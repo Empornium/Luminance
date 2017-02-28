@@ -1,0 +1,17 @@
+{
+    "name": "luminance/luminance",
+    "authors": [
+        {
+            "name": "UncleMeat",
+            "email": "unclemeat1979@live.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {"Luminance\\": "application/"}
+    },
+    "require": {
+        "monolog/monolog": "^1.16",
+        "twig/twig": "1.20",
+        "donatj/phpuseragentparser": "0.3.6"
+    }
+}

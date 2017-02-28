@@ -1,0 +1,21 @@
+{% extends "base.html" %} {% block scripts %}
+<script src="/static/functions/cinfo.js" type="text/javascript"></script>
+{% endblock %} {% block content %}
+<div style="color:red;font-weight:bold; background-color: rgba(255, 255, 255, 0.12); width:300px;border-radius:5px;padding:10px;">
+    <h2>Your account has been disabled</h2></br>
+    <p>This is either due to inactivity or rule violation.
+    </p>
+    </br>
+    <p>To discuss this come to our IRC at: {{irc_server}}</br>
+        And join {{disabled_chan}}
+    </p>
+    </br>
+
+    <p>Be honest - at this point, lying will get you nowhere.</p>
+    </br>
+</div>
+<br/>
+<form action="" method="post">
+    <iframe src="{{web_irc}}" width="98%" height="600"></iframe>
+</form>
+{% endblock %}

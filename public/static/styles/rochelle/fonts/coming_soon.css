@@ -1,0 +1,6 @@
+@font-face {
+  font-family: 'Coming Soon';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Coming Soon'), local('ComingSoon'), url('coming_soon.ttf') format('truetype');
+}

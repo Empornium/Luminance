@@ -1,0 +1,43 @@
+.nolegacy {
+    font: normal 11pt "Lucida Grande", Helvetica, Arial, Verdana, sans-serif;
+    font-size: 11pt;
+}
+
+.flash {
+    padding-top: 3px; 
+    padding-right: 10px;
+    padding-left: 10px;
+ /*   height: 20px; */
+    background-color: blue;
+    text-align: center;
+    font-weight: bold;
+    color: white;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+.flash.success {
+    background-color: red;
+    font-size: 11pt;
+}
+
+.flash.notice {
+    background-color: blue;
+    font-size: 11pt;
+}
+
+.flash.warning {
+    background-color: orange;
+    font-size: 11pt;
+}
+
+.flash.error {
+    background-color: red;
+    font-size: 11pt;
+}
+
+.flash.critical {
+    background-color: red;
+    font-size: 11pt;
+    border: 2px solid yellow;
+}

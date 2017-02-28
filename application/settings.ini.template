@@ -1,0 +1,203 @@
+; application/settings.ini.template: copy this to applications/settings.ini ,
+; and enter the appropriate values.
+; Settings which don't have to be changed from the default can be left commented
+; out or deleted entirely.
+
+[main]
+;site_name = ''
+; (was: SITE_NAME)
+;nonssl_site_url = ''
+; (was: NONSSL_SITE_URL)
+;ssl_site_url = ''
+; (was: SSL_SITE_URL)
+;site_ip = ''
+; (was: SITE_IP)
+;announce_url = ''
+; (was: ANNOUNCE_URL; gets derived from nonssl_site_url and the [tracker] port setting by default)
+;nonssl_static_server = 'static/'
+; (was: NONSSL_STATIC_SERVER)
+;ssl_static_server = 'static/'
+; (was: SSL_STATIC_SERVER)
+;site_url = ''
+; (was: SITE_URL)
+;static_server = ''
+; (was: STATIC_SERVER)
+;additional_domains = 'somelinkedsite.com,anotherlinkedsite.com'
+;internal_urls_regex = ''
+; (was: INTERNAL_URLS_REGEX)
+
+[keys]
+;enckey = ''
+; (was: ENCKEY)
+;crypto_key = ''
+; must be 32 chars of hex
+;rss_hash = ''
+; (was: RSS_HASH)
+
+[database]
+;host = 'localhost'
+; (was: SQLHOST)
+;username = ''
+; (was: SQLLOGIN)
+;password = ''
+; (was: SQLPASS)
+;db = 'luminance'
+; (was: SQLDB)
+;port = 3306
+; (was: SQLPORT)
+;socket = '/var/run/mysqld/mysqld.sock'
+; (was: SQLSOCK)
+
+[memcached]
+;host = 'unix:///var/run/memcached.sock'
+; (was: MEMCACHED_HOST)
+;port = 0
+; (was: MEMCACHED_PORT)
+
+[sphinx]
+;host = 'localhost'
+; (was: SPHINX_HOST)
+;port = 9312
+; (was: SPHINX_PORT)
+;max_matches = 1000
+; (was: SPHINX_MAX_MATCHES)
+;matches_start = 100
+; (was: SPHINX_MATCHES_START)
+;matches_step = 50
+; (was: SPHINX_MATCHES_STEP)
+;index = 'torrents'
+; (was: SPHINX_INDEX)
+
+[tracker]
+;host = 'localhost'
+; (was: TRACKER_HOST)
+;port = 2710
+; (was: TRACKER_PORT)
+;secret = ''
+; (was: TRACKER_SECRET)
+
+[site]
+;debug_mode = Off
+; (was: DEBUG_MODE)
+;open_registration = On
+; (was: OPEN_REGISTRATION)
+;user_limit = 5000
+; (was: USER_LIMIT)
+;starting_invites = 0
+; (was: STARTING_INVITES)
+;block_tor = Off
+; (was: BLOCK_TOR)
+;block_opera_mini = Off
+; (was: BLOCK_OPERA_MINI)
+;donor_invites = 2
+; (was: DONOR_INVITES)
+;user_edit_post_time = 900
+; (was: USER_EDIT_POST_TIME)
+;user_flood_post_time = 10
+; (was: USER_FLOOD_POST_TIME)
+;thread_catalogue = 500
+; (was: THREAD_CATALOGUE)
+;chat_url = ''
+; (was: CHAT_URL)
+;help_url = ''
+; (was: HELP_URL)
+;advert_html = ''
+; (was: ADVERT_HTML)
+;anonymizer_url = 'http://anonym.to/?'
+; (was: ANONYMIZER_URL)
+
+[users]
+;classes = 'APPRENTICE=2,PERV=3,GOOD_PERV=4,DONOR=20,SEXTREME_PERV=5,SMUT_PEDDLER=6,ADMIN=1,SYSOP=15'
+;level_staff = 500
+; (was: LEVEL_STAFF)
+;level_admin = 600
+; (was: LEVEL_ADMIN)
+
+[pagination]
+;torrent_comments = 10
+; (was: TORRENT_COMMENTS_PER_PAGE)
+;posts = 25
+; (was: POSTS_PER_PAGE)
+;topics = 50
+; (was: TOPICS_PER_PAGE)
+;torrents = 50
+; (was: TORRENTS_PER_PAGE)
+;requests = 25
+; (was: REQUESTS_PER_PAGE)
+;messages = 25
+; (was: MESSAGES_PER_PAGE)
+;log_entries = 50
+; (was: LOG_ENTRIES_PER_PAGE)
+
+[irc]
+;nick = ''
+; (was: BOT_NICK)
+;server = ''
+; (was: BOT_SERVER)
+;port = 6667
+; (was: BOT_PORT)
+;chan = ''
+; (was: BOT_CHAN)
+;announce_chan = ''
+; (was: BOT_ANNOUNCE_CHAN)
+;staff_chan = ''
+; (was: BOT_STAFF_CHAN)
+;disabled_chan = ''
+; (was: BOT_DISABLED_CHAN)
+;help_chan = ''
+; (was: BOT_HELP_CHAN)
+;debug_chan = ''
+; (was: BOT_DEBUG_CHAN)
+;report_chan = ''
+; (was: BOT_REPORT_CHAN)
+;admin_chan = ''
+; (was: ADMIN_CHAN)
+;lab_chan = ''
+; (was: LAB_CHAN)
+;status_chan = ''
+; (was: STATUS_CHAN)
+;nickserv_pass = ''
+; (was: BOT_NICKSERV_PASS)
+;listen_port = 51010
+; (was: SOCKET_LISTEN_PORT)
+;listen_address = 'localhost'
+; (was: SOCKET_LISTEN_ADDRESS)
+
+[forums]
+;sig_max_width = 800
+; (was: SIG_MAX_WIDTH)
+;sig_max_height = 300
+; (was: SIG_MAX_HEIGHT)
+;title_maxword_length = 42
+; (was: TITLE_MAXWORD_LENGTH)
+;announcement_forum_id = 5
+; (was: ANNOUNCEMENT_FORUM_ID)
+;staff_forum_id = 0
+; (was: STAFF_FORUM_ID)
+;trash_forum_id = 18
+; (was: TRASH_FORUM_ID)
+;exclude_forums = '9'
+;forums_reveal_voters = '15,21'
+;forums_double_post = ''
+
+[torrents]
+;auto_freeleech_size = 32212254720
+; (was: AUTO_FREELEECH_SIZE)
+;bonus_torrents_cap = 300
+; (was: BONUS_TORRENTS_CAP)
+;torrent_sig_max_height = 800
+; (was: TORRENT_SIG_MAX_HEIGHT)
+;enhanced_vote_power = 2
+; (was: ENHANCED_VOTE_POWER)
+;exclude_dupes_after_days = 183
+; (was: EXCLUDE_DUPES_AFTER_DAYS)
+;exclude_dupes_seeds = 5
+; (was: EXCLUDE_DUPES_SEEDS)
+;torrent_edit_time = 1209600
+; (was: TORRENT_EDIT_TIME)
+;uploader_request_time = 86400
+; (was: UPLOADER_REQUEST_TIME)
+;request_approval_size = 107374182400
+; (was: REQUEST_APPROVAL_SIZE)
+;request_filler_share = 0.5
+; (was: REQUEST_FILLER_SHARE)

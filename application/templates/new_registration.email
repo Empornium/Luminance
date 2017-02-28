@@ -1,0 +1,8 @@
+This email is to confirm the account you just created at {{settings.main.site_name}}
+
+You have 24 hours to click the link below and finish the registration process for this account.
+
+{{scheme}}://{{settings.main.site_url}}/users/create?token={{token}}&email={{email}}
+
+Thank you,
+{{settings.main.site_name}} Staff

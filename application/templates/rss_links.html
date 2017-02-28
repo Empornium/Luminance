@@ -1,0 +1,20 @@
+        <p>
+            <a style="margin-left:16px;vertical-align: top" href="feeds.php?feed=torrents_all&amp;{{ rss_auth_string }}" title="{{ site_name }} : All Torrents" ><img src="{{ static_uri }}common/symbols/rss.png" alt="RSS feed" /></a>
+            <a style="margin-left:3px;" href="feeds.php?feed=torrents_all&amp;{{ rss_auth_string }}" title="{{ site_name }} : All Torrents" >torrents</a>
+
+            <a style="margin-left:16px;vertical-align: top" href="feeds.php?feed=feed_news&amp;{{ rss_auth_string }}" title="{{ site_name }} : News" ><img src="{{ static_uri }}common/symbols/rss.png" alt="RSS feed" /></a>
+            <a style="margin-left:3px;" href="feeds.php?feed=feed_news&amp;{{ rss_auth_string }}" title="{{ site_name }} : News" >news</a>
+
+            <a style="margin-left:16px;vertical-align: top" href="feeds.php?feed=torrents_bookmarks_t_{{ request.user.legacy.torrent_pass }}&amp;{{ rss_auth_string }}&amp;name={{ (site_name ~ ": Bookmarked Torrents")|raw|url_encode }}" title="{{ site_name }} : Bookmarked Torrents" ><img src="{{ static_uri }}common/symbols/rss.png" alt="RSS feed" /></a>
+            <a style="margin-left:3px;" href="feeds.php?feed=torrents_bookmarks_t_{{ request.user.legacy.torrent_pass }}&amp;{{ rss_auth_string }}&amp;name={{ (site_name ~ ": Bookmarked Torrents")|raw|url_encode }}" title="{{ site_name }} : Bookmarked Torrents" >bookmarks</a>
+
+            <a style="margin-left:16px;vertical-align: top" href="feeds.php?feed=feed_blog&amp;{{ rss_auth_string }}" title="{{ site_name }} : Blog" ><img src="{{ static_uri }}common/symbols/rss.png" alt="RSS feed" /></a>
+            <a style="margin-left:3px;" href="feeds.php?feed=feed_blog&amp;{{ rss_auth_string }}" title="{{ site_name }} : Blog" >blog</a>
+
+            <a style="margin-left:16px;vertical-align: top" href="feeds.php?feed=torrents_notify_{{ request.user.legacy.torrent_pass }}&amp;{{ rss_auth_string }}" title="{{ site_name }} : Torrent Notifications" ><img src="{{ static_uri }}common/symbols/rss.png" alt="RSS feed" /></a>
+            <a style="margin-left:3px;" href="feeds.php?feed=torrents_notify_{{ request.user.legacy.torrent_pass }}&amp;{{ rss_auth_string }}" title="{{ site_name }} : Torrent Notifications" >notifications</a>
+
+            <a style="margin-left:16px;vertical-align: top" href="articles.php?topic=rsshelp" title="{{ site_name }} : RSS Help" ><img src="{{ static_uri }}common/symbols/rss.png" alt="RSS feed" /></a>
+            <a style="margin-left:3px;" href="articles.php?topic=rsshelp" title="{{ site_name }} : RSS Help" >help</a>
+
+        </p>

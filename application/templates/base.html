@@ -1,0 +1,146 @@
+{% if not footeronly %}
+{% block header %}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <title>{% block title %}{{ page_title|raw }}{% endblock %}{% set _title = block('title') %}{% if _title %} :: {% endif %}{{ site_name }}</title>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1;IE=edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+{% if authenticated %}
+    {% include 'header_links.html' %}
+{% endif %}
+
+{% block stylesheets %}
+{% if authenticated %}
+    <link href="{{ static_uri }}styles/global.css?v={{ peon.public_file_mtime('/static/styles/global.css') }}" rel="stylesheet" type="text/css" />
+    {% if ActiveUser.legacy.StyleURL %}
+        <link href="{{ ActiveUser.legacy.StyleURL }}" title="External CSS" rel="stylesheet" type="text/css" media="screen" />
+    {% else %}
+        <link href="{{ static_uri }}styles/{{ Stylesheet.Name }}/style.css?v={{ peon.public_file_mtime("/static/styles/#{Stylesheet.Name}/style.css") }}" title="{{ Stylesheet.Name }}" rel="stylesheet" type="text/css" media="screen" />
+    {% endif %}
+{% else %}
+    <link href="{{ static_uri }}styles/public/style.css?v={{ peon.public_file_mtime('/static/styles/public/style.css') }}" rel="stylesheet" type="text/css" />
+{% endif %}
+{% endblock %}
+
+{% if authenticated %}
+    <script type="text/javascript">//<![CDATA[
+        var authkey = "{{ ActiveUser.legacy.AuthKey }}";
+        var userid = {{ ActiveUser.ID }};
+    //]]></script>
+{% endif %}
+{% block scripts %}
+{% for script in scripts %}
+    <script src="{{ script.src }}" type="text/javascript"></script>
+    {% if script.append %}
+        {{ script.append|raw }}
+    {% endif %}
+{% endfor %}
+{% endblock %}
+</head>
+{% if authenticated %}
+<body id="{% block body_id %}{% if Document == 'collages' %}collage{% else %}{{ Document }}{% endif %}{% endblock %}">
+    <div id="overDiv" style="position:absolute; visibility:hidden; z-index:1000;"></div>
+    <div id="wrapper">
+
+    <h1 class="hidden">{{ site_name }}</h1>
+<div id="header">
+    <div id="header_top">
+    <div id="logo"><a href="{{ main_uri }}/index.php"></a></div>
+    {% include 'stats_block.html' %}
+    {% include 'site_menu.html' %}
+    {% include 'alert_bars.html' %}
+    {% include 'search_bars.html' %}
+    {% include 'header_bottom.html' %}
+</div>
+<div id="content">
+{% else %}
+    <body>
+    <div id="head">
+    {% if master.request.ssl %}<span>SSL</span>{% endif %}
+    </div>
+    <table id="maincontent">
+        <tr>
+            <td align="center" valign="middle">
+                <div id="logo">
+                    <img class="svg" src="{{ static_uri }}styles/public/images/logo.svg" />
+                    <ul>
+                        <li><a href="{{ main_uri }}/">Home</a></li>
+                        <li><a href="/login">Login</a></li>
+                        {% if settings.site.open_registration %}<li><a href="{{ main_uri }}/users/register">Register</a></li>{% endif %}
+                    </ul>
+                </div>
+{% endif %}
+    {% block flashes_workaround %}
+        {% include 'flashes.html' %}
+    {% endblock %}
+
+{% endblock %}
+{% endif %}
+
+{% if not headeronly and not footeronly %}
+{% block content %}
+{% endblock %}
+{% endif %}
+
+{% if not headeronly %}
+{% block footer %}
+{% if authenticated %}
+    </div>
+    <div id="footer">
+    {% if disclaimer %}
+        <br /><br />
+        <div id="disclaimer_container" class="thin" style="text-align:center; margin-bottom:20px;">
+            None of the files shown here are actually hosted on this server. The links are provided solely by this site's users. These BitTorrent files are meant for the distribution of backup files. By downloading the BitTorrent file, you are claiming that you own the original file. The administrator of this site (http{% if master.request.ssl %}s{% endif %}://{{ site_url }}) holds NO RESPONSIBILITY if these files are misused in any way and cannot be held responsible for what its users post, or any other actions of it.
+        </div>
+    {% endif %}
+        <p>
+            Site and design &copy; {{ "now"|date("Y") }} {{ site_name }}
+        </p>
+
+    {% if performance_info %}
+        <p>
+                <strong>Time:</strong> {{ performance_info.time }} ms
+                <strong>Used:</strong> {{ performance_info.memory }}
+                <strong>Load:</strong> {{ performance_info.load }}
+                <strong>Date:</strong> {{ performance_info.date }}
+
+        </p>
+    {% endif %}
+
+    {% include "rss_links.html" %}
+    <p><a href="{{ main_uri }}/log.php">Site Logs</a></p>
+    </div>
+    <div id="footer_bottom">
+    </div>
+    {% if debug_html %}
+        <!-- Begin Debugging -->
+        <div id="site_debug">
+        {{ debug_html|raw }}
+        </div>
+        <!-- End Debugging -->
+    {% endif %}
+    </div>
+    <div id="lightbox" class="lightbox hidden"></div>
+    <div id="curtain" class="curtain hidden"></div>
+
+    <!-- Extra divs, for stylesheet developers to add imagery -->
+    <div id="extra1"><span></span></div>
+    <div id="extra2"><span></span></div>
+    <div id="extra3"><span></span></div>
+    <div id="extra4"><span></span></div>
+    <div id="extra5"><span></span></div>
+    <div id="extra6"><span></span></div>
+{% else %}
+            </td>
+        </tr>
+    </table>
+    <div id="foot">
+        <span><a href="#">{{ settings.main.site_name }}</a> | <a href="https://www.empornium.me">Project Luminance</a></span>
+    </div>
+{% endif %}
+</body>
+</html>
+{% endblock %}
+{% endif %}

@@ -1,0 +1,103 @@
+    <div id="header_bottom">
+            <div id="major_stats_left">
+                <ul id="userinfo_major">
+                    <li id="nav_logout" class="brackets"><a href="/logout">Logout</a></li>
+                    <li id="nav_donate" class="brackets"><a href="{{ main_uri }}/donate.php">Donate</a></li>
+                    <li id="nav_conncheck" class="normal"><a href="{{ main_uri }}/user.php?action=connchecker">Conn-Checker</a></li>
+
+                    <li><a id="nav_seeding" class="user_peers" href="{{ main_uri }}/torrents.php?type=seeding&amp;userid={{ ActiveUser.ID }}" title="View seeding torrents">seed: 
+                        {% if seeding > 0 %}<span id="nav_seeding_r">{{ seeding|number_format }}</span>{% else %}0{% endif %}
+                    </a></li>
+                    <li><a id="nav_leeching" class="user_peers" href="{{ main_uri }}/torrents.php?type=leeching&amp;userid={{ ActiveUser.ID }}" title="View leeching torrents">leech: 
+                        {% if leeching > 0 %}<span id="nav_leeching_r">{{ leeching|number_format }}</span>{% else %}0{% endif %}
+                    </a></li>
+                </ul>
+            </div>
+        {% if not freeleech_html is empty %}
+            <div class="nicebar" style="display:inline-block">{{ freeleech_html|raw }}</div>
+        {% endif %}
+            <div id="major_stats">
+        {% if userinfo_invites %}
+                <ul id="userinfo_invites">
+                    <li id="nav_invites" class="brackets"><a href="user.php?action=invite" title="Invite new user">Invites:
+                    {% if userinfo_unlimited_invites %}&infin;{% else %}<span id="nav_invites_r">{{ invites|number_format }}</span>{% endif %}</a></li></ul>
+        {% endif %}
+        {% if userinfo_tools %}
+                <ul id="userinfo_tools">
+                    <li id="nav_tools"><a href="{{ main_uri }}/tools.php">Tools</a>
+                        <ul>
+                    {% for entry in userinfo_tools %}
+                            <li><a href="{{ entry.target }}">{{ entry.title }}</a></li>
+                    {% endfor %}
+                        </ul>
+                    </li>
+                </ul>
+        {% endif %}
+                <ul id="userinfo_username">
+                          <li id="nav_upload" class="brackets"><a href="{{ main_uri }}/upload.php">Upload</a></li>
+                 <li id="nav_userinfo" class="{% if hv.NewMessages or hv.NumUnansweredStaffPMs or hv.NewStaffPMs or hv.NewNotifications or hv.NewSubscriptions %}highlight{% else %}normal{% endif %}"><a href="{{ main_uri }}/user.php?id={{ ActiveUser.ID }}" class="username">{{ ActiveUser.Username }}</a>
+                          <ul>
+                                <li id="nav_inbox" class="{% if hv.NewMessages %}highlight{% else %}normal{% endif %}"><a onmousedown="Stats('inbox');" href="{{ main_uri }}/inbox.php">Inbox{% if hv.NewMessages %}({{ hv.NewMessages }}){% endif %}</a></li>
+                                {% if ActiveUser.legacy.SupportFor or Permissions.DisplayStaff %}
+                      <li id="nav_staffinbox" class="{% if hv.NumUnansweredStaffPMs %}highlight{% else %}normal{% endif %}">
+                          <a onmousedown="Stats('staffinbox');" href="{{ main_uri }}/staffpm.php?action=staff_inbox&amp;view=open">Staff Inbox ({{ hv.NumUnansweredStaffPMs }}) ({{ hv.NumOpenStaffPMs }})</a>
+                      </li>
+                                {% endif %}
+                                <li id="nav_staffmessages" class="{% if hv.NewStaffPMs %}highlight{% else %}normal{% endif %}"><a onmousedown="Stats('staffpm');" href="{{ main_uri }}/staffpm.php?action=user_inbox">Message Staff{% if hv.NewStaffPMs %}({{ hv.NewStaffPMs }}){% endif %}</a></li>
+
+                                <li id="nav_uploaded" class="normal"><a onmousedown="Stats('uploads');" href="{{ main_uri }}/torrents.php?type=uploaded&amp;userid={{ ActiveUser.ID }}">Uploads</a></li>
+{% if check_perms('site_submit_requests') %}
+                                <li id="nav_myrequests" class="normal"><a onmousedown="Stats('requests');" href="{{ main_uri }}/requests.php?type=created">My Requests</a></li>
+{% endif %}
+                                <li id="nav_bookmarks" class="normal"><a onmousedown="Stats('bookmarks');" href="{{ main_uri }}/bookmarks.php?type=torrents">Bookmarks</a></li>
+{% if check_perms('site_torrents_notify') %}
+                                <li id="nav_notifications" class="{% if hv.NewNotifications %}highlight{% else %}normal{% endif %}"><a onmousedown="Stats('notifications');" href="{{ main_uri }}/torrents.php?action=notify">Notifications{% if hv.NewNotifications %} ({{ hv.NewNotifications }}){% endif %}</a></li>
+{% endif %}
+                                <li id="nav_subscriptions" class="{% if hv.NewSubscriptions %}highlight{% else %}normal{% endif %}"><a onmousedown="Stats('subscriptions');" href="{{ main_uri }}/userhistory.php?action=subscriptions"{% if hv.NewSubscriptions %} class="new-subscriptions"{% endif %}>Subscriptions{% if hv.NewSubscriptions %}({{ hv.NewSubscriptions }}){% endif %}</a></li>
+                                <li id="nav_posthistory" class="normal"><a href="{{ main_uri }}/userhistory.php?action=posts&amp;group=0&amp;showunread=0">Post History</a></li>
+                                <li id="nav_comments" class="normal"><a onmousedown="Stats('comments');" href="{{ main_uri }}/userhistory.php?action=comments">Comments</a></li>
+{% if check_perms('site_can_invite_always') %}
+                                <li id="nav_invites" class="normal"><a onmousedown="Stats('invites');" href="user.php?action=invite">Invites</a></li>
+{% endif %}
+                                <li id="nav_friends" class="normal"><a onmousedown="Stats('friends');" href="{{ main_uri }}/friends.php">Friends</a></li>
+                                <li id="nav_mydonations" class="normal"><a href="{{ main_uri }}/donate.php?action=my_donations">My Donations</a></li>
+                                <li id="nav_bonus" class="normal" title="Spend your credits in the bonus shop"><a href="{{ main_uri }}/bonus.php">Bonus Shop</a></li>
+{% if check_perms('site_give_specialgift') %}
+                                <li id="nav_gift" class="normal" title="Give a gift of credits to a perv in need"><a href="{{ main_uri }}/bonus.php?action=gift">Special Gift</a></li>
+{% endif %}
+                                <li id="nav_sandbox" class="normal"><a href="{{ main_uri }}/sandbox.php">Sandbox</a></li>
+
+{% if check_perms('site_play_slots') %}
+                                <li id="nav_slots" class="normal"><a href="{{ main_uri }}/bonus.php?action=slot">Slot Machine</a></li>
+{% endif %}
+                          </ul>
+                      </li>
+                      <li id="nav_useredit" class="brackets"><a href="{{ main_uri }}/user.php?action=edit&amp;userid={{ ActiveUser.ID }}" title="Edit User Settings">Settings</a></li>
+               </ul>
+            </div>
+    </div>
+
+{# include 'donation_bar.html' #}
+{% if donation_drive %}
+    <div id="active_drive">
+        <div id="donorbar">
+            <div>
+                <a href="{{ main_uri }}/forums.php?action=viewthread&amp;threadid={{ donation_drive.threadid }}" title="click for details">{{ donation_drive.name }}</a>
+                <a class="link" href="{{ main_uri }}/donate.php" title="click to donate"><!--so far we have raised <strong>&euro;{{ donation_drive.raised_euros|number_format(2) }}</strong> out of-->
+                    target: <strong>&euro;{{ donation_drive.target_euros|number_format(2) }}</strong> - to help support the site click to donate
+                </a>
+                <div>
+                    <a href="{{ main_uri }}/donate.php" title="click to donate">
+                        <div id="donorbargreen" style="width:{{ donation_drive.percentdone }}%;"> {% if donation_drive.percent_done > 94 %}{{ donation_drive.percentdone }}%{% endif %} &nbsp;</div><div id="donorbarred" style="width:{{ 100 - donation_drive.percentdone }}%;"> &nbsp;{% if donation_drive.percent_done <= 94 %}{{ percentdone }}%{% endif %}</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+{% if not ActiveUser.legacy.Donor and settings.site.advert_html %}
+<div id="adbar">
+    {{ settings.site.advert_html }}
+</div>
+{% endif %}

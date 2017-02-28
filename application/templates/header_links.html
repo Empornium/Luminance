@@ -1,0 +1,16 @@
+    <link rel="search" type="application/opensearchdescription+xml" title="{{ site_name }} Torrents" href="opensearch.php?type=torrents" />
+    <link rel="search" type="application/opensearchdescription+xml" title="{{ site_name }} Torrent Tags" href="opensearch.php?type=tags" />
+    <link rel="search" type="application/opensearchdescription+xml" title="{{ site_name }} Requests" href="opensearch.php?type=requests" />
+    <link rel="search" type="application/opensearchdescription+xml" title="{{ site_name }} Forums" href="opensearch.php?type=forums" />
+    <link rel="search" type="application/opensearchdescription+xml" title="{{ site_name }} Log" href="opensearch.php?type=log" />
+    <link rel="search" type="application/opensearchdescription+xml" title="{{ site_name }} Users" href="opensearch.php?type=users" />
+
+    <link rel="alternate" type="application/rss+xml" href="feeds.php?feed=feed_news&amp;user={{ ActiveUser.ID }}&amp;auth={{ ActiveUser.legacy.RSS_Auth }}&amp;passkey={{ ActiveUser.legacy.torrent_pass }}&amp;authkey={{ ActiveUser.legacy.AuthKey }}" title="{{ site_name }} - News" />
+    <link rel="alternate" type="application/rss+xml" href="feeds.php?feed=feed_blog&amp;user={{ ActiveUser.ID }}&amp;auth={{ ActiveUser.legacy.RSS_Auth }}&amp;passkey={{ ActiveUser.legacy.torrent_pass }}&amp;authkey={{ ActiveUser.legacy.AuthKey }}" title="{{ site_name }} - Blog" />
+    <link rel="alternate" type="application/rss+xml" href="feeds.php?feed=torrents_notify_{{ ActiveUser.legacy.torrent_pass }}&amp;user={{ ActiveUser.ID }}&amp;auth={{ ActiveUser.legacy.RSS_Auth }}&amp;passkey={{ ActiveUser.legacy.torrent_pass }}&amp;authkey={{ ActiveUser.legacy.AuthKey }}" title="{{ site_name }} - P.T.N." />
+    {% if Notifications %}
+        {% for FilterID, FilterName in Notifications %}
+            <link rel="alternate" type="application/rss+xml" href="feeds.php?feed=torrents_notify_{{ FilterID }}_{{ ActiveUser.legacy.torrent_pass }}&amp;user={{ ActiveUser.ID }}&amp;auth={{ ActiveUser.legacy.RSS_Auth }}&amp;passkey={{ ActiveUser.legacy.torrent_pass }}&amp;authkey={{ ActiveUser.legacy.AuthKey }}&amp;name={{ FilterName|url_encode }}" title="{{ site_name }} - {{ FilterName }}" />
+        {% endfor %}
+    {% endif %}
+    <link rel="alternate" type="application/rss+xml" href="feeds.php?feed=torrents_all&amp;user={{ ActiveUser.ID }}&amp;auth={{ ActiveUser.legacy.RSS_Auth }}&amp;passkey={{ ActiveUser.legacy.torrent_pass }}&amp;authkey={{ ActiveUser.legacy.AuthKey }}" title="{{ site_name }} - All Torrents" />

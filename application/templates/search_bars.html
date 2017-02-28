@@ -1,0 +1,92 @@
+    <div id="searchbars">
+        <ul>
+            <li id="searchbar_torrents">
+                <span class="hidden">Torrents: </span>
+                <form action="/torrents.php" method="get"
+                      onsubmit="if ($('#searchbox_torrents').raw().value == 'Search Torrents')$('#searchbox_torrents').raw().value ='';">
+                    <div class="searchcontainer">
+                    {% if ActiveUser.legacy.SearchType %}<input type="hidden" name="action" value="advanced" />{% endif %}
+                    <input
+                        id="searchbox_torrents"
+                        class="searchbox"
+                        accesskey="t"
+                        spellcheck="false"
+                        onfocus="if (this.value == 'Search Torrents') this.value='';"
+                        onblur="if (this.value == '') this.value='Search Torrents';"
+                        value="Search Torrents" type="text" name="searchtext" title="Search Torrents - enter text and press return to search"
+
+                    />
+                    <input type="submit" class="searchbutton" value="" />
+                    </div>
+                </form>
+            </li>
+            <li id="searchbar_requests">
+                <span class="hidden">Requests: </span>
+                <form action="/requests.php" method="get"
+                      onsubmit="if ($('#searchbox_requests').raw().value == 'Search Requests')$('#searchbox_requests').raw().value ='';">
+                    <div class="searchcontainer">
+                    <input
+                        id="searchbox_requests"
+                        class="searchbox"
+                        spellcheck="false"
+                        onfocus="if (this.value == 'Search Requests') this.value='';"
+                        onblur="if (this.value == '') this.value='Search Requests';"
+                        value="Search Requests" type="text" name="search" title="Search Requests - enter text and press return to search"
+                    />
+                    <input type="submit" class="searchbutton" value="" />
+                    </div>
+                </form>
+            </li>
+            <li id="searchbar_forums">
+                <span class="hidden">Forums: </span>
+                <form action="/forums.php" method="get"
+                      onsubmit="if ($('#searchbox_forums').raw().value == 'Search Forums')$('#searchbox_forums').raw().value ='';">
+                    <div class="searchcontainer">
+                    <input value="search" type="hidden" name="action" />
+                    <input
+                        id="searchbox_forums"
+                        class="searchbox"
+                        onfocus="if (this.value == 'Search Forums') this.value='';"
+                        onblur="if (this.value == '') this.value='Search Forums';"
+                        value="Search Forums" type="text" name="search" title="Search Forums - enter text and press return to search"
+                    />
+                    <input type="submit" class="searchbutton" value="" />
+                    </div>
+                </form>
+            </li>
+            <li id="searchbar_help">
+                <span class="hidden">Help: </span>
+                <form action="/articles.php" method="get"
+                      onsubmit="if ($('#searchbox_help').raw().value == 'Search Help')$('#searchbox_help').raw().value ='';">
+                    <div class="searchcontainer">
+                    <input
+                        id="searchbox_help"
+                        class="searchbox"
+                        onfocus="if (this.value == 'Search Help') this.value='';"
+                        onblur="if (this.value == '') this.value='Search Help';"
+                        value="Search Help" type="text" name="searchtext" title="Search Help &amp; Rules Articles - enter text and press return to search"
+                    />
+                    <input type="submit" class="searchbutton" value="" />
+                    </div>
+                </form>
+            </li>
+            <li id="searchbar_users">
+                <span class="hidden">Users: </span>
+                <form action="/user.php" method="get"
+                      onsubmit="if ($('#searchbox_users').raw().value == 'Search Users')$('#searchbox_users').raw().value ='';">
+                    <div class="searchcontainer">
+                    <input type="hidden" name="action" value="search" />
+                    <input
+                        id="searchbox_users"
+                        class="searchbox"
+                        onfocus="if (this.value == 'Search Users') this.value='';"
+                        onblur="if (this.value == '') this.value='Search Users';"
+                        value="Search Users" type="text" name="search" size="17" title="Search Users - enter text and press return to search"
+                    />
+                    <input type="submit" class="searchbutton" value="" />
+                    </div>
+                </form>
+            </li>
+        </ul>
+    </div>
+    </div>

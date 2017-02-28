@@ -1,0 +1,8 @@
+{% if flashes %}
+<div style="margin-bottom: 20px;">
+    {% for flash in flashes %}
+    {% set severity = constant('\\Luminance\\Services\\Flasher::SEVERITY_SUCCESS') %}
+    <div id="messagebarA" class="flash {{ flashStyleClasses[flash.severity] }}" title="{{ flash.message }}"><pre>{{ flash.message | raw }}</pre></div>
+    {% endfor %}
+</div>
+{% endif %}

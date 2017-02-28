@@ -1,0 +1,21 @@
+{% extends "page.html" %}
+{% block scripts %}
+    <script src="/static/functions/cinfo.js" type="text/javascript"></script>
+{% endblock %}
+
+{% block title %}Forgotten Password{% endblock %}
+
+{% block main_content %}
+    <form method="POST" action="/users/recover" />
+        <div>
+            <input type="hidden" name="cinfo" value="auth" id="cinfo" />
+            <input type="hidden" name="token" value="{{ secretary.getToken("users.recoverPassword") }}" />
+            <div id="email">
+                <input type="text" name="email" placeholder="Registered e-mail address"  value="{{email}}" autofocus/>
+            </div>
+        </div>
+        <div id="options">
+            <input type="submit" name="submit" value="recover" />
+        </div>
+    </form>
+{% endblock %}

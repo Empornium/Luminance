@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block scripts %}
+    <script src="/static/functions/cinfo.js" type="text/javascript"></script>
+{% endblock %}
+
+{% block content %}
+    <form method="POST" action="/login" />
+        <div id="username">
+            <input class="text-input" type="text" name="username" placeholder="Username" autofocus/>
+        </div>
+        <div id="password">
+            <input class="text-input" type="password" name="password" placeholder="Password" />
+        </div>
+        <div id="options">
+            <input  type="hidden" name="cinfo" value="auth" id="cinfo" />
+            <input  type="hidden" name="iplocked" value="0" /><input type="checkbox" name="iplocked" value="1" /> Lock this session to my IP address
+            <p>
+            <input type="hidden" name="keeploggedin" value="0" /><input type="checkbox" name="keeploggedin" value="1" /> Stay logged in
+            <input id="login_button" type="submit" name="submit" value="login" />
+            </p>
+        </div>
+        <div id="forgottenpw">
+            <span><a href="/users/recover">forgotten password</a></span>
+        </div>
+    </form>
+{% endblock %}

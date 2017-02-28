@@ -1,0 +1,109 @@
+[main]
+site_name = SITE_NAME
+nonssl_site_url = NONSSL_SITE_URL
+ssl_site_url = SSL_SITE_URL
+site_ip = SITE_IP
+announce_url = ANNOUNCE_URL
+nonssl_static_server = NONSSL_STATIC_SERVER
+ssl_static_server = SSL_STATIC_SERVER
+site_url = SITE_URL
+static_server = STATIC_SERVER
+internal_urls_regex = INTERNAL_URLS_REGEX
+
+[keys]
+enckey = ENCKEY
+rss_hash = RSS_HASH
+
+[database]
+host = SQLHOST
+username = SQLLOGIN
+password = SQLPASS
+db = SQLDB
+port = SQLPORT
+socket = SQLSOCK
+
+[memcached]
+host = MEMCACHED_HOST
+port = MEMCACHED_PORT
+
+[sphinx]
+host = SPHINX_HOST
+port = SPHINX_PORT
+max_matches = SPHINX_MAX_MATCHES
+matches_start = SPHINX_MATCHES_START
+matches_step = SPHINX_MATCHES_STEP
+index = SPHINX_INDEX
+
+[tracker]
+host = TRACKER_HOST
+port = TRACKER_PORT
+secret = TRACKER_SECRET
+
+[site]
+debug_mode = DEBUG_MODE
+open_registration = OPEN_REGISTRATION
+user_limit = USER_LIMIT
+starting_invites = STARTING_INVITES
+block_tor = BLOCK_TOR
+block_opera_mini = BLOCK_OPERA_MINI
+donor_invites = DONOR_INVITES
+user_edit_post_time = USER_EDIT_POST_TIME
+user_flood_post_time = USER_FLOOD_POST_TIME
+thread_catalogue = THREAD_CATALOGUE
+chat_url = CHAT_URL
+help_url = HELP_URL
+advert_html = ADVERT_HTML
+anonymizer_url = ANONYMIZER_URL
+
+[users]
+level_staff = LEVEL_STAFF
+level_admin = LEVEL_ADMIN
+
+[pagination]
+torrent_comments = TORRENT_COMMENTS_PER_PAGE
+posts = POSTS_PER_PAGE
+topics = TOPICS_PER_PAGE
+torrents = TORRENTS_PER_PAGE
+requests = REQUESTS_PER_PAGE
+messages = MESSAGES_PER_PAGE
+log_entries = LOG_ENTRIES_PER_PAGE
+
+[irc]
+nick = BOT_NICK
+server = BOT_SERVER
+port = BOT_PORT
+chan = BOT_CHAN
+announce_chan = BOT_ANNOUNCE_CHAN
+staff_chan = BOT_STAFF_CHAN
+disabled_chan = BOT_DISABLED_CHAN
+help_chan = BOT_HELP_CHAN
+debug_chan = BOT_DEBUG_CHAN
+report_chan = BOT_REPORT_CHAN
+admin_chan = ADMIN_CHAN
+lab_chan = LAB_CHAN
+status_chan = STATUS_CHAN
+nickserv_pass = BOT_NICKSERV_PASS
+listen_port = SOCKET_LISTEN_PORT
+listen_address = SOCKET_LISTEN_ADDRESS
+
+[forums]
+sig_max_width = SIG_MAX_WIDTH
+sig_max_height = SIG_MAX_HEIGHT
+title_maxword_length = TITLE_MAXWORD_LENGTH
+announcement_forum_id = ANNOUNCEMENT_FORUM_ID
+staff_forum_id = STAFF_FORUM_ID
+trash_forum_id = TRASH_FORUM_ID
+
+[torrents]
+auto_freeleech_size = AUTO_FREELEECH_SIZE
+bonus_torrents_cap = BONUS_TORRENTS_CAP
+torrent_sig_max_height = TORRENT_SIG_MAX_HEIGHT
+enhanced_vote_power = ENHANCED_VOTE_POWER
+exclude_dupes_after_days = EXCLUDE_DUPES_AFTER_DAYS
+exclude_dupes_seeds = EXCLUDE_DUPES_SEEDS
+torrent_edit_time = TORRENT_EDIT_TIME
+uploader_request_time = UPLOADER_REQUEST_TIME
+request_approval_size = REQUEST_APPROVAL_SIZE
+request_filler_share = REQUEST_FILLER_SHARE
+
+

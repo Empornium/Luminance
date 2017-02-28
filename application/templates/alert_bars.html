@@ -1,0 +1,15 @@
+{% if not ( hv.Alerts is empty ) or not ( hv.ModBar is empty ) or not ( hv.Infos is empty ) %}
+    <div id="alerts">
+    {% for Alert in hv.Alerts %}
+        <div class="alertbar">{{ Alert|raw }}</div>
+    {% endfor %}
+    {% if not hv.ModBar is empty %}
+        <div id="modbar" class="alertbar blend"> {{ hv.ModBar|join(' | ')|raw }}</div>
+    {% endif %}
+    {% if not hv.Infos is empty %}
+        {% for Infobar in hv.Infos %}
+            <div class="alertbar bluebar">{{ Infobar|raw }}</div>
+        {% endfor %}
+    {% endif %}
+    </div>
+{% endif %}

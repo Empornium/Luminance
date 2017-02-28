@@ -1,0 +1,26 @@
+    <div id="stats_block">
+          <table class="userinfo_stats noborder">
+              <tr>
+                  <td style="text-align:right;"><a href="{{ main_uri }}/bonus.php">Credits</a>:</td>
+                  <td><span class="stat">{{ UserStats.TotalCredits|number_format(0) }}</span></td>
+                  <td style="text-align:right;"><a href="{{ main_uri }}/torrents.php?type=seeding&amp;userid={{ ActiveUser.ID }}">Up</a>:</td>
+                  <td><span class="stat">{{ UserStats.BytesUploaded|format_size }}</span></td>
+              </tr>
+              <tr>
+                  <td style="text-align:right;"><a href="{{ main_uri }}/userhistory.php?action=token_history">Slots</a>:</td>
+                  <td><span class="stat">{{ ActiveUser.legacy.FLTokens }}</span></td>
+                  <td style="text-align:right;"><a href="{{ main_uri }}/torrents.php?type=leeching&amp;userid={{ ActiveUser.ID }}">Down</a>:</td>
+                  <td><span class="stat">{{ UserStats.BytesDownloaded|format_size }}</span></td>
+              </tr>
+              <tr>
+            {% if UserStats.RequiredRatio and UserStats.RequiredRatio > 0.0 %}
+                  <td style="text-align:right;"><a href="{{ main_uri }}/articles.php?topic=ratio">Required</a>:</td>
+                  <td><span class="stat">{{ UserStats.RequiredRatio|number_format(2) }}</span></td>
+            {% else %}
+                  <td colspan="2"></td>
+            {% endif %}
+                  <td style="text-align:right;"><a href="{{ main_uri }}/articles.php?topic=ratio">Ratio</a>:</td>
+                  <td><span class="stat">{{ ratio(UserStats.BytesUploaded, UserStats.BytesDownloaded)|raw }}</span></td>
+              </tr>
+          </table>
+    </div>

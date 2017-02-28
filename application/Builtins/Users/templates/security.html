@@ -1,0 +1,38 @@
+{% extends "page.html" %}
+
+{% block title %}Security settings for {{ user.Username }}{% endblock %}
+
+{% block main_content %}
+    <div>
+        <div class="head">Change e-mail</div>
+        <div class="box">
+            <div>
+                Current e-mail: <strong>{{ email.Address }}</strong> {% if email.getFlag(1) %}validated{% else %}not validated{% endif %}
+            </div>
+            <form action="/users/{{ user.ID }}/email" method="POST">
+                <input type="hidden" name="token" value="{{ secretary.getToken('users.changeEmail') }}" />
+                <input type="text" name="address" placeholder="Enter new e-mail address" />
+                <input type="submit" name="submit" value="Submit" />
+            </form>
+            <div>
+                <div>Unvalidated e-mails:</div>
+                {% for em in emails %}
+                    <div>{{ em.Address }} {% if em.readyToResend() %}re-send{% endif %} cancel</div>
+                {% endfor %}
+            </div>
+                
+        </div>
+    </div>
+    <div>
+        <div class="head">Change password</div>
+        <div class="box">
+            <form action="/users/{{ user.ID }}/password" method="POST">
+                <input type="hidden" name="token" value="{{ secretary.getToken('users.changePassword') }}" />
+                <input type="password" name="password" placeholder="Enter new password" />
+                <input type="password" name="check_password" placeholder="Enter new password again" />
+                <input type="password" name="old_password" placeholder="Enter old password" />
+                <input type="submit" name="submit" value="Submit" />
+            </form>
+        </div>
+    </div>
+{% endblock %}
