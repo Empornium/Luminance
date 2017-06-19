@@ -44,12 +44,12 @@ if ($LoggedUser['DisablePosting']) {
 
 $Body = $_POST['body'];
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 $Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
 
 $TopicID = $_POST['thread'];
 $ThreadInfo = get_thread_info($TopicID);
+if ($ThreadInfo === false) { error(404); }
 $ForumID = $ThreadInfo['ForumID'];
 $sqltime = sqltime();
 

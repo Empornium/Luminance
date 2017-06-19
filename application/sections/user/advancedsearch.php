@@ -127,6 +127,9 @@ $YesNo = array('inarray'=>array('any', 'yes', 'no'));
 $OrderVals = array('inarray'=>array('Username', 'Ratio', 'IP', 'Email', 'Joined', 'Last Seen', 'Uploaded', 'Downloaded', 'Invites', 'Snatches'));
 $WayVals = array('inarray'=>array('Ascending', 'Descending'));
 
+$Stylesheets = $master->repos->stylesheets->get_all();
+
+
 if (count($_GET)) {
     $DateRegex = array('regex'=>'/\d{4}-\d{2}-\d{2}/');
 
@@ -164,8 +167,8 @@ if (count($_GET)) {
 
     $Val->SetFields('passkey', '0', 'string', 'Invalid passkey', array('maxlength'=>32));
     $Val->SetFields('avatar', '0', 'string', 'Avatar URL too long', array('maxlength'=>512));
-    $Val->SetFields('stylesheet', '0', 'inarray', 'Invalid stylesheet', array_unique(array_keys($Stylesheets)));
-    $Val->SetFields('cc', '0', 'inarray', 'Invalid Country Code', array('maxlength'=>2));
+    $Val->SetFields('stylesheet', '0', 'inarray', 'Invalid stylesheet',  array('inarray'=>array_unique(array_keys($Stylesheets))));
+    $Val->SetFields('cc', '0', 'string', 'Invalid Country Code', array('maxlength'=>2));
 
     $Err = $Val->ValidateForm($_GET);
 
@@ -265,16 +268,16 @@ if (count($_GET)) {
 
         if (!empty($_GET['cc'])) {
             if ($_GET['cc_op'] == "equal") {
-                $Where[]="um1.ipcc = '".$_GET['cc']."'";
+                $Where[]="um1.ipcc = '".db_string($_GET['cc'])."'";
             } else {
-                $Where[]="um1.ipcc != '".$_GET['cc']."'";
+                $Where[]="um1.ipcc != '".db_string($_GET['cc'])."'";
             }
         }
 
         if (!empty($_GET['tracker_ip'])) {
                 $Distinct = 'DISTINCT ';
                 $Join['xfu']=' JOIN xbt_files_users AS xfu ON um1.ID=xfu.uid ';
-                $Where[]= ' xfu.ip '.$Match.wrap($_GET['tracker_ip'], '', true);
+                $Where[]= ' INET6_NTOA(xfu.ipv4) '.$Match.wrap($_GET['tracker_ip'], '', true);
         }
 
         if (!empty($_GET['comment'])) {

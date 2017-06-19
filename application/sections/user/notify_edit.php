@@ -40,7 +40,7 @@ foreach ($Notifications as $N) { //$N stands for Notifications
             <tr>
                 <td class="label"><strong>Label</strong></td>
                 <td>
-                    <input type="text" name="label" class="long" />
+                    <input type="text" name="label" class="long" maxlength="128" />
                     <p class="min_padding">A label for the filter set, to tell different filters apart.</p>
                 </td>
             </tr>
@@ -56,14 +56,14 @@ foreach ($Notifications as $N) { //$N stands for Notifications
             <tr>
                 <td class="label"><strong>At least one of these tags</strong></td>
                 <td>
-                    <textarea name="tags" class="long" rows="2"><?=display_str($N['Tags'])?></textarea>
+                    <textarea name="tags" class="long" rows="2" maxlength="500"><?=display_str($N['Tags'])?></textarea>
                     <p class="min_padding">Space-separated list - eg. <em>hardcore big.tits anal</em></p>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>None of these tags</strong></td>
                 <td>
-                    <textarea name="nottags" class="long" rows="2"><?=display_str($N['NotTags'])?></textarea>
+                    <textarea name="nottags" class="long" rows="2" maxlength="500"><?=display_str($N['NotTags'])?></textarea>
                     <p class="min_padding">Space-separated list - eg. <em>hardcore big.tits anal</em></p>
                 </td>
             </tr>

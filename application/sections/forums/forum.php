@@ -66,7 +66,8 @@ if (!check_perms('site_moderate_forums')) {
 if ($LoggedUser['CustomForums'][$ForumID] != 1 && $Forums[$ForumID]['MinClassRead'] > $LoggedUser['Class']) { error(403); }
 
 // Start printing
-show_header(empty($LoggedUser['ShortTitles'])?"Forums > {$Forums[$ForumID][Name]}":$Forums[$ForumID][Name]);
+$forumName = display_str($Forums[$ForumID][Name]);
+show_header(empty($LoggedUser['ShortTitles'])?"Forums > {$forumName}":$forumName);
 
 ?>
 <div class="thin">
@@ -114,6 +115,7 @@ show_header(empty($LoggedUser['ShortTitles'])?"Forums > {$Forums[$ForumID][Name]
     <div class="box pad center">
 <?php foreach ($Forums[$ForumID]['SpecificRules'] as $ThreadIDs) {
     $Thread = get_thread_info($ThreadIDs);
+    if ($Thread === false) { error(404); }
 ?>
             &nbsp;&nbsp;[<a href="forums.php?action=viewthread&amp;threadid=<?=$ThreadIDs?>"><?=$Thread['Title']?></a>]&nbsp;&nbsp;
 <?php } ?>
@@ -125,7 +127,7 @@ $Pages=get_pages($Page,$Forums[$ForumID]['NumTopics'],TOPICS_PER_PAGE,9);
 echo $Pages;
 ?>
     </div>
-        <div class="head"><a href="forums.php">Forums</a> &gt; <?=$Forums[$ForumID]['Name']?></div>
+        <div class="head"><a href="forums.php">Forums</a> &gt; <?=display_str($Forums[$ForumID]['Name'])?></div>
     <table class="forum_list" width="100%">
         <tr class="colhead">
             <td style="width:2%;"></td>

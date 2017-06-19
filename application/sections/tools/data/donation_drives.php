@@ -4,9 +4,8 @@ if (!check_perms('admin_donor_drives'))  error(403);
 include(SERVER_ROOT . '/sections/donate/functions.php');
 
 include(SERVER_ROOT . '/sections/forums/functions.php');
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
 
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $ForumCats = get_forum_cats();
 //This variable contains all our lovely forum data

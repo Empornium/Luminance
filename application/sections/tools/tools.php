@@ -7,11 +7,11 @@ show_header('Staff Tools');
         <table>
 <?php    if (check_perms('admin_manage_articles')) { ?>
             <tr><td><a href="tools.php?action=articles">Articles</a></td></tr>
-<?php  } if (check_perms('site_manage_awards')) { ?>
+<?php  } if (check_perms('admin_manage_awards')) { ?>
             <tr><td><a href="tools.php?action=awards_auto">Automatic Awards</a></td></tr>
-<?php  } if (check_perms('site_manage_badges')) { ?>
+<?php  } if (check_perms('admin_manage_badges')) { ?>
             <tr><td><a href="tools.php?action=badges_list">Badges</a></td></tr>
-<?php  } if (check_perms('site_manage_shop')) { ?>
+<?php  } if (check_perms('admin_manage_shop')) { ?>
             <tr><td><a href="tools.php?action=shop_list">Bonus Shop</a></td></tr>
 <?php  } if (check_perms('admin_manage_categories')) { ?>
             <tr><td><a href="tools.php?action=categories">Categories</a></td></tr>
@@ -37,9 +37,9 @@ show_header('Staff Tools');
 
 <?php  } if (check_perms('admin_manage_news')) { ?>
             <tr><td><a href="tools.php?action=news">News</a></td></tr>
-<?php  } if (check_perms('site_manage_tags')) { ?>
+<?php  } if (check_perms('admin_manage_tags')) { ?>
             <tr><td><a href="tools.php?action=official_tags">Official Tags Manager</a></td></tr>
-<?php  } if (check_perms('site_convert_tags')) { ?>
+<?php  } if (check_perms('admin_convert_tags')) { ?>
             <tr><td><a href="tools.php?action=official_synonyms">Official Synonyms Manager</a></td></tr>
 <?php  } if (check_perms('users_fls')) { ?>
             <tr><td><a href="torrents.php?action=allcomments">Recent Torrent Comments</a></td></tr>
@@ -85,6 +85,7 @@ if (check_perms('admin_donor_addresses')) { ?>
 <?php  } if (check_perms('site_debug')) { ?>
             <tr><td><a href="tools.php?action=opcode_stats">Opcode Stats</a></td></tr>
             <tr><td><a href="tools.php?action=service_stats">Service Stats</a></td></tr>
+            <tr><td><a href="tools.php?action=ocelot_info">Tracker Stats</a></td></tr>
 <?php  } if (check_perms('admin_manage_permissions')) { ?>
             <tr><td><a href="tools.php?action=special_users">Special Users</a></td></tr>
 <?php  } if (check_perms('admin_data_viewer')) { ?>

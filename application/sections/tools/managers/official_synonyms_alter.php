@@ -2,7 +2,7 @@
 enforce_login();
 authorize();
 
-if (!check_perms('site_manage_tags')) {
+if (!check_perms('admin_manage_tags')) {
     error(403);
 }
 include(SERVER_ROOT . '/sections/torrents/functions.php');
@@ -86,7 +86,7 @@ if (isset($_POST['tagtosynomyn'])) {
                 // if we are just adding a tag as a synomyn and not converting there is nothing more to do
                 if (isset($_POST['converttag'])) {
                     // convert a synomyn to a tag properly
-                    if (!check_perms('site_convert_tags')) {
+                    if (!check_perms('admin_convert_tags')) {
                         $Message .= "(You do not have permission to convert an exisiting tag) Added tag $TagName as synonym for $ParentTagName";
                     } else {
                         // 'convert refrences to the original tag to parenttag and cleanup db

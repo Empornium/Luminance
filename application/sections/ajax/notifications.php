@@ -34,7 +34,7 @@ $Results = $DB->query("SELECT SQL_CALC_FOUND_ROWS
         t.Leechers,
         t.Time,
         t.FreeTorrent,
-                t.double_seed,
+        t.DoubleTorrent,
         tln.TorrentID AS LogInDB,
         unt.UnRead,
         unt.FilterID,

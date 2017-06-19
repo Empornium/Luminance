@@ -10,8 +10,7 @@ authorize();
 
 enforce_login();
 
-require(SERVER_ROOT.'/classes/class_validate.php');
-$Validate = new VALIDATE;
+$Validate = new Luminance\Legacy\Validate;
 
 $GroupID = (int) $_POST['groupid'];
 $SenderID = isset($_POST['showsender']) ? $LoggedUser['ID'] : 0;
@@ -48,7 +47,7 @@ if ($DB->record_count()>0) {
     }
 }
 
-$Log = isset($_POST['showsender']) ? "[user]{$LoggedUser['Username']}[/user]" : "System ([user]{$LoggedUser['Username']}[/user])";
+$Log = isset($_POST['showsender']) ? "[user]{$LoggedUser['ID']}[/user]" : "System ([user]{$LoggedUser['ID']}[/user])";
 $Log = sqltime()." - [color=purple]Mass PM sent[/color] by $Log - subject: $Subject";
 $DB->query("UPDATE groups SET Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
 

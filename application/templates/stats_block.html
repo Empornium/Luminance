@@ -2,7 +2,7 @@
           <table class="userinfo_stats noborder">
               <tr>
                   <td style="text-align:right;"><a href="{{ main_uri }}/bonus.php">Credits</a>:</td>
-                  <td><span class="stat">{{ UserStats.TotalCredits|number_format(0) }}</span></td>
+                  <td><span id="stats_credits" class="stat">{{ UserStats.TotalCredits|number_format(0) }}</span></td>
                   <td style="text-align:right;"><a href="{{ main_uri }}/torrents.php?type=seeding&amp;userid={{ ActiveUser.ID }}">Up</a>:</td>
                   <td><span class="stat">{{ UserStats.BytesUploaded|format_size }}</span></td>
               </tr>

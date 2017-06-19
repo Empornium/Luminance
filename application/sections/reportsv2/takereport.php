@@ -13,8 +13,7 @@
 
 authorize();
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 
 if (!is_number($_POST['torrentid'])) {
@@ -123,7 +122,7 @@ if (!empty($Err)) {
 
 $DB->query("SELECT ID FROM reportsv2 WHERE TorrentID=".$TorrentID." AND ReporterID=".db_string($LoggedUser['ID'])." AND ReportedTime > '".time_minus(3)."'");
 if ($DB->record_count() > 0) {
-    header('Location: torrents.php?torrentid='.$TorrentID);
+    header('Location: details.php?id='.$TorrentID);
     die();
 }
 
@@ -142,4 +141,4 @@ $DB->query("SELECT GroupID FROM torrents WHERE ID='$TorrentID'");
 list($GroupID) = $DB->next_record();
 $Cache->delete_value('torrent_group_'.$GroupID);
 
-header('Location: torrents.php?torrentid='.$TorrentID);
+header('Location: details.php?id='.$TorrentID);

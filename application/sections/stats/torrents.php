@@ -2,12 +2,11 @@
 
 if (!check_perms('site_stats_advanced')) error(403);
 
-include_once(SERVER_ROOT.'/classes/class_charts.php');
 $DB->query("SELECT tg.NewCategoryID, COUNT(t.ID) AS Torrents
               FROM torrents AS t JOIN torrents_group AS tg ON tg.ID=t.GroupID
           GROUP BY tg.NewCategoryID ORDER BY Torrents DESC");
 $Groups = $DB->to_array();
-$Pie = new PIE_CHART(750,400,array('Other'=>0.2,'Percentage'=>1));
+$Pie = new Luminance\Legacy\PieChart(750,400,array('Other'=>0.2,'Percentage'=>1));
 foreach ($Groups as $Group) {
     list($NewCategoryID, $Torrents) = $Group;
     //$CategoryName = $NewCategories[$NewCategoryID]['name'];

@@ -1,6 +1,5 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 // check if their credits need updating (if they have been online whilst creds are accumalting)
 $DB->query("SELECT Credits FROM users_main WHERE ID='$LoggedUser[ID]'");
@@ -122,7 +121,7 @@ $BonusCredits = $LoggedUser['TotalCredits'];
                    <?php   }
 
                         if (strpos($Action, 'give') !== false) {
-                            $OnSubmit = 'onsubmit="return SetUsername(\'othername'.$ItemID.'\'); "';
+                            $OnSubmit = 'onsubmit="return SetNameAndMessage(\'othername'.$ItemID.'\',\'message'.$ItemID.'\');"';
                         } elseif ($Action == 'title') {
                             $OnSubmit = 'onsubmit="return SetTitle(\'title'.$ItemID.'\'); "';
                         } elseif ($Action == 'ufl') {
@@ -136,6 +135,7 @@ $BonusCredits = $LoggedUser['TotalCredits'];
                             <form method="post" action="" <?=$OnSubmit?>>
                                 <input type="hidden" name="action" value="buy" />
                                 <input type="hidden" id="othername<?=$ItemID?>" name="othername" value="" />
+                                <input type="hidden" id="message<?=$ItemID?>" name="message" value="" />
                                 <input type="hidden" name="shopaction" value="<?=$Action?>" />
                                 <input type="hidden" name="userid" value="<?=$LoggedUser['ID']?>" />
                                 <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />

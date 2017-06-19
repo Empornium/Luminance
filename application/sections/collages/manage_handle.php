@@ -38,10 +38,11 @@ if ($_POST['submit'] == 'Remove') {
 $DB->query("SELECT COUNT(GroupID) AS NumGroups FROM collages_torrents WHERE CollageID='$CollageID'");
 list($NumGroups) = $DB->next_record();
 
-$TorrentsPerPage = TORRENTS_PER_PAGE;
+/*$TorrentsPerPage = TORRENTS_PER_PAGE;
 $Pages = max(1, ceil((float)$NumGroups/(float)$TorrentsPerPage));
 for ($Page=1; $Page <= $Pages; $Page++) {
     $Cache->delete_value('collage_'.$CollageID.'_'.$Page);
-}
+}*/
+$Cache->delete_value('collage_torrents_'.$CollageID);
 $Cache->delete_value('collage_'.$CollageID);
 header('Location: collages.php?action=manage&collageid='.$CollageID);

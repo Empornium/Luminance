@@ -38,8 +38,6 @@ if ( !check_forumperm($ForumID, 'Write') ) { error(403); }
 
 $DB->query("DELETE FROM forums_posts WHERE ID='$PostID'");
 
-$DB->query("DELETE FROM forums_last_read_topics WHERE PostID='$PostID'");
-
 $DB->query("SELECT MAX(ID) FROM forums_posts WHERE TopicID='$TopicID'");
 list($LastID) = $DB->next_record();
 $DB->query("UPDATE forums AS f, forums_topics AS t SET f.NumPosts=f.NumPosts-1, t.NumPosts=t.NumPosts-1 WHERE f.ID='$ForumID' AND t.ID='$TopicID'");
@@ -99,3 +97,9 @@ $Cache->update_row($ForumID, $UpdateArrayForums);
 $Cache->commit_transaction();
 
 $Cache->delete('forums_'.$ForumID);
+
+// In rare occasions, a user may have been notified of a new post between its creation and deletion.
+// Because a direct deletion does not leave any notification in the thread
+// and in order to avoid a subscription counting bug (mantis issue #273),
+// we must delete the cache key of all users subscribed to this thread.
+deleteTopicSubCounter($TopicID);

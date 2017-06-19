@@ -4,15 +4,16 @@
 authorize();
 
 if (!check_perms('admin_reports')) {
-    error(403);
+    error(403, true);
 }
 
 if (empty($_POST['reportid']) || !is_number($_POST['reportid'])) {
-    echo 'HAX ATTEMPT!'.$_GET['reportid'];
-    die();
+    //echo 'HAX ATTEMPT!'.$_GET['reportid'];
+    //die();
+    error(0, true);
 }
 
-$ReportID = $_POST['reportid'];
+$ReportID = (int)$_POST['reportid'];
 
 $Message = db_string($_POST['comment']);
 //Message can be blank!

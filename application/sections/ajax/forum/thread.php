@@ -13,8 +13,7 @@ Things to expect in $_GET:
 
 //---------- Things to sort out before it can start printing/generating content
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 // Check for lame SQL injection attempts
 if (!isset($_GET['threadid']) || !is_number($_GET['threadid'])) {
@@ -50,6 +49,7 @@ if (isset($_GET['pp'])) {
 
 // Thread information, constant across all pages
 $ThreadInfo = get_thread_info($ThreadID, true, true);
+if ($ThreadInfo === false) { error(404); }
 $ForumID = $ThreadInfo['ForumID'];
 
 // Make sure they're allowed to look at the page

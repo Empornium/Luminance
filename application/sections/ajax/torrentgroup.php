@@ -3,8 +3,7 @@ authorize(true);
 
 require(SERVER_ROOT.'/sections/torrents/functions.php');
 
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $GroupAllowed = array('Body', 'Image', 'ID', 'Name', 'NewCategoryID', 'Time');
 $TorrentAllowed = array('ID', 'FileCount', 'Size', 'Seeders', 'Leechers', 'Snatched', 'FreeTorrent', 'Time', 'FileList', 'FilePath', 'UserID', 'Username');

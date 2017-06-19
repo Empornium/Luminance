@@ -1,6 +1,5 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 authorize();
 
@@ -20,5 +19,4 @@ list($CollageID) = $DB->next_record();
 
 $DB->query("DELETE FROM collages_comments WHERE ID='$PostID'");
 
-$Cache->delete_value('collage_'.$CollageID);
-$Cache->delete('collage_'.$CollageID.'_catalogue_0'); //Because these never exceed 500 posts, and I'm really tired right now.
+$Cache->delete_value('collage_comments_'.$CollageID);

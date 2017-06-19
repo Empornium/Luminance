@@ -1,42 +1,17 @@
 <?php
 authorize();
 
-function blockedPM($ToID, $FromID, &$Error)
-{
-    global $StaffIDs, $DB;
-    $FromID=(int) $FromID;
-    $Err=false;
-    if (!is_number($ToID)) {
-        $Err = "This recipient does not exist.";
-    } else {
-        $ToID = (int) $ToID;
-            if (!isset($StaffIDs[$FromID])) { // staff are never blocked
-                // check if this user is blocked from sending
-                $DB->query("SELECT Type FROM friends WHERE UserID='$ToID' AND FriendID='$FromID'");
-                list($FType)=$DB->next_record();
-                if($FType == 'blocked') $Err = "This user cannot recieve PM's from you.";
-                else {
-                    $DB->query("SELECT BlockPMs FROM users_info WHERE UserID='$ToID'");
-                    list($BlockPMs)=$DB->next_record();
-                    if($BlockPMs == 2) $Err = "This user cannot recieve PM's from you.";
-                    elseif($BlockPMs == 1 && $FType != 'friends')
-                        $Err = "This user cannot recieve PM's from you.";
-                }
-            }
-    }
-    $Error = $Err;
-
-    return $Err !== false;
-}
 
 if (empty($_POST['toid']) || !is_number($_POST['toid'])) { error(404); }
+
+$StaffIDs = getStaffIDs();
 
 if (!empty($LoggedUser['DisablePM']) && !isset($StaffIDs[$_POST['toid']])) {
     error(403);
 }
 
 $ToID = $_POST['toid'];
-if (blockedPM($ToID, $LoggedUser[ID], $Err)) error($Err);
+if (blockedPM($ToID, $LoggedUser['ID'], $Err)) error($Err);
 
 if (isset($_POST['convid']) && is_number($_POST['convid'])) {
     $ConvID = $_POST['convid'];
@@ -58,8 +33,7 @@ if (!$Err && empty($Body)) {
 }
 if(!empty($Err)) error($Err);
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 $Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
 
 if (isset($_POST['forwardbody'])) {

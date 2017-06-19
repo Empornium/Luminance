@@ -2,11 +2,10 @@
 
 if (!check_perms('torrents_review_manage')) error(403);
 
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
 
 show_header('Manage torrents marked for deletion', 'bbcode,marked_reasons,jquery');
 
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 ?>
 <div class="thin">
@@ -35,7 +34,7 @@ $Text = new TEXT;
                     <br />
                     <input type="button" value="Toggle preview" onClick="PreviewResponse(0);" />
                     <input type="hidden" name="id" value="0" />
-                    <input type="hidden" name="action" value="mfd_edit_reason"" />
+                    <input type="hidden" name="action" value="mfd_edit_reason" />
                     <input type="submit" name="submit" value="Save" id="save_0"/>
             </form>
         </div><a id="old_responses" name="old_responses"></a>

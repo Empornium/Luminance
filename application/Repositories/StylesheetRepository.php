@@ -19,8 +19,7 @@ class StylesheetRepository extends Repository {
         if (is_null($this->allStylesheets)) {
             $this->allStylesheets = $this->cache->get_value('stylesheets');
             if (!is_array($this->allStylesheets)) {
-                $this->master->olddb->query('SELECT ID, LOWER(REPLACE(Name," ","_")) AS Name, Name AS ProperName FROM stylesheets');
-                $this->allStylesheets = $this->master->olddb->to_array('ID', MYSQLI_BOTH);
+                $this->allStylesheets = $this->master->db->raw_query('SELECT ID, ID, LOWER(REPLACE(Name," ","_")) AS Name, Name AS ProperName FROM stylesheets ORDER BY Name')->fetchAll(\PDO::FETCH_UNIQUE | \PDO::FETCH_ASSOC);
                 $this->cache->cache_value('stylesheets', $this->allStylesheets, 600);
             }
         }

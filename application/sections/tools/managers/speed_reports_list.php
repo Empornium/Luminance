@@ -20,10 +20,11 @@ if (empty($_GET['order_by']) || !in_array($_GET['order_by'], array('Username', '
     $OrderBy = $_GET['order_by'];
 }
 
-$DB->query("SELECT DeleteRecordsMins, KeepSpeed FROM site_options ");
-list($DeleteRecordsMins, $KeepSpeed) = $DB->next_record();
+if (isset($_GET['torrentid'])) $_GET['torrentid'] = (int) $_GET['torrentid'];
+if (isset($_GET['userid'])) $_GET['userid'] = (int) $_GET['userid'];
 
-$ViewSpeed = isset($_GET['viewspeed'])?(int) $_GET['viewspeed']:$KeepSpeed;
+
+$ViewSpeed = isset($_GET['viewspeed'])?(int) $_GET['viewspeed']:$master->options->KeepSpeed;
 
 show_header('Speed Reports','watchlist');
 
@@ -110,11 +111,9 @@ show_header('Speed Reports','watchlist');
     //---------- options
 
     if (is_number($_GET['userid']) && $_GET['userid']>0) {
-        $_GET['userid'] = (int) $_GET['userid'];
         $WHERE = " AND xbt.uid='$_GET[userid]' ";
         $ViewInfo = "User ($_GET[userid]) ". $Watchlist[$_GET['userid']]['Username'] .' &nbsp;&nbsp; ';
     } elseif (is_number($_GET['torrentid']) && $_GET['torrentid']>0) {
-        $_GET['torrentid'] = (int) $_GET['torrentid'];
         $WHERE = " AND xbt.fid='$_GET[torrentid]' ";
         $ViewInfo = "Torrent ($_GET[torrentid]) &nbsp;&nbsp; ". $TWatchlist[$_GET['torrentid']]['Name'] .' &nbsp;&nbsp; ';
     } else {
@@ -148,32 +147,32 @@ show_header('Speed Reports','watchlist');
                             <label for="delrecordmins">Delete unwatched records after </label>
 <?php  if ($CanManage) { ?>
                             <select id="delrecordmins" name="delrecordmins" title="Delete unwatched records after this time">
-                                <option value="0"<?=($DeleteRecordsMins==0?' selected="selected"':'');?>>&nbsp;asap&nbsp;&nbsp;</option>
+                                <option value="0"<?=($master->options->DeleteRecordsMins==0?' selected="selected"':'');?>>&nbsp;asap&nbsp;&nbsp;</option>
 <?php                               for ($i=1;$i<5;$i++) {
                                     $mins = $i * 15;  ?>
-                                    <option value="<?=$mins?>" <?=($DeleteRecordsMins==$mins?' selected="selected"':'');?>>&nbsp;<?=time_span($mins*60);?>&nbsp;&nbsp;</option>
+                                    <option value="<?=$mins?>" <?=($master->options->DeleteRecordsMins==$mins?' selected="selected"':'');?>>&nbsp;<?=time_span($mins*60);?>&nbsp;&nbsp;</option>
 <?php                               }
                                 for ($i=1;$i<25;$i++) {
                                     $mins = $i * 120;  ?>
-                                    <option value="<?=$mins?>" <?=($DeleteRecordsMins==$mins?' selected="selected"':'');?>>&nbsp;<?=time_span($mins*60);?>&nbsp;&nbsp;</option>
+                                    <option value="<?=$mins?>" <?=($master->options->DeleteRecordsMins==$mins?' selected="selected"':'');?>>&nbsp;<?=time_span($mins*60);?>&nbsp;&nbsp;</option>
 <?php                               }  ?>
                             </select>
 <?php  } else { ?>
-                            <input name="delrecords" type="text" style="width:130px;color:black;" disabled="disabled" value="<?=time_span($DeleteRecordsMins*60)?>" title="Delete unwatched records after this time" />
+                            <input name="delrecords" type="text" style="width:130px;color:black;" disabled="disabled" value="<?=time_span($master->options->DeleteRecordsMins*60)?>" title="Delete unwatched records after this time" />
 <?php  }  ?>
                 </td>
                 <td  class="center">
                             <label for="keepspeed" title="Keep Speed">Keep unwatched records with upload speed over </label>
 <?php  if ($CanManage) { ?>
                             <select id="keepspeed" name="keepspeed" title="Keep unwatched records over this speed">
-                                <option value="524288"<?=($KeepSpeed==524288?' selected="selected"':'');?>>&nbsp;<?=get_size(524288);?>/s&nbsp;&nbsp;</option>
+                                <option value="524288"<?=($master->options->KeepSpeed==524288?' selected="selected"':'');?>>&nbsp;<?=get_size(524288);?>/s&nbsp;&nbsp;</option>
 <?php                               for ($i=1;$i<21;$i++) {
                                     $speed = $i * 1048576;  ?>
-                                    <option value="<?=$speed?>" <?=($KeepSpeed==$speed?' selected="selected"':'');?>>&nbsp;<?=get_size($speed);?>/s&nbsp;&nbsp;</option>
+                                    <option value="<?=$speed?>" <?=($master->options->KeepSpeed==$speed?' selected="selected"':'');?>>&nbsp;<?=get_size($speed);?>/s&nbsp;&nbsp;</option>
 <?php                               } ?>
                             </select>
 <?php  } else { ?>
-                            <input type="text" name="keepspeed" style="width:130px;color:black;" disabled="disabled" value="<?=get_size($KeepSpeed);?>/s" title="Keep unwatched records over this speed" />
+                            <input type="text" name="keepspeed" style="width:130px;color:black;" disabled="disabled" value="<?=get_size($master->options->KeepSpeed);?>/s" title="Keep unwatched records over this speed" />
 <?php  }  ?>
                 </td>
 <?php  if ($CanManage) { ?>
@@ -244,7 +243,7 @@ list($TotalResults) = $DB->next_record();
 
 $DB->query("SELECT SQL_CALC_FOUND_ROWS
                             xbt.id, uid, Username, xbt.downloaded, remaining, t.Size, xbt.uploaded,
-                            upspeed, downspeed, timespent, peer_id, xbt.ip, tg.ID, fid, tg.Name, xbt.mtime,
+                            upspeed, downspeed, timespent, peer_id, INET6_NTOA(xbt.ipv4), INET6_NTOA(xbt.ipv6), tg.ID, fid, tg.Name, xbt.mtime,
                              ui.Donor, ui.Warned, um.Enabled, um.PermissionID,
                                 IF(w.UserID,'1','0'), IF(nc.UserID,'1','0')
                           FROM xbt_peers_history AS xbt
@@ -305,10 +304,10 @@ $Pages=get_pages($Page,$NumResults,25,9);
             } else {
                 foreach ($Records as $Record) {
                     list($ID, $UserID, $Username, $Downloaded, $Remaining, $Size, $Uploaded, $UpSpeed, $DownSpeed,
-                                       $Timespent, $ClientPeerID, $IP, $GroupID, $TorrentID, $Name, $Time,
+                                       $Timespent, $ClientPeerID, $IPv4, $IPv6, $GroupID, $TorrentID, $Name, $Time,
                                        $IsDonor, $Warned, $Enabled, $ClassID, $OnWatchlist, $OnExcludeList) = $Record;
                     $row = ($row === 'a' ? 'b' : 'a');
-                    $ipcc = geoip($IP);
+                    $ipcc = geoip($IPv4);
 ?>
                     <tr class="row<?=$row?>">
                         <td>
@@ -334,8 +333,8 @@ $Pages=get_pages($Page,$NumResults,25,9);
                         </td>
                         <td class="center"><?=get_size($Remaining)?></td>
                         <td class="center"><img src="static/styles/<?= $LoggedUser['StyleName'] ?>/images/seeders.png" title="up"/> <?=size_span($Uploaded, get_size($Uploaded))?></td>
-                        <td class="center"><?=speed_span($UpSpeed, $KeepSpeed, 'red', get_size($UpSpeed).'/s')?></td>
-                        <td class="center"><span style="color:#555"><?=substr($ClientPeerID,0,8)?></span> &nbsp;<?=display_ip($IP, $ipcc)?></td>
+                        <td class="center"><?=speed_span($UpSpeed, $master->options->KeepSpeed, 'red', get_size($UpSpeed).'/s')?></td>
+                        <td class="center"><span style="color:#555"><?=substr($ClientPeerID,0,8)?></span> &nbsp;<?=display_ip($IPv4, $ipcc)?></td>
                         <td class="center"><?=time_diff($Time, 2, true, false, 1)?></td>
                         <td rowspan="2">
                             <input class="remove" type="checkbox"  name="rid[]" value="<?=$ID?>" title="check to remove selected records" />
@@ -355,8 +354,8 @@ $Pages=get_pages($Page,$NumResults,25,9);
                         </td>
                         <td class="center"><span style="color:#555"><?=get_size($Size)?></span></td>
                         <td class="center"><img src="static/styles/<?= $LoggedUser['StyleName'] ?>/images/leechers.png" title="down"/> <?=size_span($Downloaded, get_size($Downloaded))?></td>
-                        <td class="center"><?=speed_span($DownSpeed, $KeepSpeed, 'purple', get_size($DownSpeed).'/s')?></td>
-                        <td class="center"><span style="color:#555"><?=get_host($IP)?> </span></td>
+                        <td class="center"><?=speed_span($DownSpeed, $master->options->KeepSpeed, 'purple', get_size($DownSpeed).'/s')?></td>
+                        <td class="center"><span style="color:#555"><?=get_host($IPv4)?> </span></td>
                         <td class="center"><span style="color:#555" title="<?=time_span($Timespent, 4)?>"><?=time_span($Timespent, 2)?></span></td>
                     </tr>
 <?php               }

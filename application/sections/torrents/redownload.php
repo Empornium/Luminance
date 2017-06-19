@@ -13,13 +13,14 @@ if (!empty($_GET['userid']) && is_number($_GET['userid'])) {
 if ($UserID != $LoggedUser['ID'] && !check_perms('site_zip_downloader')) {
     error(403);
 }
+if (!$master->options->EnableDownloads) {
+    error("Downloads are currently disabled.");
+}
 
 $User = user_info($UserID);
 $Perms = get_permissions($User['PermissionID']);
 $UserClass = $Perms['Class'];
 
-require(SERVER_ROOT.'/classes/class_torrent.php');
-require(SERVER_ROOT.'/classes/class_zip.php');
 
 if (empty($_GET['type'])) {
     error(0);
@@ -55,7 +56,7 @@ if ($UserID!=$LoggedUser['ID'] && !check_perms('users_view_anon_uploaders')) {
     $SQL .= " AND t.Anonymous='0'";
 }
 
-ZIP::unlimit();
+Luminance\Legacy\Zip::unlimit();
 
 $DB->query("SELECT
     DATE_FORMAT(".$Month.",'%b \'%y') AS Month,
@@ -71,12 +72,13 @@ $DB->query("SELECT
 $Downloads = $DB->to_array(false,MYSQLI_NUM,false);
 
 list($UserID, $Username) = array_values(user_info($UserID));
-$Zip = new ZIP($Username.'\'s '.ucfirst($_GET['type']));
+$Zip = new Luminance\Legacy\Zip($Username.'\'s '.ucfirst($_GET['type']));
 foreach ($Downloads as $Download) {
-    list($Month, $GroupID, $Album, $Size, $Contents) = $Download;
+    list($Month, $GroupID, $Name, $Size, $Contents) = $Download;
     $Contents = unserialize(base64_decode($Contents));
-    $Tor = new TORRENT($Contents, true);
+    $Tor = new Luminance\Legacy\Torrent($Contents, true);
     $Tor->set_announce_url(ANNOUNCE_URL.'/'.$LoggedUser['torrent_pass'].'/announce');
+    $Tor->set_comment('http'.($master->request->ssl ? 's' : '').'://'. SITE_URL."/torrents.php?id=$GroupID");
 
     if ($master->settings->main->announce_urls) {
         $announce_urls = [];
@@ -88,14 +90,9 @@ foreach ($Downloads as $Download) {
         unset($Tor->Val['announce-list']);
     }
 
-    $TorrentName = $Album;
-
-    if (!$TorrentName) { $TorrentName="No Name"; }
-
-    $FileName = file_string($TorrentName);
-    if ($Browser == 'Internet Explorer') {
-        $FileName = urlencode($FileName);
-    }
+    $TorrentName = '['.SITE_NAME.']'.((!empty($Name)) ? $Name : 'No Name');
+    $FileName = trim(file_string($TorrentName));
+    $FileName = cut_string($FileName, 192, true, false);
     $FileName .= '.torrent';
     $Zip->add_file($Tor->enc(), file_string($Month).'/'.$FileName);
 }

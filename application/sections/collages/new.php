@@ -1,6 +1,5 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 show_header('Create a collage','bbcode,jquery');
 
 if (!check_perms('site_collages_renamepersonal')) {

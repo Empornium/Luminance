@@ -10,8 +10,7 @@ $Description = isset($_POST['description'])? $_POST['description']:false;
 
 if ($Sort && $Name && $Description && ($Sort != "") && ($Name != "") && (trim($Description) != "")) {
 
-    include(SERVER_ROOT.'/classes/class_text.php');
-    $Text = new TEXT;
+    $Text = new Luminance\Legacy\Text;
     if (!$Text->validate_bbcode($Description,  get_permissions_advtags($LoggedUser['ID']), !$IsAjax)) {
         echo "There are errors in your bbcode (unclosed tags)";
         die();

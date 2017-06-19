@@ -1,15 +1,12 @@
 <?php
 // Main feeds page
-// The feeds don't use script_start.php, their code resides entirely in feeds.php in the document root
-// Bear this in mind when you try to use script_start functions.
-require_once(SERVER_ROOT . '/classes/class_feed.php');
 
 //Lets prevent people from clearing feeds
 if (isset($_GET['clearcache'])) {
     unset($_GET['clearcache']);
 }
 
-$Feed = NEW \FEED;
+$Feed = new Luminance\Legacy\Feed;
 $Feed->UseSSL = $this->master->request->ssl;
 $Cache = $this->master->cache;
 
@@ -37,12 +34,7 @@ if (
 
 $User = (int) $_GET['user'];
 
-if (!$Enabled = $Cache->get_value('enabled_'.$User)) {
-    $DB = $master->olddb;
-    $DB->query("SELECT Enabled FROM users_main WHERE ID='$User'");
-    list($Enabled) = $DB->next_record();
-    $Cache->cache_value('enabled_'.$User, $Enabled, 0);
-}
+$Enabled = getUserEnabled($User);
 
 if (md5($User.RSS_HASH.$_GET['passkey']) != $_GET['auth'] || $Enabled != 1) {
     $Feed->open_feed();
@@ -54,8 +46,7 @@ if (md5($User.RSS_HASH.$_GET['passkey']) != $_GET['auth'] || $Enabled != 1) {
 $Feed->open_feed();
 switch ($_GET['feed']) {
     case 'feed_news':
-        include(SERVER_ROOT.'/classes/class_text.php');
-        $Text = new TEXT;
+        $Text = new Luminance\Legacy\Text;
         $Feed->channel('News', 'RSS feed for site news.');
         if (!$News = $Cache->get_value('news')) {
             if (!$DB) {
@@ -86,8 +77,7 @@ switch ($_GET['feed']) {
         }
         break;
     case 'feed_blog':
-        include(SERVER_ROOT.'/classes/class_text.php');
-        $Text = new TEXT;
+        $Text = new Luminance\Legacy\Text;
         $Feed->channel('Blog', 'RSS feed for site blog.');
         if (!$Blog = $Cache->get_value('blog')) {
             if (!$DB) {
@@ -112,7 +102,7 @@ switch ($_GET['feed']) {
         }
         break;
     case 'torrents_all':
-        $Feed->channel('All Torrents', 'RSS feed for all new torrent uploads.');
+        $Feed->channel('All Torrents', 'RSS feed for all new Torrent uploads.');
         $Feed->retrieve('torrents_all',$_GET['authkey'],$_GET['passkey']);
         break;
 
@@ -131,7 +121,7 @@ switch ($_GET['feed']) {
             $Feed->channel('Bookmarked torrent notifications', 'RSS feed for bookmarked torrents.');
             $Feed->retrieve($_GET['feed'],$_GET['authkey'],$_GET['passkey']);
         } else {
-            $Feed->channel('All Torrents', 'RSS feed for all new torrent uploads.');
+            $Feed->channel('All Torrents', 'RSS feed for all new Torrent uploads.');
             $Feed->retrieve('torrents_all',$_GET['authkey'],$_GET['passkey']);
         }
 }

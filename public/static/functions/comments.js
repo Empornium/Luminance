@@ -1,130 +1,139 @@
 var username;
 var postid;
 
-function Quote(section, post, place, user) {
-	username = user;
-	postid = post;
-	ajax.get("?action=get_post&section=" + section + "&body=1&post=" + postid, function(response){
-            var params = place != '' ? ","+place+","+postid : '';
-            var s = "[quote="+username+params+"]" +  html_entity_decode(response) + "[/quote]";
-            if ( $('#quickpost').raw().value != '')   s = "\n" + s + "\n";
-            insert( s, 'quickpost');
-		resize('quickpost');
-	});
+function Quote(section, post, place, user)
+{
+    username = user;
+    postid = post;
+    ajax.get("?action=get_post&section=" + section + "&body=1&post=" + postid, function(response) {
+        var params = place != '' ? ","+place+","+postid : '';
+        var s = "[quote="+username+params+"]" +  html_entity_decode(response) + "[/quote]";
+        if ( $('#quickpost').raw().value != '')   s = "\n" + s + "\n";
+        insert( s, 'quickpost');
+        resize('quickpost');
+    });
 }
 
-function Edit_Form(section, post, key) {
-	postid = post;
-	$('#bar' + postid).raw().cancel = $('#content' + postid).raw().innerHTML;
-	$('#bar' + postid).raw().oldbar = $('#bar' + postid).raw().innerHTML;
-	$('#content' + postid).raw().innerHTML = "<div id=\"preview" + postid + "\"></div><input type=\"hidden\" name=\"auth\" value=\"" + authkey + "\" /><input type=\"hidden\" id=\"key"+postid+"\" name=\"key\" value=\"" + key + "\" /><input type=\"hidden\" name=\"post\" value=\"" + postid + "\" /><div id=\"editcont" + postid + "\"></div>";
-	$('#bar' + postid).raw().innerHTML = "<input type=\"button\" value=\"Preview\" onclick=\"Preview_Edit('" + postid + "');\" /><input type=\"button\" value=\"Post\" onclick=\"Save_Edit('" + postid + "')\" /><input type=\"button\" value=\"Cancel\" onclick=\"Cancel_Edit('" + postid + "');\" />";
-	ajax.get("?action=get_post&section=" + section + "&post=" + postid, function(response){
-		$('#editcont' + postid).raw().innerHTML = response;   
-		resize('editbox' + postid);
-	});
+function Edit_Form(section, post, key)
+{
+    postid = post;
+    $('#bar' + postid).raw().cancel = $('#content' + postid).raw().innerHTML;
+    $('#bar' + postid).raw().oldbar = $('#bar' + postid).raw().innerHTML;
+    $('#content' + postid).raw().innerHTML = "<div id=\"preview" + postid + "\"></div><input type=\"hidden\" name=\"auth\" value=\"" + authkey + "\" /><input type=\"hidden\" id=\"key"+postid+"\" name=\"key\" value=\"" + key + "\" /><input type=\"hidden\" name=\"post\" value=\"" + postid + "\" /><div id=\"editcont" + postid + "\"></div>";
+    $('#bar' + postid).raw().innerHTML = "<input type=\"button\" value=\"Preview\" onclick=\"Preview_Edit('" + postid + "');\" /><input type=\"button\" value=\"Post\" onclick=\"Save_Edit('" + postid + "')\" /><input type=\"button\" value=\"Cancel\" onclick=\"Cancel_Edit('" + postid + "');\" />";
+    ajax.get("?action=get_post&section=" + section + "&post=" + postid, function(response) {
+        $('#editcont' + postid).raw().innerHTML = response;
+        resize('editbox' + postid);
+    });
 }
 
-function Cancel_Edit(postid) {
-	$('#bar' + postid).raw().innerHTML = $('#bar' + postid).raw().oldbar;
-	$('#content' + postid).raw().innerHTML = $('#bar' + postid).raw().cancel;
+function Cancel_Edit(postid)
+{
+    $('#bar' + postid).raw().innerHTML = $('#bar' + postid).raw().oldbar;
+    $('#content' + postid).raw().innerHTML = $('#bar' + postid).raw().cancel;
 }
 
-function Preview_Edit(postid) {
-		var ToPost = [];
-		ToPost['auth'] = authkey;
-		ToPost['key'] = $('#key'+postid).raw().value;
-		ToPost['post'] = postid;
-		ToPost['body'] = $('#editbox'+postid).raw().value;
-	$('#bar' + postid).raw().innerHTML = "<input type=\"button\" value=\"Editor\" onclick=\"Cancel_Preview('" + postid + "');\" /><input type=\"button\" value=\"Post\" onclick=\"Save_Edit('" + postid + "')\" /><input type=\"button\" value=\"Cancel\" onclick=\"Cancel_Edit('" + postid + "');\" />";
-	ajax.post("ajax.php?action=preview", ToPost, function(response){  // "form" + postid
-		$('#preview' + postid).raw().innerHTML = response;
-		//$('#editbox' + postid).hide();
-		$('#editcont' + postid).hide();	
-	});
+function Preview_Edit(postid)
+{
+    var ToPost = [];
+    ToPost['auth'] = authkey;
+    ToPost['key'] = $('#key'+postid).raw().value;
+    ToPost['post'] = postid;
+    ToPost['body'] = $('#editbox'+postid).raw().value;
+    $('#bar' + postid).raw().innerHTML = "<input type=\"button\" value=\"Editor\" onclick=\"Cancel_Preview('" + postid + "');\" /><input type=\"button\" value=\"Post\" onclick=\"Save_Edit('" + postid + "')\" /><input type=\"button\" value=\"Cancel\" onclick=\"Cancel_Edit('" + postid + "');\" />";
+    ajax.post("ajax.php?action=preview", ToPost, function(response) {
+        $('#preview' + postid).raw().innerHTML = response;
+        $('#editcont' + postid).hide();
+        lazy_load();
+    });
 }
 
-function Cancel_Preview(postid) {
-	$('#bar' + postid).raw().innerHTML = "<input type=\"button\" value=\"Preview\" onclick=\"Preview_Edit('" + postid + "');\" /><input type=\"button\" value=\"Post\" onclick=\"Save_Edit('" + postid + "')\" /><input type=\"button\" value=\"Cancel\" onclick=\"Cancel_Edit('" + postid + "');\" />";
-	$('#preview' + postid).raw().innerHTML = "";
-	//$('#editbox' + postid).show();
-	$('#editcont' + postid).show();
-}
-
-function Save_Edit(postid) {
-		var ToPost = [];
-		ToPost['auth'] = authkey;
-		ToPost['key']  = $('#key'+postid).raw().value;
-		ToPost['post'] = postid;
-		ToPost['body'] = $('#editbox'+postid).raw().value;
-	if (location.href.match(/forums\.php/) || location.href.match(/userhistory\.php\?action\=posts/)) {
-		ajax.post("forums.php?action=takeedit",ToPost, function (response) {
-                    $('#bar' + postid).raw().innerHTML = $('#bar' + postid).raw().oldbar;
-                    $('#preview' + postid).raw().innerHTML = response;
-                    $('#editcont' + postid).hide();
-                    $('#editcont' + postid).raw().innerHTML = '';
-		});
-	} else if (location.href.match(/collages?\.php/)) {
-		ajax.post("collages.php?action=takeedit_comment",ToPost, function (response) {
-                    $('#bar' + postid).raw().innerHTML = $('#bar' + postid).raw().oldbar;
-                    $('#preview' + postid).raw().innerHTML = response;
-                    $('#editcont' + postid).hide();
-                    $('#editcont' + postid).raw().innerHTML = '';
-		});
-	} else if (location.href.match(/requests\.php/)) {
-		ajax.post("requests.php?action=takeedit_comment",ToPost, function (response) {
-                    $('#bar' + postid).raw().innerHTML = $('#bar' + postid).raw().oldbar;
-                    $('#preview' + postid).raw().innerHTML = response;
-                    $('#editcont' + postid).hide();
-                    $('#editcont' + postid).raw().innerHTML = '';
-		});
-        } else if (location.href.match(/staffpm\.php/)) {
-                ajax.post("staffpm.php?action=takeedit",ToPost, function (response) {
-                    $('#bar' + postid).raw().innerHTML = $('#bar' + postid).raw().oldbar;
-                    $('#preview' + postid).raw().innerHTML = response;
-                    $('#editcont' + postid).hide();
-                    $('#editcont' + postid).raw().innerHTML = '';
-                });
-	} else {
-		ajax.post("torrents.php?action=takeedit_post",ToPost, function (response) {
-                    $('#bar' + postid).raw().innerHTML = $('#bar' + postid).raw().oldbar;
-                    $('#preview' + postid).raw().innerHTML = response;
-                    $('#editcont' + postid).hide();
-                    $('#editcont' + postid).raw().innerHTML = '';
-		});
-	}
+function Cancel_Preview(postid)
+{
+    $('#bar' + postid).raw().innerHTML = "<input type=\"button\" value=\"Preview\" onclick=\"Preview_Edit('" + postid + "');\" /><input type=\"button\" value=\"Post\" onclick=\"Save_Edit('" + postid + "')\" /><input type=\"button\" value=\"Cancel\" onclick=\"Cancel_Edit('" + postid + "');\" />";
+    $('#preview' + postid).raw().innerHTML = "";
+    $('#editcont' + postid).show();
 }
 
 
-function ModUnlock(postid) {
-		var ToPost = [];
-		ToPost['auth'] = authkey;
-		ToPost['post'] = postid;
-	if (location.href.match(/forums\.php/) || location.href.match(/userhistory\.php\?action\=posts/)) {
-		ajax.post("forums.php?action=modunlock",ToPost, function (response) {
-			$('#content' + postid).raw().innerHTML = response;
-			$('#modunlock' + postid).remove();
-		});
-	}
+
+
+function Save_Edit(postid)
+{
+    var ToPost = [];
+    ToPost['auth'] = authkey;
+    ToPost['key']  = $('#key'+postid).raw().value;
+    ToPost['post'] = postid;
+    ToPost['body'] = $('#editbox'+postid).raw().value;
+    var ajaxurl = 'ajax.php?action=takeedit_post';
+
+    if (location.href.match(/forums\.php/) || location.href.match(/userhistory\.php\?action\=posts/)) {
+        ajaxurl = "forums.php?action=takeedit";
+        ToPost['section'] = 'forums'
+    } else if (location.href.match(/collages?\.php/)) {
+        //ajaxurl = "collages.php?action=takeedit_comment";
+        ToPost['section'] = 'collages'
+    } else if (location.href.match(/requests\.php/)) {
+        //ajaxurl = "requests.php?action=takeedit_comment";
+        ToPost['section'] = 'requests'
+    } else if (location.href.match(/staffpm\.php/)) {
+        //ajaxurl = "staffpm.php?action=takeedit";
+        ToPost['section'] = 'staffpm'
+    } else {
+        //ajaxurl = "torrents.php?action=takeedit_post";
+        ToPost['section'] = 'torrents'
+    }
+
+    ajax.post(ajaxurl, ToPost, function (response) {
+        var x = json.decode(response);
+        if (!is_array(x)) {
+             alert(x);
+             return;
+        }
+        if (x[0]=='saved') {
+            $('#bar' + postid).raw().innerHTML = $('#bar' + postid).raw().oldbar;
+            $('#editcont' + postid).raw().innerHTML = '';
+            $('#content' + postid).raw().innerHTML = x[1];
+        } else {
+            $('#bar' + postid).raw().innerHTML = "<input type=\"button\" value=\"Editor\" onclick=\"Cancel_Preview('" + postid + "');\" /><input type=\"button\" value=\"Post\" onclick=\"Save_Edit('" + postid + "')\" /><input type=\"button\" value=\"Cancel\" onclick=\"Cancel_Edit('" + postid + "');\" />";
+            $('#preview' + postid).raw().innerHTML = x[1];
+        }
+        $('#editcont' + postid).hide();
+        lazy_load();
+    });
+
 }
 
-function TimeUnlock(postid) {
-		var ToPost = [];
-		ToPost['auth'] = authkey;
-		ToPost['post'] = postid;
-	if (location.href.match(/forums\.php/) || location.href.match(/userhistory\.php\?action\=posts/)) {
-		ajax.post("forums.php?action=timeunlock",ToPost, function (response) {
-			$('#timeunlock' + postid).raw().innerHTML = response;
-		});
-	}
+
+function ModUnlock(postid)
+{
+    var ToPost = [];
+    ToPost['auth'] = authkey;
+    ToPost['post'] = postid;
+    if (location.href.match(/forums\.php/) || location.href.match(/userhistory\.php\?action\=posts/)) {
+        ajax.post("forums.php?action=modunlock",ToPost, function (response) {
+            $('#content' + postid).raw().innerHTML = response;
+            $('#modunlock' + postid).remove();
+        });
+    }
 }
 
-function SetSplitInterface() {
-    //$('#split_title').disable( !$('#split_new').raw().checked );
-    //$('#split_forum').disable( !$('#split_new').raw().checked );
+function TimeUnlock(postid)
+{
+    var ToPost = [];
+    ToPost['auth'] = authkey;
+    ToPost['post'] = postid;
+    if (location.href.match(/forums\.php/) || location.href.match(/userhistory\.php\?action\=posts/)) {
+        ajax.post("forums.php?action=timeunlock",ToPost, function (response) {
+            $('#timeunlock' + postid).raw().innerHTML = response;
+        });
+    }
+}
+
+function SetSplitInterface()
+{
     $('#split_threadid').disable( !$('#split_merge').raw().checked );
     $('#split_comment').disable( !$('#split_trash').raw().checked );
-    //$('#split_comment').disable( !$('#split_trash').raw().checked );
     if ( $('#split_new').raw().checked ) {
        jQuery('#split_forum').css("color", 'black');
        jQuery('#split_forum').css("background", 'none');
@@ -138,31 +147,32 @@ function SetSplitInterface() {
     }
 }
 
-function Trash(threadid, postid) {
+function Trash(threadid, postid)
+{
     var reason = prompt('Move this post to the Trash forum\n\nComment:');
-	if (reason && reason != '') {
-		var ToPost = [];
+    if (reason && reason != '') {
+        var ToPost = [];
         ToPost['action']= 'trash_post';
-		ToPost['auth'] = authkey;
+        ToPost['auth'] = authkey;
         ToPost['threadid']= threadid;
         ToPost['postid'] = postid;
         ToPost['comment'] = reason;
-        //ToPost['']= '';
-		ajax.post("forums.php", ToPost, function (response) {
+        ajax.post("forums.php", ToPost, function (response) {
             var x = json.decode(response);
             if (is_array(x)) {
-				$('#post' + postid).hide();
+                $('#post' + postid).hide();
                 //location.href=x[0];
             } else {    // error from ajax
                 alert(x);
             }
-		});
-	}
+        });
+    }
 }
 
 
 
-function Delete(post) {
+function Delete(post)
+{
 	postid = post;
 	if (confirm('Are you sure you wish to delete this post?') == true) {
 		if (location.href.match(/forums\.php/) || location.href.match(/userhistory\.php\?action\=posts/)) {
@@ -193,6 +203,7 @@ function Quick_Preview() {
 		$('#quickreplypreview').show();
 		$('#contentpreview').raw().innerHTML = response;
 		$('#quickreplytext').hide();
+        lazy_load();
 	});
 }
 
@@ -250,10 +261,19 @@ function Newthread_Preview(mode) {
 }
 
 function LoadEdit(type, post, depth) {
-	ajax.get("?action=ajax_get_edit&postid=" + post + "&depth=" + depth + "&type=" + type, function(response) {
-			$('#content' + post).raw().innerHTML = response;
-		}
-	);
+    ajax.get("?action=ajax_get_edit&postid=" + post + "&depth=" + depth + "&type=" + type, function(response) {
+        $('#content' + post).raw().innerHTML = response;
+    });
+}
+
+function RevertEdit(post) {
+    var ToPost = [];
+    ToPost['action']= 'revertedit';
+    ToPost['auth'] = authkey;
+    ToPost['post'] = post;
+    ajax.post("forums.php", ToPost, function(response) {
+        $('#content' + post).raw().innerHTML = response;
+    });
 }
 
 function AddPollOption(id) {
@@ -266,7 +286,7 @@ function AddPollOption(id) {
 			auth.name = "auth";
 			auth.value = authkey;
 			form.appendChild(auth);
-		
+
 			var action = document.createElement("input");
 			action.type = "hidden";
 			action.name = "action";
@@ -284,7 +304,7 @@ function AddPollOption(id) {
 			input.name = "new_option";
 			input.size = "50";
 			form.appendChild(input);
-		
+
 			var submit = document.createElement("input");
 			submit.type = "submit";
 			submit.id = "new_submit";

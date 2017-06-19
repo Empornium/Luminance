@@ -1,6 +1,6 @@
 <?php
 
-if (!check_perms('site_manage_badges')) { error(403); }
+if (!check_perms('admin_manage_badges')) { error(403); }
 
 authorize();
 

@@ -2,14 +2,13 @@
 /* * **********************************************************************
 
  * ********************************************************************** */
-if (!check_perms('admin_reports') && !check_perms('site_project_team') && !check_perms('site_moderate_forums')) {
-    error(404);
+if (!check_perms('site_view_reportsv1') && !check_perms('admin_reports') && !check_perms('site_moderate_forums') && !check_perms('site_project_team')) {
+    error(403);
 }
 
 // Number of reports per page
 define('REPORTS_PER_PAGE', '20');
-include(SERVER_ROOT . '/classes/class_text.php');
-$Text = NEW TEXT;
+$Text = new Luminance\Legacy\Text;
 
 list($Page, $Limit) = page_limit(REPORTS_PER_PAGE);
 
@@ -40,7 +39,7 @@ if (!check_perms('admin_reports')) {
     if (check_perms('site_project_team')) {
         $Where .= " AND Type = 'request_update'";
     }
-    if (check_perms('site_moderate_forums')) {
+    if (check_perms('site_view_reportsv1') || check_perms('site_moderate_forums')) {
         $Where .= " AND Type IN('collages_comment', 'Post', 'requests_comment', 'thread', 'torrents_comment')";
     }
 }
@@ -74,8 +73,10 @@ $DB->set_query_id($Reports);
     <h2>Active Reports</h2>
     <div class="linkbox">
         <a href="reports.php">New</a> |
-        <a href="reports.php?view=old">Old</a> |
-        <a href="reports.php?action=stats">Stats</a>
+        <a href="reports.php?view=old">Old</a>
+<?php   if (check_perms('admin_reports')) {   ?>
+         | <a href="reports.php?action=stats">Stats</a>
+<?php   }   ?>
     </div>
     <div class="linkbox">
         <?php
@@ -272,16 +273,18 @@ $DB->set_query_id($Reports);
                     <tr class="rowb">
                         <td colspan="<?= ($Status != 'Resolved') ? '2' : '3' ?>">
                             <div>Staff Comment:<br/><?= $Text->full_format($Comment, true) ?></div>
-                            <?php  if ($Status != "Resolved") { ?>
+<?php   if ($Status != "Resolved") { ?>
                                 <br/><textarea name="comment" rows="2" class="long"></textarea>
-                            <?php  } ?>
+<?php   } ?>
                         </td>
-                        <?php  if ($Status != "Resolved") { ?>
+<?php   if ($Status != "Resolved") { ?>
                             <td width="80px" valign="bottom">
                                 <input type="submit" name="action" value="Add comment" />
+<?php       if (check_perms('admin_reports') || check_perms('site_moderate_forums')) { ?>
                                 <input type="submit" name="action" value="Resolve" />
+<?php       } ?>
                             </td>
-                        <?php  } ?>
+<?php   } ?>
                     </tr>
                 </form>
                 <?php
@@ -309,7 +312,7 @@ $DB->set_query_id($Reports);
                                 ?>
                                 <div style="text-align: right;">
                                     <em>(<?=  time_diff($cDate)?>)</em> &nbsp;view existing conversation with <a href="user.php?id=<?= $cUserID ?>"><?= $cUsername ?></a> (<?=$cType?>) about this report: &nbsp;&nbsp
-                                    <a href="staffpm.php?action=viewconv&id=<?= $cID ?>" target="_blank">[View Message]</a> &nbsp;
+                                    <a href="staffpm.php?action=viewconv&amp;id=<?= $cID ?>" target="_blank">[View Message]</a> &nbsp;
                                 </div>
                                 <?php
                             }
@@ -318,7 +321,7 @@ $DB->set_query_id($Reports);
                     </tr>
                 <?php
                 }
-                if ($Status != "Resolved") { ?>
+                if ($Status != "Resolved" && (check_perms('admin_reports') || check_perms('site_moderate_forums'))) { ?>
                     <tr class="rowa">
                         <td colspan="3" style="border-right: none">
 

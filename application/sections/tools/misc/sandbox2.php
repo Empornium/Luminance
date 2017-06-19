@@ -70,9 +70,9 @@ show_header('sandbox2');
     <div class="box pad shadow">
         <p id="start">Start: <?=$start?></p>
         <p >Last Start IP: <?=$laststartip?></p>
-        <p>Condensed <?=$rawnum?> --> <?=$num?>  &nbsp (<?="$start->".($start+$range)?>)</p>
+        <p>Condensed <?=$rawnum?> --> <?=$num?>  &nbsp; (<?="$start->".($start+$range)?>)</p>
         <p >Total: <?=$total?></p> <br/>
-        <a href="?action=sandbox2&start=<?=$start+$range?>">Process next <?=number_format($range)?> records after startip=<?=$laststartip?></a>
+        <a href="?action=sandbox2&amp;start=<?=$start+$range?>">Process next <?=number_format($range)?> records after startip=<?=$laststartip?></a>
     </div>
 
     <div class="box pad shadow" id="results">

@@ -93,6 +93,7 @@ class DB extends Service {
 
     public $pdo;
     public $Queries = array();
+    protected $enable_debug = true;
 
     public function connect() {
         if (is_null($this->pdo)) {
@@ -112,24 +113,39 @@ class DB extends Service {
         }
     }
 
+    public function enable_debug() {
+        $this->enable_debug = true;
+    }
+
+    public function disable_debug() {
+        $this->enable_debug = false;
+    }
+
     public function raw_query($sql, $parameters = array()) {
         $QueryStartTime=microtime(true);
         $this->connect();
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($parameters);
         $QueryEndTime=microtime(true);
-        $this->Queries[]=array(db_display_str($sql."\n".json_encode($parameters)),($QueryEndTime-$QueryStartTime)*1000);
+        if ($this->enable_debug)
+            $this->Queries[]=array(db_display_str($sql."\n".json_encode($parameters)),($QueryEndTime-$QueryStartTime)*1000);
         return $stmt;
     }
 
     public function legacy_query($sql) {
-        $QueryStartTime=microtime(true);
-        $this->connect();
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
-        $QueryEndTime=microtime(true);
-        $this->Queries[]=array(db_display_str($sql),($QueryEndTime-$QueryStartTime)*1000);
-        $wrapper = new LegacyWrapper($stmt);
+        try {
+            $QueryStartTime=microtime(true);
+            $this->connect();
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute();
+            $QueryEndTime=microtime(true);
+            if ($this->enable_debug)
+                $this->Queries[]=array(db_display_str($sql),($QueryEndTime-$QueryStartTime)*1000);
+            $wrapper = new LegacyWrapper($stmt);
+        } catch(PDOException $pdo_except) {
+            error_log("Failed query! \n".$sql);
+            throw $pdo_except;
+        }
         return $wrapper;
     }
 
@@ -142,4 +158,16 @@ class DB extends Service {
         return $count;
     }
 
+    // a helper function to build a param array and param String for use in an IN ( ) clause
+    public function bindParamArray($prefix, $values, &$params)
+    {
+        $str = "";
+        foreach($values as $index => $value){
+            // build named param string in form ':id0,:id1',
+            $str .= ":".$prefix.$index.",";
+            // $params are returned in form [':id0'=>$val[0], ':id1'=>$val[1] ]
+            $params[$prefix.$index] = $value;
+        }
+        return rtrim($str,",");
+    }
 }

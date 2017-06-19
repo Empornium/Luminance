@@ -7,8 +7,7 @@ if (!empty($LoggedUser['DisableForums'])) {
     error(403);
 }
 
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 if (isset($LoggedUser['PostsPerPage'])) {
     $PerPage = $LoggedUser['PostsPerPage'];

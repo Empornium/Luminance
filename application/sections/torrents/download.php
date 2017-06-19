@@ -1,4 +1,5 @@
 <?php
+
 if (!isset($_REQUEST['authkey']) || !isset($_REQUEST['torrent_pass'])) {
     enforce_login();
     $TorrentPass = $LoggedUser['torrent_pass'];
@@ -21,7 +22,10 @@ if (!isset($_REQUEST['authkey']) || !isset($_REQUEST['torrent_pass'])) {
     if (!$UserID) { error(403); }
     $TorrentPass = $_REQUEST['torrent_pass'];
 }
-require(SERVER_ROOT.'/classes/class_torrent.php');
+
+if (!$master->options->EnableDownloads) {
+    error("Downloads are currently disabled.");
+}
 
 $TorrentID = $_REQUEST['id'];
 
@@ -34,7 +38,7 @@ if (!is_array($Info) || empty($Info[10])) {
         tg.Name,
         t.Size,
         t.FreeTorrent,
-        t.double_seed,
+        t.DoubleTorrent,
         t.info_hash
         FROM torrents AS t
         INNER JOIN torrents_group AS tg ON tg.ID=t.GroupID
@@ -49,7 +53,7 @@ if (!is_array($Info) || empty($Info[10])) {
 if (!is_array($Info[0])) {
     error(404);
 }
-list($GroupID,$Name, $Size, $FreeTorrent, $DoubleSeed, $InfoHash) = array_shift($Info); // used for generating the filename
+list($GroupID,$Name, $Size, $FreeTorrent, $DoubleTorrent, $InfoHash) = array_shift($Info); // used for generating the filename
 
 $TokenTorrents = $Cache->get_value('users_tokens_'.$UserID);
 if (empty($TokenTorrents)) {
@@ -92,7 +96,8 @@ if ($_REQUEST['usetoken'] == 1 && $FreeTorrent == 0) {
                         $time = time_plus(60*60*24*14); // 14 days
 
             // Let the tracker know about this
-            if (!update_tracker('add_token_fl', array('info_hash' => rawurlencode($InfoHash), 'userid' => $UserID, 'time' => strtotime($time)))) {
+            //if (!update_tracker('add_token_fl', array('info_hash' => rawurlencode($InfoHash), 'userid' => $UserID, 'time' => strtotime($time)))) {
+            if (!$master->tracker->addTokenFreeleech($InfoHash, $UserID, strtotime($time))) {
                     error("Sorry! An error occurred while trying to register your token. Most often, this is due to the tracker being down or under heavy load. Please try again later.");
             }
 
@@ -111,7 +116,7 @@ if ($_REQUEST['usetoken'] == 1 && $FreeTorrent == 0) {
             $Cache->cache_value('users_tokens_'.$UserID, $TokenTorrents);
         }
     }
-} elseif ($_REQUEST['usetoken'] == 2 && $DoubleSeed == 0) {
+} elseif ($_REQUEST['usetoken'] == 2 && $DoubleTorrent == 0) {
 
     // First make sure this isn't already DS, and if it is, do nothing
     if (empty($TokenTorrents[$TorrentID]) || $TokenTorrents[$TorrentID]['DoubleSeed'] < sqltime()) {
@@ -138,7 +143,8 @@ if ($_REQUEST['usetoken'] == 1 && $FreeTorrent == 0) {
                         $time = time_plus(60*60*24*14); // 14 days
 
             // Let the tracker know about this
-            if (!update_tracker('add_token_ds', array('info_hash' => rawurlencode($InfoHash), 'userid' => $UserID, 'time' => strtotime($time)))) {
+            //if (!update_tracker('add_token_ds', array('info_hash' => rawurlencode($InfoHash), 'userid' => $UserID, 'time' => strtotime($time)))) {
+            if (!$master->tracker->addTokenDoubleseed($InfoHash, $UserID, strtotime($time))) {
                     error("Sorry! An error occurred while trying to register your token. Most often, this is due to the tracker being down or under heavy load. Please try again later.");
             }
 
@@ -169,7 +175,7 @@ $DB->query("SELECT File FROM torrents_files WHERE TorrentID='$TorrentID'");
 
 list($Contents) = $DB->next_record(MYSQLI_NUM, array(0));
 $Contents = unserialize(base64_decode($Contents));
-$Tor = new TORRENT($Contents, true); // New TORRENT object
+$Tor = new Luminance\Legacy\Torrent($Contents, true); // new Torrent object
 // Set torrent announce URL
 $Tor->set_announce_url(ANNOUNCE_URL.'/'.$TorrentPass.'/announce');
 
@@ -191,13 +197,9 @@ unset($Tor->Val['url-list']);
 unset($Tor->Val['libtorrent_resume']);
 // Torrent name takes the format of Album - YYYY
 
-$TorrentName = $Name;
-
-if (!$TorrentName) { $TorrentName="No Name"; }
-
-$TorrentName = "[".SITE_NAME."]$TorrentName";
-
-$FileName = ($Browser == 'Internet Explorer') ? urlencode(file_string($TorrentName)) : file_string($TorrentName);
+$TorrentName = '['.SITE_NAME.']'.((!empty($Name)) ? $Name : 'No Name');
+$FileName = trim(file_string($TorrentName));
+$FileName = ($Browser == 'Internet Explorer') ? urlencode($FileName) : $FileName;
 $MaxLength = $DownloadAlt ? 192 : 196;
 $FileName = cut_string($FileName, $MaxLength, true, false);
 $FileName = $DownloadAlt ? $FileName.'.txt' : $FileName.'.torrent';

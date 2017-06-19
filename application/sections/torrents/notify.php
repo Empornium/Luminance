@@ -44,7 +44,7 @@ $Results = $DB->query("SELECT SQL_CALC_FOUND_ROWS
         t.Leechers as Leechers,
         t.Time as Time,
         t.FreeTorrent,
-        t.double_seed,
+        t.DoubleTorrent,
         t.Anonymous,
         u.Username,
         tln.TorrentID AS LogInDB,
@@ -147,7 +147,7 @@ $Pages=get_pages($Page,$TorrentCount,NOTIFICATIONS_PER_PAGE,9);
             }
 
             $IsBookmarked = in_array($TorrentID, $Bookmarks);
-            $Icons = torrent_icons(array('FreeTorrent'=>$FreeTorrent,'double_seed'=>$DoubleSeed), $TorrentID, $Review, $IsBookmarked);
+            $Icons = torrent_icons(array('FreeTorrent'=>$FreeTorrent,'DoubleTorrent'=>$DoubleSeed), $TorrentID, $Review, $IsBookmarked);
 
             $IsMarkedForDeletion = $Review['Status'] == 'Warned' || $Review['Status'] == 'Pending';
         // print row

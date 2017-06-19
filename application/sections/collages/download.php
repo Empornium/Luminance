@@ -56,6 +56,10 @@ if(
 
 if (!check_perms('site_zip_downloader')) { error(403); }
 
+if (!$master->options->EnableDownloads) {
+    error("Downloads are currently disabled.");
+}
+
 $Preferences = array('', "WHERE t.Seeders >= '1'", "WHERE t.Seeders >= '5'");
 
 $CollageID = $_REQUEST['collageid'];
@@ -87,18 +91,16 @@ if (count($Downloads)) {
     $Torrents = $DB->to_array('TorrentID',MYSQLI_ASSOC,false);
 }
 
-require(SERVER_ROOT.'/classes/class_torrent.php');
-require(SERVER_ROOT.'/classes/class_zip.php');
-$Zip = new ZIP(file_string($CollageName));
+$Zip = new Luminance\Legacy\Zip(file_string($CollageName));
 $Zip->unlimit(); // lets see if this solves the download problems with super large zips
 
 foreach ($Downloads as $Download) {
-    list($GroupID, $TorrentID, $Album, $Size) = $Download;
+    list($GroupID, $TorrentID, $Name, $Size) = $Download;
     $TotalSize += $Size;
     $Contents = unserialize(base64_decode($Torrents[$TorrentID]['file']));
-    $Tor = new TORRENT($Contents, true);
+    $Tor = new Luminance\Legacy\Torrent($Contents, true);
     $Tor->set_announce_url(ANNOUNCE_URL.'/'.$LoggedUser['torrent_pass'].'/announce');
-      $Tor->set_comment('http'.($master->request->ssl ? 's' : '').'://'. SITE_URL."/torrents.php?id=$GroupID");
+    $Tor->set_comment('http'.($master->request->ssl ? 's' : '').'://'. SITE_URL."/torrents.php?id=$GroupID");
 
 # NINJA
 if ($master->settings->main->announce_urls) {
@@ -111,14 +113,12 @@ if ($master->settings->main->announce_urls) {
     unset($Tor->Val['announce-list']);
 }
 
-    // We need this section for long file names :/
-    $TorrentName='';
-    $TorrentInfo='';
-    $TorrentName = file_string($Album);
-    $FileName = $TorrentName.$TorrentInfo;
+    $TorrentName = '['.SITE_NAME.']'.((!empty($Name)) ? $Name : 'No Name');
+    $FileName = trim(file_string($TorrentName));
     $FileName = cut_string($FileName, 192, true, false);
+    $FileName .= '.torrent';
 
-    $Zip->add_file($Tor->enc(), $FileName.'.torrent');
+    $Zip->add_file($Tor->enc(), $FileName);
 }
 
 $Skipped = count($Skips);

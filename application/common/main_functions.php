@@ -2,6 +2,116 @@
 
 # This code was originally part of script_start.php and class_mysql.php
 
+/**
+ * Initiate a staffPM conversation to a user (from a staff)
+ * @param $toID int The UserID of the recipient
+ * @param $subject string, the subject of the staffPM
+ * @param $message string, message to start the conversation
+ * @param $level int Optional, the permissions level for this message, defaults to 0
+
+ * @return int The ID for the new conversation
+ */
+function startStaffConversation($toID, $subject, $message, $level =0)
+{
+    global $master, $LoggedUser;
+
+    if (empty($toID) || !is_number($toID)) error(0);
+    if (!is_number($level)) error(0);
+
+    if (empty($message) || $message == '') error("No message!");
+    if (empty($subject) || $subject == '') error("No Subject!");
+
+    $Text = new Luminance\Legacy\Text;
+    $Text->validate_bbcode($message, get_permissions_advtags($LoggedUser['ID']));
+
+    $sqltime = sqltime();
+
+    $master->db->raw_query("INSERT INTO staff_pm_conversations
+                            (Subject, Status, Level, UserID, Date, Unread)
+                     VALUES (:subject, 'Open', :level, :toid, :sqltime, true)",
+                            [':subject' => $subject,
+                             ':level'   => $level,
+                             ':toid'    => $toID,
+                             ':sqltime' => $sqltime]);
+    // New message
+    $convID = $master->db->last_insert_id();
+
+    $master->db->raw_query("INSERT INTO staff_pm_messages
+                            (UserID, SentDate, Message, ConvID)
+                     VALUES (:userid, :sqltime, :message, :convid)",
+                             [':userid'  => $LoggedUser['ID'],
+                              ':sqltime' => $sqltime,
+                              ':message' => $message,
+                              ':convid'  => $convID]);
+
+    $master->cache->delete_value('staff_pm_new_' . $toID);
+
+    return $convID;
+}
+
+/**
+ * Gets the forwarded conv data and returns bbcode with posts quoted
+ * Assumes $_POST['forwardmessage'] / $_POST['convid'] are set
+ * @return array of [$msgtype, $subject, $body]
+ */
+function getForwardedPostData()
+{
+    global $LoggedUser, $master;
+
+    if ($_POST['forwardmessage']=='conversation') {
+        $msgType = 'conversation';
+        if (!$_POST['convid'] || !is_number($_POST['convid'])) { error(0); }
+        $convID = (int) $_POST['convid'];
+        $posts = $master->db->raw_query("SELECT pm.Subject, IFNULL(um.Username,'system') AS Username, m.Body
+                                           FROM pm_messages as m
+                                           JOIN pm_conversations AS pm ON pm.ID=m.ConvID
+                                           JOIN pm_conversations_users AS u ON m.ConvID=u.ConvID AND m.ConvID=:convid
+                                      LEFT JOIN users_main AS um ON um.ID=m.SenderID
+                                          WHERE u.UserID=:userid",
+                                                [':convid' => $convID,
+                                                 ':userid' => $LoggedUser['ID']])->fetchAll(\PDO::FETCH_ASSOC);
+        $body = "conv#$convID";
+    } else {
+        if (!$_POST['forwardmessage'] || !is_number($_POST['forwardmessage'])) { error(0); }
+        $msgID = (int) $_POST['forwardmessage'];
+        $msgType = 'message';
+        $posts = $master->db->raw_query("SELECT pm.Subject, IFNULL(um.Username,'system') AS Username, m.Body
+                                           FROM pm_messages as m
+                                           JOIN pm_conversations AS pm ON pm.ID=m.ConvID
+                                           JOIN pm_conversations_users AS u ON m.ConvID=u.ConvID
+                                      LEFT JOIN users_main AS um ON um.ID=m.SenderID
+                                          WHERE m.ID=:msgid
+                                            AND u.UserID=:userid",
+                                                [':msgid'  => $msgID,
+                                                 ':userid' => $LoggedUser['ID']])->fetchAll(\PDO::FETCH_ASSOC);
+        $msgID = " (msg#$msgID)";
+    }
+    foreach($posts as $post) {
+        if (!$subject) {
+            $subject = $post['Subject'];
+            $body = "[bg=#d3e3f3]FWD: $subject          [color=grey]{$body}[/color][/bg]\n";
+        }
+        $body .= "[quote={$post[Username]}{$msgID}]{$post[Body]}[/quote]\n";
+    }
+    return [$msgType, "FWD: $subject", $body];
+}
+
+
+function getNumArrayFromString($arrayAsString, $throwerror = true, $allowzero = false)
+{
+    $arrayAsString = trim($arrayAsString, " ,");
+    if (!$arrayAsString) return array();
+    $numArray = explode(',', $arrayAsString);
+    foreach ($numArray as $key => &$num) {
+        $num = trim($num);
+        if ($num==='' || ($num==='0' && !$allowzero) || !is_number($num)) {
+            if ($num!=='' && $throwerror) error(0);
+            else unset($numArray[$key]);
+        }
+    }
+    return $numArray;
+}
+
 //Handles escaping
 function db_string($String,$DisableWildcards=false)
 {
@@ -55,8 +165,35 @@ function user_heavy_info($UserID)
 {
     global $master;
     $User = $master->repos->users->load($UserID);
+    if (!$User) return null;
     $HeavyInfo = $User->heavy_info();
     return $HeavyInfo;
+}
+
+/**
+ * update a users last browsed torrent field with a new datetime
+ *
+ * @param int $userID
+ * @param datetime $time value to set LastBrowse field to
+ */
+function update_last_browse($userID, $time)
+{
+    global $master;
+    if (!is_number($userID)) error(0);
+
+    // update db
+    $master->db->raw_query("UPDATE users_info SET LastBrowse = :lastbrowse WHERE UserID = :userid AND LastBrowse < :lastbrowse2",
+                                [':lastbrowse' => $time,
+                                 ':userid'     => $userID,
+                                 ':lastbrowse2' => $time]);
+
+    // Update cache
+    $master->repos->users->uncache($userID);
+
+    // Update $LoggedUser if current user
+    if ($LoggedUser['ID'] == $userID) {
+        $LoggedUser['LastBrowse'] = $time;
+    }
 }
 
 /**
@@ -152,6 +289,8 @@ function get_next_bonus_update($LastBonusTime)
 
 function get_avatar_css($MaxAvatarWidth, $MaxAvatarHeight)
 {
+    if (!isset($MaxAvatarWidth))  $MaxAvatarWidth  = $master->options->AvatarWidth;
+    if (!isset($MaxAvatarHeight)) $MaxAvatarHeight = $master->options->AvatarHeight;
     $css = 'max-width:' . $MaxAvatarWidth . 'px; max-height:' . $MaxAvatarHeight . 'px;';
     return $css;
 }
@@ -396,7 +535,8 @@ function get_whitelist_regex()
             $pattern = '@';
             $div = '';
             while (list($host)=$DB->next_record()) {
-                $pattern .= $div . preg_quote($host, '@');
+                if (substr($host, -1) != "/") $host .= '/';
+                $pattern .= $div ."^". preg_quote($host, '@');
                 $div = '|';
             }
             $pattern .= '@i';
@@ -409,6 +549,36 @@ function get_whitelist_regex()
     return $pattern;
 }
 
+
+
+function getValidUrlRegex($Extension = '', $Inline = false)
+{
+    $Regex = '/^';
+    $Regex .= '(https?|ftps?|irc):\/\/'; // protocol
+    $Regex .= '(\w+(:\w+)?@)?'; // user:pass@
+    $Regex .= '(';
+    $Regex .= '(([0-9]{1,3}\.){3}[0-9]{1,3})|'; // IP or...
+    $Regex .= '(([a-z0-9\-\_]+\.)+\w{2,6})'; // sub.sub.sub.host.com
+    $Regex .= ')';
+    $Regex .= '(:[0-9]{1,5})?'; // port
+    $Regex .= '\/?'; // slash?
+    $Regex .= '(\/?[0-9a-z\-_.,&=@~%\/:;()+|!#]+)*'; // /file
+    if (!empty($Extension)) {
+        $Regex.=$Extension;
+    }
+
+    // query string
+    if ($Inline) {
+        $Regex .= '(\?([0-9a-z\-_.,%\/\@~&=:;()+*\^$!#|]|\[\d*\])*)?';
+    } else {
+        $Regex .= '(\?[0-9a-z\-_.,%\/\@[\]~&=:;()+*\^$!#|]*)?';
+    }
+
+    $Regex .= '(#[a-z0-9\-_.,%\/\@[\]~&=:;()+*\^$!]*)?'; // #anchor
+    $Regex .= '$/i';
+
+    return $Regex;
+}
 
 /**
  * Validates the passed imageurl with the passed parameters, and against an image validating regex:
@@ -436,7 +606,7 @@ function validate_imageurl($Imageurl, $MinLength, $MaxLength, $WhitelistRegex)
            return "$ErrorMessage (must be > $MinLength characters)";
        } elseif (!preg_match('/^(https?):\/\/([a-z0-9\-\_]+\.)+([a-z]{1,5}[^\.])(\/[^<>]+)*$/i', $Imageurl)) {
            return $ErrorMessage;
-       } elseif (!preg_match($WhitelistRegex, $ImageHost)) {
+       } elseif (!preg_match($WhitelistRegex, $ImageHost.'/')) {
            return "$Imageurl is not on an approved imagehost ($ImageHost).";
        } else { // hooray it validated
 
@@ -495,6 +665,15 @@ function validate_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime
         return;
     } else {
         error("Sorry - you only have ". date('i\m s\s', USER_EDIT_POST_TIME). "  to edit your post before it is automatically locked." ,true);
+    }
+}
+
+function sendIntroPM($userID)
+{
+    global $master;
+    if ($master->options->IntroPMArticle) {
+        $body = get_article($master->options->IntroPMArticle);
+        if ($body) send_pm($userID, 0, db_string("Welcome to Empornium"), db_string($body));
     }
 }
 
@@ -726,7 +905,8 @@ function authorize($Ajax = false)
 // ex: 'somefile,somdire/somefile'
 function show_header($PageTitle='', $JSIncludes='')
 {
-    global $master, $Document, $Cache, $DB, $LoggedUser, $Mobile, $Classes, $Sitewide_Freeleech_On, $Sitewide_Freeleech;
+    global $master, $Document, $Cache, $DB, $LoggedUser, $Mobile, $Classes,
+           $Sitewide_Freeleech_On, $Sitewide_Freeleech, $Sitewide_Doubleseed_On, $Sitewide_Doubleseed;
     $scripts = (strlen($JSIncludes)) ? explode(',', $JSIncludes) : [];
     $master->peon->display_header(['page_title'=>$PageTitle, 'bscripts'=>$scripts]);
 }
@@ -1208,6 +1388,11 @@ function str_plural($Str, $Num)
 function display_array($Array, $Escape = array())
 {
     foreach ($Array as $Key => $Val) {
+        if (is_array($Val)) {
+            $Array[$Key] = display_array($Val);
+            continue;
+        }
+
         if ((!is_array($Escape) && $Escape == true) || !in_array($Key, $Escape)) {
             $Array[$Key] = display_str($Val);
         }
@@ -1260,26 +1445,78 @@ function get_tag_synonym($Tag, $Sanitise = true)
 
 /**
  * Return whether $Tag is a valid tag - more than 2** char long and not a stupid word
- * (** unless is 'hd','dp','bj','ts','sd','69','mf','3d','hj','bi')
+ * (** unless is 'hd','dp','bj','ts','sd','69','mf','3d','hj','bi','tv','dv','da','4k')
  *
  * @param string $Tag The prospective tag to be evaluated
  * @return Boolean representing whether the tag is valid format (not banned)
  */
 function is_valid_tag($Tag)
 {
-    static $Good2charTags;
+    global $master;
+
     $len = strlen($Tag);
-    if ( $len < 2 || $len > 32) return false;
-    if ($len == 2) {
-        if(!$Good2charTags) $Good2charTags = array('hd','dp','bj','ts','sd','69','mf','3d','hj','bi','tv','dv','da', '4k');
-        if ( !in_array($Tag, $Good2charTags) ) return false;
+    if ($len > $master->options->MaxTagLength) return false;
+    // check for exceptions with small tags
+    if ($len < $master->options->MinTagLength) {
+        if ( !in_array($Tag, array_column(getGoodTags(), 'Tag'))) return false;
     }
+    // check for useless tags
+    if (in_array($Tag, array_column(getBadTags(), 'Tag'))) return false;
 
     return true;
 }
 
+function getGoodTags()
+{
+    return getGoodBadTags('good');
+}
+function getBadTags()
+{
+    return getGoodBadTags('bad');
+}
 
+function getGoodBadTags($type='bad')
+{
+    global $master;
 
+    if (!in_array($type, ['bad','good'])) $type = 'bad';
+
+    $tags = $master->cache->get_value($type.'_tags');
+    if ($tags===false) {
+        $tags = $master->db->raw_query("SELECT ID, Tag FROM tags_goodbad WHERE TagType=:tagtype",[':tagtype'=>$type])->fetchAll(\PDO::FETCH_ASSOC);
+        $master->cache->cache_value($type.'_tags', $tags, 0);
+    }
+    return $tags;
+}
+
+function printRstMessage()
+{
+    if (isset($_GET['rst']) && is_number($_GET['rst'])) {
+        $Result = (int) $_GET['rst'];
+        $ResultMessage = display_str($_GET['msg']);
+        if ($Result !== 1)
+            $AlertClass = ' alert';
+
+        if ($ResultMessage) {
+?>
+            <div class="messagebar<?= $AlertClass ?>"><?= $ResultMessage ?></div>
+<?php
+        }
+    }
+}
+
+function printTagLinks()
+{
+?>
+    <div class="linkbox">
+        <a <?=($_GET['action']=='official_tags')?'style="font-weight:bold;" ':''?>href="tools.php?action=official_tags">[Tags Manager]</a>
+        <a <?=($_GET['action']=='tags_admin')?'style="font-weight:bold;" ':''?>href="tools.php?action=tags_admin">[Tags Admin]</a>
+        <a <?=($_GET['action']=='tags_goodbad')?'style="font-weight:bold;" ':''?>href="tools.php?action=tags_goodbad">[Good &amp; Bad Tag lists Manager]</a>
+        <a <?=($_GET['action']=='official_synonyms')?'style="font-weight:bold;" ':''?>href="tools.php?action=official_synonyms">[Synonyms Manager]</a>
+        <a <?=($_GET['action']=='synonyms_admin')?'style="font-weight:bold;" ':''?>href="tools.php?action=synonyms_admin">[Synonyms Admin]</a>
+    </div>
+<?php
+}
 
 // Generate a random string
 function make_secret($Length = 32)
@@ -1374,7 +1611,9 @@ function format_username($UserID, $Username, $IsDonor = false, $IsWarned = '0000
     }
     $str.=($IsDonor) ? '<a href="donate.php"><img src="' . STATIC_SERVER . 'common/symbols/donor.png" alt="Donor" title="Donor" /></a>' : '';
 
-    $str.=($IsWarned != '0000-00-00 00:00:00' && $IsWarned !== false) ? '<img src="' . STATIC_SERVER . 'common/symbols/warned.png" alt="Warned" title="Warned" />' : '';
+    if ($IsWarned != '0000-00-00 00:00:00' && $IsWarned !== false) {
+        $str.= '<img src="'.STATIC_SERVER.'common/symbols/warned.png" alt="Warned" title="Warned'.(check_perms('users_mod')?' for '.time_diff($IsWarned,2,false,false):'').'" />';
+    }
 
     if ($Enabled != '1' || $Enabled != true) {
         if ($Enabled == '0')
@@ -1450,19 +1689,56 @@ function send_irc($Raw)
     fclose($IRCSocket);
 }
 
-function delete_torrent($ID, $GroupID=0, $UserID = 0)
+function getTorrentUFL($torrentID)
+{
+    global $master;
+    if (!is_number($torrentID)) error(0);
+
+    $ufl = $master->db->raw_query("SELECT t.UserID, t.Size,
+                                        (SELECT Min(Cost) FROM bonus_shop_actions
+                                          WHERE Action = 'ufl' AND Gift = '0' AND (Value * 1024 * 1024 * 1024) < t.Size) AS Cost
+                                      FROM group_log AS l JOIN torrents AS t ON l.TorrentID=t.ID
+                                     WHERE l.TorrentID=:tid AND t.FreeTorrent = '1'
+                                       AND l.Info LIKE '%bought universal freeleech%'
+                                  GROUP BY l.TorrentID
+                                    HAVING Count(l.ID)>0",
+                                           [':tid' => $torrentID])->fetch(\PDO::FETCH_ASSOC);
+
+    // doublecheck the size, insurance in case the ufl shop items are missing a 0 cost item
+    if ($ufl['Size'] >= $master->settings->torrents->auto_freeleech_size) $ufl['Cost'] = 0;
+    if (!$ufl['Cost']) $ufl['Cost'] = 0;
+    return $ufl;
+}
+
+function refundUflCost($torrentID)
+{
+    global $master;
+
+    $ufl = getTorrentUFL($torrentID);
+
+    if ($ufl['Cost']>0) {
+        $sqltime = sqltime();
+        $master->db->raw_query("UPDATE users_main AS m JOIN users_info AS i ON m.ID=i.UserID
+                                   SET m.Credits=m.Credits+:cost,
+                                       i.BonusLog=CONCAT_WS( '\n', :bonuslog, i.BonusLog)
+                                       WHERE m.ID=:userid",
+                                [':cost'     => $ufl['Cost'],
+                                 ':bonuslog' => $sqltime.' | +'.number_format($ufl['Cost']).' credits | You were refunded the UFL cost for torrent#'.$torrentID,
+                                 ':userid'   => $ufl['UserID']]);
+
+        $master->repos->users->uncache($ufl['UserID']);
+    }
+}
+
+function delete_torrent($ID, $GroupID=0, $UserID = 0, $RefundUFL = false)
 {
     global $master, $LoggedUser;
     $DB = $master->olddb;
     $Cache = $master->cache;
-    if (!$GroupID) {
-        $DB->query("SELECT GroupID, UserID FROM torrents WHERE ID='$ID'");
-        list($GroupID, $UploaderID) = $DB->next_record();
 
-    }
-    if (!$UserID) {
-        $DB->query("SELECT UserID FROM torrents WHERE ID='$ID'");
-        list($UserID) = $DB->next_record();
+    if (!$GroupID || !$UserID) {
+        $DB->query("SELECT GroupID, UserID FROM torrents WHERE ID='$ID'");
+        list($GroupID, $UserID) = $DB->next_record();
     }
 
     $RecentUploads = $Cache->get_value('recent_uploads_'.$UserID);
@@ -1474,14 +1750,23 @@ function delete_torrent($ID, $GroupID=0, $UserID = 0)
         }
     }
 
+    if ($RefundUFL) {
+        refundUflCost($ID);
+    }
+
+    // delete pending awards (but not awarded ones)
+    $DB->query("DELETE FROM torrents_awards WHERE Ducky='0' AND TorrentID='$ID'");
+
     $DB->query("SELECT info_hash FROM torrents WHERE ID = ".$ID);
     list($InfoHash) = $DB->next_record(MYSQLI_BOTH, false);
     $DB->query("DELETE FROM torrents WHERE ID = ".$ID);
-    update_tracker('delete_torrent', array('info_hash' => rawurlencode($InfoHash), 'id' => $ID));
+
+    //update_tracker('delete_torrent', array('info_hash' => rawurlencode($InfoHash), 'id' => $ID));
+    $master->tracker->deleteTorrent($InfoHash);
 
     $Cache->decrement('stats_torrent_count');
 
-    $DB->query("SELECT COUNT(ID) FROM torrents WHERE GroupID='$GroupID' AND flags <> 1");
+    $DB->query("SELECT COUNT(ID) FROM torrents WHERE GroupID='$GroupID'");
     list($Count) = $DB->next_record();
 
     if ($Count == 0) {
@@ -1536,6 +1821,7 @@ function delete_group($GroupID)
 
         foreach ($CollageIDs as $CollageID) {
             $Cache->delete_value('collage_'.$CollageID);
+            $Cache->delete_value('collage_torrents_'.$CollageID);
         }
         $Cache->delete_value('torrent_collages_'.$GroupID);
     }
@@ -1610,9 +1896,8 @@ function warn_user($UserID, $Duration, $Reason)
             WarnedTimes=WarnedTimes+1,
             AdminComment=CONCAT(\'' . db_string($AdminComment) . '\',AdminComment)
             WHERE UserID=\'' . db_string($UserID) . '\'');
-
-        $master->repos->users->uncache($UserID);
     }
+    $master->repos->users->uncache($UserID);
 }
 
 /* -- update_hash function ------------------------------------------------ */
@@ -1882,7 +2167,7 @@ function check_force_anon($UserID)
 
 // Function to get data and torrents for an array of GroupIDs.
 // In places where the output from this is merged with sphinx filters, it will be in a different order.
-function get_groups($GroupIDs, $Return = true, $Torrents = true)
+function get_groups($GroupIDs, $Return = true, $fetchTorrents = true)
 {
     global $master, $LoggedUser;
     $DB = $master->olddb;
@@ -1890,14 +2175,14 @@ function get_groups($GroupIDs, $Return = true, $Torrents = true)
 
     $Found = array_flip($GroupIDs);
     $NotFound = array_flip($GroupIDs);
-    $Key = $Torrents ? 'torrent_group_' : 'torrent_group_light_';
+    $Key = $fetchTorrents ? 'torrent_group_' : 'torrent_group_light_';
 
     foreach ($GroupIDs as $GroupID) {
         $Data = $Cache->get_value($Key.$GroupID);
-        if (!empty($Data) && (@$Data['ver'] >= 5)) {
+        if (!empty($Data) && (@$Data['ver'] >= 6)) {
             unset($NotFound[$GroupID]);
             $Found[$GroupID] = $Data['d'];
-            if ($Torrents) {
+            if ($fetchTorrents) {
                 foreach ($Found[$GroupID]['Torrents'] as $TID=>&$TData) {
                     $TorrentPeerInfo = get_peers($TID);
                     $TData[3]=$TorrentPeerInfo['Seeders'];
@@ -1911,7 +2196,7 @@ function get_groups($GroupIDs, $Return = true, $Torrents = true)
         }
     }
 
-    $IDs = implode(',',array_flip($NotFound));
+    $IDs = array_flip($NotFound);
 
     /*
     Changing any of these attributes returned will cause very large, very dramatic site-wide chaos.
@@ -1919,40 +2204,47 @@ function get_groups($GroupIDs, $Return = true, $Torrents = true)
     torrents, collages, bookmarks, better, the front page,
     and anywhere else the get_groups function is used.
     */
+    if (!empty($IDs)) {
+        foreach($IDs as $ID) {
+            $Group = $master->db->raw_query("SELECT g.ID, g.Name, g.TagList FROM torrents_group AS g WHERE g.ID = :id", [':id' => $ID])->fetch(\PDO::FETCH_ASSOC);
 
-    if (count($NotFound)>0) {
-        $DB->query("SELECT g.ID, g.Name, g.TagList FROM torrents_group AS g WHERE g.ID IN ($IDs)");
+            // In rare cases, the torrent may not be found (e.g. deleted in between)
+            if (empty($Group)) {
+                unset($Found[$ID]);
+                continue;
+            }
 
-        while ($Group = $DB->next_record(MYSQLI_ASSOC, true)) {
             unset($NotFound[$Group['ID']]);
             $Found[$Group['ID']] = $Group;
             $Found[$Group['ID']]['Torrents'] = array();
-        }
 
-        if ($Torrents) {
+            if ($fetchTorrents) {
 
-            $DB->query("SELECT t.ID, t.UserID, um.Username, t.GroupID, FileCount, FreeTorrent, double_seed,
-                                        Size, Leechers, Seeders, Snatched, t.Time, t.ID AS HasFile, r.ReportCount, t.Anonymous
+                $Torrents = $master->db->raw_query("SELECT t.ID, t.UserID, um.Username, t.GroupID, FileCount, FreeTorrent, DoubleTorrent,
+                                        Size, Leechers, Seeders, Snatched, t.Time, t.ID AS HasFile, r.ReportCount, t.Anonymous, ta.Ducky
                           FROM torrents AS t
                           JOIN users_main AS um ON t.UserID=um.ID
                      LEFT JOIN (SELECT TorrentID, count(*) as ReportCount FROM reportsv2
                                  WHERE Type != 'edited' AND Status != 'Resolved' GROUP BY TorrentID) AS r ON r.TorrentID=t.ID
-                         WHERE t.GroupID IN($IDs)
-                      ORDER BY GroupID DESC, t.ID");
+                     LEFT JOIN torrents_awards AS ta ON ta.TorrentID=t.ID
+                         WHERE t.GroupID = :id
+                      ORDER BY t.ID", [':id' => $ID])->fetchAll(\PDO::FETCH_ASSOC);
 
-            while ($Torrent = $DB->next_record(MYSQLI_ASSOC, true)) {
-                $Found[$Torrent['GroupID']]['Torrents'][$Torrent['ID']] = $Torrent;
+                foreach($Torrents as $Torrent) {
+                    $Found[$Torrent['GroupID']]['Torrents'][$Torrent['ID']] = $Torrent;
 
-                $CacheTime = $Torrent['Seeders']==0 ? 120 : 900;
-                $TorrentPeerInfo = array('Seeders'=>$Torrent['Seeders'],'Leechers'=>$Torrent['Leechers'],'Snatched'=>$Torrent['Snatched']);
-                $Cache->cache_value('torrent_peers_'.$Torrent['ID'], $TorrentPeerInfo, $CacheTime);
+                    $CacheTime = $Torrent['Seeders']==0 ? 120 : 900;
+                    $TorrentPeerInfo = array('Seeders'=>$Torrent['Seeders'],'Leechers'=>$Torrent['Leechers'],'Snatched'=>$Torrent['Snatched']);
+                    $Cache->cache_value('torrent_peers_'.$Torrent['ID'], $TorrentPeerInfo, $CacheTime);
 
-                $Cache->cache_value('torrent_group_'.$Torrent['GroupID'], array('ver'=>5, 'd'=>$Found[$Torrent['GroupID']]), 0);
-                $Cache->cache_value('torrent_group_light_'.$Torrent['GroupID'], array('ver'=>5, 'd'=>$Found[$Torrent['GroupID']]), 0);
-            }
-        } else {
-            foreach ($Found as $Group) {
-                $Cache->cache_value('torrent_group_light_'.$Group['ID'], array('ver'=>5, 'd'=>$Found[$Group['ID']]), 0);
+                    $Cache->cache_value('torrent_group_'.$Torrent['GroupID'], array('ver'=>6, 'd'=>$Found[$Torrent['GroupID']]), 0);
+                    $Cache->cache_value('torrent_group_light_'.$Torrent['GroupID'], array('ver'=>6, 'd'=>$Found[$Torrent['GroupID']]), 0);
+                }
+
+            } else {
+                foreach ($Found as $Group) {
+                    $Cache->cache_value('torrent_group_light_'.$Group['ID'], array('ver'=>6, 'd'=>$Found[$Group['ID']]), 0);
+                }
             }
         }
     }
@@ -2001,7 +2293,7 @@ function get_last_review($GroupID)
                       FROM torrents_reviews AS tr
                  LEFT JOIN review_reasons AS rr ON rr.ID = tr.ReasonID
                  LEFT JOIN users_main AS u ON u.ID=tr.UserID
-                     WHERE tr.GroupID=$GroupID
+                     WHERE tr.GroupID='$GroupID'
                   ORDER BY tr.Time DESC
                      LIMIT 1 " );
         $LastReviewRow = $DB->next_record(MYSQLI_ASSOC);
@@ -2059,8 +2351,9 @@ function get_requests($RequestIDs, $Return = true)
     $DB = $master->olddb;
     $Cache = $master->cache;
 
-    $Found = array_flip($RequestIDs);
-    $NotFound = array_flip($RequestIDs);
+    $RequestIDs = array_map('intval', $RequestIDs);
+    $Found      = array_flip($RequestIDs);
+    $NotFound   = array_flip($RequestIDs);
 
     foreach ($RequestIDs as $RequestID) {
         $Data = $Cache->get_value('request_' . $RequestID);
@@ -2093,13 +2386,15 @@ function get_requests($RequestIDs, $Return = true)
                     r.TimeFilled,
                     r.GroupID,
                     r.UploaderID,
-                    uploader.Username
+                    uploader.Username,
+                    t.Anonymous
                 FROM requests AS r
-                    LEFT JOIN users_main AS u ON u.ID=r.UserID
-                    LEFT JOIN users_main AS filler ON filler.ID=FillerID AND FillerID!=0
-                    LEFT JOIN users_main AS uploader ON uploader.ID=r.UploaderID AND r.UploaderID!=0
-                WHERE r.ID IN (" . $IDs . ")
-                ORDER BY ID");
+           LEFT JOIN users_main AS u ON u.ID=r.UserID
+           LEFT JOIN users_main AS filler ON filler.ID=FillerID AND FillerID!=0
+           LEFT JOIN users_main AS uploader ON uploader.ID=r.UploaderID AND r.UploaderID!=0
+           LEFT JOIN torrents AS t ON t.ID = r.TorrentID
+               WHERE r.ID IN (" . $IDs . ")
+            ORDER BY ID");
 
         $Requests = $DB->to_array();
         foreach ($Requests as $Request) {
@@ -2184,13 +2479,13 @@ function get_overlay_html($GroupName, $Username, $Image, $Seeders, $Leechers, $S
     $OverName = mb_strlen($GroupName) <= 60 ? $GroupName : mb_substr($GroupName, 0, 56) . '...';
     $SL = ($Seeders == 0 ? "<span class=r00>" . number_format($Seeders) . "</span>" : number_format($Seeders)) . " / " . number_format($Leechers);
 
-    $Overlay = "<table class=overlay><tr><td class=overlay colspan=2><strong>" . $OverName . "</strong></td><tr><td class=leftOverlay><img style='max-width: 150px;' src=" . $OverImage . "></td><td class=rightOverlay><strong>Uploader:</strong> $Username<br /><br /><strong>Size:</strong> " . get_size($Size) . "<br /><br /><strong>Snatched:</strong> " . number_format($Snatched) . "<br /><br /><strong>Seeders/Leechers:</strong> " . $SL . "</td></tr></table>";
+    $Overlay = "<table class=overlay><tr><td class=overlay colspan=2><strong>".display_str($OverName)."</strong></td><tr><td class=leftOverlay><img style='max-width: 150px;' src=\"".display_str($OverImage)."\"></td><td class=rightOverlay><strong>Uploader:</strong> $Username<br /><br /><strong>Size:</strong> " . get_size($Size) . "<br /><br /><strong>Snatched:</strong> " . number_format($Snatched) . "<br /><br /><strong>Seeders/Leechers:</strong> " . $SL . "</td></tr></table>";
 
     return $Overlay;
 }
 
 function torrent_icons($Data, $TorrentID, $Review, $IsBookmarked) {  //  $UserID,
-    global $master, $LoggedUser, $TorrentUserStatus, $Sitewide_Freeleech_On, $Sitewide_Freeleech;
+    global $master, $LoggedUser, $TorrentUserStatus, $Sitewide_Freeleech_On, $Sitewide_Freeleech, $Sitewide_Doubleseed_On, $Sitewide_Doubleseed;
     $DB = $master->olddb;
     $Cache = $master->cache;
         $SeedTooltip='';
@@ -2203,8 +2498,10 @@ function torrent_icons($Data, $TorrentID, $Review, $IsBookmarked) {  //  $UserID
             $FreeTooltip = "Sitewide Freeleech for ".time_diff($Sitewide_Freeleech, 2,false,false,0);
         }
 
-        if ($Data['double_seed'] == '1') {
+        if ($Data['DoubleTorrent'] == '1') {
             $SeedTooltip = "Unlimited Doubleseed";
+        } elseif ($Sitewide_Doubleseed_On) {
+            $SeedTooltip = "Sitewide Doubleseed for ".time_diff($Sitewide_Doubleseed, 2,false,false,0);
         }
 
         $UserID = $LoggedUser['ID'];
@@ -2253,7 +2550,7 @@ function torrent_icons($Data, $TorrentID, $Review, $IsBookmarked) {  //  $UserID
         }
 
         //icon_disk_grabbed icon_disk_snatched
-        if ( !$Review || !$Review['Status'] ||  $Review['Status'] == 'Okay' || check_perms('torrents_download_override')) {
+        if (check_perms('torrents_download_override') || ($master->options->EnableDownloads && (!$Review['Status'] || $Review['Status'] == 'Okay'  ))) {
 
             if ($TorrentUserStatus[$TorrentID]['PeerStatus'] == 'S') {
                 $Icons .= '<a href="torrents.php?action=download&amp;id='.$TorrentID.'&amp;authkey='.$LoggedUser['AuthKey'].'&amp;torrent_pass='.$LoggedUser['torrent_pass'].'" title="Currently Seeding Torrent">';
@@ -2298,6 +2595,9 @@ function torrent_icons($Data, $TorrentID, $Review, $IsBookmarked) {  //  $UserID
                 $Icons .= get_status_icon($Review['Status']) ;
             }
         }
+
+        if ($Data['Ducky'])
+            $Icons .= '<span class="icon icon_ducky" title="This torrent was awarded a Golden Ducky award!"></span>';
 
         return '<span style="float:right">'.$Icons.'</span>';
 
@@ -2376,6 +2676,18 @@ function error($Error, $Ajax=false)
     die();
 }
 
+
+function getUserEnabled($userID)
+{
+    global $master;
+    $enabled = $master->cache->get_value('enabled_'.$userID);
+    if ($enabled===false) {
+        $enabled = $master->db->raw_query("SELECT Enabled FROM users_main WHERE ID=:userid", [':userid' => $userID])->fetchColumn();
+        $master->cache->cache_value('enabled_'.$userID, $enabled, 0);
+    }
+    return $enabled;
+}
+
 /**
  * @param BanReason 0 - Unknown, 1 - Manual, 2 - Ratio, 3 - Inactive, 4 - Cheating.
  */
@@ -2414,13 +2726,15 @@ function disable_users($UserIDs, $AdminComment, $BanReason = 1)
     $Concat = "";
     foreach ($PassKeys as $PassKey) {
         if (strlen($Concat) > 4000) {
-            update_tracker('remove_users', array('passkeys' => $Concat));
+            //update_tracker('remove_users', array('passkeys' => $Concat));
+            $master->tracker->removeUsers($Concat);
             $Concat = $PassKey;
         } else {
             $Concat .= $PassKey;
         }
     }
-    update_tracker('remove_users', array('passkeys' => $Concat));
+    //update_tracker('remove_users', array('passkeys' => $Concat));
+    $master->tracker->removeUsers($Concat);
 }
 
 /**
@@ -2430,83 +2744,12 @@ function disable_users($UserIDs, $AdminComment, $BanReason = 1)
  * @param $Action The action to send
  * @param $Updates An associative array of key->value pairs to send to the tracker
  */
+ /*  // obsolete
 function update_tracker($Action, $Updates, $ToIRC = false)
 {
     global $master;
-    $Cache = $master->cache;
-
-    // Build request
-    $Get = TRACKER_SECRET . "/update?action=$Action";
-    foreach ($Updates as $Key => $Value) {
-        $Get .= "&$Key=$Value";
-    }
-
-    $MaxAttempts = 3;
-    $Err = false;
-    $Result = send_tracker_request($Get, $MaxAttempts, $Err);
-    return ($Result !== false);
-}
-
-function send_tracker_request($Get, $MaxAttempts = 1, &$Err = false) {
-    global $master;
-    $Header  = "GET /$Get HTTP/1.1\r\nHost: ";
-    $Header .= parse_url($master->settings->main->announce_url)['host'];
-    $Header .= "\r\nConnection: Close\r\n\r\n";
-    $Attempts = 0;
-    $Sleep = 0;
-    $Success = false;
-    $Response = '';
-    $Data = '';
-    $StartTime = microtime(true);
-    while (!$Success && $Attempts++ < $MaxAttempts) {
-        if ($Sleep) {
-            sleep($Sleep);
-        }
-        $Sleep = 6;
-
-        // Send request - don't throw errors here
-        $File = @fsockopen(TRACKER_HOST, TRACKER_PORT, $ErrorNum, $ErrorString);
-        if ($File) {
-            if (@fwrite($File, $Header) === false) {
-                $Err = "Failed to fwrite()";
-                $Sleep = 3;
-                continue;
-            }
-        } else {
-            $Err = "Failed to fsockopen() - $ErrorNum - $ErrorString";
-            continue;
-        }
-
-        // Check for response.
-        $Response = '';
-        while (!feof($File)) {
-            $Response .= fread($File, 1024);
-        }
-        $DataStart = strpos($Response, "\r\n\r\n") + 4;
-        $DataEnd = strrpos($Response, "\n");
-        if ($DataEnd > $DataStart) {
-            $Data = substr($Response, $DataStart, $DataEnd - $DataStart);
-        } else {
-            $Data = "";
-        }
-        $Status = substr($Response, $DataEnd + 1);
-        if ($Status == "success") {
-            $Success = true;
-        }
-    }
-    $Request = array(
-        'path' => substr($Get, strpos($Get, '/')),
-        'response' => ($Success ? $Data : $Response),
-        'status' => ($Success ? 'ok' : 'failed'),
-        'time' => 1000 * (microtime(true) - $StartTime)
-    );
-    // This is broken!
-    //self::$Requests[] = $Request;
-    if ($Success) {
-        return $Data;
-    }
-    return false;
-}
+    return $master->tracker->update($Action, $Updates);
+} */
 
 /** This ends_with is slightly slower when the string is found, but a lot faster when it isn't.
  */
@@ -2572,7 +2815,7 @@ function freeleech_torrents($TorrentIDs, $FreeNeutral = 1, $FromShop = false)
     if (!is_array($TorrentIDs)) {
         $TorrentIDs = array($TorrentIDs);
     }
-
+    $FreeNeutral = (int)$FreeNeutral;
     $DB->query("UPDATE torrents SET FreeTorrent = '" . $FreeNeutral . "' WHERE ID IN (" . implode(", ", $TorrentIDs) . ")");
     $DB->query("SELECT ID, GroupID, info_hash FROM torrents WHERE ID IN (" . implode(", ", $TorrentIDs) . ") ORDER BY GroupID ASC");
     $Torrents = $DB->to_array(false, MYSQLI_NUM, false);
@@ -2580,14 +2823,17 @@ function freeleech_torrents($TorrentIDs, $FreeNeutral = 1, $FromShop = false)
 
     foreach ($Torrents as $Torrent) {
         list($TorrentID, $GroupID, $InfoHash) = $Torrent;
-        update_tracker('update_torrent', array('info_hash' => rawurlencode($InfoHash), 'freetorrent' => $FreeNeutral));
+        //update_tracker('update_torrent', array('info_hash' => rawurlencode($InfoHash), 'freetorrent' => $FreeNeutral));
+        $result = $master->tracker->updateTorrent($InfoHash, $FreeNeutral);
         $Cache->delete_value('torrent_download_' . $TorrentID);
         if ($FromShop) {
-            write_log($LoggedUser['Username'] . " bought universal freeleech for torrent " . $TorrentID);
-            write_group_log($GroupID, $TorrentID, $LoggedUser['ID'], "bought universal freeleech.", 0);
+            $verb = $FreeNeutral==0?'removed':'bought';
+            write_log($LoggedUser['Username'] . " $verb universal freeleech for torrent " . $TorrentID." (fl=$FreeNeutral)");
+            write_group_log($GroupID, $TorrentID, $LoggedUser['ID'], "$verb universal freeleech (fl=$FreeNeutral)", 0);
         } else {
-            write_log($LoggedUser['Username'] . " marked torrent " . $TorrentID . " as freeleech.");
-            write_group_log($GroupID, $TorrentID, $LoggedUser['ID'], "marked as freeleech.", 0);
+            $verb = $FreeNeutral==0?'removed':'marked';
+            write_log($LoggedUser['Username'] . " $verb torrent " . $TorrentID . " as freeleech (fl=$FreeNeutral)");
+            write_group_log($GroupID, $TorrentID, $LoggedUser['ID'], "$verb as freeleech (fl=$FreeNeutral)", 0);
         }
     }
 
@@ -2620,4 +2866,243 @@ function freeleech_groups($GroupIDs, $FreeNeutral = 1, $FromShop = false)
 function get_symbol_url($image)
 {
     return STATIC_SERVER . 'common/symbols/' . $image;
+}
+
+/**
+ * Send credits and a PM to this user congratulating them on getting a ducky award, unsets applicable torrent cache also
+ * @param $userID
+ */
+function send_ducky_reward($userID, $torrentID)
+{
+    global $master, $LoggedUser;
+
+    $reward = 4000;  // could be a site option
+    $rewardtext = number_format($reward);
+
+    // TODO: this text can be read from system_pms when we have new system up
+    send_pm($userID, 0,
+            db_string("You have been awarded the Golden Ducky award!"),
+            db_string("[center][br][br][img]".STATIC_SERVER."styles/{$LoggedUser['StyleName']}/images/duck16.png[/img][br]
+[size=4][color=white][bg=#0261a3][br]The Golden Ducky, awarded for uploading your first torrent.\n
+[torrent]{$torrentID}[/torrent][br][/bg][/color][/size][/center][br][br][size=2]The award of the Golden Ducky gives you a ducky icon on your first torrent, and as a little thank-you you have been given a gift of $rewardtext credits  :emplove:[/size]"));
+
+    $sqltime = sqltime();
+    $bonuslog = $sqltime.' | +'.ucfirst("$rewardtext credits | You received $rewardtext credits on the award of the Golden Duck");
+    $userlog  = $sqltime.' - '.ucfirst("Awarded Golden Duck and $rewardtext credits for:\n[torrent]{$torrentID}[/torrent]");
+
+    $master->db->raw_query("UPDATE users_main as m JOIN users_info AS i ON m.ID=i.UserID
+                               SET i.BonusLog = CONCAT_WS( '\n', :bonuslog, i.BonusLog),
+                                   i.AdminComment=CONCAT_WS( '\n', :userlog, i.AdminComment),
+                                   m.Credits  = (m.Credits + :credits)
+                             WHERE m.ID=:userid",
+                                  [':bonuslog' => $bonuslog,
+                                   ':userlog'  => $userlog,
+                                   ':credits'  => $reward,
+                                   ':userid'   => $userID]);
+
+    $master->cache->delete_value('torrents_details_'.$torrentID);
+    $master->cache->delete_value('torrent_group_'.$torrentID);
+    $master->cache->delete_value('torrent_group_light_'.$torrentID);
+    $master->repos->users->uncache($userID);
+}
+
+/**
+ * Remove any ducky award record (pending or awarded) this user has, unsets applicable torrent cache also
+ * @param $userID
+ */
+function remove_ducky($userID) {
+    global $master;
+    $torrentID = $master->db->raw_query("SELECT TorrentID FROM torrents_awards WHERE UserID=:userid", [':userid'=>$userID])->fetchColumn();
+    $master->db->raw_query("DELETE FROM torrents_awards WHERE UserID=:userid", [':userid'=>$userID]);
+    if ($torrentID) {
+        $master->cache->delete_value('torrents_details_'.$torrentID);
+        $master->cache->delete_value('torrent_group_'.$torrentID);
+        $master->cache->delete_value('torrent_group_light_'.$torrentID);
+    }
+}
+/**
+ * called on staff setting as okay - check if this user has a first torrent uploaded and give award if so (and meets criteria)
+ * @param $userID - the user to check against
+ * @param $checkTorrentID - a torrent that has been marked okay by staff. If a torrentID is passed the first torrent must match the parameter, if $checkTorrentID === 0 then it ignores this criteria and just awards/makes pending the users first torrent
+ */
+function award_ducky_check($userID, $checkTorrentID)
+{
+    global $master;
+    $minSnatched = 1; // could be a site option
+
+    //check if there is any awarded or pending award already
+    $hasAward = $master->db->raw_query("SELECT TorrentID FROM torrents_awards WHERE UserID=:userid", [':userid'=>$userID])->fetchColumn();
+    if(!$hasAward) {
+        $firstTorrent = $master->db->raw_query("SELECT ID, Snatched FROM torrents WHERE UserID=:userid ORDER BY Time ASC LIMIT 1", [':userid'=>$userID])->fetch(\PDO::FETCH_ASSOC);
+        // if $checkTorrentID is set then check the checked id is the same as the first torrent
+        if ($firstTorrent && ($checkTorrentID===0 || $checkTorrentID==$firstTorrent['ID'])) {
+            $ducky = $firstTorrent['Snatched']>=$minSnatched?'1':'0';
+            // inserts a record, if ducky=0 the award will not be given now but will be checked from scheduler
+            $master->db->raw_query("INSERT INTO torrents_awards (UserID, TorrentID, Ducky)
+                                         VALUES (:userid, :torrentid, :ducky)
+                        ON DUPLICATE KEY UPDATE TorrentID=VALUES(TorrentID), Ducky=VALUES(Ducky)",
+                                                [':userid'    => $userID,
+                                                 ':torrentid' => $firstTorrent['ID'],
+                                                 ':ducky'     => $ducky]);
+            if ($ducky) send_ducky_reward($userID, $firstTorrent['ID']);
+        }
+    }
+}
+
+/**
+ * called from the scheduler - check entries in the ducky table that have not been awarded yet
+ */
+function award_ducky_pending()
+{
+    global $master;
+    $minSnatched = 1; // could be a site option
+
+    // in theory this doesnt happen but if somehow we end up with a pending award for a deleted torrent this cleans it up
+    $master->db->raw_query("DELETE ta FROM torrents_awards AS ta
+                                 LEFT JOIN torrents AS t ON ta.UserID=t.UserID AND ta.TorrentID=t.ID
+                                     WHERE ta.Ducky='0' AND t.ID IS NULL");
+
+    // get all the users who have a pending torrent ducky award - torrents that have been okayed that now have Snatched>1
+    $pending = $master->db->raw_query("SELECT t.ID, t.UserID
+                                         FROM torrents AS t
+                                         JOIN torrents_awards AS ta ON ta.TorrentID=t.ID
+                                        WHERE ta.Ducky = '0'
+                                          AND t.Snatched >= :minsnatched",
+                                              [':minsnatched' => $minSnatched])->fetchAll(\PDO::FETCH_ASSOC);
+    $torrents = [];
+    foreach ($pending as $ducky) {
+        // send creds & a pm to all awardees
+        send_ducky_reward($ducky['UserID'], $ducky['ID']);
+        $torrents[] = $ducky['ID'];
+    }
+    // update ducky table
+    if(count($torrents)>0) {
+        $master->db->raw_query("UPDATE torrents_awards
+                                   SET Ducky='1'
+                                 WHERE TorrentID IN (:torrents)",
+                                     [':torrents' => implode(',',$torrents)]);
+    }
+    // returning this for debugging from sandbox
+    return $pending;
+}
+
+function getCollage($collageID)
+{
+    global $master;
+    $collage = $master->cache->get_value('collage_'.$collageID);
+    if ($collage===false) {
+        $collage = $master->db->raw_query("SELECT c.Name, c.Description, c.UserID, u.Username, c.Deleted, CategoryID, Locked, MaxGroups, MaxGroupsPerUser, c.Permissions
+                                             FROM collages AS c LEFT JOIN users_main As u ON c.UserID=u.ID
+                                            WHERE c.ID = :collageid",
+                                                  [':collageid'=>$collageID])->fetch(\PDO::FETCH_ASSOC);
+        $master->cache->cache_value('collage_'.$collageID, $collage);
+    }
+    return $collage;
+}
+
+function getCollageName($collageID)
+{
+    global $master;
+    $name = '';
+    $data = $master->cache->get_value('collage_'.$collageID);
+    if (is_array($data) && $data['Name']) {
+        $name = $data['Name'];
+    }
+    if (!$name) {
+        $name = $master->cache->get_value('collage_name_'.$collageID);
+        if (!$name) {
+            $name = $master->db->raw_query("SELECT Name FROM collages WHERE ID=:collageid", [':collageid'=>$collageID])->fetchColumn();
+            $master->cache->cache_value('collage_name_'.$collageID, $name, 0);
+        }
+    }
+    return $name;
+}
+
+function getArticleTitle($topicID)
+{
+    global $master, $LoggedUser;
+    $Title = null;
+    $Data  = $master->cache->get_value('article_'.$topicID);
+
+    // Not found in cache, fetch it from DB
+    if (empty($Data)) {
+        $Sql    = "SELECT Title, MinClass FROM articles WHERE TopicID = :topicid AND MinClass <= :userclass";
+        $Params = [':topicid' => $topicID, 'userclass' => $LoggedUser['Class']];
+        $Data   = $master->db->raw_query($Sql, $Params)->fetch(\PDO::FETCH_ASSOC);
+        $master->cache->cache_value('article_'.$topicID, $Data, 0);
+    }
+
+    // Display title only if user has the right perm
+    if ($Data['MinClass'] <= $LoggedUser['Class']) {
+        $Title = $Data['Title'];
+    }
+
+    return $Title;
+}
+
+function getThreadName($threadID)
+{
+    // Might not be loaded already depending on where we want to show the latest topics box
+    require_once(SERVER_ROOT.'/sections/forums/functions.php');
+    $threadInfo = get_thread_info($threadID);
+    $permitted = check_forumperm($threadInfo['ForumID']);
+    if ($permitted) {
+        return $threadInfo['Title'];
+    } else {
+        return '';
+    }
+}
+
+function getForumName($forumID)
+{
+    // Might not be loaded already depending on where we want to show the latest topics box
+    require_once(SERVER_ROOT.'/sections/forums/functions.php');
+    $permitted = check_forumperm($forumID);
+    $forums = get_forums_info();
+
+    if ($permitted) {
+        return $forums[$forumID]['Name'];
+    } else {
+        return '';
+    }
+}
+
+function getUserName($userID)
+{
+    global $master;
+    $data = $master->repos->users->load($userID);
+    return $data->Username;
+}
+
+/**
+ * Delete the "new subscriptions counter" cache keys of all users subscribed to the given topics
+ * @param $TopicIDs string|array A specific topic ID or an array of IDs
+ */
+function deleteTopicSubCounter($TopicIDs)
+{
+    global $master;
+    if (!is_array($TopicIDs)) $TopicIDs = array($TopicIDs);
+
+    $Sql = "SELECT UserID FROM users_subscriptions WHERE TopicID = :TopicID";
+    foreach ($TopicIDs as $TopicID) {
+        if (!is_number($TopicID)) continue;
+        $Params  = [':TopicID' => $TopicID];
+        $UserIDs = $master->db->raw_query($Sql, $Params)->fetchAll(\PDO::FETCH_COLUMN);
+        deleteUserSubCounter($UserIDs);
+    }
+}
+
+/**
+ * Delete the "new subscriptions counter" cache keys of the given users
+ * @param $UserIDs string|array A specific user ID or an array of IDs
+ */
+function deleteUserSubCounter($UserIDs)
+{
+    global $master;
+    if (!is_array($UserIDs)) $UserIDs = array($UserIDs);
+
+    foreach ($UserIDs as $UserID) {
+        if (!is_number($UserID)) continue;
+        $master->cache->delete_value('subscriptions_user_new_' . $UserID);
+    }
 }

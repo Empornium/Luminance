@@ -30,9 +30,9 @@ $Results = $DB->to_array();
 ?>
         <strong>Reports resolved in the last 24 hours</strong>
         <table class="border">
-            <tr>
-                <td class="head colhead_dark">Username</td>
-                <td class="head colhead_dark">Reports</td>
+            <tr class="colhead">
+                <td>Username</td>
+                <td>Reports</td>
             </tr>
 <?php  foreach ($Results as $Result) {
     list($UserID, $Username, $Reports) = $Result;
@@ -50,9 +50,9 @@ $Results = $DB->to_array();
 ?>
         <strong>Reports resolved in the last week</strong>
         <table class="border">
-            <tr>
-                <td class="head colhead_dark">Username</td>
-                <td class="head colhead_dark">Reports</td>
+            <tr class="colhead">
+                <td>Username</td>
+                <td>Reports</td>
             </tr>
 <?php  foreach ($Results as $Result) {
     list($Username, $Reports) = $Result;
@@ -70,9 +70,9 @@ $Results = $DB->to_array();
 ?>
         <strong>Reports resolved in the last month</strong>
         <table class="border">
-            <tr>
-                <td class="head colhead_dark">Username</td>
-                <td class="head colhead_dark">Reports</td>
+            <tr class="colhead">
+                <td>Username</td>
+                <td>Reports</td>
             </tr>
 <?php  foreach ($Results as $Result) {
     list($Username, $Reports) = $Result;
@@ -90,9 +90,9 @@ $Results = $DB->to_array();
 ?>
         <strong>Reports resolved since reportsv2 (2009-07-27)</strong>
         <table class="border">
-            <tr>
-                <td class="head colhead_dark">Username</td>
-                <td class="head colhead_dark">Reports</td>
+            <tr class="colhead">
+                <td>Username</td>
+                <td>Reports</td>
             </tr>
 <?php  foreach ($Results as $Result) {
     list($Username, $Reports) = $Result;

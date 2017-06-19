@@ -4,6 +4,7 @@ namespace Luminance\Services;
 use Luminance\Core\Master;
 use Luminance\Errors\ConfigurationError;
 use Luminance\Errors\SystemError;
+use Luminance\Errors\AuthError;
 
 use \Defuse\Crypto\Crypto as DCrypto;
 use \Defuse\Crypto\Exception as DCryptoEx;
@@ -68,17 +69,21 @@ class Crypto extends Service {
     }
 
     public function checkAuthToken($keyIdentifier, $token, $cid, $action = '', $duration = 86400) {
-        $fullToken = $this->hex2bin($token);
-        $baseToken = substr($fullToken, 0, 12);
-        $unpacked = unpack('a4actionHash/a4cid/Ntimestamp', $baseToken);
-        $minTimestamp = intval(date('U')) - $duration;
-        $result = (
-            $this->shortHash($action) === $unpacked['actionHash'] &&
-            $this->shortHash($cid) === $unpacked['cid'] &&
-            $this->shortHMAC($keyIdentifier, $baseToken) === substr($fullToken, 12, 12) &&
-            $unpacked['timestamp'] >= $minTimestamp
-        );
-        return $result;
+        try {
+            $fullToken = $this->hex2bin($token);
+            $baseToken = substr($fullToken, 0, 12);
+            $unpacked = unpack('a4actionHash/a4cid/Ntimestamp', $baseToken);
+            $minTimestamp = intval(date('U')) - $duration;
+            $result = (
+                $this->shortHash($action) === $unpacked['actionHash'] &&
+                $this->shortHash($cid) === $unpacked['cid'] &&
+                $this->shortHMAC($keyIdentifier, $baseToken) === substr($fullToken, 12, 12) &&
+                $unpacked['timestamp'] >= $minTimestamp
+            );
+            return $result;
+        } catch(Exception $e) {
+            throw new AuthError("Bots are forbidden", "Unauthorized", "/login");
+        }
     }
 
     public function random_bytes($length) {

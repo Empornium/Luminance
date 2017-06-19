@@ -18,8 +18,10 @@ class Settings extends Service {
             'ssl_static_server' => '/static/',
             'site_url' => null,
             'static_server' => null,
-            'additional_domains' => 'somelinkedsite.com,anotherlinkedsite.com',
-            'internal_urls_regex' => null
+            'additional_domains' => null,
+            'internal_urls_regex' => null,
+            'non_anon_domains' => null,
+            'non_anon_urls_regex' => null
         ],
         'modes' => [
             'profiler' => false
@@ -369,13 +371,22 @@ class Settings extends Service {
         }
 
         if (is_null($this->settings['main']['internal_urls_regex'])) {
-            $internal_urls_regex = '@' . $this->settings['main']['nonssl_site_url'] . '/';
+            $internal_urls_regex = '@^https?:\/\/' . $this->settings['main']['site_url'] . '\/';
             foreach (explode(',', $this->main->additional_domains) as $domain) {
                 # FIXME: $domain should really have '.' replaced by '\.', but for now we're only mimicking existing behaviour
-                $internal_urls_regex .= '|' . $domain . '/';
+                $internal_urls_regex .= '|^https?:\/\/' .str_replace('.','\.', $domain). '\/';
             }
             $internal_urls_regex .= '@';
             $this->settings['main']['internal_urls_regex'] = $internal_urls_regex;
+        }
+
+        if (is_null($this->settings['main']['non_anon_urls_regex'])) {
+            $non_anon_urls_regex = '@^https?:\/\/' . $this->settings['main']['site_url'];
+            foreach (explode(',', $this->main->non_anon_domains) as $domain) {
+                $non_anon_urls_regex .= '|^https?:\/\/' . str_replace('.','\.', $domain);
+            }
+            $non_anon_urls_regex .= '@';
+            $this->settings['main']['non_anon_urls_regex'] = $non_anon_urls_regex;
         }
     }
 
@@ -464,8 +475,8 @@ class Settings extends Service {
         define('URL_REGEX','('.RESOURCE_REGEX.')('.IP_REGEX.'|'.DOMAIN_REGEX.')(:'.PORT_REGEX.')?(\/\S*)*');
         define('EMAIL_REGEX','[_a-z0-9-]+([.+][_a-z0-9-]+)*@'.DOMAIN_REGEX);
         define('IMAGE_REGEX', URL_REGEX.'\/\S+\.(jpg|jpeg|tif|tiff|png|gif|bmp)(\?\S*)?');
-        define('SITELINK_REGEX', RESOURCE_REGEX.'(ssl.)?'.preg_quote($this->settings['main']['site_url'], '/').'');
-        define('TORRENT_REGEX', SITELINK_REGEX.'\/torrents.php\?id=([0-9]+)');
+        define('SITELINK_REGEX', $this->settings['main']['internal_urls_regex']);
+        define('TORRENT_REGEX', '('.SITELINK_REGEX.')?\/torrents.php\?id=([0-9]+)');
         define('TORRENT_GROUP_REGEX', SITELINK_REGEX.'\/torrents.php\?id=\d{1,10}\&(torrentid=\d{1,10})?');
     }
 }

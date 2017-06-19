@@ -50,8 +50,7 @@ if ($Name != $_POST['name']) {
     }
 }
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 $Text->validate_bbcode($_POST['description'],  get_permissions_advtags($LoggedUser['ID']));
 
 if ($Description != $_POST['description']) {

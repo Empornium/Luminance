@@ -1,4 +1,7 @@
 <?php
+
+include_once(SERVER_ROOT.'/sections/torrents/functions.php');
+
 $Queries = array();
 
 $OrderWays = array('votes', 'bounty', 'created', 'lastvote', 'filled');
@@ -81,8 +84,8 @@ if (!empty($_GET['search'])) {
     }
 }
 
-if (!empty($_GET['tags'])) {
-        $Tags = cleanup_tags($_GET['tags']);
+if (!empty($_GET['taglist'])) {
+        $Tags = cleanup_tags($_GET['taglist']);
     $Tags = array_unique(explode(' ', $Tags));
     $TagNames = array();
     foreach ($Tags as $Tag) {
@@ -101,7 +104,7 @@ if (empty($_GET['tags_type']) && !empty($Tags)) {
     foreach (array_keys($Tags) as $Tag) {
         $SS->set_filter('tagid', array($Tag));
     }
-} elseif (!empty($_GET['tags']) && empty($Tags)) {
+} elseif (!empty($_GET['taglist']) && empty($Tags)) {
     // We're searching for tags but couldn't find any of them -> we should return an empty result
     $SS->set_filter('tagid', array(0));
 } else {
@@ -206,7 +209,7 @@ $Requests = $SphinxResults['matches'];
 
 $CurrentURL = get_url(array('order', 'sort'));
 
-show_header($Title, 'requests,jquery,jquery.cookie');
+show_header($Title, 'requests,autocomplete,tag_autocomplete,jquery,jquery.cookie');
 
 ?>
 <div class="thin">
@@ -255,7 +258,23 @@ show_header($Title, 'requests,jquery,jquery.cookie');
                 <tr>
                     <td class="label">Tags:</td>
                     <td>
-                        <input type="text" name="tags" size="60" value="<?= (!empty($TagNames) ? display_str(implode(' ', $TagNames)) : '') ?>" />&nbsp;
+                        <div style="vertical-align:middle;display:inline-block;" title="Toggle Autocomplete mode on/off (when off you can access browser form history)">
+                            <input id="autocomplete_toggle" onclick="ToggleAutoComplete();" type="checkbox" value="1" name="autocomplete_toggle" checked/>
+                            Autocomplete Tags
+                        </div>
+                        <br>
+                        <div style="max-width: 500px">
+                        <div id="autoresults" class="autoresults">
+                            <ul id="tagdropdown"></ul>
+                        </div>
+                        <br>
+                        <!-- we have to insert the font here for js to be able to grab it (js bug?) -->
+                        <textarea id="taginput" name="taglist" class="medium" style="font: 10pt monospace;"
+                                  onkeyup="resize('taginput'); return autocomp.keyup(event); "
+                                  onkeydown="return autocomp.keydown(event);"
+                                  onchange="resize('taginput');"
+                                  autocomplete="off"><?=(!empty($TagNames) ? display_str(implode(' ', $TagNames)) : '')?></textarea>
+                        </div>
                         <input type="radio" name="tags_type" id="tags_type0" value="0" <?php selected('tags_type',0,'checked')?> /><label for="tags_type0"> Any</label>&nbsp;&nbsp;
                         <input type="radio" name="tags_type" id="tags_type1" value="1"  <?php selected('tags_type',1,'checked')?> /><label for="tags_type1"> All</label>
                     </td>
@@ -354,7 +373,7 @@ foreach ($NewCategories as $Cat) {
             foreach ($Requests as $RequestID => $Request) {
 
             list($RequestID, $RequestorID, $RequestorName, $TimeAdded, $LastVote, $CategoryID, $Title, $Image, $Description,
-                             $FillerID, $FillerName, $TorrentID, $TimeFilled) = $Request;
+                             $FillerID, $FillerName, $TorrentID, $TimeFilled, $GroupID, $UploaderID, $UploaderName, $IsAnon) = $Request;
 
             $RequestVotes = get_votes_array($RequestID);
 
@@ -382,7 +401,7 @@ foreach ($NewCategories as $Cat) {
 <?php
             $TagList = array();
             foreach ($Tags as $TagID => $TagName) {
-                $TagList[] = "<a href='?tags=".$TagName.($BookmarkView ? "&amp;type=requests" : "")."'>".display_str($TagName)."</a>";
+                $TagList[] = "<a href='?taglist=".$TagName.($BookmarkView ? "&amp;type=requests" : "")."'>".display_str($TagName)."</a>";
             }
             $TagList = implode(' ', $TagList);
 ?>
@@ -411,11 +430,11 @@ foreach ($NewCategories as $Cat) {
 <?php    		} ?>
             </td>
             <td>
-<?php 			if ($IsFilled) { ?>
-            <a href="user.php?id=<?=$FillerID?>"><?=$FillerName?></a>
-<?php 			} else { ?>
-            --
-<?php 			} ?>
+<?php           if ($IsFilled) {
+                    echo torrent_username($FillerID, $FillerName, $FillerID==$UploaderID?$IsAnon:false);
+                } else {
+                    echo "--";
+                } ?>
             </td>
             <td>
                 <a href="user.php?id=<?=$RequestorID?>"><?=$RequestorName?></a>

@@ -41,6 +41,9 @@ class Repos extends Service {
             case 'invites':
                 $cls = 'InviteRepository';
                 break;
+            case 'options':
+                $cls = 'OptionRepository';
+                break;
             default:
                 throw new InternalError("No such repository: {$name}");
         }

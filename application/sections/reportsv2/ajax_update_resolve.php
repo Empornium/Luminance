@@ -2,17 +2,15 @@
 // perform the back end of updating a resolve type
 
 if (!check_perms('admin_reports')) {
-    error(403);
+    error(403, true);
 }
 
 if (empty($_GET['reportid']) || !is_number($_GET['reportid'])) {
-    echo 'HAX ATTEMPT!'.$_GET['reportid'];
-    die();
+    error(0, true);
 }
 
 if (empty($_GET['newresolve'])) {
-    echo "No new resolve";
-    die();
+    error(0, true);
 }
 
 $ReportID = $_GET['reportid'];
@@ -26,8 +24,7 @@ foreach ($TypeList as $Key => $Value) {
 array_multisort($Priorities, SORT_ASC, $TypeList);
 
 if (!array_key_exists($NewType, $TypeList)) {
-    echo "No resolve from that category";
-    die();
+    error("No resolve from that category", true);
 }
 
 $DB->query("UPDATE reportsv2 SET Type = '".$NewType."' WHERE ID=".$ReportID);

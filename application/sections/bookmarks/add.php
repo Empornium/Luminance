@@ -1,12 +1,10 @@
 <?php
-include(SERVER_ROOT.'/classes/class_feed.php'); // RSS feeds
-include(SERVER_ROOT.'/classes/class_text.php'); // strip_bbcode
 
 authorize();
 
 if (!can_bookmark($_GET['type'])) { error(404); }
-$Feed = new FEED;
-$Text = new TEXT;
+$Feed = new Luminance\Legacy\Feed;
+$Text = new Luminance\Legacy\Text;
 
 $Type = $_GET['type'];
 
@@ -24,6 +22,17 @@ if ($DB->record_count() == 0) {
         ('$LoggedUser[ID]', '".db_string($_GET['id'])."', '".sqltime()."')");
     $Cache->delete_value('bookmarks_'.$Type.'_'.$LoggedUser['ID']);
     if ($Type == 'torrent') {
+        if (isset($LoggedUser['TorrentsPerPage'])) {
+            $TorrentsPerPage = $LoggedUser['TorrentsPerPage'];
+        } else {
+            $TorrentsPerPage = TORRENTS_PER_PAGE;
+        }
+        $DB->query("SELECT COUNT(*) FROM bookmarks_torrents WHERE UserID='$LoggedUser[ID]'");
+        list($NumGroups) = $DB->next_record();
+        $PageLimit = ceil((float)$NumGroups/(float)$TorrentsPerPage);
+        for($Page = 0; $Page <= $PageLimit; $Page++) {
+          $Cache->delete_value('bookmarks_torrent_'.$LoggedUser['ID'].'_page_'.$Page);
+        }
         $Cache->delete_value('bookmarks_torrent_'.$LoggedUser['ID'].'_full');
         $GroupID = $_GET['id'];
 

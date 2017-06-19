@@ -66,6 +66,30 @@ class EmailManager extends Service {
         $email->Reduced = $this->reduceEmail($address);
         $email->Flags = 0;
         $this->emails->save($email);
+
+        /*
+         * This piece of code will update the time of their last email change
+         * to the current time *not* the current change.
+         */
+        if (!empty($this->master->request->user->ID)) {
+            $this->db->raw_query(
+                "UPDATE users_history_emails
+                    SET Time=:time
+                  WHERE UserID=:userid
+                    AND Time='0000-00-00 00:00:00'",
+                [':time' => sqltime(), ':userid' => $userID]);
+
+            $this->db->raw_query(
+                "INSERT INTO users_history_emails
+                    (UserID, Email, Time, IP, ChangedbyID) VALUES
+                    (:userid, :address, '0000-00-00 00:00:00', :changerip, :changerid)",
+                    [':userid'    => $userID,
+                     ':address'   => $address,
+                     ':changerip' => $this->master->request->IP,
+                     ':changerid' => $this->master->request->user->ID]
+            );
+        }
+
         return $email;
     }
 

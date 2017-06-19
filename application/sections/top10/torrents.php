@@ -121,7 +121,7 @@ $BaseQuery = "SELECT
       t.UserID,
       u.Username,
       t.FreeTorrent,
-      t.double_seed ,
+      t.DoubleTorrent ,
       t.Anonymous,
       g.Image
     FROM torrents AS t

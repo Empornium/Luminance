@@ -7,8 +7,7 @@ function compare($X, $Y)
 }
 
 include(SERVER_ROOT.'/sections/bookmarks/functions.php'); // has_bookmarked()
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $CollageID = $_GET['id'];
 if (!is_number($CollageID)) { error(0); }
@@ -49,10 +48,17 @@ if (!empty($_GET['page']) && is_number($_GET['page'])) {
     $Limit = $TorrentsPerPage;
 }
 
-$Pages=get_pages($Page,$NumGroups,$TorrentsPerPage,8,'#discof_table');
+$Pages=get_pages($Page, $NumGroups, $TorrentsPerPage, 8, '#discof_table');
 
-$Data = $Cache->get_value('collage_'.$CollageID.'_'.$Page);
 
+$collage = getCollage($CollageID);
+
+
+if (!$collage || $collage['Deleted']=='1') {
+    header('Location: log.php?search=Collage+'.$CollageID);
+}
+
+/*
 if ($Data) {
     $Data = unserialize($Data);
     list($K, list($Name, $Description, $CollageDataList, $TorrentList, $CommentList, $Deleted, $CollageCategoryID, $CreatorID, $CreatorName, $CollagePermissions)) = each($Data);
@@ -66,20 +72,17 @@ if ($Data) {
         $Deleted = '1';
     }
 }
+*/
 
-if ($Deleted == '1') {
-    header('Location: log.php?search=Collage+'.$CollageID);
-    die();
-}
-
-$CollagePermissions=(int) $CollagePermissions;
-if ($CreatorID == $LoggedUser['ID']) {
+$collage['Permissions'] = (int)$collage['Permissions'];
+if ($collage['UserID'] == $LoggedUser['ID']) {
       $CanEdit = true;
-} elseif ($CollagePermissions>0) {
-      $CanEdit = $LoggedUser['Class'] >= $CollagePermissions;
+} elseif ($collage['Permissions']>0) {
+      $CanEdit = $LoggedUser['Class'] >= $collage['Permissions'];
 } else {
       $CanEdit=false; // can be overridden by permissions
 }
+
 
 //Handle subscriptions
 if (($CollageSubscriptions = $Cache->get_value('collage_subs_user_'.$LoggedUser['ID'])) === FALSE) {
@@ -97,41 +100,42 @@ if (in_array($CollageID, $CollageSubscriptions)) {
 }
 $DB->query("UPDATE users_collage_subs SET LastVisit=NOW() WHERE UserID = ".$LoggedUser['ID']." AND CollageID=$CollageID");
 
-// Build the data for the collage and the torrent list
-if (!is_array($TorrentList)) {
-    $DB->query("SELECT ct.GroupID,
-            tg.Image,
-                        tg.NewCategoryID,
-            um.ID,
-            um.Username
-            FROM collages_torrents AS ct
-            JOIN torrents_group AS tg ON tg.ID=ct.GroupID
-            LEFT JOIN users_main AS um ON um.ID=ct.UserID
-            WHERE ct.CollageID='$CollageID'
-            ORDER BY ct.Sort
-            LIMIT $Limit");
+$ctlist = false;
+if ($Page == 1) $ctlist = $master->cache->get_value('collage_torrents_'.$CollageID);
 
-    $GroupIDs = $DB->collect('GroupID');
-    $CollageDataList=$DB->to_array('GroupID', MYSQLI_ASSOC);
+if ($ctlist===false) {
+    $ctlist = $master->db->raw_query("SELECT ct.GroupID, tg.Image, tg.NewCategoryID, ct.UserID
+                                                FROM collages_torrents AS ct
+                                                JOIN torrents_group AS tg ON tg.ID=ct.GroupID
+                                               WHERE ct.CollageID = :collageid
+                                            ORDER BY ct.Sort
+                                               LIMIT $Limit",
+                                                    [':collageid'=>$CollageID])->fetchAll(\PDO::FETCH_UNIQUE | \PDO::FETCH_ASSOC);
+}
+// only worth caching the first page
+if ($Page == 1) $master->cache->cache_value('collage_torrents_'.$CollageID, $ctlist);
 
-    if (count($GroupIDs)>0) {
-        $TorrentList = get_groups($GroupIDs);
+
+$TorrentList = [];
+if (is_array($ctlist)) {
+    $groupIDs = array_keys($ctlist);
+    if (count($groupIDs)>0) {
+        $TorrentList = get_groups($groupIDs);
         $TorrentList = $TorrentList['matches'];
-    } else {
-        $TorrentList = array();
     }
 }
 
+
 // Loop through the result set, building up $Collage and $TorrentTable
 // Then we print them.
-$Collage = array();
+$CollagesHTML = [];
 $TorrentTable = '';
 
 $Bookmarks = all_bookmarks('torrent');
 
 foreach ($TorrentList as $GroupID=>$Group) {
     list($GroupID, $GroupName, $TagList, $Torrents) = array_values($Group);
-    list($GroupID2, $Image, $NewCategoryID, $UserID, $Username) = array_values($CollageDataList[$GroupID]);
+    list($Image, $NewCategoryID, $UserID) = array_values($ctlist[$GroupID]);
 
     $Review = get_last_review($GroupID);
         // Handle stats and stuff
@@ -157,7 +161,7 @@ foreach ($TorrentList as $GroupID=>$Group) {
         list($TorrentID, $Torrent) = each($Torrents);
 
         //$DisplayName = '<a href="torrents.php?id='.$GroupID.'" title="View Torrent">'.$GroupName.'</a>';
-        $DisplayName = $GroupName;
+        $DisplayName = display_str($GroupName);
 
         if ($Torrent['ReportCount'] > 0) {
             $Title = "This torrent has ".$Torrent['ReportCount']." active ".($Torrent['ReportCount'] > 1 ?'reports' : 'report');
@@ -212,20 +216,20 @@ foreach ($TorrentList as $GroupID=>$Group) {
             $Image = '//'.SITE_URL.'/image.php?i='.urlencode($Image);
         }
 ?>
-                <img src="<?=$Image?>" alt="<?=$DisplayName?>" title="<?=$DisplayName?>"  />
+                <img src="<?=display_str($Image)?>" alt="<?=display_str($DisplayName)?>" title="<?=display_str($DisplayName)?>"  />
 <?php	} else { ?>
-                <div class="noimagepad"><div class="box noimage" title="<?=$DisplayName?>" ><?=$DisplayName?></div></div>
+                <div class="noimagepad"><div class="box noimage" title="<?=display_str($DisplayName)?>" ><?=display_str($DisplayName)?></div></div>
 <?php	} ?>
             </a>
         </li>
 <?php
-    $Collage[]=ob_get_clean();
+    $CollagesHTML[]=ob_get_clean();
 }
 
 //$NumUsers = count($Users);
 
-if (($MaxGroups>0 && $NumGroups>=$MaxGroups)  || ($MaxGroupsPerUser>0 && $NumGroupsByUser>=$MaxGroupsPerUser)) {
-    $Locked = true;
+if (($collage['MaxGroups']>0 && $NumGroups>=$collage['MaxGroups'])  || ($collage['MaxGroupsPerUser']>0 && $NumGroupsByUser>=$collage['MaxGroupsPerUser'])) {
+    $collage['Locked'] = true;
 }
 
 // Silly hack for people who are on the old setting
@@ -235,12 +239,12 @@ $CollagePages = array();
 // Pad it out
 if ($NumGroups > $CollageCovers) {
     for ($i = $NumGroups + 1; $i <= ceil($NumGroups/$CollageCovers)*$CollageCovers; $i++) {
-        $Collage[] = '<li></li>';
+        $CollagesHTML[] = '<li></li>';
     }
 }
 
 for ($i=0; $i < $NumGroups/$CollageCovers; $i++) {
-    $Groups = array_slice($Collage, $i*$CollageCovers, $CollageCovers);
+    $Groups = array_slice($CollagesHTML, $i*$CollageCovers, $CollageCovers);
     $CollagePage = '';
     foreach ($Groups as $Group) {
         $CollagePage .= $Group;
@@ -248,10 +252,10 @@ for ($i=0; $i < $NumGroups/$CollageCovers; $i++) {
     $CollagePages[] = $CollagePage;
 }
 
-show_header($Name,'overlib,browse,collage,comments,bbcode,jquery');
+show_header(display_str($collage['Name']),'overlib,browse,collage,comments,bbcode,jquery');
 ?>
 <div class="thin">
-    <h2><?=$Name?></h2>
+    <h2><?=display_str($collage['Name'])?></h2>
     <div class="linkbox">
         <a href="collages.php">[List of collages]</a>
 <?php if (check_perms('site_collages_create')) { ?>
@@ -261,7 +265,7 @@ show_header($Name,'overlib,browse,collage,comments,bbcode,jquery');
 <?php if (check_perms('site_collages_subscribe')) { ?>
         <a href="#" onclick="CollageSubscribe(<?=$CollageID?>);return false;" id="subscribelink<?=$CollageID?>">[<?=(in_array($CollageID, $CollageSubscriptions) ? 'Unsubscribe' : 'Subscribe')?>]</a>
 <?php }
-   if (check_perms('site_collages_manage') || ($CreatorID == $LoggedUser['ID'] && !$Locked) ) { ?>
+   if (check_perms('site_collages_manage') || ($collage['UserID'] == $LoggedUser['ID'] && !$collage['Locked']) ) { ?>
         <a href="collages.php?action=edit&amp;collageid=<?=$CollageID?>">[Edit description]</a>
 <?php }
     if (has_bookmarked('collage', $CollageID)) {
@@ -271,13 +275,13 @@ show_header($Name,'overlib,browse,collage,comments,bbcode,jquery');
         <a href="#" id="bookmarklink_collage_<?=$CollageID?>" onclick="Bookmark('collage', <?=$CollageID?>,'[Remove bookmark]');return false;">[Bookmark]</a>
 <?php	}
 
-if (check_perms('site_collages_manage') || ($CanEdit && !$Locked)) { ?>
+if (check_perms('site_collages_manage') || ($CanEdit && !$collage['Locked'])) { ?>
         <a href="collages.php?action=manage&amp;collageid=<?=$CollageID?>">[Manage torrents]</a>
 <?php } ?>
     <a href="reports.php?action=report&amp;type=collage&amp;id=<?=$CollageID?>">[Report Collage]</a>
 <?php if (check_perms('site_collages_delete') ||
-        ($CreatorID == $LoggedUser['ID'] &&
-                        ( $CollageCategoryID ==0 || $NumUsers == 0 || ($NumUsers ==1 && isset($Users[$CreatorID]) ))) ) { ?>
+        ($collage['UserID'] == $LoggedUser['ID'] &&
+                        ( $collage['CategoryID'] ==0 || $NumUsers == 0 || ($NumUsers ==1 && isset($Users[$collage['UserID']]) ))) ) { ?>
         <a href="collages.php?action=delete&amp;collageid=<?=$CollageID?>&amp;auth=<?=$LoggedUser['AuthKey']?>" onclick="return confirm('Are you sure you want to delete this collage?.');">[Delete]</a>
 <?php } ?>
     </div>
@@ -285,12 +289,12 @@ if (check_perms('site_collages_manage') || ($CanEdit && !$Locked)) { ?>
         <div class="head"><strong>Category</strong></div>
         <div class="box pad">
             <table class="center"><tr>
-                <td class="center"><h3><?=$CollageCats[(int) $CollageCategoryID]?></h3></td>
-                <td class="right"><a href="collages.php?action=search&amp;cats[<?=(int) $CollageCategoryID?>]=1"><img src="static/common/collageicons/<?=$CollageIcons[(int) $CollageCategoryID]?>" alt="<?=$CollageCats[(int) $CollageCategoryID]?>" title="<?=$CollageCats[(int) $CollageCategoryID]?>" /></a></td>
+                <td class="center"><h3><?=$CollageCats[(int) $collage['CategoryID']]?></h3></td>
+                <td class="right"><a href="collages.php?action=search&amp;cats[<?=(int) $collage['CategoryID']?>]=1"><img src="static/common/collageicons/<?=$CollageIcons[(int) $collage['CategoryID']]?>" alt="<?=$CollageCats[(int) $collage['CategoryID']]?>" title="<?=$CollageCats[(int) $collage['CategoryID']]?>" /></a></td>
             </tr></table>
         </div>
 <?php
-if (check_perms('site_zip_downloader')) {
+if (check_perms('site_zip_downloader') && (check_perms('torrents_download_override') || $master->options->EnableDownloads)) {
 ?>
         <div class="head"><strong>Collector</strong></div>
         <div class="box">
@@ -317,42 +321,42 @@ if (check_perms('site_zip_downloader')) {
             </ul>
         </div>
 
-        <div class="head"><strong>Created by <?=$CreatorName?></strong></div>
+        <div class="head"><strong>Created by <?=$collage['Username']?></strong></div>
         <div class="box pad">
 
-<?php	if (check_perms('site_collages_manage') || $CreatorID == $LoggedUser['ID']) { ?>
+<?php	if (check_perms('site_collages_manage') || $collage['UserID'] == $LoggedUser['ID']) { ?>
 
                 <form action="collages.php" method="post">
                     <input type="hidden" name="action" value="change_level" />
                     <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
                     <input type="hidden" name="collageid" value="<?=$CollageID?>" />
-                    The collage creator can set the permission level for who can add/delete torrents<br/>
-                    <em>the collage creator can edit the description</em><br/>
+                    The collage creator can set the permission level for who can add/remove torrents<br/>
+                    <em>only the collage creator can edit the description</em><br/>
                     <select name="permission">
 <?php
-        foreach ($ClassLevels as $CurClass) {
+            foreach ($ClassLevels as $CurClass) {
                     if ($CurClass['Level']>=STAFF_LEVEL) break;
-                    if ($CollagePermissions==$CurClass['Level']) { $Selected='selected="selected"'; } else { $Selected=""; }
+                    if ($collage['Permissions']==$CurClass['Level']) { $Selected='selected="selected"'; } else { $Selected=""; }
 ?>
                     <option value="<?=$CurClass['Level']?>" <?=$Selected?>><?=$CurClass['Name'];?></option>
-<?php		} ?>
+<?php       } ?>
 
-                    <option value="0" <?php if($CollagePermissions==0)echo'selected="selected"';?>>Only Creator</option>
+                    <option value="0" <?php if($collage['Permissions']==0)echo'selected="selected"';?>>Only Creator</option>
 
                     </select>
 
                     <input type="submit" value="Change" title="Change Permissions" />
                 </form>
-<?php	} else { //  ?>
-
-                can be edited by: <?php
-                    if ($CollagePermissions==0)
-                        echo '<span style="font-weight:bold;color:black;">'.$CreatorName.'</span>';
-                    else
-                        echo make_class_string($ClassLevels[$CollagePermissions]['ID'], true).'+';
-                    ?> <br/><br/>
-                you <span style="font-weight:bold;color:black;"><?=($CanEdit?'can':'cannot')?></span> edit this collage.
 <?php	} ?>
+
+                <br/>torrents can be added/removed by: <?php
+                    if ($collage['Permissions']==0)
+                        echo '<span style="font-weight:bold;color:black;">'.$collage['Username'].'</span>';
+                    else
+                        echo make_class_string($ClassLevels[$collage['Permissions']]['ID'], true).'+';
+                    ?> <br/>
+                you <span style="font-weight:bold;color:black;"><?=($CanEdit?'can':'cannot')?></span> add/remove torrents to this collage.
+
         </div>
         <div class="head"><strong>Top tags</strong></div>
         <div class="box">
@@ -391,7 +395,7 @@ foreach ($Users as $ID => $User) {
 
             </div>
         </div>
-<?php if (check_perms('site_collages_manage') || ($CanEdit && !$Locked)) { ?>
+<?php if (check_perms('site_collages_manage') || ($CanEdit && !$collage['Locked'])) { ?>
         <div class="head"><strong>Add torrent</strong><span style="float: right"><a href="#" onClick="$('#addtorrent').toggle(); $('#batchadd').toggle(); this.innerHTML = (this.innerHTML == '[Batch Add]'?'[Individual Add]':'[Batch Add]'); return false;">[Batch Add]</a></span></div>
         <div class="box">
             <div class="pad" id="addtorrent">
@@ -426,7 +430,7 @@ if ($CollageCovers != 0) { ?>
         <div id="coverart" class="box">
             <ul class="collage_images" id="collage_page0">
 <?php
-    foreach ($Collage as $Group) {
+    foreach ($CollagesHTML as $Group) {
         echo $Group;
 }?>
             </ul>
@@ -438,7 +442,7 @@ if ($CollageCovers != 0) { ?>
 } ?>
             <div class="head"><strong>Description</strong></div>
         <div class="box">
-                  <div class="pad"><?=$Text->full_format($Description, get_permissions_advtags($UserID))?></div>
+                  <div class="pad"><?=$Text->full_format($collage['Description'], get_permissions_advtags($collage['UserID']))?></div>
         </div>
 
     <div class="linkbox"><?=$Pages?></div>
@@ -452,7 +456,7 @@ if ($CollageCovers != 0) { ?>
                 <td class="sign"><img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="Seeders" title="Seeders" /></td>
                 <td class="sign"><img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="Leechers" title="Leechers" /></td>
             </tr>
-<?=$TorrentTable?>
+            <?=$TorrentTable?>
         </table>
     <div class="linkbox"><?=$Pages?></div>
             <br style="clear:both;" />
@@ -460,25 +464,28 @@ if ($CollageCovers != 0) { ?>
                 <h3 style="float:left">Most recent Comments</h3>
             <br style="clear:both;" /></div>
 <?php
-if (empty($CommentList)) {
-    $DB->query("SELECT
-        cc.ID,
-        cc.Body,
-        cc.UserID,
-        um.Username,
-        cc.Time
-        FROM collages_comments AS cc
-        LEFT JOIN users_main AS um ON um.ID=cc.UserID
-        WHERE CollageID='$CollageID'
-        ORDER BY ID DESC LIMIT 15");
-    $CommentList = $DB->to_array();
+
+
+$commentList = $master->cache->get_value('collage_comments_'.$CollageID);
+if ($commentList===false) {
+    $commentList = $master->db->raw_query("SELECT cc.ID, cc.Body, cc.UserID, um.Username, cc.Time
+                                             FROM collages_comments AS cc
+                                        LEFT JOIN users_main AS um ON um.ID=cc.UserID
+                                            WHERE CollageID=:collageid
+                                         ORDER BY ID DESC LIMIT 15",
+                                                [':collageid'=>$CollageID])->fetchAll(\PDO::FETCH_ASSOC);
+    $master->cache->cache_value('collage_comments_'.$CollageID, $commentList);
 }
-foreach ($CommentList as $Comment) {
-    list($CommentID, $Body, $UserID, $Username, $CommentTime) = $Comment;
+
+foreach ($commentList as $comment) {
+    //list($CommentID, $Body, $UserID, $Username, $CommentTime) = array_values($comment);
 ?>
-                <div class="head"><a href='#post<?=$CommentID?>'>#<?=$CommentID?></a> By <?=format_username($UserID, $Username) ?> <?=time_diff($CommentTime) ?> <a href="reports.php?action=report&amp;type=collages_comment&amp;id=<?=$CommentID?>">[Report Comment]</a></div>
-        <div id="post<?=$CommentID?>" class="box">
-                  <div class="pad"><?=$Text->full_format($Body, get_permissions_advtags($UserID))?></div>
+                <div class="head"><a href='#post<?=$comment['ID']?>'>#<?=$comment['ID']?></a>
+                    By <?=format_username($comment['UserID'], $comment['Username']) ?> <?=time_diff($comment['Time']) ?>
+                    <a href="reports.php?action=report&amp;type=collages_comment&amp;id=<?=$comment['ID']?>">[Report]</a>
+                </div>
+        <div id="post<?=$comment['ID']?>" class="box">
+                  <div class="pad"><?=$Text->full_format($comment['Body'], get_permissions_advtags($comment['UserID']))?></div>
         </div>
 <?php
 }
@@ -526,6 +533,8 @@ if (!$LoggedUser['DisablePosting']) {
     </div>
 </div>
 <?php
-show_footer();
 
-$Cache->cache_value('collage_'.$CollageID.'_'.$Page, serialize(array(array($Name, $Description, $CollageDataList, $TorrentList, $CommentList, $Deleted, $CollageCategoryID, $CreatorID, $CreatorName, $CollagePermissions, $Locked, $MaxGroups, $MaxGroupsPerUser))), 3600);
+// as we might have updated some of the values in $collage we store it again
+$master->cache->cache_value('collage_'.$collageID, $collage);
+
+show_footer();

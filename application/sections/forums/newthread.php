@@ -17,8 +17,7 @@ $Forum = get_forum_info($ForumID);
 if ($Forum === false) {
     error(404);
 }
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = NEW TEXT;
+$Text = new Luminance\Legacy\Text;
 
 if (!check_forumperm($ForumID, 'Write') || !check_forumperm($ForumID, 'Create')) { error(403); }
 show_header('Forums > '.$Forum['Name'].' > New Topic','comments,bbcode,jquery');

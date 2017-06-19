@@ -14,7 +14,7 @@ if(isset($_REQUEST['state'])){
     echo $result;
 
 } else if (isset($_REQUEST['amount'])) {
+    if (!is_number($_REQUEST['amount'])) error(0, true);
     $amount = $_REQUEST['amount'];
     $DB->query("UPDATE bitcoin_donations SET current_euro='$amount' WHERE public='$address'");
 }
-

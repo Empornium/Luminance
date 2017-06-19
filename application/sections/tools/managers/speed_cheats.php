@@ -19,11 +19,8 @@ if (empty($_GET['order_by']) || !in_array($_GET['order_by'], array('Username', '
     $OrderBy = $_GET['order_by'];
 }
 
-$DB->query("SELECT DeleteRecordsMins, KeepSpeed FROM site_options ");
-list($DeleteRecordsMins, $KeepSpeed) = $DB->next_record();
-
-$ViewSpeed = isset($_GET['viewspeed'])?(int) $_GET['viewspeed']:$KeepSpeed;
-$BanSpeed = isset($_GET['banspeed'])?(int) $_GET['banspeed']:$KeepSpeed;
+$ViewSpeed = isset($_GET['viewspeed'])?(int) $_GET['viewspeed']:$master->options->KeepSpeed;
+$BanSpeed = isset($_GET['banspeed'])?(int) $_GET['banspeed']:$master->options->KeepSpeed;
 
 $WHERE = '';
 $ViewInfo = ">= ".get_size($ViewSpeed);
@@ -62,8 +59,8 @@ show_header('Speed Cheats','watchlist');
     <table class="box pad">
         <form action="tools.php" method="post">
                 <input type="hidden" name="action" value="save_records_options" />
-                <input type="hidden" name="userid" value="<?=$_GET['userid']?>" />
-                <input type="hidden" name="torrentid" value="<?=$_GET['torrentid']?>" />
+                <input type="hidden" name="userid" value="<?=display_str($_GET['userid'])?>" />
+                <input type="hidden" name="torrentid" value="<?=display_str($_GET['torrentid'])?>" />
                 <input type="hidden" name="viewspeed" value="<?=$ViewSpeed?>" />
                 <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
 
@@ -173,7 +170,7 @@ if (isset($_GET['viewptnupload']) && $_GET['viewptnupload']) {
 $DB->query("SELECT SQL_CALC_FOUND_ROWS
                              uid, Username, Count(xbt.id) as count, MAX(upspeed) as upspeed, MAX(xbt.uploaded) as uploaded, MAX(mtime) as time,
                              GROUP_CONCAT(DISTINCT LEFT(xbt.peer_id,8) SEPARATOR '|'),
-                             GROUP_CONCAT(DISTINCT xbt.ip SEPARATOR '|'),
+                             GROUP_CONCAT(DISTINCT INET6_NTOA(xbt.ipv4) SEPARATOR '|'),
                              ui.Donor, ui.Warned, um.Enabled, um.PermissionID, IF(w.UserID,'1','0')
                           FROM xbt_peers_history AS xbt
                           JOIN users_main AS um ON um.ID=xbt.uid
@@ -287,7 +284,7 @@ $Pages=get_pages($Page,$NumResults,25,9);
                             }
 ?>
                         </td>
-                        <td class="center"><?=speed_span($MaxUpSpeed, $KeepSpeed, 'red', get_size($MaxUpSpeed).'/s')?></td>
+                        <td class="center"><?=speed_span($MaxUpSpeed, $master->options->KeepSpeed, 'red', get_size($MaxUpSpeed).'/s')?></td>
                         <td class="center"><?=get_size($MaxUploaded)?></td>
                         <td class="center"><?=$CountRecords?></td>
                         <td class="center"><?php

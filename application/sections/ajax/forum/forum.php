@@ -19,7 +19,7 @@ if (!is_number($ForumID)) {
     die();
 }
 
-if (isset($_GET['pp'])) {
+if (isset($_GET['pp']) && is_number($_GET['pp'])) {
     $PerPage = $_GET['pp'];
 } elseif (isset($LoggedUser['PostsPerPage'])) {
     $PerPage = $LoggedUser['PostsPerPage'];
@@ -76,6 +76,7 @@ if ($LoggedUser['CustomForums'][$ForumID] != 1 && $Forums[$ForumID]['MinClassRea
 $JsonSpecificRules = array();
 foreach ($Forums[$ForumID]['SpecificRules'] as $ThreadIDs) {
     $Thread = get_thread_info($ThreadIDs);
+    if ($Thread === false) { error(404); }
     $JsonSpecificRules[] = array(
         'threadId' => (int) $ThreadIDs,
         'thread' => $Thread['Title']

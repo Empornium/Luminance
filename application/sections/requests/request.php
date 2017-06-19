@@ -4,8 +4,7 @@
  */
 
 include(SERVER_ROOT.'/sections/bookmarks/functions.php'); // has_bookmarked()
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 if (empty($_GET['id']) || !is_number($_GET['id'])) {
     error(0);
@@ -18,21 +17,17 @@ $RequestID = $_GET['id'];
 $Request = get_requests(array($RequestID));
 $Request = $Request['matches'][$RequestID];
 if (empty($Request)) {
-    error(404);
+    header('Location: log.php?search=Request+'.$RequestID);
 }
 
 list($RequestID, $RequestorID, $RequestorName, $TimeAdded, $LastVote, $CategoryID, $Title, $Image, $Description,
-     $FillerID, $FillerName, $TorrentID, $TimeFilled, $GroupID, $UploaderID, $UploaderName) = $Request;
+     $FillerID, $FillerName, $TorrentID, $TimeFilled, $GroupID, $UploaderID, $UploaderName, $IsAnon) = $Request;
 
 include(SERVER_ROOT.'/sections/torrents/functions.php');
 $TorrentCache = get_group_info($TorrentID, true, false);
-
 $TorrentDetails = $TorrentCache[0];
-$TorrentList = $TorrentCache[1];
-
 list(,,, $TorrentTitle) = array_shift($TorrentDetails);
 
-list(,,,,,,,,,,,,,,,,,,,, $IsAnon) = $TorrentList[0];
 
 //Convenience variables
 $NowTime = time();
@@ -100,7 +95,7 @@ show_header('View request: '.$FullName, 'comments,requests,bbcode,jquery,jquery.
             <ul id="torrent_tags" class="stats nobullet">
 <?php 	foreach ($Request['Tags'] as $TagID => $TagName) { ?>
                 <li>
-                    <a href="torrents.php?taglist=<?=$TagName?>"><?=display_str($TagName)?></a>
+                    <a href="?taglist=<?=$TagName?>"><?=display_str($TagName)?></a>
                     <br style="clear:both" />
                 </li>
 <?php 	} ?>
@@ -213,14 +208,13 @@ show_header('View request: '.$FullName, 'comments,requests,bbcode,jquery,jquery.
                 <td class="label">Filled</td>
                 <td>
                     <strong><a href="torrents.php?id=<?=$TorrentID?>"><?php echo ($TorrentTitle == '') ? "(torrent deleted)" : $TorrentTitle; ?></a></strong>
-<?php 		if( ( $TimeExpires>$NowTime &&  ($LoggedUser['ID'] == $RequestorID || $LoggedUser['ID'] == $FillerID) )
-                || check_perms('site_moderate_requests')) { ?>
+<?php       if( ( $TimeExpires>$NowTime &&  ($LoggedUser['ID'] == $RequestorID || $LoggedUser['ID'] == $FillerID) ) || check_perms('site_moderate_requests')) { ?>
                         - <span title="Unfilling a request without a valid, nontrivial reason will result in a warning."><a href="requests.php?action=unfill&amp;id=<?=$RequestID?>">[Unfill]</a></span>
-<?php 		} ?>
-                   <br/>Filled by <?=format_username($FillerID, $FillerName)?>
-<?php           if ( $UploaderID != 0 && $TorrentTitle != '' ) {
+<?php       } ?>
+                   <br/>Filled by <?=torrent_username($FillerID, $FillerName, $FillerID==$UploaderID?$IsAnon:false)?>
+<?php       if ( $UploaderID != 0 && $TorrentTitle != '' ) {
                     echo ", uploaded by ".torrent_username($UploaderID, $UploaderName, $IsAnon);
-                } ?>
+            } ?>
                 </td>
             </tr>
 <?php 	} elseif ($TimeExpires > $NowTime) { ?>

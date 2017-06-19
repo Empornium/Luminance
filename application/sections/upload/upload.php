@@ -10,7 +10,7 @@
 //*********************************************************************//
 
 ini_set('max_file_uploads', '100');
-show_header('Upload', 'upload,bbcode,autocomplete,tag_autocomplete');
+show_header('Upload', 'upload,bbcode,autocomplete,tag_autocomplete,jquery');
 
 if (empty($Properties) && !empty($_POST['fill']) && is_number($_POST['template']) && check_perms('site_use_templates') ) {
     /* -------  Get template ------- */
@@ -18,21 +18,21 @@ if (empty($Properties) && !empty($_POST['fill']) && is_number($_POST['template']
     $Properties = $Cache->get_value('template_' . $TemplateID);
     if ($Properties === FALSE) {
         $DB->query("SELECT
-                                    t.ID,
-                                    t.UserID,
-                                    t.Name,
-                                    t.Title,
-                                    t.CategoryID AS Category,
-                                    t.Title,
-                                    t.Image,
-                                    t.Body AS GroupDescription,
-                                    t.Taglist AS TagList,
-                                    t.TimeAdded,
-                                    t.Public,
-                                    u.Username AS Authorname
-                               FROM upload_templates as t
-                          LEFT JOIN users_main AS u ON u.ID=t.UserID
-                              WHERE t.ID='$TemplateID'");
+                            t.ID,
+                            t.UserID,
+                            t.Name,
+                            t.Title,
+                            t.CategoryID AS Category,
+                            t.Title,
+                            t.Image,
+                            t.Body AS GroupDescription,
+                            t.Taglist AS TagList,
+                            t.TimeAdded,
+                            t.Public,
+                            u.Username AS Authorname
+                       FROM upload_templates as t
+                  LEFT JOIN users_main AS u ON u.ID=t.UserID
+                      WHERE t.ID='$TemplateID'");
         list($Properties) = $DB->to_array(false, MYSQLI_BOTH);
         if ($Properties) {
             $Properties['TemplateFooter'] = "[bg=#0074b7][bg=#0074b7,90%][color=white][align=right][b][i][font=Courier New]$Properties[Name] template by $Properties[Authorname][/font][/i][/b][/align][/color][/bg][/bg]";
@@ -57,7 +57,7 @@ if (empty($Properties) && !empty($_POST['fill']) && is_number($_POST['template']
         tg.Name AS Title,
         tg.Image AS Image,
         tg.Body AS GroupDescription,
-            t.UserID
+        t.UserID
         FROM torrents_group AS tg
         LEFT JOIN torrents AS t ON t.GroupID = tg.ID
         WHERE tg.ID='$_GET[groupid]'");
@@ -95,12 +95,10 @@ if (empty($Properties) && !empty($_POST['fill']) && is_number($_POST['template']
     $Properties['TagList'] = implode(" ", get_request_tags($_GET['requestid']));
 }
 
-require(SERVER_ROOT . '/classes/class_torrent_form.php');
-$TorrentForm = new TORRENT_FORM($Properties, $Err);
+$TorrentForm = new Luminance\Legacy\TorrentForm($Properties, $Err);
 
 if (!isset($Text)) {
-    include(SERVER_ROOT . '/classes/class_text.php'); // Text formatting class
-    $Text = new TEXT;
+    $Text = new Luminance\Legacy\Text;
 }
 
 /* -------  Draw a box with do_not_upload list  -------   */
@@ -125,26 +123,6 @@ if (!$HideDNU)
     $HideDNU = check_perms('torrents_hide_dnu') || !$NewDNU;
 ?>
 
-<script type="text/javascript">//<![CDATA[
-    public function change_tagtext()
-    {
-        var tags = new Array();
-<?php
-foreach ($NewCategories as $cat) {
-    echo 'tags[' . $cat['id'] . ']="' . $cat['tag'] . '"' . ";\n";
-}
-?>
-        if ($('#category').raw().value == 0) {
-            $('#tagtext').html("");
-        } else {
-            $('#tagtext').html("<strong>The tag "+tags[$('#category').raw().value]+" will be added automatically.</strong>");
-        }
-    }
-<?php
-if (!empty($Properties))
-    echo "addDOMLoadEvent(SynchInterface);";
-?>
-//]]></script>
 
 <div class="thin">
     <h2>Upload torrent</h2>
@@ -268,6 +246,27 @@ foreach ($Whitelist as $ImageHost) {
             SelectTemplate(<?=$CanDelAny?>);
         }
             addDOMLoadEvent(SynchTemplates);
+        //]]></script>
+
+        <script type="text/javascript">//<![CDATA[
+            function change_tagtext()
+            {
+                var tags = [];
+        <?php
+        foreach ($OpenCategories as $cat) {
+            echo 'tags[' . $cat['id'] . ']="' . $cat['tag'] . '"' . ";\n";
+        }
+        ?>
+                if ($('#category').raw().value == 0) {
+                    $('#tagtext').html("");
+                } else {
+                    $('#tagtext').html("<strong>The tag "+tags[$('#category').raw().value]+" will be added automatically.</strong>");
+                }
+            }
+        <?php
+        if (!empty($Properties))
+            echo "addDOMLoadEvent(SynchInterface);";
+        ?>
         //]]></script>
 <?php
     }

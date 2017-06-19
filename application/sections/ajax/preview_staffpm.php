@@ -1,8 +1,7 @@
 <?php
 /* AJAX Previews, simple stuff. */
 
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 if (!empty($_POST['AdminComment'])) {
     echo $Text->full_format($_POST['AdminComment'],true);

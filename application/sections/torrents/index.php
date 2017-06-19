@@ -1,4 +1,5 @@
 <?php
+
 define('TORRENT_EDIT_TIME', 3600 * 24 * 14  );
 
 //Function used for pagination of peer/snatch/download lists on details.php
@@ -19,21 +20,6 @@ function js_pages($Action, $TorrentID, $NumResults, $CurrentPage)
 
 if (!empty($_REQUEST['action'])) {
     switch ($_REQUEST['action']) {
-        case 'resort_tags':
-            error(0, true);
-            authorize();
-
-            header('Content-Type: application/json; charset=utf-8');
-
-            include(SERVER_ROOT . '/sections/torrents/functions.php');
-
-            $GroupID = $_POST['groupid'];
-            if (!is_number($GroupID) || !$GroupID) error(0, true);
-
-            echo json_encode(array(get_taglist_html($GroupID, $_POST['tagsort'], $_POST['order'])));
-
-            break;
-
         case 'get_tags':
             authorize();
 
@@ -54,7 +40,6 @@ if (!empty($_REQUEST['action'])) {
             if(!isset($_GET['id']) || !is_number($_GET['id'])) error(0);
             $GroupID = (int) $_GET['id'];
 
-            require(SERVER_ROOT.'/classes/class_torrent.php');
             include(SERVER_ROOT . '/sections/upload/functions.php');
 
             $DB->query("SELECT tg.Name, tf.File, tg.TagList
@@ -65,7 +50,7 @@ if (!empty($_REQUEST['action'])) {
 
             list($DupeTitle, $Contents, $SearchTags) = $DB->next_record(MYSQLI_NUM, array(1));
             $Contents = unserialize(base64_decode($Contents));
-            $Tor = new TORRENT($Contents, true); // New TORRENT object
+            $Tor = new Luminance\Legacy\Torrent($Contents, true); // new Torrent object
 
             list($TotalSize, $FileList) = $Tor->file_list();
 
@@ -314,8 +299,7 @@ if (!empty($_REQUEST['action'])) {
                 error('Your posting rights have been removed.');
             }
 
-           include(SERVER_ROOT.'/classes/class_text.php');
-           $Text = new TEXT;
+           $Text = new Luminance\Legacy\Text;
            $Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
 
            flood_check('torrents_comments');
@@ -364,75 +348,8 @@ if (!empty($_REQUEST['action'])) {
             break;
 
         case 'takeedit_post':
-            enforce_login();
-            authorize();
-
-            include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-            $Text = new TEXT;
-
-            // Quick SQL injection check
-            if (!$_POST['post'] || !is_number($_POST['post'])) { error(0); }
-
-            // Mainly
-            $DB->query("SELECT
-                tc.Body,
-                tc.AuthorID,
-                tc.GroupID,
-                tc.AddedTime,
-                tc.EditedTime,
-                tc.EditedUserID
-                FROM torrents_comments AS tc
-                WHERE tc.ID='".db_string($_POST['post'])."'");
-            if ($DB->record_count()==0) { error(404); }
-            list($OldBody, $AuthorID,$GroupID,$AddedTime,$EditedTime,$EditedUserID)=$DB->next_record();
-
-            $DB->query("SELECT ceil(COUNT(ID) / ".TORRENT_COMMENTS_PER_PAGE.") AS Page FROM torrents_comments WHERE GroupID = $GroupID AND ID <= $_POST[post]");
-            list($Page) = $DB->next_record();
-
-            //if ($DB->record_count()==0) { error(404); }
-            //if ($LoggedUser['ID']!=$AuthorID && !check_perms('site_moderate_forums')) { error(404); }
-
-            validate_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime);
-
-            // Perform the update
-            $DB->query("UPDATE torrents_comments SET
-                Body = '".db_string($_POST['body'])."',
-                EditedUserID = '".db_string($LoggedUser['ID'])."',
-                EditedTime = '".sqltime()."'
-                WHERE ID='".db_string($_POST['post'])."'");
-
-            // Update the cache
-            $CatalogueID = floor((TORRENT_COMMENTS_PER_PAGE*$Page-TORRENT_COMMENTS_PER_PAGE)/THREAD_CATALOGUE);
-            $Cache->delete('torrent_comments_'.$GroupID.'_catalogue_'.$CatalogueID);
-
-/*            $Cache->begin_transaction('torrent_comments_'.$GroupID.'_catalogue_'.$CatalogueID);
-
-            $Cache->update_row($_POST['key'], array(
-                'ID'=>$_POST['post'],
-                'AuthorID'=>$AuthorID,
-                'AddedTime'=>$AddedTime,
-                'Body'=>$_POST['body'],
-                'EditedUserID'=>db_string($LoggedUser['ID']),
-                'EditedTime'=>sqltime(),
-                'Username'=>$LoggedUser['Username']
-            ));
-            $Cache->commit_transaction(0);
- */
-            $Cache->delete('torrents_edits_'.$_POST['post']);
-            $DB->query("INSERT INTO comments_edits (Page, PostID, EditUser, EditTime, Body)
-                                    VALUES ('torrents', ".db_string($_POST['post']).", ".db_string($LoggedUser['ID']).", '".sqltime()."', '".db_string($OldBody)."')");
-
-            // This gets sent to the browser, which echoes it in place of the old body
-            //echo '<div class="post_content">'.$Text->full_format($_POST['body'], get_permissions_advtags($AuthorID)).'</div>';
-?>
-<div class="post_content">
-    <?=$Text->full_format($_POST['body'], get_permissions_advtags($LoggedUser['ID'], $LoggedUser['CustomPermissions']));?>
-</div>
-<div class="post_footer">
-    <span class="editedby">Last edited by <a href="user.php?id=<?=$LoggedUser['ID']?>"><?=$LoggedUser['Username']?></a> just now</span>
-</div>
-<?php
-                  break;
+            include(SERVER_ROOT.'/sections/torrents/takeedit_post.php');
+            break;
 
         case 'delete_post':
             enforce_login();
@@ -480,10 +397,9 @@ if (!empty($_REQUEST['action'])) {
                         JOIN torrents_group AS tg ON tg.ID=t.GroupID
                         WHERE tf.TorrentID = ".$TorrentID);
                 if ($DB->record_count() > 0) {
-                    require(SERVER_ROOT.'/classes/class_torrent.php');
                     list($GroupID, $Contents) = $DB->next_record(MYSQLI_NUM, false);
                     $Contents = unserialize(base64_decode($Contents));
-                    $Tor = new TORRENT($Contents, true);
+                    $Tor = new Luminance\Legacy\Torrent($Contents, true);
                     list($TotalSize, $FileList) = $Tor->file_list();
                     foreach ($FileList as $File) {
                         list($Size, $Name) = $File;
@@ -494,7 +410,7 @@ if (!empty($_REQUEST['action'])) {
                     $DB->query("UPDATE torrents SET Size = ".$TotalSize.", FilePath = '".db_string($FilePath)."', FileList = '".db_string($FileString)."' WHERE ID = ".$TorrentID);
                     $Cache->delete_value('torrents_details_'.$GroupID);
                 }
-                header('Location: torrents.php?torrentid='.$TorrentID);
+                header('Location: details.php?id='.$TorrentID);
                 die();
             } else {
                 error(403);
@@ -522,8 +438,7 @@ if (!empty($_REQUEST['action'])) {
             //authorize(); // who cares if somone fakes this
 
             include(SERVER_ROOT.'/sections/tools/managers/mfd_functions.php');
-            include(SERVER_ROOT.'/classes/class_text.php');
-            $Text = new TEXT;
+            $Text = new Luminance\Legacy\Text;
 
             $GroupID = (int) $_REQUEST['groupid'];
             $ReasonID = (int) $_REQUEST['reasonid'];
@@ -739,6 +654,9 @@ if (!empty($_REQUEST['action'])) {
                         $DB->query("INSERT INTO torrents_reviews (GroupID, ReasonID, UserID, ConvID, Time, Status, Reason, KillTime)
                          VALUES ($GroupID, $ReasonID, ".db_string($LoggedUser['ID']).", ".($ConvID?$ConvID:"null").", '$Time', '$Status', '".db_string($Reason)."', '".sqltime($KillTime)."')");
 
+                        // if okayed check if this torrent gets the ducky award
+                        if ($Status=="Okay") award_ducky_check($UserID, $TorrentID);
+
                         $Cache->delete_value('torrent_review_' . $GroupID);
                         $Cache->delete_value('staff_pm_new_' . $UserID);
 
@@ -794,16 +712,15 @@ if (!empty($_REQUEST['action'])) {
             if(!isset($_GET['torrentid']) || !is_number($_GET['torrentid'])) error(0);
             $TorrentID = (int) $_GET['torrentid'];
 
-            require(SERVER_ROOT.'/classes/class_torrent.php');
 
             $DB->query("SELECT File FROM torrents_files WHERE TorrentID='$TorrentID'");
 
             list($Contents) = $DB->next_record(MYSQLI_NUM, array(0));
             $Contents = unserialize(base64_decode($Contents));
-            $Tor = new TORRENT($Contents, true); // New TORRENT object
+            $Tor = new Luminance\Legacy\Torrent($Contents, true); // new Torrent object
             // Set torrent announce URL
             $Tor->set_announce_url(ANNOUNCE_URL.'/uSeRsToRrEntPaSs/announce');
-            $Tor->set_comment('http'.($master->request->ssl ? 's' : '').'://'. SITE_URL."/torrents.php?torrentid=$TorrentID");
+            $Tor->set_comment('http'.($master->request->ssl ? 's' : '').'://'. SITE_URL."/details.php?id=$TorrentID");
 
             // Remove multiple trackers from torrent
             unset($Tor->Val['announce-list']);
@@ -814,10 +731,16 @@ if (!empty($_REQUEST['action'])) {
 
             if ($_GET['action']=='output') {
                 ksort($Tor->Val);
-                error ( "<pre>". print_r($Tor->Val,true)."</pre>" );
+                error("<pre>".display_str(print_r($Tor->Val,true))."</pre>");
             } else
-                error ( "<pre>". print_r($Tor->enc(),true)."</pre>" );
+                error("<pre>".display_str(print_r($Tor->enc(),true))."</pre>");
 
+            break;
+
+        case 'clear_browse':
+            enforce_login();
+            update_last_browse($LoggedUser['ID'], sqltime());
+            header('Location: torrents.php');
             break;
 
         default:

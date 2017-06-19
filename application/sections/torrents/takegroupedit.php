@@ -1,12 +1,10 @@
 <?php
 authorize();
 
-include(SERVER_ROOT.'/classes/class_text.php');
-include(SERVER_ROOT . '/classes/class_validate.php');
 include(SERVER_ROOT . '/sections/torrents/functions.php');
 
-$Text = new TEXT;
-$Validate = new VALIDATE;
+$Text = new Luminance\Legacy\Text;
+$Validate = new Luminance\Legacy\Validate;
 
 // Quick SQL injection check
 if (!$_REQUEST['groupid'] || !is_number($_REQUEST['groupid'])) {
@@ -38,8 +36,6 @@ if (!$CanEdit) { error(403); }
 // Variables for database input - with edit, the variables are passed with POST
 $OldCategoryID = (int) $_POST['oldcategoryid'];
 $CategoryID = (int) $_POST['categoryid'];
-$Body = $_POST['body'];
-$Image = $_POST['image'];
 
 $Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
 
@@ -54,9 +50,11 @@ $Err = $Validate->ValidateForm($_POST, $Text); // Validate the form
 if ($Err) { // Show the upload form, with the data the user entered
     $HasDescriptionData = TRUE; /// tells editgroup to use $Body and $Image vars instead of requerying them
     $_GET['groupid'] = $GroupID;
-    $Name = $_POST['name'];
-    $AuthorID = $_POST['authorid'];
-    $EditSummary = $_POST['summary'];
+    $Name = display_str($_POST['name']);
+    $AuthorID = display_str($_POST['authorid']);
+    $EditSummary = display_str($_POST['summary']);
+    $Body = display_str($_POST['body']);
+    $Image = display_str($_POST['image']);
     include(SERVER_ROOT . '/sections/torrents/editgroup.php');
     die();
 }
@@ -69,9 +67,9 @@ if (!preg_match("/^".URL_REGEX."$/i", $Image)) {
 $TorrentCache = get_group_info($GroupID, true);
 $GroupName = $TorrentCache[0][0][3];
 
-$Image = db_string($Image);
-$SearchText = db_string(trim($GroupName) . ' ' . $Text->db_clean_search(trim($Body)));
-$Body =  db_string($Body);
+$Image = db_string($_POST['image']);
+$Body =  db_string($_POST['body']);
+$SearchText = db_string(trim($GroupName) . ' ' . $Text->db_clean_search(trim($_POST['body'])));
 
 // Update torrents table
 $DB->query("UPDATE torrents_group SET
@@ -127,7 +125,7 @@ $Cache->delete_value('torrents_details_'.$GroupID);
 $DB->query("SELECT CollageID FROM collages_torrents WHERE GroupID='$GroupID'");
 if ($DB->record_count()>0) {
     while (list($CollageID) = $DB->next_record()) {
-        $Cache->delete_value('collage_'.$CollageID);
+        $Cache->delete_value('collage_torrents_'.$CollageID);
     }
 }
 

@@ -25,7 +25,7 @@ if (empty($_GET['order_by']) || !in_array($_GET['order_by'], array('IP', 'Userna
 
 $_POST['searchips'] = trim($_POST['searchips']);
 $ExtraWhere = '';
-$params = array();
+$params = [];
 if (isset($_POST['submit']) && isset($_POST['searchips']) && $_POST['submit'] == 'Search' && $_POST['searchips'] != '') {
     $ExtraWhere = "AND l.IP LIKE :searchips";
     $params[':searchips'] = $_POST['searchips'].'%';
@@ -73,7 +73,7 @@ show_header('Login Watch');
             <tr class="box">
                 <td class="label">Search for:</td>
                 <td>
-                        <input name="searchips" type="text" class="text" value="<?=htmlentities($_POST['searchips'])?>" />
+                        <input name="searchips" type="text" class="text" value="<?=display_str($_POST['searchips'])?>" />
                                 <input type="submit" name="submit" value="Search" />
                 </td>
                 <td >
@@ -87,7 +87,7 @@ show_header('Login Watch');
 
 <div class="head">
 <?php
-    if ($ExtraWhere !== '') echo "$NumResults Search Results for '{$_POST['searchips']}*'";
+    if ($ExtraWhere !== '') echo "$NumResults Search Results for '".display_str($_POST['searchips'])."*'";
     else echo "$NumResults entries in Login Watch";
 ?>
 </div>

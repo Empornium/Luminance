@@ -20,8 +20,9 @@ show_header('View torrent bbcode');
     <h2>BBCode for <?=$Torrent['Name']?></h2>
 
     <div class="box pad">
-        <textarea id="body" name="body" class="long" rows="20"><?=$Torrent['Body']?></textarea><br /><br />
+        <textarea id="body" name="body" class="long" rows="20" onkeyup="resize('body');"><?=display_str($Torrent['Body'])?></textarea><br /><br />
     </div>
 </div>
+<script type="text/javascript">addDOMLoadEvent(function(){resize('body');})</script>
 <?php
 show_footer();

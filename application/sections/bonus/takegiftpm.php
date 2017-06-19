@@ -1,5 +1,4 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php');
 global $DB, $Cache, $Classes;
 
 enforce_login();

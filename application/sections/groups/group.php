@@ -1,6 +1,5 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 // Number of users per page
 define('USERS_PER_PAGE', '50');
@@ -28,6 +27,7 @@ $DB->query("SELECT
     m.Uploaded,
     m.Downloaded,
     m.PermissionID,
+    p.Level,
     m.GroupPermissionID,
     m.Enabled,
     m.Paranoia,
@@ -39,9 +39,10 @@ $DB->query("SELECT
     FROM users_groups AS u
     JOIN users_main AS m ON u.UserID=m.ID
     JOIN users_info AS i ON u.UserID=i.UserID
+    JOIN permissions AS p ON p.ID=m.PermissionID
     WHERE u.GroupID='$GroupID'
     ORDER BY m.Username ASC LIMIT $Limit");
-$Users = $DB->to_array(false, MYSQLI_BOTH, array(8));
+$Users = $DB->to_array(false, MYSQLI_BOTH, array(9, 'Paranoia'));
 
 // Number of results (for pagination)
 $DB->query('SELECT FOUND_ROWS()');
@@ -172,7 +173,7 @@ if ($Results == 0) {
     echo '<p>There are no users in this group</p>';
 } else {
     foreach ($Users as $User) {
-          list($UserID, $Comment, $Username, $Uploaded, $Downloaded, $Class, $GroupPermID, $Enabled, $Paranoia, $Donor, $Warned, $Title, $LastAccess, $Avatar) = $User;
+          list($UserID, $Comment, $Username, $Uploaded, $Downloaded, $Class, $Level, $GroupPermID, $Enabled, $Paranoia, $Donor, $Warned, $Title, $LastAccess, $Avatar) = $User;
     ?>
     <form action="groups.php" method="post">
           <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
@@ -183,20 +184,20 @@ if ($Results == 0) {
                 <tr>
                       <td class="colhead" colspan="3">
                             <span style="float:left;"><?=format_username($UserID, $Username, $Donor, $Warned, $Enabled, $Class, $Title, true, $GroupPermID, true)?>
-    <?php 	if (check_paranoia('ratio', $Paranoia, $Class, $UserID)) { ?>
+    <?php 	if (check_paranoia('ratio', $Paranoia, $Level, $UserID)) { ?>
                             &nbsp;Ratio: <strong><?=ratio($Uploaded, $Downloaded)?></strong>
     <?php 	} ?>
-    <?php 	if (check_paranoia('uploaded', $Paranoia, $Class, $UserID)) { ?>
+    <?php 	if (check_paranoia('uploaded', $Paranoia, $Level, $UserID)) { ?>
                             &nbsp;Up: <strong><?=get_size($Uploaded)?></strong>
     <?php 	} ?>
-    <?php 	if (check_paranoia('downloaded', $Paranoia, $Class, $UserID)) { ?>
+    <?php 	if (check_paranoia('downloaded', $Paranoia, $Level, $UserID)) { ?>
                             &nbsp;Down: <strong><?=get_size($Downloaded)?></strong>
     <?php 	} ?>
                             </span>
 
                             <span style="float:right;">&nbsp;&nbsp;<a href="#" class="togglelink" onclick="$('#friend<?=$UserID?>').toggle(); this.innerHTML=(this.innerHTML=='(Hide)'?'(View)':'(Hide)'); return false;"><?=($SelectUserID==$UserID?'(Hide)':'(View)')?></a></span>&nbsp;
 
-    <?php 	if (check_paranoia('lastseen', $Paranoia, $Class, $UserID)) { ?>
+    <?php 	if (check_paranoia('lastseen', $Paranoia, $Level, $UserID)) { ?>
                             <span style="float:right;"><?=time_diff($LastAccess)?></span>
     <?php 	} ?>
                       </td>

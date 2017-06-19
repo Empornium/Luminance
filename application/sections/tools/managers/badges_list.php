@@ -1,5 +1,5 @@
 <?php
-if (!check_perms('site_manage_badges')) { error(403); }
+if (!check_perms('admin_manage_badges')) { error(403); }
 
 // get all images in badges directory for drop down
 $imagefiles = scandir($master->public_path.'/static/common/badges');

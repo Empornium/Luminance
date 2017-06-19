@@ -47,6 +47,7 @@ class Master {
         [ '*',    'captcha.php',     2, 'legacy', 'captcha'     ],
         [ '*',    'chat.php',        2, 'legacy', 'chat'        ],
         [ '*',    'collages.php',    2, 'legacy', 'collages'    ],
+        [ '*',    'contests.php',    2, 'legacy', 'contests'    ],
         [ '*',    'donate.php',      2, 'legacy', 'donate'      ],
         [ '*',    'error.php',       2, 'legacy', 'error'       ],
         [ '*',    'feeds.php',       0, 'legacy', 'feeds'       ],
@@ -198,6 +199,7 @@ class Master {
             case 'crypto':
             case 'guardian':
             case 'log':
+            case 'options':
             case 'peon':
             case 'profiler':
             case 'repos':
@@ -205,6 +207,7 @@ class Master {
             case 'secretary':
             case 'emailManager':
             case 'settings':
+            case 'tracker':
                 return $this->getService(ucfirst($name));
             case 'db':
             case 'orm':

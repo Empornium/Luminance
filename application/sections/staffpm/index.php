@@ -22,28 +22,8 @@ switch ($_REQUEST['action']) {
             list($ToID) = $DB->next_record();
         } else $ToID = $_POST['toid'];
 
-        if (empty($ToID) || !is_number($ToID)) error(0);
+        $ConvID = startStaffConversation($ToID, $_POST['subject'], $_POST['message']);
 
-        if (empty($_POST['message']) || $_POST['message'] == '') error("No message!");
-        if (empty($_POST['subject']) || $_POST['subject'] == '') error("No Subject!");
-
-        include(SERVER_ROOT . '/classes/class_text.php');
-        $Text = new TEXT;
-        $Text->validate_bbcode($_POST['message'], get_permissions_advtags($LoggedUser['ID']));
-
-        $Message = db_string($_POST['message']);
-        $Subject = db_string($_POST['subject']);
-
-        $DB->query("INSERT INTO staff_pm_conversations
-                     (Subject, Status, Level, UserID, Date, Unread)
-                VALUES ('$Subject', 'Open', '0', '$ToID', '" . sqltime() . "', true)");
-        // New message
-        $ConvID = $DB->inserted_id();
-        $DB->query("INSERT INTO staff_pm_messages
-                     (UserID, SentDate, Message, ConvID)
-                VALUES ('{$LoggedUser['ID']}', '" . sqltime() . "', '$Message', $ConvID)");
-
-        $Cache->delete_value('staff_pm_new_' . $ToID);
         header("Location: staffpm.php?action=viewconv&id=$ConvID");
 
         break;
@@ -75,6 +55,9 @@ switch ($_REQUEST['action']) {
         break;
     case 'assign':
         require 'assign.php';
+        break;
+    case 'assign_urgency':
+        require 'assign_urgency.php';
         break;
     case 'make_donor':
         require 'makedonor.php';

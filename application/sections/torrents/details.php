@@ -4,8 +4,7 @@ define(MAX_PERS_COLLAGES, 3); // How many personal collages should be shown by d
 include(SERVER_ROOT.'/sections/tools/managers/mfd_functions.php');
 include(SERVER_ROOT.'/sections/requests/functions.php');
 include(SERVER_ROOT.'/sections/bookmarks/functions.php'); // has_bookmarked()
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 if(!$GroupID) $GroupID=ceil($_GET['id']);
 
@@ -22,9 +21,12 @@ $DisplayName=$GroupName;
 $AltName=$GroupName; // Goes in the alt text of the image
 $Title=$GroupName; // goes in <title>
 
-list($TorrentID, $FileCount, $Size, $Seeders, $Leechers, $Snatched, $FreeTorrent, $DoubleSeed, $TorrentTime,
+list($TorrentID, $FileCount, $Size, $Seeders, $Leechers, $Snatched, $FreeTorrent, $DoubleTorrent, $TorrentTime,
         $FileList, $FilePath, $UserID, $Username, $LastActive,
-        $BadTags, $BadFolders, $BadFiles, $LastReseedRequest, $LogInDB, $HasFile, $IsAnon) = $TorrentList[0];
+        $BadTags, $BadFolders, $BadFiles, $LastReseedRequest, $LogInDB, $HasFile, $IsAnon, $Ducky) = $TorrentList[0];
+
+// update this users last browsed datetime
+update_last_browse($LoggedUser['ID'], $TorrentTime);
 
 $tagsort = isset($_GET['tsort'])?$_GET['tsort']:'uses';
 if(!in_array($tagsort, array('uses','score','az','added'))) $tagsort = 'uses';
@@ -73,7 +75,7 @@ if (empty($TokenTorrents)) {
 $Review = get_last_review($GroupID); // ,
 
 // Start output
-show_header($Title,'comments,status,torrent,bbcode,watchlist,jquery,jquery.cookie,details');  // ,tag_autocomplete,autocomplete
+show_header($Title,'comments,status,torrent,bbcode,watchlist,jquery,jquery.cookie,details,tag_autocomplete,autocomplete');
 
 $IsUploader =  $UserID == $LoggedUser['ID'];
 $CanEdit = (check_perms('torrents_edit') ||  $IsUploader );
@@ -104,14 +106,15 @@ $IsBookmarked = has_bookmarked('torrent', $GroupID);
 
 $sqltime = sqltime();
 
-$Icons = '';
-if ($DoubleSeed == '1') {
+if ($DoubleTorrent == '1') {
     $SeedTooltip = "Unlimited Doubleseed"; // a theoretical state?
 } elseif (!empty($TokenTorrents[$TorrentID]) && $TokenTorrents[$TorrentID]['DoubleSeed'] > $sqltime) {
     $SeedTooltip = "Personal Doubleseed Slot for ".time_diff($TokenTorrents[$TorrentID]['DoubleSeed'], 2, false,false,0);
+} elseif ($LoggedUser['personal_doubleseed'] > $sqltime) {
+    $SeedTooltip = "Personal Doubleseed for ".time_diff($LoggedUser['personal_doubleseed'], 2, false,false,0);
+} elseif ($Sitewide_Doubleseed_On) {
+    $SeedTooltip = "Sitewide Doubleseed for ".time_diff($Sitewide_Doubleseed, 2,false,false,0);
 }
-if ($SeedTooltip)
-    $Icons = '<img src="static/common/symbols/doubleseed.gif" alt="DoubleSeed" title="'.$SeedTooltip.'" />&nbsp;&nbsp;';
 
 if ($FreeTorrent == '1') {
     $FreeTooltip = "Unlimited Freeleech";
@@ -123,14 +126,19 @@ if ($FreeTorrent == '1') {
     $FreeTooltip = "Sitewide Freeleech for ".time_diff($Sitewide_Freeleech, 2,false,false,0);
 }
 
+$Icons = '';
+if ($SeedTooltip)
+    $Icons .= '<img src="static/common/symbols/doubleseed.gif" alt="DoubleSeed" title="'.$SeedTooltip.'" />&nbsp;&nbsp;';
 if ($FreeTooltip)
     $Icons .= '<img src="static/common/symbols/freedownload.gif" alt="Freeleech" title="'.$FreeTooltip.'" />&nbsp;';
 if ($IsBookmarked)
     $Icons .= '<img src="static/styles/'.$LoggedUser['StyleName'].'/images/star16.png" alt="bookmarked" title="You have this torrent bookmarked" />&nbsp;';
-$Icons .= '&nbsp;';
+if ($Ducky)
+    $Icons .= '<span class="icon icon_ducky" title="This torrent was awarded a Golden Ducky award!"></span>';
 
+$Icons .= '&nbsp;';
 // For now we feed this function some 'false' information to prevent certain icons from occuring that are already present elsewhere on the page
-$ExtraIcons = torrent_icons(array('FreeTorrent'=>false, 'double_seed'=>false), $TorrentID, $Review, false);
+$ExtraIcons = torrent_icons(array('FreeTorrent'=>false, 'DoubleSeed'=>false, 'Ducky'=>false), $TorrentID, $Review, false);
 
 ?>
 <div class="details thin">
@@ -146,7 +154,7 @@ if (check_perms('torrents_review')) {
     </div>
     <br class="clear"/>
     <script type="text/javascript">
-        setTimeout("Update_status();", 500);
+        setTimeout(Update_status, 500);
     </script>
 <?php
 }
@@ -246,19 +254,25 @@ if (check_perms('torrents_review')) {
     </div>
     <div  class="linkbox">
         <span id="torrent_buttons"  style="float: left;">
-<?php   if (check_perms('torrents_download_override') || !$Review['Status'] || $Review['Status'] == 'Okay'  ) { ?>
+<?php   if (check_perms('torrents_download_override') || ($master->options->EnableDownloads && (!$Review['Status'] || $Review['Status'] == 'Okay'  ))) { ?>
 
             <a href="torrents.php?action=download&amp;id=<?=$TorrentID ?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" class="button blueButton" title="Download">DOWNLOAD TORRENT</a>
 
-<?php       if (!$Sitewide_Freeleech_On && ($LoggedUser['FLTokens'] > 0) && $HasFile  && (empty($TokenTorrents[$TorrentID]) || $TokenTorrents[$TorrentID]['FreeLeech'] < $sqltime) && ($FreeTorrent == '0')  && ($LoggedUser['personal_freeleech'] < $sqltime) && ($LoggedUser['CanLeech'] == '1')) { ?>
-            <a href="torrents.php?action=download&amp;id=<?=$TorrentID ?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>&usetoken=1" class="button greenButton" title="This will use 1 slot" onClick="return confirm('Are you sure you want to use a freeleech slot here?');">FREELEECH TORRENT</a>
-<?php       }
-        if (($LoggedUser['FLTokens'] > 0) && $HasFile  && (empty($TokenTorrents[$TorrentID]) || $TokenTorrents[$TorrentID]['DoubleSeed'] < $sqltime) && ($DoubleSeed == '0')) { ?>
-            <a href="torrents.php?action=download&amp;id=<?=$TorrentID ?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>&usetoken=2" class="button orangeButton" title="This will use 1 slot" onClick="return confirm('Are you sure you want to use a doubleseed slot here?');">DOUBLESEED TORRENT</a>
-<?php       }
+<?php   if (!$Sitewide_Freeleech_On && ($LoggedUser['FLTokens'] > 0) && $HasFile
+                && (empty($TokenTorrents[$TorrentID]) || $TokenTorrents[$TorrentID]['FreeLeech'] < $sqltime)
+                && ($FreeTorrent == '0') && ($LoggedUser['personal_freeleech'] < $sqltime) && ($LoggedUser['CanLeech'] == '1')) {
+?>
+            <a href="torrents.php?action=download&amp;id=<?=$TorrentID ?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>&amp;usetoken=1" class="button greenButton" title="This will use 1 slot" onClick="return confirm('Are you sure you want to use a freeleech slot here?');">FREELEECH TORRENT</a>
+<?php   }
+        if (!$Sitewide_Doubleseed_On && ($LoggedUser['FLTokens'] > 0) && $HasFile
+                && (empty($TokenTorrents[$TorrentID]) || $TokenTorrents[$TorrentID]['DoubleSeed'] < $sqltime)
+                && ($DoubleTorrent == '0') && ($LoggedUser['personal_doubleseed'] < $sqltime) ) {
+?>
+            <a href="torrents.php?action=download&amp;id=<?=$TorrentID ?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>&amp;usetoken=2" class="button orangeButton" title="This will use 1 slot" onClick="return confirm('Are you sure you want to use a doubleseed slot here?');">DOUBLESEED TORRENT</a>
+<?php   }
         if (check_perms('site_debug')) { ?>
-            [<a href="torrents.php?action=output&torrentid=<?=$TorrentID ?>" title="View torrent data">view data</a>]
-            [<a href="torrents.php?action=output_enc&torrentid=<?=$TorrentID ?>" title="View bencode data">view bencode</a>]
+            [<a href="torrents.php?action=output&amp;torrentid=<?=$TorrentID ?>" title="View torrent data">view data</a>]
+            [<a href="torrents.php?action=output_enc&amp;torrentid=<?=$TorrentID ?>" title="View bencode data">view bencode</a>]
 <?php       } ?>
 
 <?php   } ?>
@@ -514,32 +528,46 @@ if ($FreeTorrent == '0' && $IsUploader) {
                 </div>
                 <div id="torrent_tags" class="tag_inner">
 <?php
-
-if (count($Tags) == 0) {
+        if (count($Tags) == 0) {
 ?>
             Please add a tag for this torrent!
 <?php
-} else {
+        } else {
 ?>
-                    <ul id="torrent_tags_list" class="stats nobullet">
-                    </ul>
+                    <ul id="torrent_tags_list" class="stats nobullet"></ul>
 <?php
-}
+        }
 ?>
                 </div>
-<?php       if (empty($LoggedUser['DisableTagging']) && (check_perms('site_add_tag') || $IsUploader)) { ?>
-            <div class="tag_add">
-    <div id="messagebar" class="messagebar hidden"></div>
-                <form id="form_addtag" action="" method="post" onsubmit="return false;">
+<?php
+
+      // onfocus="if (this.value == 'search tags') this.value='';"
+      // onblur="if (this.value == '') this.value='search tags';"
+
+        if (empty($LoggedUser['DisableTagging']) && (check_perms('site_add_tag') || $IsUploader)) {
+?>
+                <div class="tag_add">
+                    <div id="messagebar" class="messagebar hidden"></div>
+
                     <input type="hidden" name="action" value="add_tag" />
                     <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-                    <input type="hidden" name="groupid" value="<?=$GroupID?>" />
+                    <input type="hidden" id="groupid" name="groupid" value="<?=$GroupID?>" />
                     <input type="hidden" name="tagsort" value="<?=$tagsort?>" />
-                    <input type="text" id="tagname" name="tagname" size="15" onkeydown="if (event.keyCode == 13) { Add_Tag(); return false; }" />
-                    <input type="button" value="+" onclick="Add_Tag(); return false;" />
-                </form>
-            </div>
-<?php       }       ?>
+
+                    <div class="autoresults"> <!-- we have to insert the font here for js to be able to grab it (js bug) -->
+                        <input type="text" id="taginput" value="" style="font: 10pt monospace;"
+                                onkeyup="return autocomp.keyup(event);"
+                                onkeydown="return autocomp.keydown(event);"
+                                autocomplete="off"
+                                size="25"
+                                title="enter text to search for tags, click (or enter) to select a tag from the drop-down" />
+                        <input type="button" value="+" onclick="addTag(); return false;" />
+                        <ul id="tagdropdown"></ul>
+                    </div>
+
+                </div>
+<?php
+        }       ?>
             </div>
     </div>
 

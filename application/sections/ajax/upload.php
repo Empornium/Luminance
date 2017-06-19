@@ -4,8 +4,7 @@
 // this is probably broken now... but is currently unused, and has been supplanted by the new category/tag system
 
 // Include the necessary form class
-include(SERVER_ROOT.'/classes/class_torrent_form.php');
-$TorrentForm = new TORRENT_FORM();
+$TorrentForm = new Luminance\Legacy\TorrentForm();
 
 $GenreTags = $Cache->get_value('genre_tags');
 if (!$GenreTags) {

@@ -107,7 +107,7 @@ if (is_numeric($_REQUEST['id'])) { ?>
 <?php  } ?>
     </table>
 <?php
-include(SERVER_ROOT."/classes/permissions_form.php");
+include(SERVER_ROOT."/Legacy/permissions_form.php");
 permissions_form();
 ?>
 </form>

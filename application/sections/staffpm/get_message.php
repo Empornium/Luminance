@@ -23,8 +23,7 @@ $MessageID = (int) $_GET['message'];
 $DB->query("SELECT Message FROM staff_pm_messages WHERE ID='$MessageID'");
 list($Message) = $DB->next_record(MYSQLI_NUM);
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 $Message = $Text->clean_bbcode($Message, get_permissions_advtags($LoggedUser['ID']));
 
 // This gets sent to the browser, which echoes it wherever

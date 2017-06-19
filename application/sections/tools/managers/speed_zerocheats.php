@@ -93,7 +93,7 @@ $DB->query("SELECT SQL_CALC_FOUND_ROWS
                    uid, Username, COUNT(x.fid) as Peercount, Count(DISTINCT ud.TorrentID) as Grabbed,
                             MAX(x.upspeed) as upspeed, MAX(x.mtime) as time, ui.JoinDate,
                              GROUP_CONCAT(DISTINCT LEFT(x.peer_id,8) SEPARATOR '|'),
-                             GROUP_CONCAT(DISTINCT x.ip SEPARATOR '|'),
+                             GROUP_CONCAT(DISTINCT INET6_NTOA(x.ipv4) SEPARATOR '|'),
                              ui.Donor, ui.Warned, um.Enabled, um.PermissionID, IF(w.UserID,'1','0'), IF(nc.UserID,'1','0'),
                              IF(ui.SeedHistory,'true','false') as history
                FROM xbt_files_users AS x

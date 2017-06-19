@@ -25,6 +25,9 @@
 ;additional_domains = 'somelinkedsite.com,anotherlinkedsite.com'
 ;internal_urls_regex = ''
 ; (was: INTERNAL_URLS_REGEX)
+;non_anon_domains = 'friendly.site.sx,imagehost.somelinkedsite.com'
+;non_anon_urls_regex = ''
+
 
 [keys]
 ;enckey = ''

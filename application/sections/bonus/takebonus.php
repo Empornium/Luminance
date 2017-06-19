@@ -47,7 +47,7 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
         $UpdateSet = array();
         $UpdateSetOther = array();
 
-        Switch($Action){  // atm hardcoded in db:  givecredits, givegb, gb, slot, title, badge
+        switch($Action) {  // atm hardcoded in db:  givecredits, givegb, gb, slot, title, badge
             case 'badge' :
 
                 $UserBadgeIDs = get_user_shop_badges_ids($UserID);
@@ -56,8 +56,6 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                     break;
                 }
 
-                $Summary = sqltime().' - '.ucfirst("user bought $Title badge. Cost: $Cost credits");
-                $UpdateSet[]="i.AdminComment=CONCAT_WS( '\n', '$Summary', i.AdminComment)";
                 $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought a $Title badge.");
                 $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
 
@@ -85,22 +83,18 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
 
             case 'givecredits':
 
-                $Summary = sqltime().' - '.ucfirst("user gave a gift of ".number_format ($Value)." credits to {$P['othername']} Cost: $Cost credits");
-                $UpdateSet[]="i.AdminComment=CONCAT_WS( '\n', '$Summary', i.AdminComment)";
-
-                $Summary = sqltime().' - '.ucfirst("user received a gift of ".number_format ($Value)." credits from {$LoggedUser['Username']}");
-                $UpdateSetOther[]="i.AdminComment=CONCAT_WS( '\n', '$Summary', i.AdminComment)";
-
                 $Summary = sqltime()." | +".number_format ($Value)." credits | ".ucfirst("you received a gift of ".number_format ($Value)." credits from {$LoggedUser['Username']}");
                 $UpdateSetOther[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
                 $UpdateSetOther[]="m.Credits=(m.Credits+'$Value')";
+
                 $Summary = sqltime()." | -".number_format ($Cost)." credits | ".ucfirst("you gave a gift of ".number_format ($Value)." credits to {$P['othername']}");
                 $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
                 $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
                 $ResultMessage=$Summary;
 
-                send_pm($OtherID, 0, "Bonus Shop - You received a gift of credits",
-                            "[br]You received a gift of ".number_format ($Value)." credits from [user={$LoggedUser['Username']}]{$LoggedUser['Username']}[/user]");
+                $AddMessage = isset($P['message']) && $P['message']?"[br][br]Message from sender:[br][br]{$_POST['message']}":'';
+                send_pm($OtherID, 0, db_string("Bonus Shop - You received a gift of credits"),
+                        db_string("[br]You received a gift of ".number_format ($Value)." credits from [user]{$LoggedUser['ID']}[/user]{$AddMessage}"));
 
                 break;
 
@@ -109,16 +103,12 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                 if ($LoggedUser['BytesDownloaded'] <= 0) {
                     $ResultMessage= "You have no download to deduct from!";
                 } else {
-                    $Summary = sqltime().' - '.ucfirst("user bought -$Value gb. Cost: $Cost credits");
-                    if($LoggedUser['BytesDownloaded'] < $ValueBytes)
-                        $Summary .= " | NOTE: Could only remove ". get_size($LoggedUser['BytesDownloaded']);
-                    $UpdateSet[]="i.AdminComment=CONCAT_WS( '\n', '$Summary', i.AdminComment)";
 
                     $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought -$Value gb.");
                     if($LoggedUser['BytesDownloaded'] < $ValueBytes)
                         $Summary .= " | NOTE: Could only remove ". get_size($LoggedUser['BytesDownloaded']);
                     $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
-                    //$Value = get_bytes($Value.'gb');
+
                     $UpdateSet[]="m.Downloaded=(m.Downloaded-'$ValueBytes')";
                     $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
                     $ResultMessage=$Summary;
@@ -127,31 +117,26 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                 break;
 
             case 'givegb':  // no test if user had download to remove as this could violate privacy settings
-                $Summary = sqltime().' - '.ucfirst("user gave a gift of -$Value gb to {$P['othername']} Cost: $Cost credits");
-                $UpdateSet[]="i.AdminComment=CONCAT_WS( '\n', '$Summary', i.AdminComment)";
-
-                $Summary = sqltime().' - '.ucfirst("user received a gift of -$Value gb from {$LoggedUser['Username']}.");
-                $UpdateSetOther[]="i.AdminComment=CONCAT_WS( '\n', '$Summary', i.AdminComment)";
+                $ValueBytes = get_bytes($Value.'gb');
 
                 $Summary = sqltime()." | ".ucfirst("you received a gift of -$Value gb from {$LoggedUser['Username']}.");
                 $UpdateSetOther[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
+
                 $Summary = sqltime()." | -$Cost credits | ".ucfirst("you gave a gift of -$Value gb to {$P['othername']}.");
                 $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
                 $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
 
+                $AddMessage = isset($P['message']) && $P['message']?"[br][br]Message from sender:[br][br]{$_POST['message']}":'';
                 send_pm($OtherID, 0, db_string("Bonus Shop - You received a gift of -gb"),
-                     db_string("[br]You received a gift of -$Value gb from [user={$LoggedUser['Username']}]{$LoggedUser['Username']}[/user]"));
+                     db_string("[br]You received a gift of -".number_format ($Value)." gb from [user]{$LoggedUser['ID']}[/user]{$AddMessage}"));
 
-                $Value = get_bytes($Value.'gb');
-                $UpdateSetOther[]="m.Downloaded=(m.Downloaded-'$Value')";
+                $UpdateSetOther[]="m.Downloaded=(m.Downloaded-'$ValueBytes')";
                 $ResultMessage=$Summary;
 
                 break;
 
             case 'slot':
 
-                $Summary = sqltime().' - '.ucfirst("user bought $Value slot".($Value>1?'s':'').". Cost: $Cost credits");
-                $UpdateSet[]="i.AdminComment=CONCAT_WS( '\n', '$Summary', i.AdminComment)";
                 $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought $Value slot".($Value>1?'s':'').".");
                 $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
                 $UpdateSet[]="m.FLTokens=(m.FLTokens+'$Value')";
@@ -160,8 +145,7 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                 break;
 
             case 'pfl':
-                $Summary = sqltime().' - '.ucfirst("user bought $Value hour".($Value>1?'s':'')." personal freeleech. Cost: $Cost credits");
-                $UpdateSet[]="i.AdminComment=CONCAT_WS( '\n', '$Summary', i.AdminComment)";
+
                 $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought $Value hour".($Value>1?'s':'')." of personal freeleech.");
                 $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
                 $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
@@ -177,7 +161,7 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                 }
 
                 $UpdateSet[]="personal_freeleech='$personal_freeleech'";
-                update_tracker('set_personal_freeleech', array('passkey' => $LoggedUser['torrent_pass'], 'time' => strtotime($personal_freeleech)));
+                $master->tracker->setPersonalFreeleech($LoggedUser['torrent_pass'], strtotime($personal_freeleech));
 
                 $ResultMessage=$Summary;
                 break;
@@ -193,8 +177,6 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                         $ResultMessage = "Title was too long ($tlen characters, max=32)";
                     } else {
                         $NewTitle = db_string( display_str($NewTitle) );
-                        $Summary = sqltime().' - '.ucfirst("user bought a new custom title ''$NewTitle''. Cost: $Cost credits");
-                        $UpdateSet[]="i.AdminComment=CONCAT_WS( '\n', '$Summary', i.AdminComment)";
                         $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought a new custom title ''$NewTitle''.");
                         $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
                         $UpdateSet[]="m.Title='$NewTitle'";
@@ -234,8 +216,6 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                             // make torrent FL
                             freeleech_groups($GroupID, 1, true);
 
-                            $Summary = sqltime().' - '.ucfirst("user bought universal freeleech ($Value gb+) for torrent [torrent]{$GroupID}[/torrent]. Cost: $Cost credits");
-                            $UpdateSet[]="i.AdminComment=CONCAT_WS( '\n', '$Summary', i.AdminComment)";
                             $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought a universal freeleech ($Value gb+) for torrent [torrent]{$GroupID}[/torrent]");
                             $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
                             $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";

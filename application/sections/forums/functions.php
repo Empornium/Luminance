@@ -70,6 +70,7 @@ function make_thread_note($Message, $ThreadID)
 function get_thread_info($ThreadID, $Return = true, $SelectiveCache = false)
 {
     global $DB, $Cache;
+    $ThreadID = (int) $ThreadID;
     if (!$ThreadInfo = $Cache->get_value('thread_'.$ThreadID.'_info')) {
         $DB->query("SELECT
             t.Title,
@@ -86,7 +87,7 @@ function get_thread_info($ThreadID, $Return = true, $SelectiveCache = false)
             LEFT JOIN forums_polls AS p ON p.TopicID=t.ID
             WHERE t.ID = '$ThreadID'
             GROUP BY fp.TopicID");
-        if ($DB->record_count()==0) { error(404); }
+        if ($DB->record_count()==0) { return false; }
         $ThreadInfo = $DB->next_record(MYSQLI_ASSOC);
         if ($ThreadInfo['StickyPostID']) {
             $ThreadInfo['Posts']--;
@@ -153,7 +154,7 @@ function print_forums_select($Forums, $ForumCats, $SelectedForumID=false, $Eleme
 <?php		$OpenGroup = true;
         }
 ?>
-                        <option value="<?=$Forum['ID']?>"<?php if ($SelectedForumID == $Forum['ID']) { echo ' selected="selected"';} ?>><?=$Forum['Name']?></option>
+                        <option value="<?=$Forum['ID']?>"<?php if ($SelectedForumID == $Forum['ID']) { echo ' selected="selected"';} ?>><?=display_str($Forum['Name'])?></option>
 <?php } ?>
                     </optgroup>
                 </select>
@@ -182,7 +183,7 @@ function print_thread_links($ThreadID, $UserSubscriptions, $IncSearch = false)
 ?>
     <div class="linkbox">
         [<a href="reports.php?action=report&amp;type=thread&amp;id=<?=$ThreadID?>">Report Thread</a>]&nbsp;
-        [<a href="#" onclick="Subscribe(<?=$ThreadID?>);return false;" id="subscribelink<?=$ThreadID?>"><?=(in_array($ThreadID, $UserSubscriptions) ? 'Unsubscribe' : 'Subscribe')?></a>]&nbsp;
+        [<a href="#" onclick="Subscribe(<?=$ThreadID?>);return false;" class="subscribelink<?=$ThreadID?>"><?=(in_array($ThreadID, $UserSubscriptions) ? 'Unsubscribe' : 'Subscribe')?></a>]&nbsp;
 <?php
     if ($IncSearch) { ?>
         [<a href="#" onclick="$('#searchthread').toggle(); this.innerHTML = (this.innerHTML == 'Search this Thread'?'Hide Search':'Search this Thread'); return false;">Search this Thread</a>]&nbsp;

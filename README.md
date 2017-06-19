@@ -1,12 +1,17 @@
 Luminance
 =========
 
+[![PHP56](https://img.shields.io/badge/PHP-5.6-brightgreen.svg)]()
+[![PHP71](https://img.shields.io/badge/PHP-7.x-blue.svg)]()
+[![HHVM](https://img.shields.io/badge/HHVM-3.x-blue.svg)]()
+
+
 Note: **BETA SOFTWARE**. This software is currently in heavy development; do not use it for running a live website unless you are quite sure it's appropriate. This document will be updated to reflect changes in this situation, see the *Roadmap* section for details.
 
 Luminance is a webapplication for hosting authentication-restricted torrent tracker websites.
 It builds on the heavily altered version of the Gazelle software that has been in use by the Empornium tracker website since 2011.
 
-This document is current as of 2015-09-11.
+This document is current as of 2017-06-19.
 
 
 Goals
@@ -73,14 +78,16 @@ Contributors & thanks
 The currently active core team consists of:
 
 -   Starbuck
--   Dax
+-   Unclemeat
 -   mifune
+-   SubPixel
+-   Dax
 -   Dez
 -   Mobbo
 
 We would like to thank the following people for their contributions and/or help:
 
--   UncleMeat
 -   Lanz
 -   The staff and beta testers at Empornium
--   The original Gazelle developers.
+-   PornBay coders for code contributions
+-   The original Gazelle developers

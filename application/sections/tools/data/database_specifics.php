@@ -21,8 +21,7 @@ if (!$Tables = $Cache->get_value('database_table_stats')) {
     $Cache->cache_value('database_table_stats',$Tables,3600*4);
 }
 
-require(SERVER_ROOT.'/classes/class_charts.php');
-$Pie = new PIE_CHART(750,400,array('Other'=>1,'Percentage'=>1,'Sort'=>1));
+$Pie = new Luminance\Legacy\PieChart(750,400,array('Other'=>1,'Percentage'=>1,'Sort'=>1));
 
 //Begin sorting
 $Sort = array();

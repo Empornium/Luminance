@@ -24,8 +24,7 @@ if ($ID = (int) $_GET['id']) {
     if ($_GET['plain'] == 1) {
         echo $Message;
     } else {
-        include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-        $Text = new TEXT;
+        $Text = new Luminance\Legacy\Text;
         echo $Text->full_format($Message, true);
     }
 

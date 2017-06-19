@@ -69,6 +69,7 @@ $LoggedUser['TotalCredits'] += ($Win-$TotalBet);
 $LoggedUser['Credits'] += ($Win-$TotalBet);
 
 $Cache->delete_value('user_stats_'.$UserID);
+$Cache->delete_value('_entity_User_legacy_'.$UserID);
 
 $Results = array();
 $Results[0] = $Pos[0];

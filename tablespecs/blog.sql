@@ -26,9 +26,12 @@ CREATE TABLE IF NOT EXISTS `blog` (
   `Body` text NOT NULL,
   `Time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `ThreadID` int(10) unsigned DEFAULT NULL,
+  `Section` ENUM ('Blog','Contests') DEFAULT 'Blog',
+  `Image` varchar(255) NOT NULL,
   PRIMARY KEY (`ID`),
   KEY `UserID` (`UserID`),
-  KEY `Time` (`Time`)
+  KEY `Time` (`Time`),
+  KEY `Section` (`Section`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

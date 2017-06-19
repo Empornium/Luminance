@@ -9,9 +9,9 @@ class Peon extends Service {
     public $userinfo_tools_entries = [
         #  permission                   action                                  title
         [ 'admin_manage_articles',     'tools.php?action=articles',            'Articles'                ],
-        [ 'site_manage_awards',        'tools.php?action=awards_auto',         'Automatic Awards'        ],
-        [ 'site_manage_badges',        'tools.php?action=badges_list',         'Badges'                  ],
-        [ 'site_manage_shop',          'tools.php?action=shop_list',           'Bonus Shop'              ],
+        [ 'admin_manage_awards',       'tools.php?action=awards_auto',         'Automatic Awards'        ],
+        [ 'admin_manage_badges',       'tools.php?action=badges_list',         'Badges'                  ],
+        [ 'admin_manage_shop',         'tools.php?action=shop_list',           'Bonus Shop'              ],
         [ 'admin_manage_categories',   'tools.php?action=categories',          'Categories'              ],
         [ 'admin_whitelist',           'tools.php?action=client_blacklist',    'Client Blacklist'        ],
         [ 'admin_dnu',                 'tools.php?action=dnu',                 'Do not upload list'      ],
@@ -23,8 +23,8 @@ class Peon extends Service {
         [ 'users_mod',                 'tools.php?action=tokens',              'Manage freeleech tokens' ],
         [ 'torrents_review',           'tools.php?action=marked_for_deletion', 'Marked for Deletion'     ],
         [ 'admin_manage_news',         'tools.php?action=news',                'News'                    ],
-        [ 'site_manage_tags',          'tools.php?action=official_tags',       'Official Tags'           ],
-        [ 'site_convert_tags',         'tools.php?action=official_synonyms',   'Official Synonyms'       ],
+        [ 'admin_manage_tags',         'tools.php?action=official_tags',       'Official Tags'           ],
+        [ 'admin_convert_tags',        'tools.php?action=official_synonyms',   'Official Synonyms'       ],
         [ 'users_fls',                 'torrents.php?action=allcomments',      'Recent Torrent Comments' ],
         [ 'users_fls',                 'requests.php?action=allcomments',      'Recent Request Comments' ],
         [ 'users_fls',                 'collages.php?action=allcomments',      'Recent Collage Comments' ],
@@ -47,6 +47,7 @@ class Peon extends Service {
 
     protected static $useRepositories = [
         'stylesheets' => 'StylesheetRepository',
+        'permissions' => 'PermissionRepository',
     ];
 
     protected static $useServices = [
@@ -54,9 +55,10 @@ class Peon extends Service {
         'flasher'   => 'Flasher',
         'secretary' => 'Secretary',
         'settings'  => 'Settings',
+        'options'   => 'Options',
         'tpl'       => 'TPL',
-        'cache' => 'Cache',
-        'db'    => 'DB',
+        'cache'     => 'Cache',
+        'db'        => 'DB',
     ];
 
     public function __construct(Master $master) {
@@ -76,11 +78,13 @@ class Peon extends Service {
         $base_variables['request'] = $this->request;
         $base_variables['secretary'] = $this->secretary;
         $base_variables['settings'] = $this->settings;
+        $base_variables['options'] = $this->options;
         $base_variables['rss_auth_string'] = $this->getRSSAuthString();
         $base_variables['peon'] = $this;
         $base_variables['static_uri'] = $this->settings->main->static_server;
         $base_variables['main_uri'] = '';
         $base_variables['authenticated'] = isset($this->request->user);
+        $base_variables['allow_registration'] = ($this->settings->site->open_registration) && ($this->permissions->getMinUserClassID() > 0);
         $base_variables['ActiveUser'] = $user;
         $base_variables['site_name'] = $this->settings->main->site_name;
         $base_variables['site_url'] = $this->settings->main->site_url;
@@ -119,7 +123,18 @@ class Peon extends Service {
     public function display_header($values) {
         global $LoggedUser;
 
-        //if ($this->master->auth->authenticated) {
+        if ($this->request->user) {
+            // Set content security policy
+            $imagehosts = $this->db->raw_query("SELECT Imagehost FROM imagehost_whitelist")->fetchAll();
+            $imagehosts = implode(' ', array_column($imagehosts, 'Imagehost'));
+
+            // Google is require for the charts api, we need to kill that off soon
+            header("Content-Security-Policy: default-src 'self';".
+                   " img-src 'self' data: $imagehosts http://chart.apis.google.com;".
+                   " child-src 'self' $imagehosts;".
+                   " script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com;".
+                   " style-src 'self' 'unsafe-inline' https://www.google.com https://ajax.googleapis.com;");
+
             $values['hv'] = $this->get_header_vars();
             list($values['seeding'], $values['leeching']) = array_values(user_peers($this->auth->get_active_user()->ID));
             if (check_perms('users_mod') || $LoggedUser['SupportFor'] !="" || $LoggedUser['DisplayStaff'] == 1 ) {
@@ -129,9 +144,10 @@ class Peon extends Service {
             $values['userinfo_unlimited_invites'] = $this->auth->isAllowed('site_send_unlimited_invites');
             $values['invites'] = $LoggedUser['Invites'];
             $values['freeleech_html'] = $this->get_freeleech_html();
+            $values['doubleseed_html'] = $this->get_doubleseed_html();
             $values['donation_drive'] = $this->get_donation_drive();
 
-        //}
+        }
         $values['scripts'] = $this->get_scripts($values['bscripts']);
         $values['headeronly'] = true;
         $values['flashes'] = $this->flasher->grabFlashes();
@@ -198,10 +214,17 @@ class Peon extends Service {
         return $scripts;
     }
 
+    public function get_icon($set, $symbol) {
+        return '<svg class="'.$set.'" data-src="/static/common/'.$set.'.svg?v='.$this->public_file_mtime('/static/common/'.$set.'.svg').'#'.$symbol.'"></svg>';
+    }
+
     public function get_notifications() {
         global $LoggedUser;
 
         $user = $this->request->user;
+        if (!$user) {
+            return null;
+        }
         if (isset($LoggedUser['Permissions']['site_torrents_notify'])) {
             $Notifications = $this->cache->get_value('notify_filters_' . $user->ID);
             if (!is_array($Notifications)) {
@@ -227,14 +250,14 @@ class Peon extends Service {
         if ($hv->NewSubscriptions === FALSE) {
             if ($LoggedUser['CustomForums']) {
                 unset($LoggedUser['CustomForums']['']);
-                $RestrictedForums = implode("','", array_keys($LoggedUser['CustomForums'], 0));
-                $PermittedForums  = implode("','", array_keys($LoggedUser['CustomForums'], 1));
+                $RestrictedForums = array_keys($LoggedUser['CustomForums'], 0);
+                $PermittedForums  = array_keys($LoggedUser['CustomForums'], 1);
             }
             // num of params need to match query so build appropriately
             $params = [':userclass' => $LoggedUser['Class'],
                        ':userid'    => $user->ID];
-            if (!empty($PermittedForums)) $params[':permittedforums'] = $PermittedForums;
-            if (!empty($RestrictedForums)) $params[':restrictedforums'] = $RestrictedForums;
+            if (is_array($PermittedForums)) $permittedvars = $this->db->bindParamArray('pfid', $PermittedForums, $params);
+            if (is_array($RestrictedForums)) $restrictedvars = $this->db->bindParamArray('rfid', $RestrictedForums, $params);
 
             $hv->NewSubscriptions = $this->db->raw_query("SELECT COUNT(s.TopicID)
                         FROM users_subscriptions AS s
@@ -242,10 +265,10 @@ class Peon extends Service {
                                 JOIN forums_topics AS t ON l.TopicID = t.ID
                                 JOIN forums AS f ON t.ForumID = f.ID
                         WHERE (f.MinClassRead <= :userclass".
-                        (!empty($PermittedForums) ? " OR f.ID IN ( :permittedforums ))" : ")")."
+                        (!empty($permittedvars) ? " OR f.ID IN ( $permittedvars ))" : ")")."
                                 AND l.PostID < t.LastPostID
                                 AND s.UserID = :userid".
-                        (!empty($RestrictedForums) ? " AND f.ID NOT IN ( :restrictedforums )" : ""), $params)->fetchColumn();
+                        (!empty($restrictedvars) ? " AND f.ID NOT IN ( $restrictedvars )" : ""), $params)->fetchColumn();
 
             $this->cache->cache_value('subscriptions_user_new_'.$user->ID, $hv->NewSubscriptions, 0);
         }
@@ -253,23 +276,51 @@ class Peon extends Service {
         // Moved alert bar handling to before we draw minor stats to allow showing alert status in links too
 
         //Start handling alert bars
-        $hv->Infos = array(); // an info alert bar (nicer color)
-        $hv->Alerts = array(); // warning bar (red!)
-        $hv->ModBar = array();
+        $hv->Infos  = []; // an info alert bar (nicer color)
+        $hv->Alerts = []; // warning bar (red!)
+        $hv->ModBar = [];
+        $hv->Urgent = [];
 
         // News
-        $MyNews = $LoggedUser['LastReadNews']+0;
-        $CurrentNews = $this->cache->get_value('news_latest_id');
-        if ($CurrentNews === false) {
-            $CurrentNews = $this->db->raw_query("SELECT ID FROM news ORDER BY Time DESC LIMIT 1")->fetchColumn();
-            $this->cache->cache_value('news_latest_id', $CurrentNews, 0);
+        if(empty($LoggedUser['NoNewsAlerts'])) {
+            $CurrentNews = $this->cache->get_value('news_latest_id');
+            if ($CurrentNews === false) {
+                $CurrentNews = $this->db->raw_query("SELECT ID FROM news ORDER BY Time DESC LIMIT 1")->fetchColumn();
+                $this->cache->cache_value('news_latest_id', $CurrentNews, 0);
+            }
+
+            if ((int)$LoggedUser['LastReadNews'] < $CurrentNews) {
+                $hv->Alerts[] = '<a href="index.php">New Announcement!</a>';
+            }
         }
 
-        if ($MyNews < $CurrentNews) {
-            $hv->Alerts[] = '<a href="index.php">New Announcement!</a>';
+        // Blogs
+        if(empty($LoggedUser['NoBlogAlerts'])) {
+            $CurrentBlogs = $this->cache->get_value('blog_latest_id');
+            if ($CurrentBlogs === false) {
+                $CurrentBlogs = $this->db->raw_query("SELECT ID FROM blog WHERE Section='Blog' ORDER BY Time DESC LIMIT 1")->fetchColumn();
+                $this->cache->cache_value('blog_latest_id', $CurrentBlogs, 0);
+            }
+
+            if ((int)$LoggedUser['LastReadBlog'] < $CurrentBlogs) {
+                $hv->Alerts[] = '<a href="blog.php">New Site Blog!</a>';
+            }
         }
 
-        //Staff PMs for users
+        // Contests
+        if(empty($LoggedUser['NoContestAlerts'])) {
+            $CurrentContests = $this->cache->get_value('contests_latest_id');
+            if ($CurrentContests === false) {
+                $CurrentContests = $this->db->raw_query("SELECT ID FROM blog WHERE Section='Contests' ORDER BY Time DESC LIMIT 1")->fetchColumn();
+                $this->cache->cache_value('contests_latest_id', $CurrentContests, 0);
+            }
+
+            if ((int)$LoggedUser['LastReadContests'] < $CurrentContests) {
+                $hv->Alerts[] = '<a href="contests.php">New Contest!</a>';
+            }
+        }
+
+        // Staff PMs for users
         $hv->NewStaffPMs = $this->cache->get_value('staff_pm_new_'.$user->ID);
         if ($hv->NewStaffPMs === false) {
             $hv->NewStaffPMs = $this->db->raw_query("SELECT COUNT(ID) FROM staff_pm_conversations WHERE UserID=:userid AND UnRead = '1'", [':userid' => $user->ID])->fetchColumn();
@@ -277,7 +328,40 @@ class Peon extends Service {
         }
 
         if ($hv->NewStaffPMs > 0) {
-            $hv->Alerts[] = '<a href="staffpm.php?action=user_inbox">You have '.$hv->NewStaffPMs.(($hv->NewStaffPMs > 1) ? ' new staff messages' : ' new staff message').'</a>';
+            $hv->Alerts[] = '<a href="staffpm.php?action=user_inbox">You have '.$hv->NewStaffPMs.' new staff message'.(($hv->NewStaffPMs > 1) ? 's' : '').'</a>';
+        }
+
+        // Urgent Staff PMs for users
+        $hv->UrgentStaffPMs = $this->cache->get_value('staff_pm_urgent_'.$user->ID);
+        if ($hv->UrgentStaffPMs === false) {
+            $urgentPMs = $this->db->raw_query("SELECT Urgent, Count(ID) AS NumPMs
+                                                 FROM staff_pm_conversations
+                                                WHERE UserID=:userid
+                                                  AND ((UnRead = '1' AND Urgent = 'Read')
+                                                      OR (Status != 'Unanswered' AND Urgent = 'Respond'))
+                                             GROUP BY Urgent", [':userid' => $user->ID])->fetchAll(\PDO::FETCH_ASSOC | \PDO::FETCH_UNIQUE);
+
+            $hv->UrgentStaffPMs = [ 'Read' => (int)$urgentPMs['Read']['NumPMs'] , 'Respond' => (int)$urgentPMs['Respond']['NumPMs']];
+            $this->cache->cache_value('staff_pm_urgent_'.$user->ID, $hv->UrgentStaffPMs, 0);
+        }
+
+        if (is_array($hv->UrgentStaffPMs)) {
+            $numUrgentPMs = array_sum($hv->UrgentStaffPMs);
+            if ($numUrgentPMs > 0 ) {
+                $hv->Urgent[] = '<a href="staffpm.php?action=user_inbox">You have '.$numUrgentPMs.' urgent staff message'.($numUrgentPMs > 1 ? 's' : '').'</a>';
+                if ($numUrgentPMs == $hv->UrgentStaffPMs['Read']) {
+                    $hv->Urgent[] = 'Please read '.($numUrgentPMs > 1 ? 'these' : 'this').' message'.($numUrgentPMs > 1 ? 's' : '').' immediately.';
+                    $hv->Urgent[] = 'If you do not read '.($numUrgentPMs > 1 ? 'these' : 'this').' you may be restricted or banned.';
+                } elseif ($numUrgentPMs == $hv->UrgentStaffPMs['Respond']) {
+                    $hv->Urgent[] = 'Please respond to '.($numUrgentPMs > 1 ? 'these' : 'this').' message'.($numUrgentPMs > 1 ? 's' : '').' immediately.';
+                    $hv->Urgent[] = 'If you do not respond to '.($numUrgentPMs > 1 ? 'these' : 'this').' you may be restricted or banned.';
+                } else {
+                    $hv->Urgent[] = 'You have '.$hv->UrgentStaffPMs['Read'].' message'.($hv->UrgentStaffPMs['Read'] > 1 ? 's' : '').' to read immediately.';
+                    $hv->Urgent[] = 'You have '.$hv->UrgentStaffPMs['Respond'].' message'.($hv->UrgentStaffPMs['Respond'] > 1 ? 's' : '').' to respond to immediately.';
+                    $hv->Urgent[] = 'If you do not read and respond to these messages you may be restricted or banned.';
+                }
+                $hv->Urgent[] = '<a class="btn" href="staffpm.php?action=user_inbox">View</a>';
+            }
         }
 
         //Inbox
@@ -348,7 +432,6 @@ class Peon extends Service {
 
             $hv->NumOpenStaffPMs += $hv->NumUnansweredStaffPMs;
 
-            // if ($hv->NumUnansweredStaffPMs > 0 || $hv->NumOpenStaffPMs >0) - removing this test to make it consistent with other parts of staff header -- mifune
             $hv->ModBar[] = '<a href="staffpm.php?view=unanswered">('.$hv->NumUnansweredStaffPMs.')</a><a href="staffpm.php?view=open">('.$hv->NumOpenStaffPMs.') Staff PMs</a>';
         }
 
@@ -359,7 +442,7 @@ class Peon extends Service {
                 $this->cache->cache_value('num_torrent_reportsv2', $hv->NumTorrentReports, 0);
             }
 
-            $hv->ModBar[] = '<a href="reportsv2.php">'.$hv->NumTorrentReports.(($hv->NumTorrentReports == 1) ? ' Report' : ' Reports').'</a>';
+            $hv->ModBar[] = '<a href="reportsv2.php">'.$hv->NumTorrentReports.' Report'.(($hv->NumTorrentReports != 1) ? 's' : '').'</a>';
         }
 
         if (check_perms('admin_reports')) {
@@ -369,7 +452,7 @@ class Peon extends Service {
                 $this->cache->cache_value('num_other_reports', $hv->NumOtherReports, 0);
             }
 
-            $hv->ModBar[] = '<a href="reports.php">'.$hv->NumOtherReports.(($hv->NumTorrentReports == 1) ? ' Other Report' : ' Other Reports').'</a>';
+            $hv->ModBar[] = '<a href="reports.php">'.$hv->NumOtherReports.' Other Report'.(($hv->NumOtherReports != 1) ? 's' : '').'</a>';
 
         } elseif (check_perms('site_project_team')) {
             $hv->NumUpdateReports = $this->cache->get_value('num_update_reports');
@@ -378,19 +461,16 @@ class Peon extends Service {
                 $this->cache->cache_value('num_update_reports', $hv->NumUpdateReports, 0);
             }
 
-            if ($hv->NumUpdateReports > 0) {
-                $hv->ModBar[] = '<a href="reports.php">'.'Request update reports'.'</a>';
-            }
-        } elseif (check_perms('site_moderate_forums')) {
+            $hv->ModBar[] = '<a href="reports.php">'.$hv->NumUpdateReports.' Update Report'.(($hv->NumUpdateReports != 1) ? 's' : '').'</a>';
+
+        } elseif (check_perms('site_moderate_forums') || check_perms('site_view_reportsv1')) {
             $hv->NumForumReports = $this->cache->get_value('num_forum_reports');
             if ($hv->NumForumReports === false) {
                 $hv->NumForumReports = $this->db->raw_query("SELECT COUNT(ID) FROM reports WHERE Status='New' AND Type IN('collages_comment', 'Post', 'requests_comment', 'thread', 'torrents_comment')")->fetchColumn();
                 $this->cache->cache_value('num_forum_reports', $hv->NumForumReports, 0);
             }
 
-            if ($hv->NumForumReports > 0) {
-                $hv->ModBar[] = '<a href="reports.php">'.$hv->NumForumReports.' Forum report'.(($hv->NumForumReports > 1) ? 's' : '').'</a>';
-            }
+            $hv->ModBar[] = '<a href="reports.php">'.$hv->NumForumReports.' Other Report'.(($hv->NumForumReports != 1) ? 's' : '').'</a>';
         }
         return $hv;
     }
@@ -399,11 +479,16 @@ class Peon extends Service {
         global $Sitewide_Freeleech_On, $Sitewide_Freeleech, $LoggedUser;
 
         $PFL = null;
-        if ($Sitewide_Freeleech_On) {
-
-            $TimeNow = date('M d Y, H:i', strtotime($Sitewide_Freeleech) - (int) $LoggedUser['TimeOffset']);
-            $PFL = '<span class="time" title="Sitewide Freeleech for '. time_diff($Sitewide_Freeleech,2,false,false,0).' (until '.$TimeNow.')">Sitewide Freeleech for '.time_diff($Sitewide_Freeleech,2,false,false,0).'</span>';
-
+        if (($this->options->SitewideFreeleechStartTime < strtotime(sqltime())) &&
+            ($this->options->SitewideFreeleechEndTime > strtotime(sqltime())) &&
+            ($this->options->SitewideFreeleechMode == 'timed')) {
+            $Sitewide_Freeleech_On = TRUE;
+            $Sitewide_Freeleech    = $this->options->SitewideFreeleechEndTime;
+            $TimeNow = date('M d Y, H:i', $this->options->SitewideFreeleechEndTime - (int) $LoggedUser['TimeOffset']);
+            $PFL = '<span class="time" title="Sitewide Freeleech for '. time_diff($this->options->SitewideFreeleechEndTime,2,false,false,0).' (until '.$TimeNow.')">Sitewide Freeleech for '.time_diff($this->options->SitewideFreeleechEndTime,2,false,false,0).'</span>';
+        } elseif ($this->options->SitewideFreeleechMode == 'perma') {
+           $Sitewide_Freeleech_On = TRUE;
+           //$PFL = '<span class="time" title="Sitewide Freeleech for '. time_diff($this->options->SitewideFreeleechEndTime,2,false,false,0).' (until '.$TimeNow.')">Sitewide Freeleech for '.time_diff($this->options->SitewideFreeleechEndTime,2,false,false,0).'</span>';
         } else {
 
             $TimeStampNow = time();
@@ -423,6 +508,41 @@ class Peon extends Service {
 
         }
         return $PFL;
+    }
+
+    public function get_doubleseed_html() {
+        global $Sitewide_Doubleseed_On, $Sitewide_Doubleseed, $LoggedUser;
+
+        $PDS = null;
+        if (($this->options->SitewideDoubleseedStartTime < strtotime(sqltime())) &&
+            ($this->options->SitewideDoubleseedEndTime > strtotime(sqltime())) &&
+            ($this->options->SitewideDoubleseedMode == 'timed')) {
+            $Sitewide_Doubleseed_On = TRUE;
+            $Sitewide_Doubleseed    = $this->options->SitewideDoubleseedEndTime;
+            $TimeNow = date('M d Y, H:i', $this->options->SitewideDoubleseedEndTime - (int) $LoggedUser['TimeOffset']);
+            $PDS = '<span class="time" title="Sitewide Doubleseed for '. time_diff($this->options->SitewideDoubleseedEndTime,2,false,false,0).' (until '.$TimeNow.')">Sitewide Doubleseed for '.time_diff($this->options->SitewideDoubleseedEndTime,2,false,false,0).'</span>';
+        } elseif ($this->options->SitewideDoubleseedMode == 'perma') {
+           $Sitewide_Doubleseed_On = TRUE;
+           //$PDS = '<span class="time" title="Sitewide Doubleseed for '. time_diff($this->options->SitewideDoubleseedEndTime,2,false,false,0).' (until '.$TimeNow.')">Sitewide Doubleseed for '.time_diff($this->options->SitewideDoubleseedEndTime,2,false,false,0).'</span>';
+        } else {
+
+            $TimeStampNow = time();
+            $PDSTimeStamp = strtotime($LoggedUser['personal_doubleseed']);
+
+            if ($PDSTimeStamp >= $TimeStampNow) {
+
+                if (($PDSTimeStamp - $TimeStampNow) < (28*24*3600)) { // more than 28 days doubleseed and the time is only specififed in the tooltip
+                    $TimeAgo = time_diff($LoggedUser['personal_doubleseed'],2,false,false,0);
+                    $PDS = "PDS for $TimeAgo";
+                } else {
+                    $PDS = "Personal Doubleseed";
+                }
+                $TimeNow = date('M d Y, H:i', $PDSTimeStamp - (int) $LoggedUser['TimeOffset']);
+                $PDS = '<span class="time" title="Personal Doubleseed until '.$TimeNow.'">'.$PDS.'</span>';
+            }
+
+        }
+        return $PDS;
     }
 
     public function get_donation_drive() {
@@ -465,7 +585,15 @@ class Peon extends Service {
 
     protected function get_debug_html() {
         global $Debug;
+        /*
+         * Prevent var_dump from being clipped in debug info
+         */
+        ini_set('xdebug.var_display_max_depth',    -1);
+        ini_set('xdebug.var_display_max_children', -1);
+        ini_set('xdebug.var_display_max_data',     -1);
+
         ob_start();
+        $Debug->git_commit();
         $Debug->flag_table();
         $Debug->error_table();
         $Debug->sphinx_table();

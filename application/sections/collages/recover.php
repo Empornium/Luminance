@@ -13,6 +13,7 @@ if ($_POST['collage_id'] && is_number($_POST['collage_id'])) {
     } else {
         $DB->query("UPDATE collages SET Deleted = '0' WHERE ID=$CollageID");
         $Cache->delete_value('collage_'.$CollageID);
+        $Cache->delete_value('collage_torrents_'.$CollageID);
         write_log("Collage ".$CollageID." was recovered by ".$LoggedUser['Username']);
         header("Location: collages.php?id=$CollageID");
     }

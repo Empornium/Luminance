@@ -1,12 +1,11 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php');
 
 global $Classes, $DB;
 
 if ( !check_perms('site_give_specialgift') ) {
     error(404);
 }
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 // check if their credits need updating (if they have been online whilst creds are accumalting)
 $DB->query("SELECT Credits FROM users_main WHERE ID='$LoggedUser[ID]'");

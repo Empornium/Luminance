@@ -5,6 +5,7 @@
 
 {% block content %}
     <form method="POST" action="/login" />
+        <input type="hidden" name="token" value="{{ secretary.getToken("users.login") }}" />
         <div id="username">
             <input class="text-input" type="text" name="username" placeholder="Username" autofocus/>
         </div>

@@ -12,6 +12,7 @@ $DB->query("SELECT
             m.Signature,
             m.PermissionID,
             m.CustomPermissions,
+            m.track_ipv6,
             i.Info,
             i.Avatar,
             i.Country,
@@ -20,16 +21,19 @@ $DB->query("SELECT
             i.SiteOptions,
             i.UnseededAlerts,
             i.TimeZone,
+            i.BlockPMs,
+            i.CommentsNotify,
             m.Flag,
             i.DownloadAlt,
-            i.TorrentSignature
+            i.TorrentSignature,
+            i.LastBrowse
             FROM users_main AS m
             JOIN users_info AS i ON i.UserID = m.ID
             LEFT JOIN permissions AS p ON p.ID=m.PermissionID
             WHERE m.ID = '".db_string($UserID)."'");
 
-list($Username,$Email,$IRCKey,$Paranoia,$Signature,$PermissionID,$CustomPermissions,$Info,$Avatar,$Country,
-        $StyleID,$StyleURL,$SiteOptions,$UnseededAlerts,$TimeZone,$flag, $DownloadAlt, $TorrentSignature)=$DB->next_record(MYSQLI_NUM, array(3,6,12));
+list($Username,$Email,$IRCKey,$Paranoia,$Signature,$PermissionID,$CustomPermissions,$TrackIPv6,$Info,$Avatar,$Country,
+        $StyleID,$StyleURL,$SiteOptions,$UnseededAlerts,$TimeZone,$BlockPms,$CommentsNotify,$flag,$DownloadAlt,$TorrentSignature,$LastBrowse)=$DB->next_record(MYSQLI_NUM, array(3,6,13));
 
 $Permissions = get_permissions($PermissionID);
 list($Class,$PermissionValues,$MaxSigLength,$MaxAvatarWidth,$MaxAvatarHeight)=array_values($Permissions);
@@ -121,8 +125,7 @@ if ($SiteOptions) {
 }
 if (!isset($SiteOptions['MaxTags'])) $SiteOptions['MaxTags'] = 100;
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 // Get Forums information for latest forum topics settings
 require_once(SERVER_ROOT.'/sections/forums/functions.php');
@@ -165,7 +168,7 @@ echo $Val->GenerateJS('userform');
                 <td class="label"><strong>Stylesheet</strong></td>
                 <td>
                     <select name="stylesheet" id="stylesheet">
-<?php  foreach ($Stylesheets as $Style) { ?>
+<?php  foreach ($master->repos->stylesheets->get_all() as $Style) { ?>
                         <option value="<?=$Style['ID']?>"<?php  if ($Style['ID'] == $StyleID) { ?>selected="selected"<?php  } ?>><?=$Style['ProperName']?></option>
 <?php  } ?>
                     </select>
@@ -188,23 +191,12 @@ echo $Val->GenerateJS('userform');
             <tr>
                 <td class="label"><strong>Time style</strong></td>
                 <td>
-                    <input type="radio" name="timestyle" value="0" <?php  if (empty($LoggedUser['TimeStyle'])||$LoggedUser['TimeStyle']==0) { ?>checked="checked"<?php  } ?> />
+                    <input type="radio" name="timestyle" value="0" <?php  if (empty($SiteOptions['TimeStyle'])||$SiteOptions['TimeStyle']==0) { ?>checked="checked"<?php  } ?> />
                     <label>Display times as time since (date and time is displayed as tooltip)</label><br/>
-                    <input type="radio" name="timestyle" value="1" <?php  if ($LoggedUser['TimeStyle']==1) { ?>checked="checked"<?php  } ?> />
+                    <input type="radio" name="timestyle" value="1" <?php  if ($SiteOptions['TimeStyle']==1) { ?>checked="checked"<?php  } ?> />
                     <label>Display times as date and time (time since is displayed as tooltip)</label>
                 </td>
             </tr>
-<?php  if (check_perms('site_advanced_search')) { ?>
-            <tr>
-                <td class="label"><strong>Default Search Type</strong></td>
-                <td>
-                    <select name="searchtype" id="searchtype">
-                        <option value="0"<?php  if ($SiteOptions['SearchType'] == 0) { ?>selected="selected"<?php  } ?>>Simple</option>
-                        <option value="1"<?php  if ($SiteOptions['SearchType'] == 1) { ?>selected="selected"<?php  } ?>>Advanced</option>
-                    </select>
-                </td>
-            </tr>
-<?php  } ?>
             <tr>
                 <td class="label"><strong>Torrents per page</strong></td>
                 <td>
@@ -301,19 +293,19 @@ echo $Val->GenerateJS('userform');
             <tr>
                 <td class="label"><strong>Accept PM's</strong></td>
                 <td>
-                    <input type="radio" name="blockPMs" id="blockPMs" value="0" <?php  if (empty($LoggedUser['BlockPMs'])||$LoggedUser['BlockPMs']==0) { ?>checked="checked"<?php  } ?> />
+                    <input type="radio" name="blockPMs" id="blockPMs" value="0" <?php  if (empty($BlockPms)||$BlockPms==0) { ?>checked="checked"<?php  } ?> />
                     <label>All (except blocks)</label><br/>
-                    <input type="radio" name="blockPMs" id="blockPMs" value="1" <?php  if ($LoggedUser['BlockPMs']==1) { ?>checked="checked"<?php  } ?> />
+                    <input type="radio" name="blockPMs" id="blockPMs" value="1" <?php  if ($BlockPms==1) { ?>checked="checked"<?php  } ?> />
                     <label>Friends only</label><br/>
-                    <input type="radio" name="blockPMs" id="blockPMs" value="2"  <?php  if ($LoggedUser['BlockPMs']==2) { ?>checked="checked"<?php  } ?> />
+                    <input type="radio" name="blockPMs" id="blockPMs" value="2"  <?php  if ($BlockPms==2) { ?>checked="checked"<?php  } ?> />
                     <label>Staff only</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Comments PM</strong></td>
                 <td>
-                    <input type="checkbox" name="commentsnotify" id="commentsnotify" <?php  if (!empty($LoggedUser['CommentsNotify'])) { ?>checked="checked"<?php  } ?> />
-                    <label for="commentsnotify">Notify me by PM when I receive a comment on one of my torrents</label>
+                    <input type="checkbox" name="commentsnotify" id="commentsnotify" <?php  if (!empty($CommentsNotify)) { ?>checked="checked"<?php  } ?> />
+                    <label for="commentsnotify">Notify me by PM when I receive a comment on one of my torrents or requests</label>
                 </td>
             </tr>
             <tr>
@@ -365,11 +357,48 @@ echo $Val->GenerateJS('userform');
                     <label for="downloadalt">For users whose ISP block the downloading of torrent files</label>
                 </td>
             </tr>
+        <?php if ($master->options->EnableIPv6Tracker) { ?>
+            <tr>
+                <td class="label"><strong>Use IPv6 Tracker</strong></td>
+                <td>
+                    <input type="checkbox" name="trackipv6" id="trackipv6" <?php  if ($TrackIPv6) { ?>checked="checked"<?php  } ?> />
+                    <label for="trackipv6">Allow the tracker to broadcast your IPv6 address to the swarm (if you have one)</label>
+                </td>
+            </tr>
+        <?php } ?>
             <tr>
                 <td class="label"><strong>Unseeded torrent alerts</strong></td>
                 <td>
                     <input type="checkbox" name="unseededalerts" id="unseededalerts" <?=checked($UnseededAlerts)?> />
                     <label for="unseededalerts">Receive a PM alert before your uploads are deleted for being unseeded</label>
+                </td>
+            </tr>
+            <tr>
+                <td class="label"><strong>New torrent indicator</strong></td>
+                <td>
+                    <input type="checkbox" name="resetlastbrowse" id="resetlastbrowse" />
+                    <label for="resetlastbrowse" title="[Current LastBrowsed: <?=$LastBrowse?>] check this option to reset.">Clear the Last Browsed field (will make all torrents appear as (New!) again)</label>
+                </td>
+            </tr>
+            <tr>
+                <td class="label"><strong>Disable alerts for news</strong></td>
+                <td>
+                    <input type="checkbox" name="nonewsalerts" id="nonewsalerts" <?php  if (!empty($SiteOptions['NoNewsAlerts'])) { ?>checked="checked"<?php  } ?>/>
+                    <label for="nonewsalerts" title="Disable alerts at the top of the page when a new news post is made">Disable alerts for news</label>
+                </td>
+            </tr>
+            <tr>
+                <td class="label"><strong>Disable alerts for blog</strong></td>
+                <td>
+                    <input type="checkbox" name="noblogalerts" id="noblogalerts" <?php  if (!empty($SiteOptions['NoBlogAlerts'])) { ?>checked="checked"<?php  } ?>/>
+                    <label for="noblogalerts" title="Disable alerts at the top of the page when a new blog post is made">Disable alerts for blog</label>
+                </td>
+            </tr>
+            <tr>
+                <td class="label"><strong>Disable alerts for contests</strong></td>
+                <td>
+                    <input type="checkbox" name="nocontestalerts" id="nocontestalerts" <?php  if (!empty($SiteOptions['NoContestAlerts'])) { ?>checked="checked"<?php  } ?>/>
+                    <label for="nocontestalerts" title="Disable alerts at the top of the page when a new contests post is made">Disable alerts for contests</label>
                 </td>
             </tr>
             <tr>
@@ -386,7 +415,7 @@ echo $Val->GenerateJS('userform');
                 <td class="label"><strong>Avatar URL</strong></td>
                 <td>
                     <input class="long" type="text" name="avatar" id="avatar" value="<?=display_str($Avatar)?>" />
-                    <p class="min_padding">Maximum Size: <?=$MaxAvatarWidth?>x<?=$MaxAvatarHeight?> pixels and 1 MB</p>
+                    <p class="min_padding">Maximum Size: <?=$MaxAvatarWidth?>x<?=$MaxAvatarHeight?> pixels and <?=get_size($master->options->AvatarSizeKiB*1024)?></p>
                 </td>
             </tr>
             <tr>
@@ -599,7 +628,7 @@ echo $Val->GenerateJS('userform');
 
                 print '<div class="quarter_width_checkbox_container">';
                 printf('<input type="checkbox" name="disable_lt_%d" id="disable_lt_%d"%s/>', $Forum['ID'], $Forum['ID'], $enabled ? 'checked="checked"' : '');
-                printf('<label for="disable_lt_%d" class="quarter_width_checkbox">%s</label>', $Forum['ID'], $Forum['Name']);
+                printf('<label for="disable_lt_%d" class="quarter_width_checkbox">%s</label>', $Forum['ID'], display_str($Forum['Name']));
                 print '</div>';
             }
 ?>

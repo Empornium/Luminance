@@ -4,7 +4,6 @@
 
 \*************************************************************************/
 
-
 // Are they being tricky blighters?
 if (!$_POST['userid'] || !is_number($_POST['userid'])) {
     error(404);
@@ -31,6 +30,7 @@ $Pass2 = db_string($_POST['ChangePassword2']);
 $Email = db_string($_POST['ChangeEmail']);
 $Warned = (isset($_POST['Warned']))? 1 : 0;
 
+$HasDucky = (isset($_POST['Ducky']))? 1 : 0;
 $AddBadges = $_POST['addbadge'];
 $DelBadges = $_POST['delbadge'];
 
@@ -56,9 +56,16 @@ if (!is_numeric($AdjustUpValue) || !is_numeric($AdjustDownValue)) {
     error(0);
 }
 
+$AdjustCreditsValue = ($_POST['adjustcreditsvalue']  == "" ? 0 : $_POST['adjustcreditsvalue']);
+if ( isset($AdjustCreditsValue) && $AdjustCreditsValue[0]=='+') $AdjustCreditsValue = substr($AdjustCreditsValue, 1);
+if (!is_numeric($AdjustCreditsValue)) {
+    error(0);
+}
+
 $FLTokens = (int) $_POST['FLTokens'];
 $BonusCredits = (float) $_POST['BonusCredits'];
 $PersonalFreeLeech = (int) $_POST['PersonalFreeLeech'];
+$PersonalDoubleseed = (int) $_POST['PersonalDoubleseed'];
 
 $WarnLength = (int) $_POST['WarnLength'];
 $ExtendWarning = (int) $_POST['ExtendWarning'];
@@ -79,8 +86,9 @@ $DisableLeech = (isset($_POST['DisableLeech'])) ? 0 : 1;
 $DisableSig = (isset($_POST['DisableSignature']))? 1 : 0;
 $DisableTorrentSig = (isset($_POST['DisableTorrentSig']))? 1 : 0;
 
-$RestrictedForums = db_string(trim($_POST['RestrictedForums']));
-$PermittedForums = db_string(trim($_POST['PermittedForums']));
+$RestrictedForums = trim($_POST['RestrictedForums']);
+$PermittedForums = trim($_POST['PermittedForums']);
+
 $EnableUser = (int) $_POST['UserStatus'];
 $ResetRatioWatch = (isset($_POST['ResetRatioWatch']))? 1 : 0;
 $ResetPasskey = (isset($_POST['ResetPasskey']))? 1 : 0;
@@ -88,6 +96,7 @@ $ResetAuthkey = (isset($_POST['ResetAuthkey']))? 1 : 0;
 $SendHackedMail = (isset($_POST['SendHackedMail']))? 1 : 0;
 if ($SendHackedMail && !empty($_POST['HackedEmail'])) {
     $HackedEmail = $_POST['HackedEmail'];
+    $EnableUser = 2;  // automatically disable user
 } else {
     $SendHackedMail = false;
 }
@@ -117,6 +126,7 @@ $DB->query("SELECT
     m.Invites,
     m.can_leech,
     m.Visible,
+    m.track_ipv6,
     i.AdminComment,
     m.torrent_pass,
     i.Donor,
@@ -125,27 +135,31 @@ $DB->query("SELECT
     i.RestrictedForums,
     i.PermittedForums,
     i.SuppressConnPrompt,
-    DisableAvatar,
-    DisableInvites,
-    DisablePosting,
-    DisableForums,
-    DisableTagging,
-    DisableUpload,
-    DisablePM,
-    DisableIRC,
-    DisableRequests,
-    DisableSignature,
-    DisableTorrentSig,
+    i.DisableAvatar,
+    i.DisableInvites,
+    i.DisablePosting,
+    i.DisableForums,
+    i.DisableTagging,
+    i.DisableUpload,
+    i.DisablePM,
+    i.DisableIRC,
+    i.DisableRequests,
+    i.DisableSignature,
+    i.DisableTorrentSig,
     m.RequiredRatio,
     m.FLTokens,
     m.personal_freeleech,
+    m.personal_doubleseed,
     i.RatioWatchEnds,
     SHA1(i.AdminComment) AS CommentHash,
     m.Credits,
-    m.GroupPermissionID
+    m.GroupPermissionID,
+    ta.Ducky,
+    ta.TorrentID AS DuckyTID
     FROM users_main AS m
     JOIN users_info AS i ON i.UserID = m.ID
     LEFT JOIN permissions AS p ON p.ID=m.PermissionID
+    LEFT JOIN torrents_awards AS ta ON ta.UserID=m.ID
     WHERE m.ID = $UserID");
 
 if ($DB->record_count() == 0) { // If user doesn't exist
@@ -182,7 +196,7 @@ if ($Class==0 || $Username=='') {
         list($ID) = $Admin;
         $ToID[]=$ID;
     }
-    send_pm($ToID, 0, "Account Wipe Error: id=$UserID", $ErrBody);
+    send_pm($ToID, 0, db_string("Account Wipe Error: id=$UserID"), db_string($ErrBody));
     error(0);
 }
 
@@ -225,6 +239,9 @@ if ($_POST['UserStatus']=="delete" && check_perms('users_delete_users')) {
     $DB->query("DELETE FROM users_torrent_history_temp   WHERE UserID=".$UserID);
     $DB->query("DELETE FROM users_watch_list             WHERE UserID=".$UserID);
 
+    # Torrent Awards - only delete if it is a pending record
+    $DB->query("DELETE FROM torrents_awards              WHERE UserID=".$UserID." AND Ducky='0'");
+
     # Tracker Tables
     $DB->query("DELETE FROM xbt_snatched                 WHERE uid=".$UserID);
     $DB->query("DELETE FROM xbt_files_users              WHERE uid=".$UserID);
@@ -248,7 +265,8 @@ if ($_POST['UserStatus']=="delete" && check_perms('users_delete_users')) {
 
     $master->repos->users->uncache($UserID);
 
-    update_tracker('remove_user', array('passkey' => $Cur['torrent_pass']));
+    //update_tracker('remove_user', array('passkey' => $Cur['torrent_pass']));
+    $master->tracker->removeUser($Cur['torrent_pass']);
 
     header("Location: log.php?search=User+".$UserID);
     die();
@@ -268,7 +286,7 @@ if ($_POST['ResetIPHistory'] && check_perms('users_edit_reset_keys')) {
 
     $DB->query("DELETE FROM users_history_ips WHERE UserID='$UserID'");
     $DB->query("UPDATE users_main SET IP='127.0.0.1' WHERE ID='$UserID'");
-    $DB->query("UPDATE xbt_snatched SET IP = '' WHERE uid='$UserID'");
+    $DB->query("UPDATE xbt_snatched SET ipv4 = '', ipv6 = '' WHERE uid='$UserID'");
     $DB->query("UPDATE users_history_passwords SET ChangerIP = '' WHERE UserID = ".$UserID);
     $EditSummary[]='IP history cleared';
 }
@@ -296,12 +314,12 @@ if ($_POST['ResetDownloadList'] && check_perms('users_edit_reset_keys')) {
     $Cache->delete_value('users_torrents_grabbed_' . $UserID);
 }
 
-if (($_POST['ResetSession'] || $_POST['LogOut']) && check_perms('users_logout')) {
+if ((($_POST['ResetSession'] || $_POST['LogOut']) && check_perms('users_logout')) || ($SendHackedMail && check_perms('users_disable_any'))) {
     $master->repos->users->uncache($UserID);
 
     $EditSummary[]='reset user cache';
 
-    if ($_POST['LogOut']) {
+    if ($_POST['LogOut'] || $SendHackedMail) {
         $DB->query("SELECT ID FROM sessions WHERE UserID='$UserID'");
         while (list($SessionID) = $DB->next_record()) {
             $Cache->delete_value('_entity_Session_'.$SessionID);
@@ -390,6 +408,20 @@ if ($Visible!=$Cur['Visible']  && check_perms('users_make_invisible')) {
     $UpdateSet[]="Visible='$Visible'";
     $EditSummary[]="visibility changed";
     $LightUpdates['Visible']=$Visible;
+    // factor in IP
+    if ($User->IP == '127.0.0.1') $Visible=0;
+    $master->tracker->updateUser($Cur['torrent_pass'], null, $Visible, null);
+}
+
+$doDuckyCheck = false; // delay this till later because otherwise the admincomments get messed up
+if ($HasDucky=='1' && !$Cur['DuckyTID'] && check_perms('users_edit_badges')) {
+    $EditSummary[]=ucfirst("Attempting to give Golden Duck Award...");
+    $doDuckyCheck = true;   //award_ducky_check($UserID, 0);
+}
+
+if ($HasDucky=='0' && $Cur['DuckyTID'] && check_perms('users_edit_badges')) {
+    $EditSummary[]=ucfirst("Removing Golden Duck Award");
+    remove_ducky($UserID);
 }
 
 if (is_array($AddBadges) && check_perms('users_edit_badges')) {
@@ -507,22 +539,45 @@ if ($PersonalFreeLeech != 1 && ($PersonalFreeLeech > 1 || ($PersonalFreeLeech ==
     $UpdateSet[]="personal_freeleech='$time'";
     $EditSummary[]="Personal Freeleech changed from ".$before." to ".$after;
     $HeavyUpdates['personal_freeleech'] = $time;
-    update_tracker('set_personal_freeleech', array('passkey' => $Cur['torrent_pass'], 'time' => strtotime($time)));
+    //update_tracker('set_personal_freeleech', array('passkey' => $Cur['torrent_pass'], 'time' => strtotime($time)));
+    $master->tracker->setPersonalFreeleech($Cur['torrent_pass'], strtotime($time));
 }
 
-if ($BonusCredits!=$Cur['Credits'] && ((check_perms('users_edit_credits') && $UserID != $LoggedUser['ID'])
-                        || (check_perms('users_edit_own_credits') && $UserID == $LoggedUser['ID']))) {
-        $UpdateSet[]="Credits=".$BonusCredits;
-        $Creditschange = $BonusCredits - $Cur['Credits'];
-        if ($Creditschange>=0) $Creditschange = "+".number_format ($Creditschange);
-        else $Creditschange = number_format ($Creditschange);
-        $BonusSummary = sqltime()." | $Creditschange | ".ucfirst("credits set to $BonusCredits from {$Cur['Credits']} by {$LoggedUser['Username']}");
-        $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$BonusSummary', i.BonusLog)";
+// $PersonalDoubleseed 1 is current time.
+if ($PersonalDoubleseed != 1 && ($PersonalDoubleseed > 1 || ($PersonalDoubleseed == 0 && $Cur['personal_doubleseed'] > sqltime())) &&
+   ((check_perms('users_edit_pfl') && $UserID != $LoggedUser['ID']) || (check_perms('users_edit_own_pfl') && $UserID == $LoggedUser['ID']))) {
+    if ($PersonalDoubleseed == 0) {
+        $time = '0000-00-00 00:00:00';
+        $after = 'none';
+    } else {
+        $time = time_plus( 60*60*$PersonalDoubleseed );
+        $after = time_diff($time, 2, false);
+    }
+    if ($Cur['personal_doubleseed'] < sqltime()) {
+        $before = 'none';
+    } else {
+        $before = time_diff($Cur['personal_doubleseed'], 2, false);
+    }
 
-        $EditSummary[]="Bonus Credits changed from ".$Cur['Credits']." to ".$BonusCredits;
-      $Cache->delete_value('user_stats_'.$UserID);
-        $HeavyUpdates['Credits'] = $BonusCredits;
+    $UpdateSet[]="personal_doubleseed='$time'";
+    $EditSummary[]="Personal Doubleseed changed from ".$before." to ".$after;
+    $HeavyUpdates['personal_doubleseed'] = $time;
+    //update_tracker('set_personal_doubleseed', array('passkey' => $Cur['torrent_pass'], 'time' => strtotime($time)));
+    $master->tracker->setPersonalDoubleseed($Cur['torrent_pass'], strtotime($time));
+}
 
+if ($AdjustCreditsValue != 0 && ((check_perms('users_edit_credits') && $UserID != $LoggedUser['ID'])
+                        || (check_perms('users_edit_own_credits') && $UserID == $LoggedUser['ID']))){
+    $BonusCredits = $Cur['Credits'] + $AdjustCreditsValue;
+    if ($BonusCredits<0) $BonusCredits=0;
+    $UpdateSet[]="Credits='".$BonusCredits."'";
+    $Creditschange = number_format ($AdjustCreditsValue);
+    if ($AdjustCreditsValue>=0) $Creditschange = "+".$Creditschange;
+    $BonusSummary = sqltime()." | $Creditschange | Credits set to $BonusCredits from {$Cur['Credits']} by {$LoggedUser['Username']}";
+    $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$BonusSummary', i.BonusLog)";
+    //$EditSummary[]="Bonus Credits changed from ".$Cur['Credits']." to ".$BonusCredits;
+    $Cache->delete_value('user_stats_'.$UserID);
+    $HeavyUpdates['Credits'] = $BonusCredits;
 }
 
 if ($Invites!=$Cur['Invites'] && check_perms('users_edit_invites')) {
@@ -569,22 +624,25 @@ if ($SupportFor!=db_string($Cur['SupportFor']) && (check_perms('admin_manage_fls
     $Cache->delete_value('fls');
 }
 
-if ($RestrictedForums != db_string($Cur['RestrictedForums']) && check_perms('users_mod')) {
-    $UpdateSet[]="RestrictedForums='$RestrictedForums'";
-    $EditSummary[]="restricted forum(s): $RestrictedForums";
+if ($RestrictedForums != $Cur['RestrictedForums'] && check_perms('users_mod')) {
+    $forumsrestricted = getNumArrayFromString($RestrictedForums);
+    $RestrictedForums = implode(',',$forumsrestricted);
+    $UpdateSet[]="RestrictedForums='".db_string($RestrictedForums)."'";
+    $EditSummary[]="restricted forum(s): ".db_string($RestrictedForums);
 }
 
-if ($PermittedForums != db_string($Cur['PermittedForums']) && check_perms('users_mod')) {
-    $ForumSet=explode(',',$PermittedForums);
-    $ForumList = array();
-    foreach ($ForumSet as $ForumID) {
-        if ($Forums[$ForumID]['MinClassCreate'] <= $LoggedUser['Class']) {
-            $ForumList[] = $ForumID;
+if ($PermittedForums != $Cur['PermittedForums'] && check_perms('users_mod')) {
+    require_once(SERVER_ROOT.'/sections/forums/functions.php');
+    $forumInfo = get_forums_info();
+    $forumspermitted = getNumArrayFromString($PermittedForums);
+    foreach ($forumspermitted as $key=>$forumid) {
+        if ($forumInfo[$forumid]['MinClassCreate'] > $LoggedUser['Class']) {
+            unset($forumspermitted[$key]);
         }
     }
-    $PermittedForums = implode(',',$ForumSet);
-    $UpdateSet[]="PermittedForums='$PermittedForums'";
-    $EditSummary[]="permitted forum(s): $PermittedForums";
+    $PermittedForums = implode(',',$forumspermitted);
+    $UpdateSet[]="PermittedForums='".db_string($PermittedForums)."'";
+    $EditSummary[]="permitted forum(s): ".db_string($PermittedForums);
 }
 
 if (empty($RestrictedForums) && empty($PermittedForums)) {
@@ -618,7 +676,7 @@ if ($DisableLeech!=$Cur['can_leech'] && check_perms('users_disable_any')) {
     if (!empty($UserReason)) {
         send_pm($UserID, 0, db_string('Your leeching privileges have been disabled'),db_string("Your leeching privileges have been disabled. The reason given was: $UserReason."));
     }
-    update_tracker('update_user', array('passkey' => $Cur['torrent_pass'], 'can_leech' => $DisableLeech));
+    $master->tracker->updateUser($Cur['torrent_pass'], $DisableLeech);
 }
 
 if ($DisableInvites!=$Cur['DisableInvites'] && check_perms('users_disable_any')) {
@@ -722,7 +780,8 @@ if ($EnableUser!=$Cur['Enabled'] && check_perms('users_disable_users')) {
         disable_users($UserID, '', $BanReason);
     } elseif ($EnableUser == '1') {
         $Cache->increment('stats_user_count');
-        update_tracker('add_user', array('id' => $UserID, 'passkey' => $Cur['torrent_pass']));
+        //update_tracker('add_user', array('id' => $UserID, 'passkey' => $Cur['torrent_pass']));
+        $master->tracker->addUser($Cur['torrent_pass'], $UserID);
         if (($Cur['Downloaded'] == 0) || ($Cur['Uploaded']/$Cur['Downloaded'] >= $Cur['RequiredRatio'])) {
             $UpdateSet[]="i.RatioWatchEnds='0000-00-00 00:00:00'";
             $CanLeech = 1;
@@ -735,13 +794,17 @@ if ($EnableUser!=$Cur['Enabled'] && check_perms('users_disable_users')) {
                 $UpdateSet[]="i.RatioWatchDownload=m.Downloaded";
                 $CanLeech = 0;
             }
-            update_tracker('update_user', array('passkey' => $Cur['torrent_pass'], 'can_leech' => '0'));
         }
+        $Visible=$Cur['Visible'];
+        if ($User->IP == '127.0.0.1') $Visible=0;
+        $track_ipv6=$Cur['track_ipv6'];
+        //Ensure the tracker has the correct settings applied
+        $master->tracker->updateUser($Cur['torrent_pass'], $CanLeech, $Visible, $track_ipv6);
         $UpdateSet[]="Enabled='1'";
         $LightUpdates['Enabled'] = 1;
     }
     $EditSummary[]=$EnableStr;
-    $Cache->replace_value('enabled_'.$UserID, $EnableUser, 0);
+    $Cache->cache_value('enabled_'.$UserID, $EnableUser, 0);
 }
 
 if ($ResetPasskey == 1 && check_perms('users_edit_reset_keys')) {
@@ -755,7 +818,8 @@ if ($ResetPasskey == 1 && check_perms('users_edit_reset_keys')) {
     $DB->query("INSERT INTO users_history_passkeys
             (UserID, OldPassKey, NewPassKey, ChangerIP, ChangeTime) VALUES
             ('$UserID', '".$Cur['torrent_pass']."', '$Passkey', '0.0.0.0', '".sqltime()."')");
-    update_tracker('change_passkey', array('oldpasskey' => $Cur['torrent_pass'], 'newpasskey' => $Passkey));
+    //update_tracker('change_passkey', array('oldpasskey' => $Cur['torrent_pass'], 'newpasskey' => $Passkey));
+    $master->tracker->changePasskey($Cur['torrent_pass'], $Passkey);
 }
 
 if ($ResetAuthkey == 1 && check_perms('users_edit_reset_keys')) {
@@ -766,7 +830,7 @@ if ($ResetAuthkey == 1 && check_perms('users_edit_reset_keys')) {
 }
 
 if ($SendHackedMail && check_perms('users_disable_any')) {
-    $EditSummary[]="hacked email sent to ".$HackedEmail;
+    $EditSummary[]="hacked email sent to ".db_string($HackedEmail);
     send_email($HackedEmail, "Your ".SITE_NAME." account.","Your ".SITE_NAME." account appears to have been compromised. As a security measure we have disabled your account. To resolve this please visit us on IRC.
 
 This is the information to connect to our server:
@@ -780,12 +844,11 @@ Please visit us soon so we can help you resolve this matter.");
 }
 
 if ($SendConfirmMail) {
-    $EditSummary[]="confirmation email resent to ".$ConfirmEmail;
+    $EditSummary[]="confirmation email resent to ".db_string($ConfirmEmail);
 
-    include(SERVER_ROOT.'/classes/class_templates.php');
 
     // TODO: Use Twig template
-    $TPL=NEW TEMPLATE;
+    $TPL= new Template;
     $TPL->open(SERVER_ROOT.'/templates/new_registration.tpl');
 
     $TPL->set('Username',$_POST['Username']);
@@ -817,7 +880,7 @@ if ($MergeStatsFrom && check_perms('users_edit_ratio')) {
 if ($Pass) {
     if (!check_perms('users_edit_password')) error(403);
     if ($Pass !== $Pass2) error("Password1 and Password2 did not match! You must enter the same new password twice to change a users password");
-    $master->auth->set_user_password($User, $Pass);
+    $master->auth->set_password($UserID, $Pass);
     $EditSummary[]='password reset';
 
     $master->repos->users->uncache($UserID);
@@ -839,11 +902,6 @@ if ($Email) {
     $EditSummary[]="email changed from $Cur[Email] to $Email";
 
     $this->master->emailManager->newEmail($UserID, $Email);
-    //This piece of code will update the time of their last email change to the current time *not* the current change.
-    $DB->query("UPDATE users_history_emails SET Time='".sqltime()."' WHERE UserID='$UserID' AND Time='0000-00-00 00:00:00'");
-    $DB->query("INSERT INTO users_history_emails
-                (UserID, Email, Time, IP, ChangedByID) VALUES
-                ('$UserID', '$Email', '0000-00-00 00:00:00', '".db_string($_SERVER['REMOTE_ADDR'])."', '$LoggedUser[ID]')");
 }
 
 if (empty($UpdateSet) && empty($EditSummary)) {
@@ -892,6 +950,9 @@ $master->repos->users->save($User);
 
 // Perform update
 $DB->query($sql);
+
+// do this now so it doesnt interfere with previous query
+if ($doDuckyCheck === true) award_ducky_check($UserID, 0);
 
 if (isset($ClearStaffIDCache)) {
     $Cache->delete_value('staff_ids');

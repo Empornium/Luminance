@@ -16,9 +16,9 @@ function change_lang_flag() {
 }
 
 function delete_conn_record(elem_id, user_id, ip) {
- 
+
 	ajax.get('ajax.php?action=delete_conn_record&ip=' + ip + '&userid=' + user_id, function (response) {
-        var x = json.decode(response); 
+        var x = json.decode(response);
         if ( is_array(x)){
             if ( x[0] == true){
                $('#'+elem_id).remove();
@@ -27,62 +27,62 @@ function delete_conn_record(elem_id, user_id, ip) {
             }
         } else {    // error from ajax
             alert(x);
-        } 
-	}); 
+        }
+	});
 }
 
 
 function unset_conn_status(elemstatus_id, elemlink_id, user_id, ip) {
- 
+
 	ajax.get('ajax.php?action=remove_conn_status&ip=' + ip + '&userid=' + user_id, function (response) {
-        var x = json.decode(response); 
+        var x = json.decode(response);
         if ( is_array(x)){
             if ( x[0] == true){
-               $('#'+elemstatus_id).html("?"); 
-               $('#'+elemstatus_id).remove_class("red"); 
-               $('#'+elemstatus_id).remove_class("green"); 
-               $('#'+elemstatus_id).add_class("grey"); 
+               $('#'+elemstatus_id).html("?");
+               $('#'+elemstatus_id).remove_class("red");
+               $('#'+elemstatus_id).remove_class("green");
+               $('#'+elemstatus_id).add_class("grey");
                $('#'+elemlink_id).remove();
             } else {
                 alert(x[1]);
             }
         } else {    // error from ajax
             alert(x);
-        } 
-	}); 
+        }
+	});
 }
 
 function Toggle_view(elem_id) {
 
     jQuery('#'+elem_id+'div').toggle();
- 
-    if (jQuery('#'+elem_id+'div').is(':hidden')) 
+
+    if (jQuery('#'+elem_id+'div').is(':hidden'))
         jQuery('#'+elem_id+'button').text('(Show)');
-    else  
+    else
         jQuery('#'+elem_id+'button').text('(Hide)');
-     
-    var t= [get_hidden_value('profile'), 
-                        get_hidden_value('bonus'), 
-                        get_hidden_value('donate'), 
-                        get_hidden_value('snatches'), 
-                        get_hidden_value('recentuploads'), 
-                        get_hidden_value('linked'), 
-                        get_hidden_value('invite'), 
-                        get_hidden_value('requests'), 
-                        get_hidden_value('staffpms'), 
-                        get_hidden_value('notes'), 
-                        get_hidden_value('history'), 
-                        get_hidden_value('info'), 
-                        get_hidden_value('badgesadmin'), 
-                        get_hidden_value('warn'), 
-                        get_hidden_value('privilege'), 
+
+    var t= [get_hidden_value('profile'),
+                        get_hidden_value('bonus'),
+                        get_hidden_value('donate'),
+                        get_hidden_value('snatches'),
+                        get_hidden_value('recentuploads'),
+                        get_hidden_value('linked'),
+                        get_hidden_value('invite'),
+                        get_hidden_value('requests'),
+                        get_hidden_value('staffpms'),
+                        get_hidden_value('notes'),
+                        get_hidden_value('history'),
+                        get_hidden_value('info'),
+                        get_hidden_value('badgesadmin'),
+                        get_hidden_value('warn'),
+                        get_hidden_value('privilege'),
                         get_hidden_value('session'),
                         get_hidden_value('submit'),
-                        get_hidden_value('loginwatch'), 
-                        get_hidden_value('iplinked'), 
-                        get_hidden_value('elinked'), 
-                        get_hidden_value('reports')]; 
-            
+                        get_hidden_value('loginwatch'),
+                        get_hidden_value('iplinked'),
+                        get_hidden_value('elinked'),
+                        get_hidden_value('reports')];
+
     jQuery.cookie('userPageState', json.encode(t));
     return false;
 }
@@ -90,15 +90,15 @@ function Toggle_view(elem_id) {
 
 
 function get_hidden_value(elem_id){
-    
-    if (!in_array(elem_id, cookieitems, false)) 
+
+    if (!in_array(elem_id, cookieitems, false))
         return 'not';
     else
         return ( jQuery('#'+elem_id+'div').is(':hidden') )?'0':'1';
-     
+
     /*
     var element =  document.getElementById(elem_id);
- 
+
     if (typeof(element) != 'undefined' && element != null)
     {
       // exists.
@@ -111,9 +111,9 @@ function get_hidden_value(elem_id){
 }
 
 function set_hidden_value(elem_id, state){
-    
+
     if (!in_array(elem_id, cookieitems, false))  return ;
-   
+
     //if (jQuery('#'+elem_id).length == 0) return;
     if(state != '1') {
         jQuery('#'+elem_id+'div').hide();
@@ -124,13 +124,13 @@ function set_hidden_value(elem_id, state){
     }
 }
 
-function Load_User_Cookie()  { 
-    
+function Load_User_Cookie()  {
+
 	if(jQuery.cookie('userPageState') == undefined) {
 		jQuery.cookie('userPageState', json.encode(['0', '1', '1', '0', '0', '0', '0', '0', '0', '1', '0', '1', '0', '1', '1', '1', '1', '1']));
 	}
 	var state = json.decode( jQuery.cookie('userPageState') );
-     
+
       set_hidden_value('profile', state[0]);
       set_hidden_value('bonus', state[1]);
       set_hidden_value('donate', state[2]);
@@ -195,9 +195,9 @@ function Preview_Toggle(id) {
 }
 
 function CalculateAdjustUpload(name, radioObj, currentvalue){
-    var adjustamount = $('#' + name + 'value').raw().value; 
+    var adjustamount = $('#' + name + 'value').raw().value;
     if ( adjustamount == '' ) adjustamount =0;
-    else adjustamount = parseFloat(adjustamount); 
+    else adjustamount = parseFloat(adjustamount);
     if (adjustamount != 0){
         var mul = 1;
 	  var radioLength = radioObj.length;
@@ -210,12 +210,27 @@ function CalculateAdjustUpload(name, radioObj, currentvalue){
 		}
 	  }
         adjustamount = adjustamount * mul;
-        var newvalue = Math.max(currentvalue + adjustamount, 0); 
+        var newvalue = Math.max(currentvalue + adjustamount, 0);
         $('#' + name + 'result').raw().setAttribute('class', (adjustamount > 0 ? 'green' : 'red'));
         $('#' + name + 'result').raw().innerHTML = (adjustamount > 0 ? '+ ' : '- ') + get_size_fixed(Math.abs(adjustamount),3) + ' => ' + get_size_fixed(newvalue, 3);
     } else {
         $('#' + name + 'result').raw().setAttribute('class', 'none');
         $('#' + name + 'result').raw().innerHTML = '';
+    }
+}
+
+function CalculateAdjustCredits(currentvalue)
+{
+    var adjustamount = $('#adjustcreditsvalue').raw().value;
+    if (adjustamount == '') adjustamount = 0;
+    else adjustamount = parseFloat(adjustamount);
+    if (adjustamount != 0) {
+        var newvalue = Math.max(currentvalue + adjustamount, 0);
+        $('#adjustcreditsresult').raw().setAttribute('class', (adjustamount > 0 ? 'green' : 'red'));
+        $('#adjustcreditsresult').raw().innerHTML = (adjustamount > 0 ? '+ ' : '- ') + addCommas(Math.abs(adjustamount)) + ' => ' + addCommas(Math.abs(newvalue)) + ' credits';
+    } else {
+        $('#adjustcreditsresult').raw().setAttribute('class', 'none');
+        $('#adjustcreditsresult').raw().innerHTML = '';
     }
 }
 
@@ -298,11 +313,11 @@ function ParanoiaReset(checkbox, drops) {
 	var checkboxes = $(':checkbox');
 	for (var i = 0; i < checkboxes.results(); i++) {
 		if (checkboxes.raw(i).name.match(/^p_/) && (checkboxes.raw(i).name != 'p_lastseen')) {
-                if (checkbox == 3) 
+                if (checkbox == 3)
                     checkboxes.raw(i).checked = !(checkboxes.raw(i).name.match(/_list$/) || checkboxes.raw(i).name.match(/_l$/));
-                else 
-                    checkboxes.raw(i).checked = checkbox; 
-                AlterParanoia();			
+                else
+                    checkboxes.raw(i).checked = checkbox;
+                AlterParanoia();
 		}
 	}
 }
@@ -324,7 +339,7 @@ function ParanoiaResetStats2() {
       $('input[name=p_requestsfilled_list]').raw().checked = true;
       $('input[name=p_requestsvoted_list]').raw().checked = true;
       $('input[name=p_uploads_l]').raw().checked = true;
-      AlterParanoia();			
+      AlterParanoia();
 }
 
 function ParanoiaResetOn() {

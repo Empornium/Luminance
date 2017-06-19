@@ -7,12 +7,8 @@
 // how long they get to fix their upload before autodeletion is set here
 function get_warning_time()
 {
-    global $DB;
-    //return time() + (12 * 60 * 60); // 12 hours...   ?
-    $DB->query("SELECT ReviewHours FROM site_options");
-    list($Time) = $DB->next_record();
-
-    return time() + ((int) $Time * 3600);
+    global $master;
+    return time() + ((int) $master->options->MFDReviewHours * 3600);
 }
 
 // message is in two parts so we can grab the bits around the reason for display etc.

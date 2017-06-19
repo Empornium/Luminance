@@ -10,8 +10,8 @@ if (isset($_POST['submit'])) {
         //$Bans = $Cache->delete_value('ip_bans');
         $Cache->delete_value('ip_bans');
     } else { //Edit & Create, Shared Validation
-        $Val->SetFields('start', '1','regex','You must inculde starting IP address.',array('regex'=>'/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/i'));
-        $Val->SetFields('end', '1','regex','You must inculde ending IP address.',array('regex'=>'/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/i'));
+        $Val->SetFields('start', '1','regex','You must inculde starting IP address.',array('regex'=>'/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/i'));
+        $Val->SetFields('end', '1','regex','You must inculde ending IP address.',array('regex'=>'/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/i'));
         $Val->SetFields('notes', '1','string','You must inculde a note regarding the reason for the ban.');
         $Err=$Val->ValidateForm($_POST); // Validate the form
         if ($Err) { error($Err); }
@@ -50,7 +50,7 @@ if (isset($_POST['submit'])) {
             $Username = trim($_POST['user']);
             if ($Username) {
                 $UserID = get_userid($Username);
-                if (!$UserID) error("Could not find User '$Username'");
+                if (!$UserID) error("Could not find User '".display_str($Username)."'");
             } else
                 $UserID=0;
 

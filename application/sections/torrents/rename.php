@@ -1,8 +1,6 @@
 <?php
 authorize();
 
-include(SERVER_ROOT.'/classes/class_text.php');
-include(SERVER_ROOT.'/classes/class_validate.php');
 
 $GroupID = $_POST['groupid'];
 $OldGroupID = $GroupID;
@@ -20,8 +18,8 @@ $CanEdit = check_perms('torrents_edit') || ($AuthorID == $LoggedUser['ID']);
 
 if (!$CanEdit) { error(403); }
 
-$Text = new TEXT;
-$Validate = new VALIDATE;
+$Text = new Luminance\Legacy\Text;
+$Validate = new Luminance\Legacy\Validate;
 
 $Validate->SetFields('name', '1', 'string', 'You must enter a Title.', array('maxlength' => 200, 'minlength' => 2, 'maxwordlength'=>TITLE_MAXWORD_LENGTH));
 

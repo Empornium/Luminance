@@ -60,6 +60,7 @@ class PermissionRepository extends Repository {
     // for now we will just override uncache($ID) and put these here, when we add something to replace the classes arrays this might move --mifune
     public function uncache($ID) {
         $this->cache->delete_value('min_user_level');
+        $this->cache->delete_value('min_user_classid');
         $this->cache->delete_value('min_staff_level');
         parent::uncache($ID);
     }

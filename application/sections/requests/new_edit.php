@@ -6,12 +6,11 @@
  * maintaining 2 copies of almost identical files.
  */
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 if(!check_perms('site_submit_requests')) error(403);
 
-$NewRequest = ($_GET['action'] == "new" ? true : false);
+$NewRequest   = ($_GET['action'] == "new" ? true : false);
 
 if (!$NewRequest) {
     $RequestID = $_GET['id'];
@@ -39,7 +38,7 @@ if (!$NewRequest) {
         $VoteCount = count($VoteArray['Voters']);
 
         $IsFilled = !empty($TorrentID);
-        $CategoryName = $NewCategories[$CategoryID]['name'];
+        $CategoryName = $OpenCategories[$CategoryID]['name'];
         $ProjectCanEdit = (check_perms('site_project_team') && !$IsFilled && (($CategoryID == 0)));
         $CanEdit = ((!$IsFilled && $LoggedUser['ID'] == $RequestorID && $VoteCount < 2) || $ProjectCanEdit || check_perms('site_moderate_requests'));
 
@@ -65,14 +64,14 @@ if ($NewRequest && !empty($_GET['groupid']) && is_number($_GET['groupid'])) {
     }
 }
 
-show_header(($NewRequest ? "Create a request" : "Edit a request"), 'requests,bbcode,jquery,jquery.cookie');
+show_header(($NewRequest ? "Create a request" : "Edit a request"), 'requests,bbcode,autocomplete,tag_autocomplete,jquery,jquery.cookie');
 ?>
 <script type="text/javascript">//<![CDATA[
-    public function change_tagtext()
+    function change_tagtext()
     {
-        var tags = new Array();
+        var tags = [];
 <?php
-foreach ($NewCategories as $cat) {
+foreach ($OpenCategories as $cat) {
     echo 'tags[' . $cat['id'] . ']="' . $cat['tag'] . '"' . ";\n";
 }
 ?>
@@ -180,7 +179,7 @@ foreach ($Whitelist as $ImageHost) {
                     <td>
                         <select id="category" name="category" onchange="change_tagtext();">
                                         <option value="0">---</option>
-                                    <?php  foreach ($NewCategories as $category) { ?>
+                                    <?php  foreach ($OpenCategories as $category) { ?>
                                         <option value="<?=$category['id']?>"<?php
                                             if (isset($CategoryID) && $CategoryID==$category['id']) {
                                                 echo ' selected="selected"';
@@ -221,7 +220,22 @@ foreach ($Whitelist as $ImageHost) {
                             <option value="<?=$Genre ?>"><?=$Genre ?></option>
 <?php 	} ?>
                         </select>
-                    <textarea id="tags" name="tags" class="medium" style="height:1.4em;" ><?=(!empty($Tags) ? display_str($Tags) : '')?></textarea>
+
+                        <div style="vertical-align:middle;display:inline-block;" title="Toggle Autocomplete mode on/off (when off you can access browser form history)">
+                            <input id="autocomplete_toggle" onclick="ToggleAutoComplete();" type="checkbox" value="1" name="autocomplete_toggle" checked/>
+                            Autocomplete Tags
+                        </div>
+                        <br>
+                        <div id="autoresults" class="autoresults">
+                            <ul id="tagdropdown"></ul>
+                        </div>
+                        <br>
+                        <!-- we have to insert the font here for js to be able to grab it (js bug?) -->
+                        <textarea id="taginput" name="taglist" class="medium" style="font: 10pt monospace;"
+                                  onkeyup="resize('taginput'); return autocomp.keyup(event); "
+                                  onkeydown="return autocomp.keydown(event);"
+                                  onchange="resize('taginput');"
+                                  autocomplete="off"><?=(!empty($Tags) ? display_str($Tags) : '')?></textarea>
 
                         <br />
                     <?php
@@ -245,11 +259,10 @@ foreach ($Whitelist as $ImageHost) {
                 <tr id="voting">
                     <td class="label" id="bounty">Bounty</td>
                     <td>
-                        <input type="text" id="amount_box" size="8" value="<?=(!empty($Bounty) ? $Bounty : '100')?>" onchange="Calculate();" onkeyup="Calculate();" />
+                        <input type="text" id="amount_box" size="8" value="<?=((!empty($Bounty) ? $Bounty : $MinimumBounty) / (1024*1024*1024) )?>" onchange="Calculate();" onkeyup="Calculate();" />
                         <select id="unit" name="unit" onchange="Calculate();">
-                            <option value='mb'<?=(!empty($_POST['unit']) && $_POST['unit'] == 'mb' ? ' selected="selected"' : '') ?>>MB</option>
                             <option value='gb'<?=(!empty($_POST['unit']) && $_POST['unit'] == 'gb' ? ' selected="selected"' : '') ?>>GB</option>
-                                                        <option value='tb'<?=(!empty($_POST['unit']) && $_POST['unit'] == 'tb' ? ' selected="selected"' : '') ?>>TB</option>
+                            <option value='tb'<?=(!empty($_POST['unit']) && $_POST['unit'] == 'tb' ? ' selected="selected"' : '') ?>>TB</option>
                         </select>
                         <input type="button" value="Preview" onclick="Calculate();"/>
                         <strong id="inform"></strong>
@@ -258,7 +271,7 @@ foreach ($Whitelist as $ImageHost) {
                 <tr>
                     <td class="label">Post request information</td>
                     <td>
-                        <input type="hidden" id="amount" name="amount" value="<?=(!empty($Bounty) ? $Bounty : $MinimumBounty / (1024*1024) )?>" />
+                        <input type="hidden" id="amount" name="amount" value="<?=(!empty($Bounty) ? $Bounty : $MinimumBounty )?>" />
                         <input type="hidden" id="current_uploaded" value="<?=$LoggedUser['BytesUploaded']?>" />
                         <input type="hidden" id="current_downloaded" value="<?=$LoggedUser['BytesDownloaded']?>" />
                         If you add the entered <strong><span id="new_bounty"><?=get_size($MinimumBounty);?></span></strong> of bounty, your new stats will be: <br/>

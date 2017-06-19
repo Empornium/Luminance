@@ -26,8 +26,7 @@ if (!$Users) { error("Cannot make an award to this group as there are no users i
 
 show_header('Mass Award', 'upload,bbcode,inbox');
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 ?>
 <div class="thin">

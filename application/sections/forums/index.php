@@ -15,6 +15,10 @@ $Forums = get_forums_info();
 
 if (!empty($_POST['action'])) {
     switch ($_POST['action']) {
+        case 'revertedit':
+            // revert (delete) last edit
+            require(SERVER_ROOT.'/sections/forums/revert_edit.php');
+            break;
         case 'goto_forum':
             // using the forum jump
             $ForumID = (int) $_POST['forumid'];

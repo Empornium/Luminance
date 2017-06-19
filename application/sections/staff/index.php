@@ -11,7 +11,7 @@ list($FrontLineSupport, $Staff, $Admins) = $SupportStaff;
 
 $Show = isset($_REQUEST['show'])?($_REQUEST['show']==1?1:0):0;
 $Assign = isset($_REQUEST['assign'])?$_REQUEST['assign']:'';
-if ($Assign !== '' && !in_array($Assign, array('mod','admin'))) $Assign = '';
+if ($Assign !== '' && !in_array($Assign, array('mod','smod','admin'))) $Assign = '';
 $Subject = isset($_REQUEST['sub'])?$_REQUEST['sub']:'';
 $Msg = isset($_REQUEST['msg'])?$_REQUEST['msg']:'';
 

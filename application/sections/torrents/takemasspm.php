@@ -10,8 +10,7 @@ authorize();
 
 enforce_login();
 
-require(SERVER_ROOT.'/classes/class_validate.php');
-$Validate = new VALIDATE;
+$Validate = new Luminance\Legacy\Validate;
 
 $TorrentID = (int) $_POST['torrentid'];
 $GroupID = (int) $_POST['groupid'];

@@ -12,7 +12,9 @@ abstract class Repository {
     protected $cache;
     protected $entityName;
     protected $use_cache = true;
-    protected $internal_cache = [];
+    // The cache service implements its own internal cache, thus we're storing
+    // same data in memory twice, this is a bad idea IMO.
+    //protected $internal_cache = [];
 
     public function __construct(Master $master) {
         $this->master = $master;
@@ -48,19 +50,29 @@ abstract class Repository {
         return $result;
     }
 
+    public function disable_cache() {
+        $this->use_cache = false;
+    }
+
+    public function enable_cache() {
+        $this->use_cache = true;
+    }
+
     public function save_to_cache($entity) {
         if (!$entity->exists_in_db()) {
             throw new InternalError("Attempt to cache non-saved entity.");
         }
-        $key = $this->get_cache_key($entity->get_pkey_value());
-        $values = $entity->get_saved_values();
-        $this->cache->cache_value($key, $values, 0);
+        if ($this->use_cache) {
+            $key = $this->get_cache_key($entity->get_pkey_value());
+            $values = $entity->get_saved_values();
+            $this->cache->cache_value($key, $values, 0);
+        }
     }
 
     public function load($ID, $post_load = true) {
-        if (array_key_exists($ID, $this->internal_cache)) {
-            return $this->internal_cache[$ID];
-        }
+        //if (array_key_exists($ID, $this->internal_cache)) {
+        //    return $this->internal_cache[$ID];
+        //}
         if ($this->use_cache) {
             $entity = $this->load_from_cache($ID);
         }
@@ -73,9 +85,9 @@ abstract class Repository {
         if ($post_load) {
             $entity = $this->post_load($ID, $entity);
         }
-        if ($entity) {
-            $this->internal_cache[$ID] = $entity;
-        }
+        //if ($entity) {
+        //    $this->internal_cache[$ID] = $entity;
+        //}
         return $entity;
     }
 
@@ -90,6 +102,13 @@ abstract class Repository {
         $this->orm->save($entity);
     }
 
+    public function delete(Entity $entity) {
+        if ($this->use_cache && $entity->exists_in_db()) {
+            $this->uncache($entity->get_pkey_value());
+        }
+        $this->orm->delete($entity);
+    }
+
     public function get_cache_key($ID) {
         $key = "_entity_{$this->entityName}_{$ID}";
         return $key;
@@ -98,9 +117,9 @@ abstract class Repository {
     public function uncache($ID) {
         $key = $this->get_cache_key($ID);
         $this->cache->delete_value($key);
-        if (array_key_exists($ID, $this->internal_cache)) {
-            unset($this->internal_cache[$ID]);
-        }
+        //if (array_key_exists($ID, $this->internal_cache)) {
+        //    unset($this->internal_cache[$ID]);
+        //}
     }
 
 }

@@ -204,7 +204,6 @@ if ($DB->affected_rows() > 0 || !$Report) {
                 $Peers = $DB->collect('uid');
                 $Message = "Torrent ".$TorrentID." (".$RawName.") was deleted for being a dupe.[br][br]";
                 $Message .= "The torrent it was duping was:";
-                //$DB->query("SELECT ID, Name FROM torrents_group WHERE ID IN ($ExtraIDs)");
                 $DB->query("SELECT tg.ID, tg.Name, t.Time, t.Size, t.UserID, um.Username
                               FROM torrents AS t JOIN torrents_group AS tg ON tg.ID=t.GroupID
                               LEFT JOIN users_main AS um ON um.ID=t.UserID
@@ -219,12 +218,13 @@ if ($DB->affected_rows() > 0 || !$Report) {
 
         }
 
-        delete_torrent($TorrentID);
+        delete_torrent($TorrentID, $GroupID, $UploaderID, isset($Escaped['refundufl']));
         write_log($Log);
         $Log = "deleted torrent for the reason: ".$ResolveType['title'].". ( ".$Escaped['log_message']." )";
         write_group_log($GroupID, $TorrentID, $LoggedUser['ID'], $Log, 0);
     } else {
         $Log = "No log message (Torrent wasn't deleted)";
+        unset($Escaped['delete']); // for later checks
     }
 
     //Warnings / remove upload
@@ -249,50 +249,19 @@ if ($DB->affected_rows() > 0 || !$Report) {
               $DB->query("UPDATE users_main AS m JOIN users_info AS i ON m.ID=i.UserID SET $SET WHERE m.ID='$ReporterID'");
               $Cache->delete_value('user_stats_'.$ReporterID);
 
-              $Body = "Thank-you for your {$ResolveType['title']} report re: [url=http://".SITE_URL."/torrents.php?torrentid=$TorrentID]{$RawName}[/url]\n\nYou received a bounty payment of $Bounty credits.";
+              $Body = "Thank-you for your {$ResolveType['title']} report re: [url=http://".SITE_URL."/details.php?id=$TorrentID]{$RawName}[/url]\n\nYou received a bounty payment of $Bounty credits.";
 
               send_pm($ReporterID, 0, "Received Bounty Payment", db_string($Body));
         }
     }
 
-    if ($Warning > 0) {
-        $WarnLength = $Warning * (7*24*60*60);
-        $Reason = "Uploader of torrent [url=/torrents.php?id=".$TorrentID."]".$RawName."[/url] which was reported (ID: ".$ReportID.") as ".$ResolveType['title'].".";
-        if ($Upload) {
-            $Reason .= " Upload privileges Disabled.";
-        }
-        if ($Escaped['admin_message']) {
-            $Reason .= " Notes: ".$Escaped['admin_message'];
-        }
-
-        warn_user($UploaderID, $WarnLength, $Reason);
-    } else {
-        //This is a bitch for people that don't warn but do other things, it makes me sad.
-        $StaffNote = "";
-        if ($Upload) {
-            //They removed upload
-            $StaffNote .= "Upload privileges Disabled by ".$LoggedUser['Username'];
-            $StaffNote .= "\nReason: Uploader of torrent [url=/torrents.php?id=".$TorrentID."]".$RawName."[/url] which was reported (ID: ".$ReportID.") as ".$ResolveType['title'].".";
-        }
-        if ($Escaped['admin_message']) {
-            //They did nothing of note, but still want to mark it (Or upload and mark)
-            if ($StaffNote) {
-                $StaffNote .= " Notes: ".$Escaped['admin_message'];
-            } else {
-                $StaffNote .= "Notes added by ".$LoggedUser['Username']."\nReason: Uploader of torrent [url=/torrents.php?id=".$TorrentID."]".$RawName."[/url] which was reported (ID: ".$ReportID.") as ".$ResolveType['title'].". Notes: ".$Escaped['admin_message'];
-            }
-        }
-        if ($StaffNote) {
-            write_user_log($UploaderID, $StaffNote);
-        }
-    }
 
     //PM
     if ($Escaped['uploader_pm'] || $Warning > 0 || isset($Escaped['delete']) || $SendPM) {
         if (isset($Escaped['delete'])) {
-            $PM = "[url=/torrents.php?torrentid=".$TorrentID."]Your above torrent[/url] was reported and has been deleted.\n\n";
+            $PM = "[url=/details.php?id=".$TorrentID."]Your above torrent[/url] was reported and has been deleted.\n\n";
         } else {
-            $PM = "[url=/torrents.php?torrentid=".$TorrentID."]Your above torrent[/url] was reported but not deleted.\n\n";
+            $PM = "[url=/details.php?id=".$TorrentID."]Your above torrent[/url] was reported but not deleted.\n\n";
         }
 
         $Preset = $ResolveType['resolve_options']['pm'];
@@ -320,6 +289,31 @@ if ($DB->affected_rows() > 0 || !$Report) {
         $PM .= "\n\nReport was handled by [url=/staff.php?]".$LoggedUser['Username']."[/url].";
 
         send_pm($UploaderID, 0, db_string($Escaped['raw_name']), db_string($PM));
+        $SendPM = true;
+    }
+
+
+    // write to the uploaders staff notes/warn
+    $StaffNote = "Uploader of torrent [url=/torrents.php?id=".$TorrentID."]".$RawName."[/url] which was reported (ID: ".$ReportID.") as ".$ResolveType['title'].".";
+    $XtraNote = '';
+    if (isset($Escaped['delete'])) $XtraNote .= "\nTorrent deleted by ".$LoggedUser['Username'];
+
+    if ($Upload) $XtraNote .= "\nUpload privileges Disabled by ".$LoggedUser['Username'];
+
+    if ($SendPM) $XtraNote .= "\nSystem PM sent to user";
+
+    if ($Escaped['admin_message']) {
+        if ($XtraNote) $XtraNote .= "\nNotes: ".$Escaped['admin_message'];
+        else $XtraNote = "\nNotes added by ".$LoggedUser['Username'].": ".$Escaped['admin_message'];
+    }
+    $StaffNote .= $XtraNote;
+
+    if ($Warning > 0) {
+        $WarnLength = $Warning * (7*24*60*60);
+        // warn the user (makes its own staff note)
+        warn_user($UploaderID, $WarnLength, $StaffNote);
+    } else {
+        write_user_log($UploaderID, $StaffNote);
     }
 
     $Cache->delete_value('reports_torrent_'.$TorrentID);

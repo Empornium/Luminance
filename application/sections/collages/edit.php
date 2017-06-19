@@ -1,6 +1,5 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $CollageID = $_GET['collageid'];
 if (!is_number($CollageID)) { error(0); }

@@ -1,17 +1,21 @@
 <?php
 if ($Message = db_string($_POST['message'])) {
 
-      include(SERVER_ROOT.'/classes/class_text.php');
       include(SERVER_ROOT.'/sections/staffpm/functions.php');
-      $Text = new TEXT;
+      $Text = new Luminance\Legacy\Text;
       $Text->validate_bbcode($_POST['message'],  get_permissions_advtags($LoggedUser['ID']));
 
     if ($_POST['note'] && $IsStaff) {
+
+        // make a staff note
         $ConvID = (int) $_POST['convid'];
         $Message = "[b]".sqltime()." - Notes added by ".$LoggedUser['Username'].":[/b] ".$Message;
         make_staffpm_note($Message, $ConvID);
+
         header("Location: staffpm.php?action=viewconv&id=$ConvID");
+
     } else if ($Subject = db_string($_POST['subject'])) {
+
         // New staff pm conversation
         $Level = db_string($_POST['level']);
         $DB->query("
@@ -21,6 +25,9 @@ if ($Message = db_string($_POST['message'])) {
                 ('{$Subject}', 'Unanswered', '{$Level}', '{$LoggedUser['ID']}', '".sqltime()."')"
         );
 
+        if (isset($_POST['forwardbody'])) {
+            $Message = db_string($_POST['forwardbody']) .$Message;
+        }
         // New message
         $ConvID = $DB->inserted_id();
         $DB->query("
@@ -33,20 +40,20 @@ if ($Message = db_string($_POST['message'])) {
         header('Location: staffpm.php?action=user_inbox');
 
     } elseif ($ConvID = (int) $_POST['convid']) {
-        // Check if conversation belongs to user
-        $DB->query("SELECT UserID, AssignedToUser FROM staff_pm_conversations WHERE ID=$ConvID");
-        list($UserID, $AssignedToUser) = $DB->next_record();
 
-        if ($UserID == $LoggedUser['ID'] || $IsFLS || $UserID == $AssignedToUser) {
+        // Respond to existing conversation
+        $DB->query("SELECT UserID, AssignedToUser, Urgent FROM staff_pm_conversations WHERE ID=$ConvID");
+        list($TargetUserID, $AssignedToUser, $Urgent) = $DB->next_record();
+
+        // Check if conversation belongs to user / isStaff
+        if ($TargetUserID == $LoggedUser['ID'] || $IsFLS || $TargetUserID == $AssignedToUser) {
+
             $DB->query("SELECT ID FROM staff_pm_messages WHERE ConvID=$ConvID ORDER BY ID DESC LIMIT 1");
             list($LastMessageID) = $DB->next_record();
             if ($LastMessageID != $_POST['lastmessageid']) {
                 error("There is a message you have not read, please go back and refresh the page.");
-                echo $LastMessageID;
-                die();
             }
 
-            // Response to existing conversation
             $DB->query("
                 INSERT INTO staff_pm_messages
                     (UserID, SentDate, Message, ConvID, IsNotes)
@@ -55,17 +62,19 @@ if ($Message = db_string($_POST['message'])) {
             );
 
             // Update conversation
-            if ($IsFLS) {
+            if ($TargetUserID != $LoggedUser['ID']) {
                 // FLS/Staff
                 $DB->query("UPDATE staff_pm_conversations SET Date='".sqltime()."', Unread=true, Status='Open' WHERE ID=$ConvID");
             } else {
-                // User
-                $DB->query("UPDATE staff_pm_conversations SET Date='".sqltime()."', Unread=false, Status='Unanswered' WHERE ID=$ConvID");
+                // User replied
+                if ($Urgent == 'Respond') $ExtraSet = ", Urgent='No'";
+                $DB->query("UPDATE staff_pm_conversations SET Date='".sqltime()."', Unread=false, Status='Unanswered'$ExtraSet WHERE ID=$ConvID");
             }
 
             // Clear cache for user
-            $Cache->delete_value('staff_pm_new_'.$UserID);
-            $Cache->delete_value('staff_pm_new_'.$LoggedUser['ID']);
+            $Cache->delete_value('staff_pm_new_'.$TargetUserID);
+            //$Cache->delete_value('staff_pm_new_'.$LoggedUser['ID']);
+            $master->cache->delete_value('staff_pm_urgent_'.$TargetUserID);
 
             header("Location: staffpm.php?action=viewconv&id=$ConvID");
         } else {

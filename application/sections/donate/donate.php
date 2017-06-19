@@ -14,8 +14,7 @@ show_header('Donate','bitcoin');
         <?php
         $Body = get_article('donateinline');
         if ($Body) {
-            include(SERVER_ROOT.'/classes/class_text.php');
-            $Text = new TEXT;
+            $Text = new Luminance\Legacy\Text;
             echo $Text->full_format($Body , get_permissions_advtags($LoggedUser['ID']));
         }
         ?>

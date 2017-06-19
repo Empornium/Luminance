@@ -6,8 +6,7 @@ if (!check_perms('users_mod')) {
 }
 
 show_header('Staff Blog','bbcode');
-require(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 if (check_perms('admin_manage_blog')) {
     if (!empty($_REQUEST['action'])) {

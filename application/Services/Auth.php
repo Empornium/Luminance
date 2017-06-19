@@ -22,6 +22,14 @@ class Auth extends Service {
 
     public $Session = null;
 
+
+    protected static $defaultOptions = [
+        'UsersStartingUpload'          => ['value' => '500',   'section' => 'users', 'displayRow' => 1, 'displayCol' => 1, 'type' => 'int',  'description' => 'Initial Upload Credit (MiB)'],
+        'UsersStartingInvites'         => ['value' => '0',     'section' => 'users', 'displayRow' => 1, 'displayCol' => 2, 'type' => 'int',  'description' => 'Initial Invites'],
+        'UsersStartingPFLDays'         => ['value' => '0',     'section' => 'users', 'displayRow' => 1, 'displayCol' => 3, 'type' => 'int',  'description' => 'Initial Personal Freeleech (days)'],
+        'UsersStartingFLTokens'        => ['value' => '0',     'section' => 'users', 'displayRow' => 1, 'displayCol' => 4, 'type' => 'int',  'description' => 'Initial Freeleech/Doubleseed Tokens'],
+    ];
+
     protected static $useRepositories = [
         'permissions' => 'PermissionRepository',
         'sessions'    => 'SessionRepository',
@@ -36,12 +44,15 @@ class Auth extends Service {
         'guardian'  => 'Guardian',
         'db'        => 'DB',
         'secretary' => 'Secretary',
+        'tracker'   => 'Tracker',
+        'options'   => 'Options',
     ];
 
     protected $SessionID = null;
     protected $UserSessions = null;
     protected $CID = null;
     protected $activeUserPermissions = null;
+    protected $minUserPermissions = null;
 
     public function __construct(Master $master) {
         parent::__construct($master);
@@ -80,11 +91,10 @@ class Auth extends Service {
         // Because we <3 our staff
         if ($this->isAllowed('site_disable_ip_history')) {
             $this->master->server['REMOTE_ADDR'] = '127.0.0.1';
+            $this->request->IP = '127.0.0.1';
         }
 
         // Throwback, for now
-        //var_dump($this->request->user->legacy['IP']);
-        //var_dump($this->master->server['REMOTE_ADDR']);
         if ($this->request->user && ($this->request->user->legacy['IP'] != $this->master->server['REMOTE_ADDR'])) {
             $UserID = $this->request->user->legacy['ID'];
             $CurIP  = $this->request->user->legacy['IP'];
@@ -148,6 +158,10 @@ class Auth extends Service {
         if ($this->request->authLevel >= 2) {
             throw new UserError("Already logged in");
         }
+        if (empty($options['width']) || empty($options['height']) || empty($options['colordepth'])) {
+            # Deny access to bots
+            throw new AuthError("Bots are forbidden", "Unauthorized", "/login");
+        }
 
         $this->secretary->updateClientInfo($options);
 
@@ -194,6 +208,7 @@ class Auth extends Service {
         $session->setFlagStatus(Session::IP_LOCKED, $options['iplocked']);
 
         $this->sessions->save($session);
+        $this->cache->delete_value('users_sessions_'.$user->ID);
         return $session;
     }
 
@@ -243,21 +258,32 @@ class Auth extends Service {
         return $this->check_password($user, $password);
     }
 
-    public function set_password($userID, $password) {
-        $user = $this->users->load($userID);
+    public function set_password($user, $password) {
+        // If we're passed a userID the load the user object
+        $userID = false;
+        if (is_numeric($user)) {
+            $userID = $user;
+            $user = $this->users->load($user);
+        }
+
+        // Handle setting the password
         if ($user && strlen($password)) {
             $user->Password = $this->create_hash_bcrypt($password);
-            $this->users->save($user);
+            // Only save the user object if we loaded it
+            if ($userID && is_numeric($userID)) {
+                $this->users->save($user);
+            }
+            // Save the password change
+            $this->db->raw_query(
+                "INSERT INTO users_history_passwords
+                (UserID, ChangerIP, ChangeTime) VALUES
+                (:userid, :changerIP, :changetime)",
+                [':userid'     => $user->ID,
+                 ':changerIP'  => $this->request->IP,
+                 ':changetime' => sqltime()]
+            );
         } else {
             throw new InternalError("Invalid set_password attempt.");
-        }
-    }
-
-    public function set_user_password(User $user, $password) {
-        if ($user && strlen($password)) {
-            $user->Password = $this->create_hash_bcrypt($password);
-        } else {
-            throw new InternalError("Invalid set_user_password attempt.");
         }
     }
 
@@ -351,6 +377,14 @@ class Auth extends Service {
         return $userPermissions;
     }
 
+    public function getMinUserPermissions() {
+        if (is_null($this->minUserPermissions)) {
+            $userPerms = $this->permissions->getLegacyPermission($this->permissions->getMinUserClassID());
+            $this->minUserPermissions = $userPerms['Permissions'];
+        }
+        return $this->minUserPermissions;
+    }
+
     public function getActiveUserPermissions() {
         if (is_null($this->activeUserPermissions)) {
             if (!$this->request->user) {
@@ -367,6 +401,13 @@ class Auth extends Service {
             return false;
         }
         $permissions = $this->getActiveUserPermissions();
+        $allowed = array_key_exists($name, $permissions) && $permissions[$name];
+        return $allowed;
+    }
+
+    public function isAllowedByMinUser($name) {
+        # Determine if something is allowed, and return the answer as a boolean.
+        $permissions = $this->getMinUserPermissions();
         $allowed = array_key_exists($name, $permissions) && $permissions[$name];
         return $allowed;
     }
@@ -445,7 +486,7 @@ class Auth extends Service {
 
     public function createUser($username, $password, $email, $inviter=0) {
         $torrentPass = $this->crypto->random_string(32);
-        list($userCount) = $this->db->raw_query("SELECT COUNT(*) FROM users_main")->fetch();
+        $userCount = $this->db->raw_query("SELECT COUNT(*) FROM users_main")->fetchColumn();
         // First user is SysOp
         if($userCount == 0) {
             $permissionID = 1; # Should be true on new installs
@@ -458,15 +499,17 @@ class Auth extends Service {
         }
 
         $enabled = '1';
-        $uploaded = 524288000; # TODO config
-        $this->db->raw_query("INSERT INTO users_main (Username, Email, torrent_pass, PermissionID, Enabled, Uploaded)
-                                              VALUES (:username, :email, :torrentpass, :permissionID, :enabled, :uploaded)",
+        $this->db->raw_query("INSERT INTO users_main (Username, Email, torrent_pass, PermissionID, Enabled, Uploaded, FLTokens, Invites, personal_freeleech)
+                                              VALUES (:username, :email, :torrentpass, :permissionID, :enabled, :uploaded, :fltokens, :invites, :personalFL)",
                                 [':username'     => $username,
                                  ':email'        => $email,
                                  ':torrentpass'  => $torrentPass,
                                  ':permissionID' => $permissionID,
                                  ':enabled'      => $enabled,
-                                 ':uploaded'     => $uploaded]);
+                                 ':uploaded'     => $this->options->UsersStartingUpload * 1024*1024,
+                                 ':fltokens'     => $this->options->UsersStartingFLTokens,
+                                 ':invites'      => $this->options->UsersStartingInvites,
+                                 ':personalFL'   => date('Y-m-d H:i:s', strtotime("+{$this->options->UsersStartingPFLDays} days"))]);
         $userID = $this->db->last_insert_id();
         $stylesheet = $this->stylesheets->getDefault();
         $this->db->raw_query("INSERT INTO users_info
@@ -484,13 +527,15 @@ class Auth extends Service {
         $user->ID = $userID;
         $user->Username = $username;
         $user->EmailID = 0;
-        $this->set_user_password($user, $password);
-
-        // Required for legacy Tracker comms
-        $this->master->settings->set_legacy_constants();
-        update_tracker('add_user', array('id' => $userID, 'passkey' => $torrentPass));
-
+        $this->set_password($user, $password);
         $this->users->save($user);
+
+        sendIntroPM($user->ID);
+
+        // Add user before setting PFL on the tracker
+        $this->tracker->addUser($torrentPass, $userID);
+        $this->tracker->setPersonalFreeleech($torrentPass, strtotime("+{$this->options->UsersStartingPFLDays} days") );
+
         return $user;
     }
 }

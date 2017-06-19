@@ -6,8 +6,7 @@ if (!check_perms('site_collages_subscribe')) {
     error(403);
 }
 
-include(SERVER_ROOT . '/classes/class_text.php'); // Text formatting class
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 show_header('Subscribed collages', 'browse,collage');
 
@@ -168,7 +167,7 @@ $CollageSubs = $DB->to_array();
                 <tr class="colhead_dark">
                     <td>
                         <span style="float:left;">
-                            <strong><a href="collages.php?id=<?= $CollageID ?>"><?= $CollageName ?></a></strong> (<?= $NewTorrentCount ?> new torrent<?= ($NewTorrentCount == 1 ? '' : 's') ?>)
+                            <strong><a href="collages.php?id=<?= $CollageID ?>"><?= $CollageName ?></a></strong> (<?= $NewTorrentCount ?> new Torrent<?= ($NewTorrentCount == 1 ? '' : 's') ?>)
                         </span>&nbsp;
                         <span style="float:right;">
                             <a href="#" onclick="$('#discog_table_<?= $CollageID ?>').toggle(); this.innerHTML=(this.innerHTML=='[Hide]'?'[Show]':'[Hide]'); return false;"><?= $ShowAll ? '[Show]' : '[Hide]' ?></a>&nbsp;&nbsp;&nbsp;[<a href="userhistory.php?action=catchup_collages&auth=<?= $LoggedUser['AuthKey'] ?>&collageid=<?= $CollageID ?>">Catch up</a>]&nbsp;&nbsp;&nbsp;<a href="#" onclick="CollageSubscribe(<?= $CollageID ?>); return false;" id="subscribelink<?= $CollageID ?>">[Unsubscribe]</a>

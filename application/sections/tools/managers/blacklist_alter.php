@@ -14,7 +14,8 @@ if ($_POST['submit'] == 'Delete') {
     $DB->query("SELECT peer_id FROM xbt_client_blacklist WHERE id = " . $_POST['id']);
     list($PeerID) = $DB->next_record();
     $DB->query('DELETE FROM xbt_client_blacklist WHERE id=' . $_POST['id']);
-    update_tracker('remove_blacklist', array('peer_id' => $PeerID));
+    //update_tracker('remove_blacklist', array('peer_id' => $PeerID));
+    $master->tracker->removeBlacklist($PeerID);
 
 } else { //Edit & Create, Shared Validation
 
@@ -34,7 +35,8 @@ if ($_POST['submit'] == 'Delete') {
                 vstring='" . $Client . "',
                 peer_id='" . $PeerID . "'
                 WHERE ID=" . $_POST['id']);
-            update_tracker('edit_blacklist', array('old_peer_id' => $OldPeerID, 'new_peer_id' => $PeerID));
+            //update_tracker('edit_blacklist', array('old_peer_id' => $OldPeerID, 'new_peer_id' => $PeerID));
+            $master->tracker->editBlacklist($OldPeerID, $PeerID);
         }
     } else { //Create
         $Values = array();
@@ -71,7 +73,8 @@ if ($_POST['submit'] == 'Delete') {
                             (vstring, peer_id)
                      VALUES ('" . $Client . "','" . $PeerID . "')");
 
-        update_tracker('add_blacklist', array('peer_id' => $PeerID));
+        //update_tracker('add_blacklist', array('peer_id' => $PeerID));
+        $master->tracker->addBlacklist($PeerID);
     }
 }
 

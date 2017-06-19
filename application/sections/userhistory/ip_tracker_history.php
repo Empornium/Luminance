@@ -38,7 +38,7 @@ function ShowIPs(rowname)
 <?php
 list($Page,$Limit) = page_limit(IPS_PER_PAGE);
 
-$TrackerIps = $DB->query("SELECT IP, fid, tstamp FROM xbt_snatched WHERE uid = ".$UserID." AND IP != '' ORDER BY tstamp DESC LIMIT $Limit");
+$TrackerIps = $DB->query("SELECT IF(INET6_NTOA(ipv6) IS NULL, INET6_NTOA(ipv4), INET6_NTOA(ipv6)) AS IP, fid, tstamp FROM xbt_snatched WHERE uid = ".$UserID." AND (ipv4!='' OR ipv6!='') ORDER BY tstamp DESC LIMIT $Limit");
 
 $DB->query("SELECT FOUND_ROWS()");
 list($NumResults) = $DB->next_record();
@@ -66,7 +66,7 @@ foreach ($Results as $Index => $Result) {
                 <?=display_ip($IP, geoip($IP))?><br />
                 <?=get_host($IP)?>
         </td>
-        <td><a href="torrents.php?torrentid=<?=$TorrentID?>"><?=$TorrentID?></a></td>
+        <td><a href="details.php?id=<?=$TorrentID?>"><?=$TorrentID?></a></td>
         <td><?=date("Y-m-d g:i:s", $Time)?></td>
     </tr>
 <?php

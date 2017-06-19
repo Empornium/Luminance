@@ -32,6 +32,8 @@ class Cache extends \Memcache
     public $MemcacheDBArray = array();
     public $MemcacheDBKey = '';
     protected $InTransaction = false;
+    protected $enable = true;
+    protected $enable_debug = true;
     public $Time = 0;
     private $PersistentKeys = array(
         'stats_*',
@@ -48,6 +50,24 @@ class Cache extends \Memcache
         @$this->pconnect($host, $port);
     }
 
+    public function disable()
+    {
+        $this->enable = false;
+    }
+
+    public function enable()
+    {
+        $this->enable = true;
+    }
+
+    public function enable_debug() {
+        $this->enable_debug = true;
+    }
+
+    public function disable_debug() {
+        $this->enable_debug = false;
+    }
+
     //---------- Caching functions ----------//
 
     // Allows us to set an expiration on otherwise perminantly cache'd values
@@ -55,13 +75,14 @@ class Cache extends \Memcache
     public function expire_value($Key, $Duration=2592000)
     {
         $StartTime=microtime(true);
-        $this->set($Key, $this->get($Key), $Duration);
+        $this->set($Key, @$this->get($Key), $Duration);
         $this->Time+=(microtime(true)-$StartTime)*1000;
     }
 
     // Wrapper for Memcache::set, with the zlib option removed and default duration of 30 days
     public function cache_value($Key, $Value, $Duration=2592000)
     {
+        if (!$this->enable) return;
         $StartTime=microtime(true);
         if (empty($Key)) {
             //trigger_error("Cache insert failed for empty key");
@@ -74,6 +95,7 @@ class Cache extends \Memcache
 
     public function replace_value($Key, $Value, $Duration=2592000)
     {
+        if (!$this->enable) return;
         $StartTime=microtime(true);
         $this->replace($Key, $Value, false, $Duration);
         $this->Time+=(microtime(true)-$StartTime)*1000;
@@ -81,6 +103,7 @@ class Cache extends \Memcache
 
     public function get_value($Key, $NoCache=false)
     {
+        if (!$this->enable) return;
         $StartTime=microtime(true);
         if (empty($Key)) {
             trigger_error("Cache retrieval failed for empty key");
@@ -118,12 +141,11 @@ class Cache extends \Memcache
         //For cases like the forums, if a keys already loaded grab the existing pointer
         if (isset($this->CacheHits[$Key]) && !$NoCache) {
             $this->Time+=(microtime(true)-$StartTime)*1000;
-
             return $this->CacheHits[$Key];
         }
 
-        $Return = $this->get($Key);
-        if ($Return !== false && !$NoCache) {
+        $Return = @$this->get($Key);
+        if ($Return !== false && !$NoCache && $this->enable_debug) {
             $this->CacheHits[$Key]  = $Return;
             $this->CacheTimes[$Key] =(microtime(true)-$StartTime)*1000;
             $this->Time+=$this->CacheTimes[$Key];
@@ -135,13 +157,8 @@ class Cache extends \Memcache
     // Wrapper for Memcache::delete. For a reason, see above.
     public function delete_value($Key)
     {
+        if (!$this->enable) return;
         $StartTime=microtime(true);
-        if (empty($Key)) {
-            //trigger_error("Cache deletion failed for empty key");
-        }
-/*        if (!$this->delete($Key)) {
-            trigger_error("Cache delete failed for key $Key");
-        } */
         @$this->delete($Key);
         $this->Time+=(microtime(true)-$StartTime)*1000;
     }
@@ -150,7 +167,8 @@ class Cache extends \Memcache
 
     public function begin_transaction($Key)
     {
-        $Value = $this->get($Key);
+        if (!$this->enable) return;
+        $Value = @$this->get($Key);
         if (!is_array($Value)) {
             $this->InTransaction = false;
             $this->MemcacheDBKey = array();
@@ -167,6 +185,7 @@ class Cache extends \Memcache
 
     public function cancel_transaction()
     {
+        if (!$this->enable) return;
         $this->InTransaction = false;
         $this->MemcacheDBKey = array();
         $this->MemcacheDBKey = '';
@@ -174,6 +193,7 @@ class Cache extends \Memcache
 
     public function commit_transaction($Time=2592000)
     {
+        if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
         }
@@ -184,6 +204,7 @@ class Cache extends \Memcache
     // Updates multiple rows in an array
     public function update_transaction($Rows, $Values)
     {
+        if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
         }
@@ -206,6 +227,7 @@ class Cache extends \Memcache
     // $Values must be an associative array with key:value pairs like in the array we're updating
     public function update_row($Row, $Values)
     {
+        if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
         }
@@ -243,6 +265,7 @@ class Cache extends \Memcache
     // $Values must be an associative array with key:value pairs like in the array we're updating
     public function increment_row($Row, $Values)
     {
+        if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
         }
@@ -270,6 +293,7 @@ class Cache extends \Memcache
     // Insert a value at the beginning of the array
     public function insert_front($Key, $Value)
     {
+        if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
         }
@@ -283,6 +307,7 @@ class Cache extends \Memcache
     // Insert a value at the end of the array
     public function insert_back($Key, $Value)
     {
+        if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
         }
@@ -296,6 +321,7 @@ class Cache extends \Memcache
 
     public function insert($Key, $Value)
     {
+        if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
         }
@@ -308,6 +334,7 @@ class Cache extends \Memcache
 
     public function delete_row($Row)
     {
+        if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
         }
@@ -319,6 +346,7 @@ class Cache extends \Memcache
 
     public function update($Key, $Rows, $Values, $Time=2592000)
     {
+        if (!$this->enable) return;
         if (!$this->InTransaction) {
             $this->begin_transaction($Key);
             $this->update_transaction($Rows, $Values);

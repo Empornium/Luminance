@@ -32,6 +32,29 @@ var listener = {
 	}
 };
 
+var data = {
+  set: function(key, value) {
+    if (!key || !value) {return;}
+
+    if (typeof value === "object") {
+      value = JSON.stringify(value);
+    }
+    localStorage.setItem(key, value);
+  },
+  get: function(key) {
+    var value = localStorage.getItem(key);
+
+    if (!value) {return;}
+
+    // assume it is an object that has been stringified
+    if (value[0] === "{" || value[0] === "[") {
+      value = JSON.parse(value);
+    }
+
+    return value;
+  }
+}
+
 /* Site wide functions */
 
 // http://www.thefutureoftheweb.com/blog/adddomloadevent
@@ -40,6 +63,51 @@ var listener = {
 // 1) it is not open source
 //  2) there is a known IE bug (from before they grabbed it) which is going to fuck us up
 var addDOMLoadEvent=(function(){var e=[],t,s,n,i,o,d=document,w=window,r='readyState',c='onreadystatechange',x=function(){n=1;clearInterval(t);while(i=e.shift())i();if(s)s[c]=''};return function(f){if(n)return f();if(!e[0]){d.addEventListener&&d.addEventListener("DOMContentLoaded",x,false);/*@cc_on@*//*@if(@_win32)d.write("<script id=__ie_onload defer src=//0><\/scr"+"ipt>");s=d.getElementById("__ie_onload");s[c]=function(){s[r]=="complete"&&x()};/*@end@*/if(/WebKit/i.test(navigator.userAgent))t=setInterval(function(){/loaded|complete/.test(d[r])&&x()},10);o=w.onload;w.onload=function(){x();o&&o()}}e.push(f)}})();
+
+
+
+// from https://jsfiddle.net/fx6a6n6x/  2/2017
+// Copies a string to the clipboard. Must be called from within an
+// event handler such as click. May return false if it failed, but
+// this is not always possible. Browser support for Chrome 43+,
+// Firefox 42+, Safari 10+, Edge and IE 10+.
+// IE: The clipboard feature may be disabled by an administrator. By
+// default a prompt is shown the first time the clipboard is
+// used (per session).
+function copyToClipboard(text) {
+    if (window.clipboardData && window.clipboardData.setData) {
+        // IE specific code path to prevent textarea being shown while dialog is visible.
+        return clipboardData.setData("Text", text);
+
+    } else if (document.queryCommandSupported && document.queryCommandSupported("copy")) {
+        var textarea = document.createElement("textarea");
+        textarea.textContent = text;
+        textarea.style.position = "fixed";  // Prevent scrolling to bottom of page in MS Edge.
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            return document.execCommand("copy");  // Security exception may be thrown by some browsers.
+        } catch (ex) {
+            console.warn("Copy to clipboard failed.", ex);
+            return false;
+        } finally {
+            document.body.removeChild(textarea);
+        }
+    }
+}
+
+
+var getTextWidth = function(text, font) {
+    // re-use canvas object for better performance
+    var canvas = getTextWidth.canvas || (getTextWidth.canvas = document.createElement("canvas"));
+    //var font = getTextWidth.font || (getTextWidth.font = 'normal 11pt "Lucida Grande", Helvetica, Arial, Verdana, sans-serif');
+    //'    font: normal 11pt "New Courier", Courier, monospace'
+        //console.log('getTextWidth.font: '+ font.toString());
+    var context = canvas.getContext("2d");
+    context.font = font;
+    var metrics = context.measureText(text);
+    return metrics.width;
+}
 
 
 
@@ -55,6 +123,12 @@ function is_array(input) {
 function function_exists(function_name) {
 	return (typeof this.window[function_name] === 'function');
 }
+
+function html_entity_encode (str) {
+    return (str+'').replace(/./gm, function(s) {
+        return "&#" + s.charCodeAt(0) + ";";
+    });
+};
 
 function html_entity_decode(str) {
     var el = document.createElement("div");
@@ -151,7 +225,7 @@ function save_message(message) {
 function error_message(message) {
 	var messageDiv = document.createElement("div");
 	messageDiv.className = "error_message";
-	messageDiv.innerHTML = message;
+	messageDiv.innerHTML = html_entity_encode(message); //
 	$("#content").raw().insertBefore(messageDiv,$("#content").raw().firstChild);
 }
 
@@ -312,6 +386,8 @@ util.fn.init.prototype = util.fn;
 var $ = util;
 
 document.addEventListener('DOMContentLoaded', function() {
-  var mySVGsToInject = document.querySelectorAll('img.svg');
-  SVGInjector(mySVGsToInject);
+  // For icons
+  console.log("injecting icons");
+  new SVGInjector().inject(document.querySelectorAll('svg[data-src]'));
+  console.log("icons injected");
 }, false);

@@ -13,8 +13,7 @@ if (!check_perms('admin_reports')) {
     error(403);
 }
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = NEW TEXT;
+$Text = new Luminance\Legacy\Text;
 
 define('REPORTS_PER_PAGE', '10');
 list($Page,$Limit) = page_limit(REPORTS_PER_PAGE);
@@ -255,7 +254,7 @@ if (count($Reports) == 0) {
                     <table cellpadding="5">
                         <tr>
                             <td class="label"><a href="reportsv2.php?view=report&amp;id=<?=$ReportID?>">Reported </a>Torrent:</td>
-                            <td colspan="3">
+                            <td colspan="4">
             <?php 	if (!$GroupID) { ?>
                                 <a href="log.php?search=Torrent+<?=$TorrentID?>"><?=$TorrentID?></a> (Deleted)
             <?php   } else {
@@ -322,14 +321,14 @@ if (count($Reports) == 0) {
                         </tr>
                         <tr>
                             <td class="label">Reported By:</td>
-                            <td colspan="3">
+                            <td colspan="4">
                                 <a href="user.php?id=<?=$ReporterID?>"><?=$ReporterName?></a> <?=time_diff($ReportedTime)?> for the reason: <strong><?=$ReportType['title']?></strong>
                             </td>
                         </tr>
             <?php  if ($Tracks) { ?>
                         <tr>
                             <td class="label">Relevant Tracks:</td>
-                            <td colspan="3">
+                            <td colspan="4">
                                 <?=str_replace(" ", ", ", $Tracks)?>
                             </td>
                         </tr>
@@ -339,7 +338,7 @@ if (count($Reports) == 0) {
             ?>
                         <tr>
                             <td class="label">Relevant Links:</td>
-                            <td colspan="3">
+                            <td colspan="4">
             <?php
                     $Links = explode(" ", $Links);
                     foreach ($Links as $Link) {
@@ -361,13 +360,14 @@ if (count($Reports) == 0) {
             ?>
                         <tr>
                             <td class="label">Relevant Other Torrents:</td>
-                            <td colspan="3">
+                            <td colspan="4">
                                 <input class="hidden" name="extras_id" value="<?=$ExtraIDs?>" />
 
             <?php
                     $First = true;
                     $Extras = explode(" ", $ExtraIDs);
                     foreach ($Extras as $ExtraID) {
+                        if(!is_number($ExtraID)) error(0);
 
                         $DB->query("SELECT
                                     tg.Name,
@@ -398,6 +398,10 @@ if (count($Reports) == 0) {
                             &nbsp;[<a href="torrents.php?action=dupe_check&amp;id=<?=$ExtraID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
                 <?php
                             $First = false;
+                        } else {
+?>
+                                <a href="torrents.php?id=<?=$ExtraID?>">(deleted torrent) #<?=$ExtraID?></a>
+<?php
                         }
                     }
             ?>
@@ -410,7 +414,7 @@ if (count($Reports) == 0) {
             ?>
                         <tr>
                             <td class="label">Relevant Images:</td>
-                            <td colspan="3">
+                            <td colspan="4">
             <?php
                     $Images = explode(" ", $Images);
                     foreach ($Images as $Image) {
@@ -426,7 +430,7 @@ if (count($Reports) == 0) {
             ?>
                         <tr>
                             <td class="label">User Comment:</td>
-                            <td colspan="3"><?=$Text->full_format($UserComment)?></td>
+                            <td colspan="4"><?=$Text->full_format($UserComment)?></td>
                         </tr>
                         <?php  // END REPORTED STUFF :|: BEGIN MOD STUFF ?>
             <?php
@@ -434,7 +438,7 @@ if (count($Reports) == 0) {
             ?>
                         <tr>
                             <td class="label">In Progress by:</td>
-                            <td colspan="3">
+                            <td colspan="4">
                                 <a href="user.php?id=<?=$ResolverID?>"><?=$ResolverName?></a>
                             </td>
                         </tr>
@@ -443,45 +447,53 @@ if (count($Reports) == 0) {
             ?>
                         <tr>
                             <td class="label">Report Comment:</td>
-                            <td colspan="3">
+                            <td colspan="4">
                                 <input type="text" name="comment" id="comment<?=$ReportID?>" size="45" value="<?=$ModComment?>" />
                                 <input type="button" value="Update now" onclick="UpdateComment(<?=$ReportID?>)" />
                             </td>
                         </tr>
-                        <tr class="spacespans">
+                        <tr>
                             <td class="label">
-                                <a href="javascript:Load('<?=$ReportID?>')" title="Set back to <?=$ReportType['title']?>">Resolve</a>
+                                <a href="javascript:Load('<?=$ReportID?>')" title="Set back to <?=$ReportType['title']?>">Resolve Type</a>
                             </td>
-                            <td colspan="3">
-                                <select name="resolve_type" id="resolve_type<?=$ReportID?>" onchange="ChangeResolve(<?=$ReportID?>)">
+                            <td colspan="4">
+                                <select name="resolve_type" id="resolve_type<?=$ReportID?>" onchange="ChangeResolve('<?=$ReportID?>')">
     <?php
-        $TypeList = $Types;
-        $Priorities = array();
-        foreach ($TypeList as $Key => $Value) {
-            $Priorities[$Key] = $Value['priority'];
-        }
-        array_multisort($Priorities, SORT_ASC, $TypeList);
+                            $TypeList = $Types;
+                            $Priorities = array();
+                            foreach ($TypeList as $Key => $Value) {
+                                $Priorities[$Key] = $Value['priority'];
+                            }
+                            array_multisort($Priorities, SORT_ASC, $TypeList);
 
-        foreach ($TypeList as $Type => $Data) {
+                            foreach ($TypeList as $Type => $Data) {
     ?>
-                            <option value="<?=$Type?>"><?=$Data['title']?></option>
-    <?php  } ?>
+                                    <option value="<?=$Type?>"><?=$Data['title']?></option>
+    <?php                   } ?>
                                 </select>
-                                <span id="options<?=$ReportID?>">
+                                <span title="Change report type / resolve action">
+                                    <input type="button" name="update_resolve" id="update_resolve<?=$ReportID?>" value="Change report type" onclick="UpdateResolve(<?=$ReportID?>)" />
+                                </span>
+                            </td>
+                        </tr>
+                        <tr class="spacespans">
+                            <td class="label">Resolve Options</td>
+                            <td colspan="4">
+                                <span id="options<?=$ReportID?>" class="">
 <?php  if (check_perms('users_mod')) { ?>
                                     <span title="Delete Torrent?">
                                         <strong>Delete</strong>
-                                        <input type="checkbox" name="delete" id="delete<?=$ReportID?>"/>
+                                        <input type="checkbox" name="delete" id="delete<?=$ReportID?>" onchange="UpdateUFLOption('<?=$ReportID?>');" />
                                     </span>
 <?php  } ?>
                                     <span title="Warning length in weeks">
                                         <strong>Warning</strong>
                                         <select name="warning" id="warning<?=$ReportID?>">
-                                    <option value="0">none</option>
-                                    <option value="1">1 week</option>
-<?php                                       for ($i = 2; $i < 9; $i++) {  ?>
-                                    <option value="<?=$i?>"><?=$i?> weeks</option>
-<?php                                       }       ?>
+                                            <option value="0">none</option>
+                                            <option value="1">1 week</option>
+<?php                               for ($i = 2; $i < 9; $i++) {  ?>
+                                            <option value="<?=$i?>"><?=$i?> weeks</option>
+<?php                               }       ?>
                                         </select>
                                     </span>
                                     <span title="Remove upload privileges?">
@@ -489,15 +501,15 @@ if (count($Reports) == 0) {
                                         <input type="checkbox" name="upload" id="upload<?=$ReportID?>"/>
                                     </span>
                                     <span title="Pay bounty to reporter (<?=$ReporterName?>)">
-                                        <strong>Pay Bounty (<span id="bounty_amount<?=$ReportID?>"><?=$ReportType['resolve_options']['bounty']?></span>)</strong>
+                                        <strong>Pay Bounty <span id="bounty_amount<?=$ReportID?>">(<?=$ReportType['resolve_options']['bounty']?>)</span></strong>
                                         <input type="checkbox" name="bounty" id="bounty<?=$ReportID?>"/>
                                     </span>
-<?php                                       //}       ?>
-                                    <span title="Change report type / resolve action">
-                                        <input type="button" name="update_resolve" id="update_resolve<?=$ReportID?>" value="Change report type" onclick="UpdateResolve(<?=$ReportID?>)" />
+                                    <span title="Refund UFL?">
+                                        <strong>Refund UFL</strong>
+                                        <input type="checkbox" name="refundufl" id="refundufl<?=$ReportID?>"/>
                                     </span>
                                 </span>
-                                </td>
+                            </td>
                         </tr>
                         <tr>
                             <td class="label">
@@ -507,7 +519,7 @@ if (count($Reports) == 0) {
                                     <option value="Reporter">Reporter</option>
                                 </select>
                             </td>
-                            <td colspan="3">A PM is automatically generated for the uploader (and if a bounty is paid to the reporter). Any text here is appended to the uploaders auto PM unless using 'Send Now' to immediately send a message.<br />
+                            <td colspan="4">A PM is automatically generated for the uploader (and if a bounty is paid to the reporter). Any text here is appended to the uploaders auto PM unless using 'Send Now' to immediately send a message.<br />
                                 <blockquote><strong>uploader pm text:</strong><br/><span id="pm_message<?=$ReportID?>"><?=$ReportType['resolve_options']['pm']?></span></blockquote>
                                 <span title="Uploader: Appended to the regular message unless using send now. Reporter: Must be used with send now">
                                     <textarea name="uploader_pm" id="uploader_pm<?=$ReportID?>" cols="50" rows="1"></textarea>
@@ -517,12 +529,12 @@ if (count($Reports) == 0) {
                         </tr>
                         <tr>
                             <td class="label">SiteLog Message:</td>
-                            <td>
+                            <td colspan="2">
                                 <input type="text" name="log_message" id="log_message<?=$ReportID?>" class="long" <?php  if ($ExtraIDs) {
                                             $Extras = explode(" ", $ExtraIDs);
                                             $Value = "";
                                             foreach ($Extras as $ExtraID) {
-                                                $Value .= 'http://'.SITE_URL.'/torrents.php?torrentid='.$ExtraID.' ';
+                                                $Value .= 'http://'.SITE_URL.'/details.php?id='.$ExtraID.' ';
                                             }
                                             echo 'value="'.trim($Value).'"';
                                         } ?>/>
@@ -533,7 +545,7 @@ if (count($Reports) == 0) {
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="4" style="text-align: center;">
+                            <td colspan="5" style="text-align: center;">
                                 <input type="button" value="Invalid Report" onclick="Dismiss(<?=$ReportID?>);" title="Dismiss this as an invalid Report" />
                                 <input type="button" value="Report resolved manually" onclick="ManualResolve(<?=$ReportID?>);" title="Set status to Resolved but take no automatic action" />
             <?php 		if ($Status == "InProgress" && $LoggedUser['ID'] == $ResolverID) { ?>
@@ -582,7 +594,7 @@ if (count($Reports) == 0) {
                 }
                             ?>
                         <tr>
-                            <td colspan="4">
+                            <td colspan="5">
 
                                 <span style="float:right;">
                                     Start staff conversation with <select name="toid" >

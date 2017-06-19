@@ -9,6 +9,8 @@ use Luminance\Errors\NotFoundError;
 use Luminance\Errors\UserError;
 use Luminance\Entities\Email;
 use Luminance\Entities\Invite;
+use Luminance\Entities\Session;
+use Luminance\Entities\User;
 
 use Luminance\Responses\Response;
 use Luminance\Responses\Redirect;
@@ -36,6 +38,7 @@ class UsersPlugin extends Plugin {
         'emails'   => 'EmailRepository',
         'invites'  => 'InviteRepository',
         'sessions' => 'SessionRepository',
+        'users'    => 'UserRepository',
     ];
 
     protected static $useServices = [
@@ -51,12 +54,8 @@ class UsersPlugin extends Plugin {
         'orm'           => 'ORM',
     ];
 
-    public function __construct(Master $master) {
-        parent::__construct($master);
-        $this->users = $this->master->repos->users;
-    }
-
     public static function register(Master $master) {
+        parent::register($master);
         # This registers the plugin and has nothing to do with account creation!
         $master->prependRoute([ '*', 'users/**', 0, 'plugin', 'Users' ]);
     }
@@ -91,12 +90,12 @@ class UsersPlugin extends Plugin {
             return new Redirect('/');
         }
         if (!empty($this->request->getString('token'))) {
-                $token=$this->request->getString('token');
+            $token=$this->request->getString('token');
         	$this->secretary->checkToken($token, 'users.recoverPassword', 600);
         	return new Rendered('@Users/password.html', ['token' => $token]);
-	} else {
-        	return new Rendered('@Users/recover.html', []);
-	}
+    	} else {
+            	return new Rendered('@Users/recover.html', []);
+    	}
     }
 
     public function doRecover() {
@@ -113,34 +112,61 @@ class UsersPlugin extends Plugin {
                 $address = $this->request->getString('email');
 
                 $email = $this->emails->get('Address = :address', [':address'=>$address]);
-                if(is_null($email)) throw new UserError("An e-mail with further instructions has been sent to the entered address, provided it exists on {$this->settings->main->site_name}.");
+                if(is_null($email)) {
+                    $this->flasher->notice("An e-mail with further instructions has been sent to the entered address, provided it exists on {$this->settings->main->site_name}.");
+                    return;
+                }
+                
                 $user = $this->users->load(intval($email->UserID));
 
-                # Gen token after checks to prevent excessive load
-                $token = $this->secretary->getToken("users.recoverPassword");
-
-                // Stash token
-                $user->ResetToken = $token;
-                $this->users->save($user);
-
+                // Populate email_body stuff first
                 $subject = 'Forgotten Password';
                 $email_body = [];
-                $email_body['token']    = $token;
                 $email_body['user']     = $user;
                 $email_body['ip']       = $this->request->IP;
                 $email_body['settings'] = $this->settings;
                 $email_body['scheme']   = $this->request->ssl ? 'https' : 'http';
 
-                if ($this->settings->site->debug_mode) {
-                    $body = $this->tpl->render('password_reset.flash', $email_body);
-                    $this->flasher->notice($body);
+                // Use the current host if we can find it.
+                if (empty($this->request->host)) {
+                    $email_body['host']     = $this->settings->main->site_url;
                 } else {
-                    $body = $this->tpl->render('password_reset.email', $email_body);
-                    $this->secretary->send_email($email->Address, $subject, $body);
-                    $this->flasher->notice("An e-mail with further instructions has been sent to the entered address, provided it exists on {$this->settings->main->site_name}.");
+                    $email_body['host']     = $this->request->host;
                 }
 
-                write_user_log($email->UserID, 'Someone requested email password recovery, email sent');
+                if ($user->legacy['Enabled'] != '1') {
+
+                    if ($this->settings->site->debug_mode) {
+                        $body = $this->tpl->render('disabled_reset.flash', $email_body);
+                        $this->flasher->notice($body);
+                    } else {
+                        $body = $this->tpl->render('disabled_reset.email', $email_body);
+                        $this->secretary->send_email($email->Address, $subject, $body);
+                        $this->flasher->notice("An e-mail with further instructions has been sent to the entered address, provided it exists on {$this->settings->main->site_name}.");
+                    }
+
+                    write_user_log($email->UserID, 'Someone requested email password recovery, disabled email sent');
+                } else {
+
+                    # Gen token after checks to prevent excessive load
+                    $token = $this->secretary->getToken("users.recoverPassword");
+
+                    // Stash token
+                    $user->ResetToken = $token;
+                    $this->users->save($user);
+                    $email_body['token']    = $token;
+
+                    if ($this->settings->site->debug_mode) {
+                        $body = $this->tpl->render('password_reset.flash', $email_body);
+                        $this->flasher->notice($body);
+                    } else {
+                        $body = $this->tpl->render('password_reset.email', $email_body);
+                        $this->secretary->send_email($email->Address, $subject, $body);
+                        $this->flasher->notice("An e-mail with further instructions has been sent to the entered address, provided it exists on {$this->settings->main->site_name}.");
+                    }
+
+                    write_user_log($email->UserID, 'Someone requested email password recovery, recovery email sent');
+                }
 
                 return new Redirect("/");
 
@@ -164,7 +190,8 @@ class UsersPlugin extends Plugin {
                 if ($password !== $checkPassword) {
                     throw new UserError("Passwords don't match");
                 }
-                $this->auth->set_password($user->ID, $password);
+                $this->auth->set_password($user, $password);
+                $this->users->save($user);
                 $this->flasher->notice("Password updated, please login now.");
 
                 write_user_log($user->ID, 'User reset password using email recovery link');
@@ -223,7 +250,7 @@ class UsersPlugin extends Plugin {
         if (!empty($this->request->getString('invite'))) {
             // First invite only!
             $invite = $this->invites->get('InviteKey = :invite', [':invite'=>$this->request->getString('invite')]);
-            if (empty($invite) ||$invite->hasExpired()) {
+            if (empty($invite) || $invite->hasExpired() || getUserEnabled($invite->InviterID) != 1) {
                 $this->flasher->error("Invite is invalid or expired.");
                 return new Redirect("/");
             } else {
@@ -312,6 +339,8 @@ class UsersPlugin extends Plugin {
             }
             $user  = $this->auth->createUser($username, $password, $email, $inviter);
             $email = $this->emailManager->newEmail(intval($user->ID), $email);
+            $user->EmailID = $email->ID;
+            $this->users->save($user);
             if ($invite) $this->orm->delete($invite);
             return new Redirect("/login");
         } catch (InputError $e) {

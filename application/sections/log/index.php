@@ -87,11 +87,13 @@ if ($DB->record_count() == 0) {
 }
 $Row = 'a';
 $Usernames = array();
+$HideName = !check_perms('users_view_anon_uploaders');
+
 while (list($Message, $LogTime) = $DB->next_record()) {
     $MessageParts = explode(" ", $Message);
     $Message = "";
     $Color = $Colon = false;
-    $HideName=false;
+    //$HideName=true;
     for ($i = 0, $PartCount = sizeof($MessageParts); $i < $PartCount; $i++) {
         if ((strpos($MessageParts[$i], 'https://'.SSL_SITE_URL) === 0 && $Offset = strlen('https://'.SSL_SITE_URL.'/')) ||
                 (strpos($MessageParts[$i], 'http://'.NONSSL_SITE_URL) === 0 && $Offset = strlen('http://'.NONSSL_SITE_URL.'/'))) {
@@ -103,7 +105,6 @@ while (list($Message, $LogTime) = $DB->next_record()) {
             case "Synonym":
             case "synonym":
                 $Tag = $MessageParts[$i + 1];
-                //$Tag = str_replace(',', '', $Tag);
                 if (is_string($Tag)) {
                     $Message = $Message.' '.$MessageParts[$i].' <a href="torrents.php?taglist='.str_replace(',', '', $Tag).'"> '.$Tag.'</a>';
                     $i++;
@@ -113,10 +114,10 @@ while (list($Message, $LogTime) = $DB->next_record()) {
                 break;
             case "Torrent":
             case "torrent":
-                $HideName = true;
+                //$HideName = true;
                 $TorrentID = $MessageParts[$i + 1];
                 if (is_numeric($TorrentID)) {
-                    $Message = $Message.' '.$MessageParts[$i].' <a href="torrents.php?torrentid='.$TorrentID.'"> '.$TorrentID.'</a>';
+                    $Message = $Message.' '.$MessageParts[$i].' <a href="details.php?id='.$TorrentID.'"> '.$TorrentID.'</a>';
                     $i++;
                 } else {
                     $Message = $Message.' '.$MessageParts[$i];
@@ -137,6 +138,7 @@ while (list($Message, $LogTime) = $DB->next_record()) {
                         if ($Links != '') $i++;
                 break;
             case "Request":
+                //$HideName = true;
                 $RequestID = $MessageParts[$i + 1];
                 if (is_numeric($RequestID)) {
                     $Message = $Message.' '.$MessageParts[$i].' <a href="requests.php?action=view&id='.$RequestID.'"> '.$RequestID.'</a>';
@@ -160,7 +162,7 @@ while (list($Message, $LogTime) = $DB->next_record()) {
                 $User = "";
                 $URL = "";
 
-                if (!$HideName || check_perms('users_view_anon_uploaders')) {
+                if (!$HideName) {   //} || check_perms('users_view_anon_uploaders')) {
 
                     if ($MessageParts[$i + 1] == "user") {
                         $i++;
@@ -211,24 +213,20 @@ while (list($Message, $LogTime) = $DB->next_record()) {
                 $Message = $Message." ".$MessageParts[$i];
                 break;
             case "Okay":
-                $HideName = false;
+                //$HideName = false;
                 if ($Color === false) {
                     $Color = 'green';
                 }
                 $Message = $Message." ".$MessageParts[$i];
                 break;
             case "Warned":
-                $HideName = false;
-                //if ($Color === false || $Color === 'green') {
-                    $Color = '#a07100';
-                //}
+                //$HideName = false;
+                $Color = '#a07100';
                 $Message = $Message." ".$MessageParts[$i];
                 break;
             case "deleted":
             case "auto-deleted":
-                //if ($Color === false || $Color === 'green') {
-                    $Color = 'red';
-                //}
+                $Color = 'red';
                 $Message = $Message." ".$MessageParts[$i];
                 break;
             case "edited":

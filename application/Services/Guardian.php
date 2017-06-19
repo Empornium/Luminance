@@ -111,7 +111,7 @@ class Guardian extends Service {
                     "We suggest that you ensure you have a strong password for your account.\n".
                     "Sometimes this message is generated when another user with a similar username accidentally types in yours.\n\n".
                     "If you think this was an attempt to hack your account please".
-                    " [url=/staffpm.php?action=user_inbox&show=1&assign=mod&sub={$Subject}&msg={$Message}][u]report this event to staff[/u][/url].\n".
+                    " [url=/staffpm.php?action=user_inbox&show=1&assign=smod&sub={$Subject}&msg={$Message}][u]report this event to staff[/u][/url].\n".
                     "- Thank you."));
         }
 
@@ -133,7 +133,7 @@ class Guardian extends Service {
 
                 if ($Attempt->Bans>=4) { // Automated bruteforce prevention
                     $IP = ip2unsigned($_SERVER['REMOTE_ADDR']);
-                    if ($this->db->rowCount() > 0) {
+                    if ($this->db->found_rows() > 0) {
                         //Ban exists already, only add new entry if not for same reason
                         $Reason = $this->db->raw_query("SELECT Reason FROM ip_bans WHERE ? BETWEEN FromIP AND ToIP", [$IP])->fetchColumn();
                         if ($Reason != "Automated ban per >3 failed login attempts") {
@@ -239,7 +239,7 @@ class Guardian extends Service {
 
                 if ($Flood->Bans>=4) { // Automated bruteforce prevention
                     $IP = ip2unsigned($_SERVER['REMOTE_ADDR']);
-                    if ($this->db->rowCount() > 0) {
+                    if ($this->db->found_rows() > 0) {
                         //Ban exists already, only add new entry if not for same reason
                         $Reason = $this->db->raw_query("SELECT Reason FROM ip_bans WHERE ? BETWEEN FromIP AND ToIP", [$IP])->fetchColumn();
                         if ($Reason != "Automated ban per >3 failed email recovery attempts") {

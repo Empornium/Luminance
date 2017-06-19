@@ -1,9 +1,8 @@
 <?php
 enforce_login();
 
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
 include(SERVER_ROOT.'/sections/torrents/functions.php'); // Edit report etc.
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 if (!empty($_REQUEST['my_torrents']) && $_REQUEST['my_torrents'] == '1') {
     $MyTorrents = true;

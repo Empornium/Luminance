@@ -43,7 +43,7 @@ function Toggle_Play_Row(reels_row, is_playing){
     }
 }
 function Change_Bet(){
-    var num = parseInt($('#betamount').raw().value); 
+    var num = parseInt($('#betamount').raw().value);
     num *= 10;
     if (num>100)num=1;
     Set_Bet_Interface(num);
@@ -58,13 +58,7 @@ function Set_Bet_Interface(num){
     $('#betbnum').html(num);
     $('#betcnum').html(num);
 }
-function PlaySound(wav){
-    if ($('#forcesound').raw().checked)
-        $('#sound').raw().innerHTML = '<embed src="static/common/casino/' + wav + '"  style="visibility:hidden;" autostart="true" loop="false" />';
-    else
-        $('#sound').raw().innerHTML = '<embed src="static/common/casino/' + wav + '" hidden="true" autostart="true" loop="false" />';
-}
-   
+
 
 function Pull_Lever(){
     if (count>0) return; // make them wait!
@@ -79,7 +73,7 @@ function Pull_Lever(){
         return;
     }
     winningreels= new Array(3);
-    count = 90; 
+    count = 90;
     animateMS=10;
     arrayNum=0;
     won=0;
@@ -91,29 +85,32 @@ function Pull_Lever(){
         $('#reelc'+i).remove_class('win');
     }
     $('#lever').raw().setAttribute("src", 'static/common/casino/leverDown.png');
-    if ($('#playsound').raw().checked) PlaySound("wheelspin.wav");
-    
-    
+    if ($('#playsound').raw().checked) {
+        var sound = document.getElementById("wheelspin_audio");
+        sound.play()
+    }
+
+
 	var ToPost = [];
 	ToPost['auth'] = authkey;
 	ToPost['bet'] = bet_amount;
 	ToPost['numbets'] = num_bets;
- 
+
     ajax.post("?action=slot_result", ToPost, function(response){  // "form" + postid
 	//ajax.get("?action=slot_result&bet="+bet_amount+"&numbets="+num_bets, function (response) {
-        var x = json.decode(response); 
-        setTimeout("leverup();", 800);
+        var x = json.decode(response);
+        setTimeout(leverup, 800);
         if ( is_array(x)){
             animate();
             for(var i=0;i<4;i++) {
                 reel[i]= x[i]; // store the end positions
             }
-            //$('#res0').raw().innerHTML = x[6];  
+            //$('#res0').raw().innerHTML = x[6];
             won = x[4]; // total won
             winningreels=x[5]; // which reels and rows to highlight in interface
         } else {    // error from ajax
             for(var j=0;j<4;j++) {
-                EndReel(j,((arrayNum+offset[j])%20)); 
+                EndReel(j,((arrayNum+offset[j])%20));
             }
             count=0;
             alert(x);
@@ -126,7 +123,7 @@ function leverup(){
 }
 
 function animate(){
-    
+
     if (stopped[0]==0 && (count > 80 || ((arrayNum+offset[0])%20) != reel[0])) RollReel(0);
     else EndReel(0,reel[0]);
     if (stopped[1]==0 && (count > 60 || stopped[0]==0 || ((arrayNum+offset[1])%20) != reel[1])) RollReel(1);
@@ -139,12 +136,14 @@ function animate(){
         if (stopped[3]==0) {
             stopped[3]=1;
             for(var i=0;i<4;i++) {
-                EndReel(i,reel[i]); 
+                EndReel(i,reel[i]);
                 if (winningreels[0]>=(i+1)) $('#reelb'+i).add_class('win');
                 if (winningreels[1]>=(i+1)) $('#reelc'+i).add_class('win');
                 if (winningreels[2]>=(i+1)) $('#reela'+i).add_class('win');
             }
-            $('#winnings').raw().innerHTML = addCommas( parseInt( $('#winnings').raw().innerHTML.replace(/,/gi, '') )+won-bet);
+            var current = addCommas( parseInt( $('#winnings').raw().innerHTML.replace(/,/gi, '') )+won-bet);
+            $('#winnings').raw().innerHTML = current;
+            $('#stats_credits').raw().innerHTML = current;
             $('#result').raw().innerHTML = won>0?'*Win* ' +won:'';
             count=0;
         }
@@ -155,21 +154,19 @@ function animate(){
         count--;
         if(animateMS<100) animateMS = animateMS + 2;
         else if(animateMS<150) animateMS = animateMS + 1;
-        t = setTimeout("animate();", animateMS);
+        t = setTimeout(animate, animateMS);
     }
 }
 
-function RollReel(x){	 
+function RollReel(x){
     $('#reela'+ x).raw().setAttribute("src", 'static/common/casino/' + reelPix[x][(arrayNum+offset[x]+2)%20]+ '.png');
     $('#reelb'+ x).raw().setAttribute("src", 'static/common/casino/' + reelPix[x][(arrayNum+offset[x]+1)%20]+ '.png');
     $('#reelc'+ x).raw().setAttribute("src", 'static/common/casino/' + reelPix[x][(arrayNum+offset[x])%20]+ '.png');
 }
-function EndReel(x,pos){		 
+function EndReel(x,pos){
     stopped[x]=1;
     offset[x]=pos;
     $('#reela'+ x).raw().setAttribute("src", 'static/common/casino/' + reelPix[x][(pos+2)%20] + '.png');
     $('#reelb'+ x).raw().setAttribute("src", 'static/common/casino/' + reelPix[x][(pos+1)%20] + '.png');
     $('#reelc'+ x).raw().setAttribute("src", 'static/common/casino/' + reelPix[x][pos] + '.png');
 }
-
-

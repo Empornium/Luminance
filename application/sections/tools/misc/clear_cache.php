@@ -3,13 +3,11 @@ if (!check_perms('users_mod') || !check_perms('admin_clear_cache')) {
     error(403);
 }
 
-show_header('Clear a cache key');
-
 if (!empty($_GET['flush'])) {
-   $Cache->flush();
-}
-//Make sure the form was sent
-else if (!empty($_GET['key']) && $_GET['type'] == "clear") {
+    authorize();
+    $Cache->flush();
+} else if (!empty($_GET['key']) && $_GET['type'] == "clear") {
+    authorize();
     if (preg_match('/(.*?)(\d+)\.\.(\d+)(.*?)$/', $_GET['key'], $Matches) && is_number($Matches[2]) && is_number($Matches[3])) {
         for ($i=$Matches[2]; $i<=$Matches[3]; $i++) {
             $Cache->delete_value($Matches[1].$i.$Matches[4]);
@@ -20,6 +18,9 @@ else if (!empty($_GET['key']) && $_GET['type'] == "clear") {
         echo '<div class="save_message">Key '.display_str($_GET['key']).' cleared!</div>';
     }
 }
+
+show_header('Clear a cache key');
+
 ?>
     <div class="thin">
     <h2>Clear a cache key</h2>
@@ -30,7 +31,7 @@ else if (!empty($_GET['key']) && $_GET['type'] == "clear") {
             <tr valign="top">
                 <td align="right">Key</td>
                 <td align="left">
-                    <input type="text" name="key" id="key" class="inputtext" value="<?=$_GET['key']?>" />
+                    <input type="text" name="key" id="key" class="inputtext" value="<?=display_str($_GET['key'])?>" />
                     <select name="type">
                         <option value="view">View</option>
                         <option value="clear">Clear</option>
@@ -42,11 +43,12 @@ else if (!empty($_GET['key']) && $_GET['type'] == "clear") {
 <?php  if (!empty($_GET['key']) && $_GET['type'] == "view") { ?>
             <tr>
                 <td colspan="2">
-                    <pre><?php  var_dump($Cache->get_value($_GET['key'])); ?></pre>
+                    <pre><?php var_dump(display_array($Cache->get_value($_GET['key']))); ?></pre>
                 </td>
             </tr>
 <?php  } ?>
         </table>
+        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
     </form>
     </div>
 <?php

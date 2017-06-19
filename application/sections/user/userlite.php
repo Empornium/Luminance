@@ -1,6 +1,5 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 include(SERVER_ROOT.'/sections/requests/functions.php');
 
@@ -258,8 +257,7 @@ if (check_paranoia_here('uploads+')) {
     $Uploads = 0;
 }
 /* needed only for Percentile Rankking, leaving just in case
-include(SERVER_ROOT.'/classes/class_user_rank.php');
-$Rank = new USER_RANK;
+$Rank = new Luminance\Legacy\UserRank;
 
 $UploadedRank = $Rank->get_rank('uploaded', $Uploaded);
 $DownloadedRank = $Rank->get_rank('downloaded', $Downloaded);
@@ -289,7 +287,7 @@ $OverallRank = $Rank->overall_score($UploadedRank, $DownloadedRank, $UploadsRank
         if (check_perms('users_view_ips',$Class)) {
             $DB->query("SELECT COUNT(DISTINCT IP) FROM users_history_ips WHERE UserID='$UserID'");
             list($IPChanges) = $DB->next_record();
-            $DB->query("SELECT COUNT(DISTINCT IP) FROM xbt_snatched WHERE uid='$UserID' AND IP != ''");
+            $DB->query("SELECT COUNT(DISTINCT ipv4) FROM xbt_snatched WHERE uid='$UserID' AND ipv4 != ''");
             list($TrackerIPs) = $DB->next_record();
         }
         if (check_perms('users_view_email',$Class)) {
@@ -426,9 +424,9 @@ if (check_perms('users_view_invites')) {
 if (check_perms('users_mod') || $OwnProfile) {
     ?>
         <li>Clients: <?php
-        $DB->query("SELECT useragent, ip, LEFT(peer_id, 8) AS clientid
+        $DB->query("SELECT useragent, INET6_NTOA(ipv4), LEFT(peer_id, 8) AS clientid
                       FROM xbt_files_users WHERE uid ='".$UserID."'
-                  GROUP BY useragent, ip");
+                  GROUP BY useragent, ipv4");
         while (list($Client, $ClientIP, $ClientID) = $DB->next_record()) {
             $Clients .= "<br/>&nbsp; &bull; <span title=\"$ClientID on $ClientIP\">$Client</span>";
         }
@@ -440,7 +438,7 @@ if (check_perms('users_mod') || $OwnProfile) {
     $DB->query("
         SELECT ucs.Status, ucs.IP, xbt.port, Max(ucs.Time)
           FROM users_connectable_status AS ucs
-     LEFT JOIN xbt_files_users AS xbt ON xbt.uid=ucs.UserID AND xbt.ip=ucs.IP AND xbt.Active='1'
+     LEFT JOIN xbt_files_users AS xbt ON xbt.uid=ucs.UserID AND INET6_NTOA(xbt.ipv4)=ucs.IP AND xbt.Active='1'
          WHERE UserID = '$UserID'
       GROUP BY ucs.IP
       ORDER BY Max(ucs.Time) DESC LIMIT 50");
@@ -1073,8 +1071,7 @@ if (check_perms('users_mod', $Class)) {
 
 if ((check_perms('users_view_invites')) && $Invited > 0) {
         $CookieItems[] = 'invite';
-    include(SERVER_ROOT.'/classes/class_invite_tree.php');
-    $Tree = new INVITE_TREE($UserID, array('visible'=>false));
+    $Tree = new Luminance\Legacy\InviteTree($UserID, array('visible'=>false));
 ?>
             <div class="head">
                 <span style="float:left;">Invite Tree</span>
@@ -1387,7 +1384,7 @@ if (check_perms('users_mod', $Class)) {
 <?php 	if (check_perms('users_edit_usernames', $Class)) {  ?>
             <tr>
                 <td class="label">Username:</td>
-                <td><input type="text" size="40" name="Username" maxlength="20"  pattern="[A-Za-z0-9_\-\.]{1,20}" value="<?=display_str($Username)?>" /></td>
+                <td><input type="text" size="40" name="Username" maxlength="20"  pattern="[A-Za-z0-9_.!-]{1,20}" value="<?=display_str($Username)?>" /></td>
             </tr>
 <?php
     }
@@ -1943,7 +1940,7 @@ if (check_perms('users_mod', $Class)) {
 
 ?>
                 <script type="text/javascript">
-                    var cookieitems= new Array( '<?= implode("','", $CookieItems) ?>' );
+                    var cookieitems= new Luminance\Legacy\Array( '<?= implode("','", $CookieItems) ?>' );
                 </script>
 
       <a id="torrents"></a>

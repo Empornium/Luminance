@@ -1,35 +1,38 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $Body=get_article('connchecker');
 
+
 if (!isset($_GET['checkip'])) {
-    $DB->query("
-        SELECT ip, port, active
-          FROM xbt_files_users
-         WHERE uid = '$LoggedUser[ID]'
-      ORDER BY active DESC, mtime DESC LIMIT 1");
-    if ($DB->record_count() > 0) {
-        list($_GET['checkip'], $_GET['checkport'], $active) = $DB->next_record();
+    $ipinfo = $master->db->raw_query("SELECT INET6_NTOA(ipv4) AS ipv4, port, active
+                                        FROM xbt_files_users
+                                       WHERE uid = :userid
+                                    ORDER BY active DESC, mtime DESC LIMIT 1",
+                                            [':userid' => $LoggedUser[ID]])->fetch(\PDO::FETCH_ASSOC);
+    if (is_array($ipinfo)) {
+        $_GET['checkip']   = $ipinfo['ipv4'];
+        $_GET['checkport'] = $ipinfo['port'];
+        $active            = $ipinfo['active'];
         if ($active!='1') $_GET['checkport'] = '';
     } else {
-        $_GET['checkip'] = $_SERVER['REMOTE_ADDR'];
+        $_GET['checkip']   = $_SERVER['REMOTE_ADDR'];
     }
 }
 
-if (isset($_GET['checkuser']) && check_perms('users_mod') ) {
+if (isset($_GET['checkuser']) && is_number($_GET['checkuser']) && $_GET['checkuser'] > 0 && check_perms('users_mod') ) {
     $UserID = $_GET['checkuser'];
-    $DB->query("SELECT Username FROM users_main WHERE ID='$UserID'");
-    if ($DB->record_count() == 0) {
+    $Username = $master->db->raw_query("SELECT Username FROM users_main WHERE ID=:userid", [':userid' => $UserID])->fetchColumn();
+    if (!$Username) {
         $UserID = $LoggedUser['ID'];
         $Username = $LoggedUser['Username'];
-    } else
-        list($Username) = $DB->next_record();
+    }
 } else {
     $UserID = $LoggedUser['ID'];
     $Username = $LoggedUser['Username'];
 }
+
+
 
 show_header('Connectability Checker','bbcode');
 ?>
@@ -51,11 +54,11 @@ show_header('Connectability Checker','bbcode');
                 </td>
                 <td class="label" style="width:80px;">IP</td>
                 <td>
-                    <input type="text" id="ip" name="ip" value="<?=$_GET['checkip']?>" size="20" />
+                    <input type="text" id="ip" name="ip" value="<?=htmlentities($_GET['checkip'], ENT_QUOTES, 'UTF-8')?>" size="20" />
                 </td>
                 <td class="label" style="width:80px;">Port</td>
                 <td>
-                    <input type="text" id="port" name="port" value="<?=$_GET['checkport']?>" size="10" />
+                    <input type="text" id="port" name="port" value="<?=htmlentities($_GET['checkport'], ENT_QUOTES, 'UTF-8')?>" size="10" />
                 </td>
                 <td>
                     <input type="submit" value="Check" />

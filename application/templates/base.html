@@ -6,7 +6,7 @@
     <title>{% block title %}{{ page_title|raw }}{% endblock %}{% set _title = block('title') %}{% if _title %} :: {% endif %}{{ site_name }}</title>
     <meta http-equiv="X-UA-Compatible" content="chrome=1;IE=edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="shortcut icon" href="favicon.ico?v={{ peon.public_file_mtime('/favicon.ico') }}" />
 {% if authenticated %}
     {% include 'header_links.html' %}
 {% endif %}
@@ -22,6 +22,7 @@
 {% else %}
     <link href="{{ static_uri }}styles/public/style.css?v={{ peon.public_file_mtime('/static/styles/public/style.css') }}" rel="stylesheet" type="text/css" />
 {% endif %}
+    <link href="{{ static_uri }}styles/main.css?v={{ peon.public_file_mtime('/static/styles/main.css') }}" rel="stylesheet" type="text/css" />
 {% endblock %}
 
 {% if authenticated %}
@@ -29,6 +30,13 @@
         var authkey = "{{ ActiveUser.legacy.AuthKey }}";
         var userid = {{ ActiveUser.ID }};
     //]]></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            showMathMenu: false,
+            tex2jax: {inlineMath: [['[tex]','[/tex]']]}
+        });
+    </script>
+    <script type="text/javascript" async src="{{ static_uri }}functions/MathJax/MathJax.js?config=TeX-AMS_CHTML"></script>
 {% endif %}
 {% block scripts %}
 {% for script in scripts %}
@@ -41,6 +49,17 @@
 </head>
 {% if authenticated %}
 <body id="{% block body_id %}{% if Document == 'collages' %}collage{% else %}{{ Document }}{% endif %}{% endblock %}">
+    {% if not hv.Urgent is empty and Document != 'staffpm' %}
+        <div id="forcediv">
+            <div class="urgent_container">
+                <div class="urgent_surround">
+                    {% for warn in hv.Urgent %}
+                        <div class="urgent">{{ warn|raw }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
     <div id="overDiv" style="position:absolute; visibility:hidden; z-index:1000;"></div>
     <div id="wrapper">
 
@@ -60,6 +79,7 @@
     <div id="head">
     {% if master.request.ssl %}<span>SSL</span>{% endif %}
     </div>
+
     <table id="maincontent">
         <tr>
             <td align="center" valign="middle">
@@ -68,7 +88,7 @@
                     <ul>
                         <li><a href="{{ main_uri }}/">Home</a></li>
                         <li><a href="/login">Login</a></li>
-                        {% if settings.site.open_registration %}<li><a href="{{ main_uri }}/users/register">Register</a></li>{% endif %}
+                        {% if allow_registration %}<li><a href="{{ main_uri }}/users/register">Register</a></li>{% endif %}
                     </ul>
                 </div>
 {% endif %}
@@ -137,7 +157,7 @@
         </tr>
     </table>
     <div id="foot">
-        <span><a href="#">{{ settings.main.site_name }}</a> | <a href="https://www.empornium.me">Project Luminance</a></span>
+        <span><a href="#">{{ settings.main.site_name }}</a> | <a href="https://www.github.com/Empornium/Luminance">Project Luminance</a></span>
     </div>
 {% endif %}
 </body>

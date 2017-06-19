@@ -90,7 +90,7 @@ if (!$DupeResults || $NumDupes<1) {
                 }
                 $TorrentTags = implode(' ', $TorrentTags);
 
-                $AddExtra = torrent_icons($Data, $TorrentID,$Review, $Bookmarks);
+                $AddExtra = torrent_icons($Data, $TorrentID, $Review, in_array($GroupID, $Bookmarks));
 
                 $row = ($row == 'a'? 'b' : 'a');
                 $IsMarkedForDeletion = $Review['Status'] == 'Warned' || $Review['Status'] == 'Pending';

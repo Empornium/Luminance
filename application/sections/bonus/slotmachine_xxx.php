@@ -13,6 +13,7 @@ $BetAmount = 10;
 <script type="text/javascript"><?php      // get the reels array from sm_arrays into js
 echo "var reelPix = ". json_encode($Reel) . ";\n"; ?>
 </script>
+<audio id="wheelspin_audio" src="/static/common/casino/wheelspin.wav" autostart="false" ></audio>
 <div class="thin">
     <h2>Slot Machine XXX</h2>
 
@@ -80,8 +81,6 @@ echo "var reelPix = ". json_encode($Reel) . ";\n"; ?>
             </div>
             </div>
             <div  style="float:right">
-                <span title="if you cannot hear the sound you can try 'forcing' it, this forces the player to be rendered (although it hides it from view) and 'fixes' problems with a bug in FF22 but may make the screen flicker annoyingly... this is not a great solution but its the best I can do right now"><label for="forcesound">(force sound)</label>
-                <input id="forcesound" name="forcesound" type="checkbox" value="1" /> </span> &nbsp;&nbsp;&nbsp;
                 <label for="playsound">Sound</label>
                 <input id="playsound" name="playsound" type="checkbox" value="1" checked="checked" />
             </div>
@@ -169,7 +168,7 @@ echo "var reelPix = ". json_encode($Reel) . ";\n"; ?>
                               FROM sm_results as s
                               JOIN users_main as u ON s.UserID=u.ID
                              WHERE Won > 0
-                          ORDER BY Won DESC
+                          ORDER BY Won DESC, Time DESC
                              LIMIT 100");
                 $TopResults = $DB->to_array(false, MYSQLI_BOTH);
                 $Cache->cache_value('sm_top_payouts', $TopResults, 3600*24);

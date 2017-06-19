@@ -1,6 +1,5 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $ConvID = $_GET['id'];
 if (!$ConvID || !is_number($ConvID)) { error(404); }
@@ -115,6 +114,8 @@ $DB->query("SELECT UserID FROM pm_conversations_users
             ORDER BY SentDate Desc LIMIT 1");
 list($ReplyID) = $DB->next_record();
 
+$StaffIDs = getStaffIDs();
+
 if (!empty($ReplyID) && $ReplyID!=0 && $CSenderID!=0 && ( empty($LoggedUser['DisablePM']) || array_key_exists($ReplyID, $StaffIDs) ) ) {
 ?>
     <div class="head">Reply to <?=$Users[$ReplyID]['Username']?></div>
@@ -139,33 +140,40 @@ if (!empty($ReplyID) && $ReplyID!=0 && $CSenderID!=0 && ( empty($LoggedUser['Dis
 ?>
     <div class="head">Forward as new PM (takes you to a new compose message page)</div>
     <div class="box pad rowa">
-            <form id="forwardform" action="inbox.php" method="post">
+        <form id="forwardform" action="inbox.php" method="post">
             <input type="hidden" name="action" value="forward" />
             <input type="hidden" name="convid" value="<?=$ConvID?>" />
             <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
             <input type="hidden" id="forwardmessage" name="forwardmessage" value="conversation" />
 
-            <input type="radio" id="forwardto" name="forwardto" value="user" checked="checked" />
-            <label for="receivername">Forward to user:</label>
-            <input id="receivername" type="text" name="receivername" value="" size="20" onfocus="javascript: $('#forwardto').raw().checked=true"/>
-            &nbsp;&nbsp;&nbsp;
-            <input type="radio" id="forwardtostaff" name="forwardto" value="staff" />
-            <label for="receiverid">Forward to staff member:</label>
-            <select id="receiverid" name="receiverid" onfocus="javascript: $('#forwardtostaff').raw().checked=true">
-<?php
-    foreach ($StaffIDs as $StaffID => $StaffName) {
-        if ($StaffID == $LoggedUser['ID'] || in_array($StaffID, $ReceiverIDs)) {
-            continue;
-        }
-?>
-                <option value="<?=$StaffID?>"><?=$StaffName?>&nbsp;&nbsp;</option>
-<?php
-    }
-?>
-            </select>
+            <label for="receivername">Forward to user:</label>&nbsp;
+            <input id="receivername" type="text" name="receivername" value="" size="20" />
             &nbsp;&nbsp;&nbsp;
             <input type="button" onclick="Foward_To('conversation');" value="Forward entire conversation" />
-            </form>
+        </form>
+    </div>
+
+    <div class="head">Forward as Staff PM (takes you to a new compose message page)</div>
+    <div class="box pad rowa">
+        <form action="staff.php" method="post">
+            <input type="hidden" name="action" value="forward" />
+            <input type="hidden" name="show" value="1" />
+            <input type="hidden" name="convid" value="<?=$ConvID?>" />
+            <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+            <input type="hidden" id="forwardmessage" name="forwardmessage" value="conversation" />
+
+            <label for="assign">Forward to staff:</label>&nbsp;
+            <select name="assign">
+                <option value="">First Line Support</option>
+                <option value="mod">Moderators</option>
+                <option value="smod">Senior Staff</option>
+<?php       if( $LoggedUser['DisplayStaff'] == 1) { ?>
+                <option value="admin">Admin Team</option>
+<?php       } ?>
+            </select>
+            &nbsp;&nbsp;&nbsp;
+            <input type="submit" value="Forward conversation as StaffPM" />
+        </form>
     </div>
 
     <div class="head">Manage conversation</div>

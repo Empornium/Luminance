@@ -49,7 +49,8 @@ if (isset($_GET['expire'])) {
     if (!empty($InfoHash)) {
         $master->db->raw_query("DELETE FROM users_slots WHERE UserID=$UserID AND TorrentID=:torrentid", [':torrentid' => $TorrentID]);
         $Cache->delete_value('users_tokens_'.$UserID);
-        update_tracker('remove_tokens', array('info_hash' => rawurlencode($InfoHash), 'userid' => $UserID));
+        //update_tracker('remove_tokens', array('info_hash' => rawurlencode($InfoHash), 'userid' => $UserID));
+        $master->tracker->removeTokens($InfoHash, $UserID);
     }
     header("Location: userhistory.php?action=token_history&userid=$UserID");
 }
@@ -103,7 +104,7 @@ $Pages=get_pages($Page, $NumResults, 50);
         $i = !$i;
         list($TorrentID, $GroupID, $Size, $Time, $FreeLeech, $DoubleSeed, $Name) = $Token;
         if(empty($Name)) $Name = "(Deleted)";
-        $Name = "<a href=\"torrents.php?torrentid=$TorrentID\">$Name</a>";
+        $Name = "<a href=\"details.php?id=$TorrentID\">$Name</a>";
         if ($FreeLeech == '0000-00-00 00:00:00') {
             $fl = 'No';
         } else {

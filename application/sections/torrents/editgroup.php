@@ -41,8 +41,7 @@ if ($HasDescriptionData !== TRUE) {
 if (!$CanEdit) { error(403); }
 
 if (!isset($Text)) {
-    include(SERVER_ROOT.'/classes/class_text.php');
-    $Text = new TEXT;
+    $Text = new Luminance\Legacy\Text;
 }
 
 show_header('Edit torrent','bbcode,edittorrent');
@@ -88,7 +87,7 @@ show_header('Edit torrent','bbcode,edittorrent');
 
                                 <h3>Category</h3>
                                 <select name="categoryid">
-                                <?php  foreach ($NewCategories as $category) { ?>
+                                <?php  foreach ($OpenCategories as $category) { ?>
                                 <option <?=$CategoryID==$category['id'] ? 'selected="selected"' : ''?> value="<?=$category['id']?>"><?=$category['name']?></option>
                                 <?php  } ?>
                                 </select>

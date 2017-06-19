@@ -102,7 +102,8 @@ $StaffPMs = $DB->query("
         c.AssignedToUser,
         c.Date,
         c.Unread,
-        c.ResolverID
+        c.ResolverID,
+        c.Urgent
     FROM staff_pm_conversations AS c
     $WhereCondition
     GROUP BY c.ID
@@ -191,19 +192,19 @@ if ($DB->record_count() == 0) {
                     <td width="10"><input type="checkbox" onclick="toggleChecks('messageform',this)" /></td>
 <?php  				} ?>
                     <td><a href="<?=header_link('Subject') ?>">Subject</td>
-                    <td width="20%"><a href="<?=header_link('UserID') ?>">User</td>
-                    <td width="18%"><a href="<?=header_link('Date') ?>">Date</td>
-                    <td width="18%"><a href="<?=header_link('Level') ?>">Assigned to</td>
+                    <td width="14%"><a href="<?=header_link('UserID') ?>">User</td>
+                    <td width="14%"><a href="<?=header_link('Date') ?>">Date</td>
+                    <td width="14%"><a href="<?=header_link('Level') ?>">Assigned to</td>
 <?php 				if ($ViewString == 'Resolved') { ?>
-                    <td width="18%"><a href="<?=header_link('ResolverID') ?>">Resolved by</td>
+                    <td width="14%"><a href="<?=header_link('ResolverID') ?>">Resolved by</td>
 <?php 				} else { ?>
-                              <td width="12%"><a href="<?=header_link('Status') ?>">Status</td>
+                    <td width="14%"><a href="<?=header_link('Status') ?>">Status</td>
 <?php 				}  ?>
                 </tr>
 <?php
 
     // List messages
-    while (list($ID, $Subject, $UserID, $Status, $Level, $AssignedToUser, $Date, $Unread, $ResolverID) = $DB->next_record()) {
+    while (list($ID, $Subject, $UserID, $Status, $Level, $AssignedToUser, $Date, $Unread, $ResolverID, $Urgent) = $DB->next_record()) {
         $Row = ($Row === 'a') ? 'b' : 'a';
         $RowClass = ($Unread==1 ? 'unreadpm' : 'row'.$Row);
 
@@ -243,12 +244,16 @@ if ($DB->record_count() == 0) {
                 $StatusStr = '<span style="color:red; font-weight:bold">Error</span>';
                 break;
         }
-
         // Get resolver
         if ($ViewString == 'Resolved') {
             $UserInfo = user_info($ResolverID);
-            $ResolverStr = format_username($ResolverID, $UserInfo['Username'], $UserInfo['Donor'], $UserInfo['Warned'], $UserInfo['Enabled'], $UserInfo['PermissionID']);
+            $StatusStr = format_username($ResolverID, $UserInfo['Username'], $UserInfo['Donor'], $UserInfo['Warned'], $UserInfo['Enabled'], $UserInfo['PermissionID']);
+            if ($Urgent !='No') $UserStr .= '<br/><span style="color:red; font-weight:bold;">(User must '.$Urgent.')</span>';
+        } else {
+            if ($Urgent !='No') $StatusStr .= '<br/><span style="color:red; font-weight:bold;">(User must '.$Urgent.')</span>';
         }
+
+
 
         // Table row
 ?>
@@ -260,11 +265,7 @@ if ($DB->record_count() == 0) {
                     <td><?=$UserStr?></td>
                     <td><?=time_diff($Date, 2, true)?></td>
                     <td><?=$Assigned?></td>
-<?php 				if ($ViewString == 'Resolved') { ?>
-                    <td><?=$ResolverStr?></td>
-<?php 				} else { ?>
-                              <td><?=$StatusStr?></td>
-<?php 				} ?>
+                    <td><?=$StatusStr?></td>
                 </tr>
 <?php
 

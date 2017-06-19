@@ -8,9 +8,8 @@ if (!empty($LoggedUser['DisableForums'])) {
     error(403);
 }
 
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
 include_once(SERVER_ROOT.'/sections/forums/functions.php'); // Forum functions
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $UserID = empty($_GET['userid']) ? $LoggedUser['ID'] : $_GET['userid'];
 if (!is_number($UserID)) {

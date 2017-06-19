@@ -2,11 +2,6 @@
 set_time_limit(0);
 //~~~~~~~~~~~ Main bookmarks page ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
-function compare($X, $Y)
-{
-    return($Y['count'] - $X['count']);
-}
-
 if (!empty($_GET['userid'])) {
     if (!check_perms('users_override_paranoia')) {
         error(403);
@@ -23,6 +18,38 @@ $Sneaky = ($UserID != $LoggedUser['ID']);
 
 $Type = $_GET['type'];
 
+$DB->query("SELECT t.Name AS name, COUNT(tt.GroupID) count
+              FROM bookmarks_torrents AS bt
+              JOIN torrents_tags AS tt ON bt.GroupID=tt.GroupID
+              JOIN tags AS t ON t.ID=tt.TagID
+             WHERE bt.UserID='$UserID'
+          GROUP BY tt.TagID
+          ORDER BY count DESC
+          LIMIT 5");
+$Tags =  $DB->to_array('name', MYSQLI_ASSOC);
+
+if (isset($LoggedUser['TorrentsPerPage'])) {
+    $TorrentsPerPage = $LoggedUser['TorrentsPerPage'];
+} else {
+    $TorrentsPerPage = TORRENTS_PER_PAGE;
+}
+
+$DB->query("SELECT COUNT(*) FROM bookmarks_torrents WHERE UserID=$UserID");
+list($NumGroups) = $DB->next_record();
+
+$PageLimit = ceil((float)$NumGroups/(float)$TorrentsPerPage);
+
+if (!empty($_GET['page']) && is_number($_GET['page'])) {
+    $Page = $_GET['page'];
+    if ($Page > $PageLimit) $Page=$PageLimit;
+    $Limit = ($Page-1)*$TorrentsPerPage.', '.$TorrentsPerPage;
+} else {
+    $Page = 1;
+    $Limit = $TorrentsPerPage;
+}
+
+$Pages=get_pages($Page, $NumGroups, $TorrentsPerPage, 8, '#discof_table');
+
 if (!empty($_GET['order_way']) && $_GET['order_way'] == 'asc') {
     $OrderWay = 'asc'; // For header links
 } else {
@@ -36,29 +63,30 @@ if (empty($_GET['order_by']) || !in_array($_GET['order_by'], array('Title', 'Siz
     $OrderBy = $_GET['order_by'];
 }
 
-$Data = $Cache->get_value('bookmarks_torrent_'.$UserID.'_full');
+//$Data = $Cache->get_value('bookmars_torrent_'.$UserID.'_page_'.$Page);
 
-if ($Data) {
-    $Data = unserialize($Data);
-    list($K, list($TorrentList, $CollageDataList)) = each($Data);
-} else {
+//if ($Data) {
+//    $Data = unserialize($Data);
+//    list($K, list($TorrentList, $CollageDataList)) = each($Data);
+//} else {
     // Build the data for the collage and the torrent list
     $DB->query("SELECT
         bt.GroupID,
         tg.Image,
         tg.NewCategoryID,
         bt.Time as BookmarkDate,
-	tg.Time as UploadDate,
+        tg.Time as UploadDate,
         tg.Name as Title,
-	t.Snatched as Snatched,
-	t.Seeders as Seeders,
-	t.Leechers as Leechers,
-	t.Size as Size
+        t.Snatched as Snatched,
+        t.Seeders as Seeders,
+        t.Leechers as Leechers,
+        t.Size as Size
         FROM bookmarks_torrents AS bt
         JOIN torrents_group AS tg ON tg.ID=bt.GroupID
-	JOIN torrents AS t ON t.ID=bt.GroupID
+        JOIN torrents AS t ON t.ID=bt.GroupID
         WHERE bt.UserID='$UserID'
-        ORDER BY $OrderBy $OrderWay");
+        ORDER BY $OrderBy $OrderWay
+        LIMIT $Limit");
 
     $GroupIDs = $DB->collect('GroupID');
     $CollageDataList=$DB->to_array('GroupID', MYSQLI_ASSOC);
@@ -68,7 +96,7 @@ if ($Data) {
     } else {
         $TorrentList = array();
     }
-}
+//}
 
 $TokenTorrents = $Cache->get_value('users_tokens_'.$LoggedUser['ID']);
 if (empty($TokenTorrents)) {
@@ -84,17 +112,11 @@ $Title = ($Sneaky)?"$Username's bookmarked torrents":'Your bookmarked torrents';
 $Collage = array();
 $TorrentTable = '';
 
-$NumGroups = 0;
-$Tags = array();
-
 $CollageDataList = array_sort($CollageDataList, $OrderBy, $OrderWay);
 
 foreach ($CollageDataList as $GroupID=>$Group) {
     list($GroupID, $GroupName, $TagList, $Torrents) = array_values($TorrentList[$GroupID]);
     list($GroupID2, $Image, $NewCategoryID, $BookmarkDate, $UploadDate) = array_values($CollageDataList[$GroupID]);
-
-    // Handle stats and stuff
-    $NumGroups++;
 
     $TagList = explode(' ',str_replace('_','.',$TagList));
 
@@ -102,18 +124,13 @@ foreach ($CollageDataList as $GroupID=>$Group) {
     $numtags=0;
     foreach ($TagList as $Tag) {
         if ($numtags++>=$LoggedUser['MaxTags'])  break;
-        if (!isset($Tags[$Tag])) {
-            $Tags[$Tag] = array('name'=>$Tag, 'count'=>1);
-        } else {
-            $Tags[$Tag]['count']++;
-        }
         $TorrentTags[]='<a href="torrents.php?taglist='.$Tag.'">'.$Tag.'</a>';
     }
     $PrimaryTag = $TagList[0];
     $TorrentTags = implode(' ', $TorrentTags);
     $TorrentTags='<br /><div class="tags">'.$TorrentTags.'</div>';
 
-    $DisplayName = '<a href="torrents.php?id='.$GroupID.'" title="View Torrent">'.$GroupName.'</a>';
+    $DisplayName = '<a href="torrents.php?id='.$GroupID.'" title="View Torrent">'.display_str($GroupName).'</a>';
 
     // Start an output buffer, so we can store this output in $TorrentTable
     ob_start();
@@ -122,7 +139,7 @@ foreach ($CollageDataList as $GroupID=>$Group) {
 
         $Review = get_last_review($GroupID);
 
-        $DisplayName = '<a href="torrents.php?id='.$GroupID.'" title="View Torrent">'.$GroupName.'</a>';
+        $DisplayName = '<a href="torrents.php?id='.$GroupID.'" title="View Torrent">'.display_str($GroupName).'</a>';
 
         if (!empty($Torrent['FreeTorrent'])) {
                 $DisplayName .=' <strong>/ Freeleech!</strong>';
@@ -174,16 +191,16 @@ foreach ($CollageDataList as $GroupID=>$Group) {
 
     ob_start();
 
-    $DisplayName = $GroupName;
+    $DisplayName = display_str($GroupName);
 ?>
         <li class="image_group_<?=$GroupID?>">
-            <a href="#group_<?=$GroupID?>" class="bookmark_<?=$GroupID?>">
+            <a href="torrents.php?id=<?=$GroupID?>">
 <?php	if ($Image) {
         if (check_perms('site_proxy_images')) {
             $Image = '//'.SITE_URL.'/image.php?i='.urlencode($Image);
         }
 ?>
-                <img src="<?=$Image?>" alt="<?=$DisplayName?>" title="<?=$DisplayName?>" width="117" />
+                <img src="<?=display_str($Image)?>" alt="<?=$DisplayName?>" title="<?=$DisplayName?>" width="117" />
 <?php	} else { ?>
                 <div style="width:107px;padding:5px"><?=$DisplayName?></div>
 <?php	} ?>
@@ -241,12 +258,7 @@ show_header($Title, 'browse,collage');
             <div class="pad">
                 <ol style="padding-left:5px;">
 <?php
-uasort($Tags, 'compare');
-$i = 0;
-foreach ($Tags as $TagName => $Tag) {
-    $i++;
-    if ($i>5) { break; }
-?>
+foreach ($Tags as $TagName => $Tag) { ?>
                     <li><a href="torrents.php?taglist=<?=$TagName?>"><?=$TagName?></a> (<?=$Tag['count']?>)</li>
 <?php
 }
@@ -265,42 +277,31 @@ if ($CollageCovers != 0) { ?>
     $Page1 = array_slice($Collage, 0, $CollageCovers);
     foreach ($Page1 as $Group) {
         echo $Group;
+    }
 }?>
             </ul>
         </div>
-<?php	if ($NumGroups > $CollageCovers) { ?>
-        <div class="linkbox pager" style="clear: left;" id="pageslinksdiv">
-            <span id="firstpage" class="invisible"><a href="#" class="pageslink" onClick="collageShow.page(0, this); return false;">&lt;&lt; First</a> | </span>
-            <span id="prevpage" class="invisible"><a href="#" id="prevpage"  class="pageslink" onClick="collageShow.prevPage(); return false;">&lt; Prev</a> | </span>
-<?php		for ($i=0; $i < $NumGroups/$CollageCovers; $i++) { ?>
-            <span id="pagelink<?=$i?>" class="<?=(($i>4)?'hidden':'')?><?=(($i==0)?' selected':'')?>"><a href="#" class="pageslink" onClick="collageShow.page(<?=$i?>, this); return false;"><?=$CollageCovers*$i+1?>-<?=min($NumGroups,$CollageCovers*($i+1))?></a><?=($i != ceil($NumGroups/$CollageCovers)-1)?' | ':''?></span>
-<?php		} ?>
-            <span id="nextbar" class="<?=($NumGroups/$CollageCovers > 5)?'hidden':''?>"> | </span>
-            <span id="nextpage"><a href="#" class="pageslink" onClick="collageShow.nextPage(); return false;">Next &gt;</a></span>
-            <span id="lastpage" class="<?=ceil($NumGroups/$CollageCovers)==2?'invisible':''?>"> | <a href="#" id="lastpage" class="pageslink" onClick="collageShow.page(<?=ceil($NumGroups/$CollageCovers)-1?>, this); return false;">Last &gt;&gt;</a></span>
-        </div>
-        <script type="text/javascript">
-            collageShow.init(<?=json_encode($CollagePages)?>);
-        </script>
-<?php	}
-} ?>
-        </div>
-        <br />
-        <table class="torrent_table" id="torrent_table">
-            <tr class="head">
-                <td><!-- Category --></td>
-                <td width="50%"><a href="<?=header_link('Title', 'asc') ?>">Torrents</a></td>
-		<td width="20%"><a href="<?=header_link('BookmarkDate') ?>" style="float:right">Bookmarked</a></td>
-		<td><a href="<?=header_link('UploadDate') ?>">Uploaded</a></td>
-		<td><a href="<?=header_link('Size') ?>">Size</a></td>
-                <td class="sign"><a href="<?=header_link('Snatched') ?>"><img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/snatched.png" alt="Snatches" title="Snatches" /></a></td>
-                <td class="sign"><a href="<?=header_link('Seeders') ?>"><img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="Seeders" title="Seeders" /></a></td>
-                <td class="sign"><a href="<?=header_link('Leechers') ?>"><img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="Leechers" title="Leechers" /></a></td>
-            </tr>
-<?=$TorrentTable?>
-        </table>
+
     </div>
+    <br />
+    <div class="clear"></div><br />
+    <div class="linkbox"><?=$Pages?></div>
+    <table class="torrent_table" id="torrent_table">
+        <tr class="head">
+            <td><!-- Category --></td>
+            <td width="50%"><a href="<?=header_link('Title', 'asc') ?>">Torrents</a></td>
+            <td width="20%"><a href="<?=header_link('BookmarkDate') ?>" style="float:right">Bookmarked</a></td>
+            <td><a href="<?=header_link('UploadDate') ?>">Uploaded</a></td>
+            <td><a href="<?=header_link('Size') ?>">Size</a></td>
+            <td class="sign"><a href="<?=header_link('Snatched') ?>"><img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/snatched.png" alt="Snatches" title="Snatches" /></a></td>
+            <td class="sign"><a href="<?=header_link('Seeders') ?>"><img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="Seeders" title="Seeders" /></a></td>
+            <td class="sign"><a href="<?=header_link('Leechers') ?>"><img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="Leechers" title="Leechers" /></a></td>
+        </tr>
+        <?=$TorrentTable?>
+    </table>
+    <div class="linkbox"><?=$Pages?></div>
+</div>
 
 <?php
 show_footer();
-$Cache->cache_value('bookmarks_torrent_'.$UserID.'_full', serialize(array(array($TorrentList, $CollageDataList))), 3600);
+$Cache->cache_value('bookmarks_torrent_'.$UserID.'_page_'.$Page, serialize(array(array($TorrentList, $CollageDataList))), 3600);

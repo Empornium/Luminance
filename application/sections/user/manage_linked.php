@@ -6,7 +6,9 @@ if (!check_perms('users_mod')) {
     error(403);
 }
 
-$UserID = $_REQUEST['userid'];
+if (!$UserID || !is_number($UserID)) error(0);
+
+$UserID = (int)$_REQUEST['userid'];
 
 switch ($_REQUEST['dupeaction']) {
     case 'remove':
@@ -29,7 +31,7 @@ switch ($_REQUEST['dupeaction']) {
                 if (list($TargetID) = $DB->next_record()) {
                     link_users($UserID, $TargetID);
                 } else {
-                    error("User '$Target' not found.");
+                    error("User '".display_str($Target)."' not found.");
                 }
             }
         }

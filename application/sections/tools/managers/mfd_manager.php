@@ -5,9 +5,6 @@ $ViewStatus = isset($_REQUEST['viewstatus'])?$_REQUEST['viewstatus']:'both';
 $ViewStatus = in_array($ViewStatus, array('warned','pending','both','unmarked'))?$ViewStatus:'pending';
 $OverdueOnly = (isset($_REQUEST['overdue']) && $_REQUEST['overdue'])?1:0;
 
-$DB->query("SELECT ReviewHours, AutoDelete FROM site_options LIMIT 1");
-list($Hours, $Delete) = $DB->next_record();
-
 $CanManage = check_perms('torrents_review_manage');
 $NumOverdue = get_num_overdue_torrents('both');
 if ($NumOverdue) //
@@ -41,20 +38,20 @@ show_header('Manage torrents marked for deletion');
                         <td class="center">
                             <label for="hours">Warning period: (hours) </label>
 <?php  if ($CanManage) { ?>
-                            <input name="hours" type="text" style="width:30px;" value="<?=$Hours?>" title="This is the hours given to fix the torrent when warned (has no effect on current list)" />
+                            <input name="hours" type="text" style="width:30px;" value="<?=$master->options->MFDReviewHours?>" title="This is the hours given to fix the torrent when warned (has no effect on current list)" />
 <?php  } else { ?>
-                            <input name="hours" type="text" style="width:30px;color:black;" disabled="disabled" value="<?=$Hours?>" title="This is the hours given to fix the torrent when warned (has no effect on current list)" />
+                            <input name="hours" type="text" style="width:30px;color:black;" disabled="disabled" value="<?=$master->options->MFDReviewHours?>" title="This is the hours given to fix the torrent when warned (has no effect on current list)" />
 <?php  }  ?>
                         </td>
                         <td  class="center">
                             <label for="autodelete" title="AutoDelete">Auto Delete</label>
 <?php  if ($CanManage) { ?>
                             <select id="autodelete" name="autodelete" title="If On then marked torrents are automatically deleted when they time out (if not pending). If Off then overdue marked torrents can still be deleted manually in this page.">
-                                <option value="1"<?=$Delete?' selected="selected"':'';?>>On&nbsp;&nbsp;</option>
-                                <option value="0"<?=$Delete?'':' selected="selected"';?>>Off&nbsp;&nbsp;</option>
+                                <option value="1"<?=$master->options->MFDAutoDelete?' selected="selected"':'';?>>On&nbsp;&nbsp;</option>
+                                <option value="0"<?=$master->options->MFDAutoDelete?'':' selected="selected"';?>>Off&nbsp;&nbsp;</option>
                             </select>
 <?php  } else { ?>
-                            <input type="text" name="autodelete" style="width:30px;color:black;" disabled="disabled" value="<?=$Delete?'On':'Off';?>" title="If On then marked torrents are automatically deleted when they time out (if not pending). If Off then overdue marked torrents can still be deleted manually in this page." />
+                            <input type="text" name="autodelete" style="width:30px;color:black;" disabled="disabled" value="<?=$master->options->MFDAutoDelete?'On':'Off';?>" title="If On then marked torrents are automatically deleted when they time out (if not pending). If Off then overdue marked torrents can still be deleted manually in this page." />
 <?php  }  ?>
                         </td>
 <?php  if ($CanManage) { ?>   <td  class="center">  <!-- width="30%" -->

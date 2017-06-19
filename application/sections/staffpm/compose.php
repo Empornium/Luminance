@@ -1,6 +1,5 @@
 <?php
-include(SERVER_ROOT . '/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 show_header('Start Conversation', 'inbox,staffpm,bbcode,jquery');
 ?>
@@ -19,7 +18,7 @@ show_header('Start Conversation', 'inbox,staffpm,bbcode,jquery');
             [ &nbsp;<a href="staffpm.php?view=unanswered">All unanswered<?= $NumUnanswered > 0 ? " ($NumUnanswered)" : '' ?></a>&nbsp; ] &nbsp;
             [ &nbsp;<a href="staffpm.php?view=open">Open<?= $NumOpen > 0 ? " ($NumOpen)" : '' ?></a>&nbsp; ] &nbsp;
             [ &nbsp;<a href="staffpm.php?view=resolved">Resolved</a>&nbsp; ]  &nbsp;
-            [ &nbsp;<a href="staffpm.php?action=responses&convid=<?= $ConvID ?>">Common Answers</a>&nbsp; ]
+            [ &nbsp;<a href="staffpm.php?action=responses&amp;convid=<?= $ConvID ?>">Common Answers</a>&nbsp; ]
             <?php
             // User
         } else {
@@ -48,7 +47,7 @@ show_header('Start Conversation', 'inbox,staffpm,bbcode,jquery');
                         <?php  } ?>
                     </select>
                     <input type="button" value="Set message" onClick="SetMessage();" />
-                    <input type="button" value="Create new / Edit" onClick="location.href='staffpm.php?action=responses&convid=<?= $ConvID ?>'" />
+                    <input type="button" value="Create new / Edit" onClick="location.href='staffpm.php?action=responses&amp;convid=<?= $ConvID ?>'" />
                     <br/><br/>
                     <div id="common_answers_body" class="body">Select an answer from the dropdown to view it.</div>
 

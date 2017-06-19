@@ -28,15 +28,15 @@ $Result = $DB->query("SELECT SQL_CALC_FOUND_ROWS
     xu.uploaded,
     xu.remaining,
     xu.useragent,
-      IF(xu.remaining=0,1,0) AS IsSeeder,
+    IF(xu.remaining=0,1,0) AS IsSeeder,
     xu.timespent,
     xu.upspeed,
     xu.downspeed,
-    xu.IP,
+    IF(xu.ipv6=\"\", INET6_NTOA(xu.ipv4), INET6_NTOA(xu.ipv6)) AS IP,
     xu.Port
     FROM xbt_files_users AS xu
     LEFT JOIN users_main AS um ON um.ID=xu.uid
-    LEFT JOIN users_connectable_status AS ucs ON ucs.UserID=xu.uid AND xu.ip=ucs.IP
+    LEFT JOIN users_connectable_status AS ucs ON ucs.UserID=xu.uid AND INET6_NTOA(xu.ipv4)=ucs.IP
     JOIN torrents AS t ON t.ID=xu.fid
     WHERE xu.fid='$TorrentID'
     AND um.Visible='1'

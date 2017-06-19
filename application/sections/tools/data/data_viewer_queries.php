@@ -1,6 +1,57 @@
 <?php
-$data_viewer_queries = array(
-    'torrents_monthly' => array(
+$data_viewer_queries = [
+    'torrents_awards_pending' => [
+        'title' => 'Torrents: Ducky Awards Pending',
+        'description' => 'This query shows pending Ducky awards',
+        'sql' => "
+SELECT SQL_CALC_FOUND_ROWS
+    CONCAT('<a href=\"/user.php?id=', um.ID, '\">', um.Username, '</a>') AS User,
+    CONCAT('<a href=\"/torrents.php?id=', tg.ID, '\">', tg.Name, '</a>') AS Torrent,
+    CONCAT('<span class=\"nobr\">', tg.Time, '</span>') AS Date_Uploaded
+FROM
+    torrents_awards AS ta
+    LEFT JOIN torrents_group AS tg ON ta.TorrentID=tg.ID
+    LEFT JOIN users_main AS um ON ta.UserID=um.ID
+WHERE
+    ta.Ducky='0'
+ORDER BY
+    tg.Time DESC"
+    ],
+    'torrents_awards_awarded' => [
+        'title' => 'Torrents: Ducky Awards Awarded',
+        'description' => 'This query shows awarded Ducky awards',
+        'sql' => "
+SELECT SQL_CALC_FOUND_ROWS
+    CONCAT('<a href=\"/user.php?id=', um.ID, '\">', um.Username, '</a>') AS User,
+    CONCAT('<a href=\"/torrents.php?id=', tg.ID, '\">', tg.Name, '</a>') AS Torrent,
+    CONCAT('<span class=\"nobr\">', tg.Time, '</span>') AS Date_Uploaded
+FROM
+    torrents_awards AS ta
+    LEFT JOIN torrents_group AS tg ON ta.TorrentID=tg.ID
+    LEFT JOIN users_main AS um ON ta.UserID=um.ID
+WHERE
+    ta.Ducky='1'
+ORDER BY
+    tg.Time DESC"
+    ],
+    'torrents_awards_all' => [
+        'title' => 'Torrents: Ducky Awards',
+        'description' => 'This query shows all Ducky awards pending or awarded',
+        'sql' => "
+SELECT SQL_CALC_FOUND_ROWS
+    CONCAT('<a href=\"/user.php?id=', um.ID, '\">', um.Username, '</a>') AS User,
+    CONCAT('<a href=\"/torrents.php?id=', tg.ID, '\">', tg.Name, '</a>') AS Torrent,
+    CONCAT('<span class=\"nobr\">', tg.Time, '</span>') AS Date_Uploaded,
+    IF(ta.Ducky='1','yes', 'pending') AS Ducky
+FROM
+    torrents_awards AS ta
+    LEFT JOIN torrents_group AS tg ON ta.TorrentID=tg.ID
+    LEFT JOIN users_main AS um ON ta.UserID=um.ID
+ORDER BY
+    ta.Ducky ASC,
+    tg.Time DESC"
+    ],
+    'torrents_monthly' => [
         'title' => 'Torrents: Monthly stats',
         'description' => 'This query shows various torrent-related statistics grouped by month.<br /><i>Average current seeders</i> shows the number of active seeders right now for torrents uploaded during that period.',
         'sql' => "
@@ -19,11 +70,11 @@ GROUP BY
     year,
     month
 ORDER BY
-    year,
-    month"
-    ),
-    'forums_monthly' => array(
-        'title' => 'Forums: Monthly stats',
+    year DESC,
+    month DESC"
+    ],
+    'forums_monthly' => [
+        'title' => 'Forums: &nbsp;&nbsp;Monthly stats',
         'description' => 'This query shows various forum-related statistics grouped by month.',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
@@ -38,11 +89,11 @@ GROUP BY
     year,
     month
 ORDER BY
-    year,
-    month"
-    ),
-    'unlocked_posts' => array(
-        'title' => 'Forums: Timelock Exempt Posts',
+    year DESC,
+    month DESC"
+    ],
+    'unlocked_posts' => [
+        'title' => 'Forums: &nbsp;&nbsp;Timelock Exempt Posts',
         'description' => 'This query shows a list of all posts exempt from timelocking.',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
@@ -62,14 +113,14 @@ WHERE
     fp.TimeLock=0
 ORDER BY
     fp.AddedTime DESC"
-    ),
-    'users_ipcount' => array(
-        'title' => 'Users: Active IPs',
+    ],
+    'users_ipcount' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Active IPs',
         'description' => 'This query shows active IP count per user. Particularly high numbers are suspicious.',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
     CONCAT('<a href=\"/user.php?id=', xfu.uid, '\">', um.username, '</a>') AS User,
-    COUNT(DISTINCT xfu.ip) AS IP_count,
+    COUNT(DISTINCT xfu.ipv4) AS IP_count,
     COUNT(DISTINCT xfu.useragent) AS Useragent_count,
     GROUP_CONCAT(DISTINCT xfu.useragent SEPARATOR '<br/>') AS Useragents
 FROM
@@ -81,14 +132,14 @@ GROUP BY
     xfu.uid
 ORDER BY
     IP_count DESC"
-    ),
-    'users_useragentcount' => array(
-        'title' => 'Users: Active Useragents',
+    ],
+    'users_useragentcount' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Active Useragents',
         'description' => 'This query shows active IP count per user. Particularly high numbers are suspicious.',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
     CONCAT('<a href=\"/user.php?id=', xfu.uid, '\">', um.username, '</a>') AS User,
-    COUNT(DISTINCT xfu.ip) AS IP_count,
+    COUNT(DISTINCT xfu.ipv4) AS IP_count,
     COUNT(DISTINCT xfu.useragent) AS Useragent_count,
     GROUP_CONCAT(DISTINCT xfu.useragent SEPARATOR '<br/>') AS Useragents
 FROM
@@ -100,9 +151,9 @@ GROUP BY
     xfu.uid
 ORDER BY
     Useragent_count DESC, IP_count DESC, um.username ASC"
-    ),
-    'users_single_announces' => array(
-        'title' => 'Users: Single Client Announces',
+    ],
+    'users_single_announces' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Single Client Announces',
         'description' => 'This query shows users With a single 0GB down client announce',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
@@ -120,14 +171,14 @@ GROUP BY
     xfu.uid
 ORDER BY
     Torrents DESC"
-    ),
-    'users_utorrent_1800' => array(
-        'title' => 'Users: uTorrent 1800',
+    ],
+    'users_utorrent_1800' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;uTorrent 1800',
         'description' => 'This query shows users using uTorrent 1.8.0',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
     CONCAT('<a href=\"/user.php?id=', xfu.uid, '\">', um.username, '</a>') AS User,
-    xfu.ip
+    INET6_NTOA(xfu.ipv4) AS IP
 FROM
     xbt_files_users AS xfu,
     users_main AS um
@@ -138,14 +189,14 @@ GROUP BY
     xfu.uid
 ORDER BY
     um.username ASC"
-    ),
-    'users_utorrent_3130' => array(
-        'title' => 'Users: uTorrent 3130 (26837)',
+    ],
+    'users_utorrent_3130' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;uTorrent 3130 (26837)',
         'description' => 'This query shows users using uTorrent 3.1.3 build 26837',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
     CONCAT('<a href=\"/user.php?id=', xfu.uid, '\">', um.username, '</a>') AS User,
-    xfu.ip
+    INET6_NTOA(xfu.ipv4) AS IP
 FROM
     xbt_files_users AS xfu,
     users_main AS um
@@ -156,14 +207,14 @@ GROUP BY
     xfu.uid
 ORDER BY
     um.username ASC"
-    ),
-    'users_azures_3050' => array(
-        'title' => 'Users: Azures 3.0.5.0',
+    ],
+    'users_azures_3050' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Azures 3.0.5.0',
         'description' => 'This query shows users using Azures 3.0.5.0',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
     CONCAT('<a href=\"/user.php?id=', xfu.uid, '\">', um.username, '</a>') AS User,
-    xfu.ip
+    INET6_NTOA(xfu.ipv4) AS IP
 FROM
     xbt_files_users AS xfu,
     users_main AS um
@@ -174,14 +225,14 @@ GROUP BY
     xfu.uid
 ORDER BY
     um.username ASC"
-    ),
-    'users_blank' => array(
-        'title' => 'Users: Blank UserAgent',
+    ],
+    'users_blank' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Blank UserAgent',
         'description' => 'This query shows users with a Blank UserAgent',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
     CONCAT('<a href=\"/user.php?id=', xfu.uid, '\">', um.username, '</a>') AS User,
-    xfu.ip,
+    INET6_NTOA(xfu.ipv4) AS IP,
     LEFT(xfu.peer_id, 8) as ClientID
 FROM
     xbt_files_users AS xfu,
@@ -193,15 +244,15 @@ GROUP BY
     xfu.uid
 ORDER BY
     um.username ASC"
-    ),
-    'users_put_io' => array(
-        'title' => 'Users: put.io',
+    ],
+    'users_put_io' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;put.io',
         'description' => 'This query shows users using put.io',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
     CONCAT('<a href=\"/user.php?id=', xfu.uid, '\">', um.username, '</a>') AS User,
-    xfu.ip AS IP,
-    COUNT(DISTINCT xfu.ip) AS Clients
+    INET6_NTOA(xfu.ipv4) AS IP,
+    COUNT(DISTINCT xfu.ipv4) AS Clients
 FROM
     xbt_files_users AS xfu,
     users_main AS um
@@ -211,12 +262,12 @@ WHERE
 GROUP BY
     xfu.uid
 HAVING
-    COUNT(DISTINCT xfu.ip) >= 5
+    COUNT(DISTINCT xfu.ipv4) >= 5
 ORDER BY
     um.username ASC"
-    ),
-    'users_email_changes' => array(
-        'title' => 'Users: Email Changes',
+    ],
+    'users_email_changes' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Email Changes',
         'description' => 'This query shows users whose email changed recently',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
@@ -230,9 +281,9 @@ WHERE
     AND uhe.Time != '0000-00-00 00:00:00'
 ORDER BY
     uhe.Time DESC"
-    ),
-    'users_password_changes' => array(
-        'title' => 'Users: Password Changes',
+    ],
+    'users_password_changes' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Password Changes',
         'description' => 'This query shows users whose password changed recently',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
@@ -245,9 +296,9 @@ WHERE
     um.ID = uhp.UserID
 ORDER BY
     uhp.ChangeTime DESC"
-    ),
-    'users_classes' => array(
-        'title' => 'Users: Class stats',
+    ],
+    'users_classes' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Class stats',
         'description' => "This query shows various total and average stats per user class.",
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
@@ -268,11 +319,11 @@ GROUP BY
     p.ID
 ORDER BY
     p.Level"
-    ),
-        'users_dupe_email' => array(
-                'title' => 'Users: Possible duplicate emails (SLOW)',
-                'description' => '<strong>This query is slow, please use it sparingly.</strong><br />Tries to detect e-mail addresses that are effectively duplicates by processing it in various ways.<br />Results where every single account is already disabled are excluded.',
-                'sql' => "
+    ],
+    'users_dupe_email' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Possible duplicate emails (SLOW)',
+        'description' => '<strong>This query is slow, please use it sparingly.</strong><br />Tries to detect e-mail addresses that are effectively duplicates by processing it in various ways.<br />Results where every single account is already disabled are excluded.',
+        'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
         CONCAT(REPLACE(SUBSTRING_INDEX(SUBSTRING_INDEX(um.Email, '@', 1), '+', 1), '.', ''), '@', REPLACE(REPLACE(REPLACE(SUBSTRING_INDEX(SUBSTRING_INDEX(um.Email, '@', -1), '.', 1), 'googlemail', 'gmail'), 'live', 'hotmail'), 'outlook', 'hotmail')) AS Cleaned_up_address,
         COUNT(*) AS Number,
@@ -285,13 +336,12 @@ HAVING
         Number >= 2
         AND MAX(IF(um.Enabled='1',1,0)) = 1
 ORDER BY
-        Number DESC
-"
-        ),
-        'users_leechers' => array(
-                'title' => 'Users: Possible multi-account leechers (SLOW)',
-                'description' => '<strong>This query is slow, please use it sparingly.</strong><br />Tries to detect leechers with multiple accounts.<br />Results where every single account is already disabled are excluded.',
-                'sql' => "
+        Number DESC"
+    ],
+    'users_leechers' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Possible multi-account leechers (SLOW)',
+        'description' => '<strong>This query is slow, please use it sparingly.</strong><br />Tries to detect leechers with multiple accounts.<br />Results where every single account is already disabled are excluded.',
+        'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
         GROUP_CONCAT(IF(um.Enabled='1','','<del>'),'<a href=\"/user.php?id=', um.ID, '\">', um.username, '</a>', IF(um.Enabled='1','','</del>'), ' ', IFNULL(ROUND(um.Uploaded/um.Downloaded, 2), '∞') ORDER BY um.ID SEPARATOR '<br />') AS Accounts,
         COUNT(*) AS Number,
@@ -306,11 +356,10 @@ HAVING
         AND IPs <= 5
         AND IFNULL(ROUND(AVG(um.Uploaded)/AVG(um.Downloaded), 2), 'NaN') <=0.2
 ORDER BY
-        Number DESC
-"
-        ),
-    'users_monthly' => array(
-        'title' => 'Users: Monthly stats',
+        Number DESC"
+    ],
+    'users_monthly' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Monthly stats',
         'description' => "This query shows  the number of users joined as well as disabled each month.",
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
@@ -346,9 +395,9 @@ LEFT OUTER JOIN
 ON
     joined.year = banned.year
     AND joined.month = banned.month"
-    ),
-    'users_special_gifts' => array(
-        'title' => 'Users: Special Gifts - Donors & Recipients',
+    ],
+    'users_special_gifts' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Special Gifts - Donors & Recipients',
         'description' => 'This query shows Special Gifts given by users.',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
@@ -364,9 +413,9 @@ GROUP BY
     usg.Recipient
 ORDER BY
     CreditsGiven DESC"
-    ),
-'users_special_gifts_donors' => array(
-        'title' => 'Users: Special Gifts - Donors',
+    ],
+'users_special_gifts_donors' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Special Gifts - Donors',
         'description' => 'This query shows Special Gifts given by users.',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
@@ -380,9 +429,9 @@ GROUP BY
     usg.UserID
 ORDER BY
     CreditsSpent DESC"
-    ),
-'users_special_gifts_recipients' => array(
-        'title' => 'Users: Special Gifts - Recipients',
+    ],
+'users_special_gifts_recipients' => [
+        'title' => 'Users: &nbsp;&nbsp;&nbsp;Special Gifts - Recipients',
         'description' => 'This query shows Special Gifts received by users.',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
@@ -395,9 +444,9 @@ GROUP BY
     usg.Recipient
 ORDER BY
     CreditsReceived DESC, GBsReceived DESC"
-    ),
-'/24 abusive IP subnets' => array(
-        'title' => 'Abusive /24 IP subnets',
+    ],
+'/24 abusive IP subnets' => [
+        'title' => 'Network: &nbsp;Abusive /24 IP subnets',
         'description' => 'This query shows IP address ranges with high numbers of failed login attempts',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
@@ -413,9 +462,9 @@ HAVING
     IPCount > 5
 ORDER BY
     IPCount DESC"
-    ),
-'/16 abusive IP subnets' => array(
-        'title' => 'Abusive /16 IP subnets',
+    ],
+'/16 abusive IP subnets' => [
+        'title' => 'Network: &nbsp;Abusive /16 IP subnets',
         'description' => 'This query shows IP address ranges with high numbers of failed login attempts',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
@@ -431,9 +480,9 @@ HAVING
     IPCount > 5
 ORDER BY
     IPCount DESC"
-    ),
-'/8 abusive IP subnets' => array(
-        'title' => 'Abusive /8 IP subnets',
+    ],
+'/8 abusive IP subnets' => [
+        'title' => 'Network: &nbsp;Abusive /8 IP subnets',
         'description' => 'This query shows IP address ranges with high numbers of failed login attempts',
         'sql' => "
 SELECT SQL_CALC_FOUND_ROWS
@@ -449,5 +498,5 @@ HAVING
     IPCount > 5
 ORDER BY
     IPCount DESC"
-    ),
-);
+    ],
+];

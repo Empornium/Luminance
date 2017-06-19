@@ -7,8 +7,7 @@
 // set the output to be served as xml
 header("Content-type: text/xml");
 
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $indexfrom = $_REQUEST['indexfrom'];
 if ( !is_number($indexfrom)) { $indexfrom = 0; }

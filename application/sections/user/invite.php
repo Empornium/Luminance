@@ -70,7 +70,7 @@ switch ($CurrentOrder) {
 $CurrentURL = get_url(array('action', 'order', 'sort'));
 
 $DB->query("SELECT
-    ID,
+    um.ID,
     Username,
     Donor,
     Warned,
@@ -80,13 +80,16 @@ $DB->query("SELECT
     Uploaded,
     Downloaded,
     JoinDate,
-    LastAccess
+    LastAccess,
+    Paranoia,
+    Level
     FROM users_main as um
     LEFT JOIN users_info AS ui ON ui.UserID=um.ID
+    LEFT JOIN permissions AS p ON p.ID=um.PermissionID
     WHERE ui.Inviter='$UserID'
     ORDER BY ".$OrderBy." ".$CurrentSort);
 
-$Invited = $DB->to_array();
+$Invited = $DB->to_array(false, MYSQLI_NUM, array(11));
 
 show_header('Invites');
 ?>
@@ -148,7 +151,6 @@ if(!$Sneaky
     <div class="box pad">
         <form action="user.php" method="post">
             <input type="hidden" name="action" value="takeinvite" />
-            <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
             <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
         <table cellpadding="6" cellspacing="1" border="0" class="border" width="100%">
             <tr>
@@ -216,17 +218,17 @@ if (!empty($Pending)) {
 <?php
     $Row = 'a';
     foreach ($Invited as $User) {
-        list($ID, $Username, $Donor, $Warned, $Enabled, $Class, $Email, $Uploaded, $Downloaded, $JoinDate, $LastAccess) = $User;
+        list($ID, $Username, $Donor, $Warned, $Enabled, $ClassID, $Email, $Uploaded, $Downloaded, $JoinDate, $LastAccess, $Paranoia, $ClassLevel) = $User;
         $Row = ($Row == 'a') ? 'b' : 'a';
 ?>
             <tr class="row<?=$Row?>">
-                <td><?=format_username($ID, $Username, $Donor, $Warned, $Enabled, $Class)?></td>
-                <td><?=display_str($Email)?></td>
-                <td><?=time_diff($JoinDate,1)?></td>
-                <td><?=time_diff($LastAccess,1);?></td>
-                <td><?=get_size($Uploaded)?></td>
-                <td><?=get_size($Downloaded)?></td>
-                <td><?=ratio($Uploaded, $Downloaded)?></td>
+                <td><?=format_username($ID, $Username, $Donor, $Warned, $Enabled, $ClassID)?></td>
+                <td><?=display_str($Email) ?></td>
+                <td><?=time_diff($JoinDate,1) ?></td>
+                <td><?=check_paranoia('lastseen', $Paranoia, $ClassLevel, $ID) ? time_diff($LastAccess, 1) : '-'?></td>
+                <td><?=check_paranoia('uploaded', $Paranoia, $ClassLevel, $ID) ? get_size($Uploaded) : '-'?></td>
+                <td><?=check_paranoia('downloaded', $Paranoia, $ClassLevel, $ID) ? get_size($Downloaded) : '-'?></td>
+                <td><?=check_paranoia('ratio', $Paranoia, $ClassLevel, $ID) ? ratio($Uploaded, $Downloaded) : '-'?></td>
             </tr>
 <?php  } ?>
         </table>

@@ -1,8 +1,7 @@
 <?php
 authorize(true);
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 if (!$News = $Cache->get_value('news')) {
     $DB->query("SELECT

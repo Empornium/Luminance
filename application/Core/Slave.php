@@ -14,6 +14,12 @@ abstract class Slave {
         $this->prepareServices();
     }
 
+    public function registerOptions(Master $master) {
+        if (isset(static::$defaultOptions)) {
+            $master->options->register(static::$defaultOptions);
+        }
+    }
+
     protected function prepareRepositories() {
         foreach (static::$useRepositories as $localName => $repositoryName) {
             $this->{$localName} = $this->master->getRepository($repositoryName);

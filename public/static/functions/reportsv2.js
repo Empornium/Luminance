@@ -5,24 +5,40 @@ function ChangeReportType() {
 }
 
 function ChangeResolve(reportid) {
-	ajax.get('reportsv2.php?action=ajax_change_resolve&id=' + reportid + '&type=' + $('#resolve_type' + reportid).raw().value, function (response) {
-			var x = json.decode(response);
-			$('#delete' + reportid).raw().checked = (x[0] == '1' ? true : false);
-            $('#bounty_amount' + reportid).raw().innerHTML =x[3];
-			$('#bounty' + reportid).raw().disabled = (x[3] == '0' ? true : false);
+    torrentid = $('#torrentid' + reportid).raw().value;
+    ajax.get('reportsv2.php?action=ajax_change_resolve&torrentid=' + torrentid + '&id=' + reportid + '&type=' + $('#resolve_type' + reportid).raw().value, function (response) {
+            var x = json.decode(response);
+            if (!is_array(x)) {
+                 alert(x);
+                 return;
+            }
+            $('#delete' + reportid).raw().checked = (x[0] == '1' ? true : false);
+            $('#bounty_amount' + reportid).raw().innerHTML ='('+ x[3] + ')';
+            $('#bounty' + reportid).raw().disabled = (x[3] == '0' ? true : false);
             $('#pm_message' + reportid).raw().innerHTML =x[4];
-			if($('#uploaderid' + reportid).raw().value == $('#reporterid' + reportid).raw().value) {
-				$('#warning' + reportid).raw().selectedIndex = 0;
-				$('#upload' + reportid).raw().checked = false;
-				$('#bounty' + reportid).raw().checked = false;
-			} else {
-				$('#upload' + reportid).raw().checked = (x[1] == '1' ? true : false);
-				$('#warning' + reportid).raw().selectedIndex = x[2];
-				$('#bounty' + reportid).raw().checked = (x[3] != '0' ? true : false);
-			}
-			$('#update_resolve' + reportid).raw().disabled = false;
-		}
-	);
+            if($('#uploaderid' + reportid).raw().value == $('#reporterid' + reportid).raw().value) {
+                $('#warning' + reportid).raw().selectedIndex = 0;
+                $('#upload' + reportid).raw().checked = false;
+                $('#bounty' + reportid).raw().checked = false;
+            } else {
+                $('#upload' + reportid).raw().checked = (x[1] == '1' ? true : false);
+                $('#warning' + reportid).raw().selectedIndex = x[2];
+                $('#bounty' + reportid).raw().checked = (x[3] != '0' ? true : false);
+            }
+            if (x[5][0] == '-1') {
+                $('#refundufl' + reportid).raw().disabled = true;
+                jQuery('#refundufl' + reportid).parent().attr('title', 'There is no refundable UFL on this torrent');
+            } else {
+                $('#refundufl' + reportid).raw().disabled = false;
+                $('#refundufl' + reportid).raw().checked = x[5][0] == '1' && x[0] == '1';
+                jQuery('#refundufl' + reportid).attr('restore_value', x[5][0]);
+                jQuery('#refundufl' + reportid).parent().attr('title', 'There is UFL on this torrent that the uploader paid '+addCommas(x[5][1])+' credits for');
+            }
+            jQuery('#refundufl' + reportid).attr('default_enable', $('#refundufl' + reportid).raw().disabled == false);
+            $('#update_resolve' + reportid).raw().disabled = false;
+
+        }
+    );
 }
 
 function Load(reportid) {
@@ -33,25 +49,57 @@ function Load(reportid) {
 			break;
 		}
 	}
+    torrentid = $('#torrentid' + reportid).raw().value;
 	//Can't use ChangeResolve() because we need it to block to do the uploader==reporter part
-	ajax.get('reportsv2.php?action=ajax_change_resolve&id=' + reportid + '&type=' + $('#resolve_type' + reportid).raw().value , function (response) {
-		var x = json.decode(response);
-			$('#delete' + reportid).raw().checked = (x[0] == '1' ? true : false);
-            $('#bounty_amount' + reportid).raw().innerHTML =x[3];
-			$('#bounty' + reportid).raw().disabled = (x[3] == '0' ? true : false);
+	ajax.get('reportsv2.php?action=ajax_change_resolve&torrentid=' + torrentid + '&id=' + reportid + '&type=' + $('#resolve_type' + reportid).raw().value , function (response) {
+            var x = json.decode(response);
+            if (!is_array(x)) {
+                 alert(x);
+                 return;
+            }
+            $('#delete' + reportid).raw().checked = (x[0] == '1' ? true : false);
+            $('#bounty_amount' + reportid).raw().innerHTML = '('+ x[3] + ')';
+            $('#bounty' + reportid).raw().disabled = (x[3] == '0' ? true : false);
             $('#pm_message' + reportid).raw().innerHTML =x[4];
-			if($('#uploaderid' + reportid).raw().value == $('#reporterid' + reportid).raw().value) {
-				$('#warning' + reportid).raw().selectedIndex = 0;
-				$('#upload' + reportid).raw().checked = false;
-				$('#bounty' + reportid).raw().checked = false;
-			} else {
-				$('#upload' + reportid).raw().checked = (x[1] == '1' ? true : false);
-				$('#warning' + reportid).raw().selectedIndex = x[2];
-				$('#bounty' + reportid).raw().checked = (x[3] != '0' ? true : false);
-			}
-			$('#update_resolve' + reportid).raw().disabled = false;
-		}
-	);
+            if($('#uploaderid' + reportid).raw().value == $('#reporterid' + reportid).raw().value) {
+                $('#warning' + reportid).raw().selectedIndex = 0;
+                $('#upload' + reportid).raw().checked = false;
+                $('#bounty' + reportid).raw().checked = false;
+            } else {
+                $('#upload' + reportid).raw().checked = (x[1] == '1' ? true : false);
+                $('#warning' + reportid).raw().selectedIndex = x[2];
+                $('#bounty' + reportid).raw().checked = (x[3] != '0' ? true : false);
+            }
+            if (x[5][0] == '-1') {
+                $('#refundufl' + reportid).raw().disabled = true;
+                jQuery('#refundufl' + reportid).parent().attr('title', 'There is no refundable UFL on this torrent');
+            } else {
+                $('#refundufl' + reportid).raw().disabled = false;
+                $('#refundufl' + reportid).raw().checked = x[5][0] == '1' && x[0] == '1';
+                jQuery('#refundufl' + reportid).attr('restore_value', x[5][0]);
+                jQuery('#refundufl' + reportid).parent().attr('title', 'There is UFL on this torrent that the uploader paid '+addCommas(x[5][1])+' credits for');
+            }
+            jQuery('#refundufl' + reportid).attr('default_enable', $('#refundufl' + reportid).raw().disabled == false);
+            if ($('#update_resolve' + reportid)) $('#update_resolve' + reportid).raw().disabled = false;
+            UpdateUFLOption(reportid);
+        }
+    );
+}
+
+function UpdateUFLOption(reportid)
+{
+    if (jQuery('#refundufl' + reportid).attr('default_enable') == 'true') {
+        // refundUFL is only available if we are deleting the torrent, let the interface show this
+        $('#refundufl' + reportid).raw().disabled = !$('#delete' + reportid).raw().checked;
+        // save/restore the current checked value
+        if ($('#refundufl' + reportid).raw().disabled == false) {
+            $('#refundufl' + reportid).raw().checked = jQuery('#refundufl' + reportid).attr('restore_value') == '1';
+        } else {
+            jQuery('#refundufl' + reportid).attr('restore_value', $('#refundufl' + reportid).raw().checked ? '1' : '0');
+            $('#refundufl' + reportid).raw().checked = false;
+        }
+    }
+
 }
 
 function ErrorBox(reportid, message) {
@@ -95,7 +143,7 @@ function NewReport(q, view, id) {
 		if(id) {
 			url += "&id=" + id;
 		}
-		
+
 		ajax.get(url, function (response) {
 			if(response) {
 				var div = document.createElement("div");
@@ -130,10 +178,10 @@ function AddMore(view, id) {
 			x = a;
 		}
 	}
-	
+
 	if(document.getElementsByName("reportid").length + x <= 50) {
 		NewReport(x, view, id);
-	} else { 
+	} else {
 		NewReport(50 - document.getElementsByName("reportid").length, view, id);
 	}
 }
@@ -177,7 +225,7 @@ function GiveBack(id) {
 			//if(response) alert(response);
                   $('#report' + id).remove();
 		});
-		
+
 	}
 }
 
@@ -239,7 +287,7 @@ function UpdateResolve(reportid) {
 	var newresolve = $('#resolve_type' + reportid).raw().options[$('#resolve_type' + reportid).raw().selectedIndex].value;
 	ajax.get("reportsv2.php?action=ajax_update_resolve&reportid=" + reportid + "&newresolve=" + newresolve, function (response) {
 		//$('#update_resolve' + reportid).raw().disabled = true;
-		window.location.reload(true); 
+		window.location.reload(true);
       });
 }
 

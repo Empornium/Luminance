@@ -12,8 +12,7 @@ if ($LoggedUser['DisablePosting']) {
     error('Your posting rights have been removed'); // Should this be logged?
 }
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 $Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
 
 flood_check('collages_comments');
@@ -25,6 +24,5 @@ $DB->query("INSERT INTO collages_comments
 
 $CommentID = $DB->inserted_id();
 
-$Cache->delete_value('collage_'.$CollageID.'_1');
-$Cache->delete_value('collage_'.$CollageID);
+$Cache->delete_value('collage_comments_'.$CollageID);
 header('Location: collages.php?id='.$CollageID."#post$CommentID");

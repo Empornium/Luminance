@@ -17,8 +17,7 @@ if (isset($_GET['userid']) && check_perms('users_view_invites')) {
 
 list($UserID, $Username, $PermissionID) = array_values(user_info($UserID));
 
-include(SERVER_ROOT.'/classes/class_invite_tree.php');
-$Tree = new INVITE_TREE($UserID);
+$Tree = new Luminance\Legacy\InviteTree($UserID);
 
 show_header($Username.' &gt; Invites &gt; Tree');
 ?>

@@ -1,6 +1,7 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+
+require_once(SERVER_ROOT.'/sections/blog/functions.php');
+$Text = new Luminance\Legacy\Text;
 
 list($Page,$Limit) = page_limit(5);
 
@@ -65,42 +66,43 @@ show_header('News','bbcode');
     if (check_perms('users_mod')) {
 ?>
 
-            <div class="head colhead_dark"><a href="staffblog.php">Latest staff blog posts</a></div>
+        <div class="head colhead_dark"><a href="staffblog.php">Latest staff blog posts</a></div>
         <div class="box">
 
 <?php
-if (($Blog = $Cache->get_value('staff_blog')) === false) {
-    $DB->query("SELECT
-        b.ID,
-        um.Username,
-        b.Title,
-        b.Body,
-        b.Time
-        FROM staff_blog AS b LEFT JOIN users_main AS um ON b.UserID=um.ID
-        ORDER BY Time DESC
-        LIMIT 20");
-    $Blog = $DB->to_array();
-    $Cache->cache_value('staff_blog',$Blog,1209600);
-}
-if (($ReadTime = $Cache->get_value('staff_blog_read_'.$LoggedUser['ID'])) === false) {
-    $DB->query("SELECT Time FROM staff_blog_visits WHERE UserID = ".$LoggedUser['ID']);
-    if (list($ReadTime) = $DB->next_record()) {
-        $ReadTime = strtotime($ReadTime);
-    } else {
-        $ReadTime = 0;
-    }
-    $Cache->cache_value('staff_blog_read_'.$LoggedUser['ID'],$ReadTime,1209600);
-}
+        if (($Blog = $Cache->get_value('staff_blog')) === false) {
+            $DB->query("SELECT
+                b.ID,
+                um.Username,
+                b.Title,
+                b.Body,
+                b.Time
+                FROM staff_blog AS b LEFT JOIN users_main AS um ON b.UserID=um.ID
+                ORDER BY Time DESC
+                LIMIT 20");
+            $Blog = $DB->to_array();
+            $Cache->cache_value('staff_blog',$Blog,1209600);
+        }
+
+        if (($ReadTime = $Cache->get_value('staff_blog_read_'.$LoggedUser['ID'])) === false) {
+            $DB->query("SELECT Time FROM staff_blog_visits WHERE UserID = ".$LoggedUser['ID']);
+            if (list($ReadTime) = $DB->next_record()) {
+                $ReadTime = strtotime($ReadTime);
+            } else {
+                $ReadTime = 0;
+            }
+            $Cache->cache_value('staff_blog_read_'.$LoggedUser['ID'],$ReadTime,1209600);
+        }
 ?>
             <ul class="stats nobullet">
 <?php
-if (count($Blog) < 5) {
-    $Limit = count($Blog);
-} else {
-    $Limit = 5;
-}
-for ($i = 0; $i < $Limit; $i++) {
-    list($BlogID, $Author, $Title, $Body, $BlogTime, $ThreadID) = $Blog[$i];
+        if (count($Blog) < 5) {
+            $Limit = count($Blog);
+        } else {
+            $Limit = 5;
+        }
+        for ($i = 0; $i < $Limit; $i++) {
+            list($BlogID, $Author, $Title, $Body, $BlogTime, $ThreadID) = $Blog[$i];
 ?>
                 <li>
                     <?=($ReadTime < strtotime($BlogTime))?'<strong>':''?><?=($i + 1)?>. <a href="staffblog.php#blog<?=$BlogID?>"><?=$Title?></a><?=($ReadTime < strtotime($BlogTime))?'</strong>':''?>
@@ -110,47 +112,13 @@ for ($i = 0; $i < $Limit; $i++) {
 ?>
             </ul>
         </div>
-<?php 	}  ?>
-        <div class="head colhead_dark">
-            <a href="blog.php">Latest blog posts</a>
-            <a style="float:right;margin-top:4px" href="feeds.php?feed=feed_blog&amp;user=<?=$LoggedUser['ID']?>&amp;auth=<?=$LoggedUser['RSS_Auth']?>&amp;passkey=<?=$LoggedUser['torrent_pass']?>&amp;authkey=<?=$LoggedUser['AuthKey']?>" title="<?=SITE_NAME?> : Blog" ><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
-        </div>
-        <div class="box">
+<?php
+    }
 
-<?php
-if (($Blog = $Cache->get_value('blog')) === false) {
-    $DB->query("SELECT
-        b.ID,
-        um.Username,
-        b.Title,
-        b.Body,
-        b.Time,
-        b.ThreadID
-        FROM blog AS b LEFT JOIN users_main AS um ON b.UserID=um.ID
-        ORDER BY Time DESC
-        LIMIT 20");
-    $Blog = $DB->to_array();
-    $Cache->cache_value('blog',$Blog,1209600);
-}
+        printBlogSidebar('Blog');
+        printBlogSidebar('Contests');
+
 ?>
-            <ul class="stats nobullet">
-<?php
-if (count($Blog) < 5) {
-    $Limit = count($Blog);
-} else {
-    $Limit = 5;
-}
-for ($i = 0; $i < $Limit; $i++) {
-    list($BlogID, $Author, $Title, $Body, $BlogTime, $ThreadID) = $Blog[$i];
-?>
-                <li>
-                    <?=($i + 1)?>. <a href="blog.php#blog<?=$BlogID?>"><?=$Title?></a>
-                </li>
-<?php
-}
-?>
-            </ul>
-        </div>
                 <div class="head colhead_dark">Stats</div>
                 <div class="box">
             <ul class="stats nobullet">
@@ -221,7 +189,7 @@ if (($TorrentCountLastDay = $Cache->get_value('stats_torrent_count_daily')) === 
 }
 
 ?>
-                <li>New Torrents last day: <?=number_format($TorrentCountLastDay)?></li>
+                <li>new Torrents last day: <?=number_format($TorrentCountLastDay)?></li>
 <?php
 if (($TorrentCount = $Cache->get_value('stats_torrent_count')) === false) {
     $DB->query("SELECT COUNT(ID) FROM torrents");

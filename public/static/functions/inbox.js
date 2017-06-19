@@ -33,7 +33,7 @@ function Inbox_Preview(appendid) {
 }
 
 function Foward_To(message_id) {
-    if ($('#forwardto').raw().checked && $('#receivername').raw().value=='' )
+    if ($('#receivername').raw().value=='' )
         alert('No user specified to forward to');
     else {
         $('#forwardmessage').raw().value = message_id;

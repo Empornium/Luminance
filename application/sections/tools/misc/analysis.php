@@ -1,11 +1,11 @@
 <?php
 if (!check_perms('site_debug')) { error(403); }
 
-if (!isset($_GET['case']) || !$Analysis = $Cache->get_value('analysis_'.$_GET['case'])) { error(404); }
+if (!isset($_GET['case']) || !$Analysis = $Cache->get_value('analysis_'.display_str($_GET['case']))) { error(404); }
 
 show_header('Case Analysis');
 ?>
-<h2>Case Analysis (<a href="<?=display_str($Analysis['url'])?>"><?=$_GET['case']?></a>)</h2>
+<h2>Case Analysis (<a href="<?=display_str($Analysis['url'])?>"><?=display_str($_GET['case'])?></a>)</h2>
 <pre id="#debug_report"><?=display_str($Analysis['message'])?></pre>
 <?php
 $Debug->flag_table($Analysis['flags']);

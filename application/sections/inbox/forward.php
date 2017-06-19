@@ -1,6 +1,7 @@
 <?php
 authorize();
 
+$StaffIDs = getStaffIDs();
 $UserID = $LoggedUser['ID'];
 $ConvID = $_POST['convid'];
 $ReceiverID = $_POST['receiverid'];

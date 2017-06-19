@@ -7,6 +7,7 @@ class Request {
 
     public $method;
     public $get;
+    public $host;
     public $post;
     public $values;
     public $cookie;
@@ -34,6 +35,7 @@ class Request {
                 throw new SystemException("Unknown request method: {$this->method}");
             }
             $this->port = $master->server['SERVER_PORT'];
+            $this->host = $master->server['HTTP_HOST'];
             $this->ssl = (
                 array_key_exists('HTTPS', $master->server) &&
                 !empty($master->server['HTTPS']) &&

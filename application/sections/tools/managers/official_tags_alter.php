@@ -2,7 +2,7 @@
 enforce_login();
 authorize();
 
-if (!check_perms('site_manage_tags')) {
+if (!check_perms('admin_manage_tags')) {
     error(403);
 }
 include(SERVER_ROOT . '/sections/torrents/functions.php');
@@ -46,8 +46,8 @@ if (isset($_POST['doit'])) {
     }
 
     if ($_POST['newtag']) {
-        $Tag = trim($Tag,'.'); // trim dots from the beginning and end
-        $Tag = sanitize_tag($_POST['newtag']);
+        $Tag = trim($_POST['newtag'],'.'); // trim dots from the beginning and end
+        $Tag = sanitize_tag($Tag);
         $TagName = get_tag_synonym($Tag);
 
         if ($Tag != $TagName) // this was a synonym replacement
@@ -71,10 +71,10 @@ if (isset($_POST['doit'])) {
 }
 
 // ==============================  super delete ========================
-
+/*
 if (isset($_POST['deletetagperm'])) {
 
-    if (!check_perms('site_convert_tags')) error(403);
+    if (!check_perms('admin_convert_tags')) error(403);
 
     $Result = 0;
     $TagID = (int) $_POST['permdeletetagid'];
@@ -133,7 +133,7 @@ if (isset($_POST['deletetagperm'])) {
 
 if (isset($_POST['recountall'])) {
 
-    if (!check_perms('site_convert_tags'))  error(403);
+    if (!check_perms('admin_convert_tags'))  error(403);
 
     // this may take a while...
 
@@ -164,7 +164,7 @@ if (isset($_POST['recountall'])) {
     $Result = $numtt >= 0 && $numtv >= 0 && $numt >= 0? 1 :0; // just check no sql errors returned - 0 results are not errors
     $Message .= "Recounted total uses for $numt tags. Removed orphans: $numtt tor-tag links, $numtv tag-votes" ;
 
-}
+} */
 
 if ($Message != '') {
     header("Location: tools.php?action=official_tags&rst=$Result&msg=" . htmlentities($Message) .$anchor);

@@ -118,8 +118,7 @@ foreach ($Type['guidelines'] as $Guideline) {
     </div>
 <?php
 
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 switch ($Short) {
     case "user" :

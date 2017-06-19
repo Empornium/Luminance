@@ -7,7 +7,7 @@ function format_torrentid($torrentID, $name, $maxlen = 20)
     if ($torrentID == 0) return 'None';
     if ($name == '') $tname = $torrentID;
     else $tname = $name;
-    $str = '<a href="torrents.php?torrentid='.$torrentID.'" title="'.$tname.'">'. cut_string($tname, $maxlen).'</a>';
+    $str = '<a href="details.php?id='.$torrentID.'" title="'.$tname.'">'. cut_string($tname, $maxlen).'</a>';
     if ($name == '') $str = "torrent not found [$str]";
     return $str;
 }

@@ -5,8 +5,7 @@ if ($_REQUEST['action']=='smilies') {
 }
 enforce_login();
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 show_header('Sandbox', 'bbcode');
 ?>

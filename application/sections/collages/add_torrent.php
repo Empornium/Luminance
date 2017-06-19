@@ -1,8 +1,7 @@
 <?php
 authorize();
 
-include(SERVER_ROOT.'/classes/class_validate.php');
-$Val = new VALIDATE;
+$Val = new Luminance\Legacy\Validate;
 
 function AddTorrent($CollageID, $GroupID)
 {
@@ -11,9 +10,6 @@ function AddTorrent($CollageID, $GroupID)
     $DB->query("SELECT MAX(Sort) FROM collages_torrents WHERE CollageID='$CollageID'");
     list($Sort) = $DB->next_record();
     $Sort+=10;
-
-    //$DB->query("SELECT GroupID FROM collages_torrents WHERE CollageID='$CollageID' AND GroupID='$GroupID'");
-    //if ($DB->record_count() == 0) {
 
     $DB->query("SELECT GroupID FROM collages_torrents WHERE CollageID='$CollageID'");
     $GroupIDs = $DB->collect('GroupID');
@@ -27,11 +23,14 @@ function AddTorrent($CollageID, $GroupID)
         $DB->query("SELECT COUNT(GroupID) AS NumGroups FROM collages_torrents WHERE CollageID='$CollageID'");
         list($NumGroups) = $DB->next_record();
 
-        $TorrentsPerPage = TORRENTS_PER_PAGE;
+        /*$TorrentsPerPage = TORRENTS_PER_PAGE;
         $Pages = max(1, ceil((float)$NumGroups/(float)$TorrentsPerPage));
         for ($Page=1; $Page <= $Pages; $Page++) {
             $Cache->delete_value('collage_'.$CollageID.'_'.$Page);
-        }
+        }*/
+        $Cache->delete_value('collage_'.$CollageID);
+        $Cache->delete_value('collage_torrents_'.$CollageID);
+
         $GroupIDs[] = $GroupID; // Clear cache for the torrent we've just added as well
         foreach ($GroupIDs as $GID) {
             $Cache->delete_value('torrents_details_'.$GID);
@@ -72,21 +71,18 @@ if ($MaxGroupsPerUser>0) {
     }
 }
 
+$URLRegex = '/'.TORRENT_REGEX.'/i';
 if ($_REQUEST['action'] == 'add_torrent') {
-    $URLRegex = '/^https?:\/\/(www\.|ssl\.)?'.SITE_URL.'\/torrents\.php\?(page=[0-9]+&)?id=([0-9]+)/i';
-    $Val->SetFields('url', '1','regex','The URL must be a link to a torrent on the site.',array('regex'=>$URLRegex));
+    $Val->SetFields('url', '1','regex','The URL must be a link to a torrent on the site.',array('regex'=>'/'.TORRENT_REGEX.'/i'));
     $Err = $Val->ValidateForm($_POST);
 
     if ($Err) {
         error($Err);
-        header('Location: collages.php?id='.$CollageID);
-        die();
     }
 
     $URL = $_POST['url'];
 
     // Get torrent ID
-    $URLRegex = '/torrents\.php\?(page=[0-9]+&)?id=([0-9]+)/i';
     preg_match($URLRegex, $URL, $Matches);
     $TorrentID=$Matches[2];
     if (!$TorrentID || (int) $TorrentID == 0) { error(404); }
@@ -100,8 +96,7 @@ if ($_REQUEST['action'] == 'add_torrent') {
     AddTorrent($CollageID, $GroupID);
       write_log("Collage ".$CollageID." (".db_string($Name).") was edited by ".$LoggedUser['Username']." - added torrents $GroupID");
 } else {
-    $URLRegex = '/^https?:\/\/(www\.|ssl\.)?'.SITE_URL.'\/torrents\.php\?(page=[0-9]+&)?id=([0-9]+)/i';
-
+    
     $URLs = explode("\n",$_REQUEST['urls']);
     $GroupIDs = array();
     $Err = '';
@@ -112,8 +107,8 @@ if ($_REQUEST['action'] == 'add_torrent') {
 
         $Matches = array();
         if (preg_match($URLRegex, $URL, $Matches)) {
-            $GroupIDs[] = $Matches[3];
-            $GroupID    = $Matches[3];
+            $GroupIDs[] = $Matches[2];
+            $GroupID    = $Matches[2];
         } else {
             $Err = "One of the entered URLs ($URL) does not correspond to a torrent on the site.";
             break;
@@ -121,15 +116,13 @@ if ($_REQUEST['action'] == 'add_torrent') {
 
         $DB->query("SELECT ID FROM torrents_group WHERE ID='$GroupID'");
         if (!$DB->record_count()) {
-            $Err = "One of the entered URLs ($URL) does not correspond to a torrent on the site.";
+            $Err = "One of the entered URLs (".display_str($URL).") does not correspond to a torrent on the site.";
             break;
         }
     }
 
     if ($Err) {
         error($Err);
-        header('Location: collages.php?id='.$CollageID);
-        die();
     }
 
     foreach ($GroupIDs as $GroupID) {

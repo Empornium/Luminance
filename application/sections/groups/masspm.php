@@ -21,8 +21,7 @@ if (!$Users) { error("Cannot send a mass PM as there are no users in this group"
 
 show_header('Send Mass PM', 'upload,bbcode,inbox');
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 ?>
 <div class="thin">

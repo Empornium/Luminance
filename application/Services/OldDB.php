@@ -70,7 +70,7 @@ class OldDB extends Service {
     }
 
     public function next_record($Type=MYSQLI_BOTH, $Escape = true) { // $Escape can be true, false, or an array of keys to not escape
-        if ($this->LinkID) {
+        if ($this->QueryID) {
             $this->Record = $this->QueryID->fetch($Type);
             $this->Row++;
             if (!is_array($this->Record)) {

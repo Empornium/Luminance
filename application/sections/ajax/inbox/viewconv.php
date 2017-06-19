@@ -1,6 +1,5 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $ConvID = $_GET['id'];
 if (!$ConvID || !is_number($ConvID)) {

@@ -61,6 +61,7 @@ foreach ($Channels as $Channel) {
     send_irc("PRIVMSG ".$Channel." :Report ".$ReportID." resolved by ".preg_replace("/^(.{2})/", "$1·", $LoggedUser['Username'])." on site (".(int) $Remaining." remaining).");
 }
 
+$Cache->delete_value('num_forum_reports');
 $Cache->delete_value('num_other_reports');
 
 header('Location: reports.php');

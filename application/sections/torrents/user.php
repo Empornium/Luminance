@@ -65,7 +65,7 @@ if (!empty($_GET['tags'])) {
         $Tag = trim(str_replace('.','_',$Tag));
 
         if (!empty($Tag))
-            $TagList[]="tg.TagList LIKE '% ".db_string($Tag)." %'"; // Match complete tags only
+            $TagList[]="tg.TagList LIKE '%".db_string($Tag)."%'"; // Match complete tags only
     }
     if (!empty($TagList)) {
         $SearchWhere[]='('.implode(' AND ', $TagList).')';
@@ -107,7 +107,6 @@ switch ($_GET['type']) {
         if ((empty($_GET['filter']) || $_GET['filter'] != 'perfectflac') && !check_paranoia('uploads', $User['Paranoia'], $UserClass, $UserID)) { error(PARANOIA_MSG); }
         $Time = 'unix_timestamp(t.Time)';
         $UserField = 't.UserID';
-        $ExtraWhere = 'AND flags!=1';
         $From = "torrents AS t";
         break;
     case 'downloaded':
@@ -328,11 +327,11 @@ foreach ($NewCategories as $Cat) {
             $TorrentTags[]='<a href="torrents.php?type='.$Action.'&amp;userid='.$UserID.'&amp;tags='.$Tag.'">'.$Tag.'</a>';
         }
         $TorrentTags = implode(' ', $TorrentTags);
-        $DisplayName = $GroupName;
 
+        $ReportInfo = '';
         if ($Torrent['ReportCount'] > 0) {
             $Title = "This torrent has ".$Torrent['ReportCount']." active ".($Torrent['ReportCount'] > 1 ?'reports' : 'report');
-            $DisplayName .= ' /<span class="reported" title="'.$Title.'"> Reported</span>';
+            $ReportInfo = ' /<span class="reported" title="'.$Title.'"> Reported</span>';
         }
 
         $Icons = torrent_icons($Torrent, $TorrentID, $Review, in_array($GroupID, $Bookmarks));
@@ -349,7 +348,7 @@ foreach ($NewCategories as $Cat) {
             <td>
                 <?php
                 if ($LoggedUser['HideFloat']) {?>
-                    <?=$Icons?> <a href="torrents.php?id=<?=$GroupID?>"><?=$DisplayName?></a>
+                    <?=$Icons?> <a href="torrents.php?id=<?=$GroupID?>"><?=display_str($GroupName).$ReportInfo?></a>
 <?php               } else {
                     $Overlay = get_overlay_html($GroupName, anon_username($Torrent['Username'], $Torrent['Anonymous']), $Image, $Torrent['Seeders'], $Torrent['Leechers'], $Torrent['Size'], $Torrent['Snatched']);
                     ?>
@@ -357,7 +356,7 @@ foreach ($NewCategories as $Cat) {
                         var overlay<?=$GroupID?> = <?=json_encode($Overlay)?>
                     </script>
                     <?=$Icons?>
-                    <a href="torrents.php?id=<?=$GroupID?>" onmouseover="return overlib(overlay<?=$GroupID?>, FULLHTML);" onmouseout="return nd();"><?=$DisplayName?></a>
+                    <a href="torrents.php?id=<?=$GroupID?>" onmouseover="return overlib(overlay<?=$GroupID?>, FULLHTML);" onmouseout="return nd();"><?=display_str($GroupName).$ReportInfo?></a>
 <?php               }  ?>
                 <br />
           <?php  if ($LoggedUser['HideTagsInLists'] !== 1) { ?>

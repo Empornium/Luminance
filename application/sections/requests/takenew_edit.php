@@ -12,8 +12,7 @@ if ($_POST['action'] != "takenew" &&  $_POST['action'] != "takeedit") {
 }
 
 include(SERVER_ROOT . '/sections/torrents/functions.php');
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $NewRequest = ($_POST['action'] == "takenew");
 
@@ -67,10 +66,10 @@ if (empty($_POST['title'])) {
     $Title = trim($_POST['title']);
 }
 
-if (empty($_POST['tags'])) {
+if (empty($_POST['taglist'])) {
     $Err = "You forgot to enter any tags!";
 } else {
-    $Tags = trim($_POST['tags']);
+    $Tags = trim($_POST['taglist']);
 }
 
 if ($NewRequest) {
@@ -101,7 +100,7 @@ if (empty($_POST['image'])) {
     $Image = "";
 } else {
       $Result = validate_imageurl($_POST['image'], 12, 255, get_whitelist_regex());
-      if($Result!==TRUE) $Err = $Result;
+      if($Result!==TRUE) $Err = display_str($Result);
       else $Image = trim($_POST['image']);
 }
 
@@ -132,7 +131,7 @@ if (!$NewRequest) {
     $DB->query("DELETE FROM requests_tags WHERE RequestID = ".$RequestID);
 }
 
-$Tags = explode(' ', strtolower($NewCategories[$CategoryID]['tag']." ".$Tags));
+$Tags = explode(' ', strtolower($OpenCategories[$CategoryID]['tag']." ".$Tags));
 
 $TagsAdded=array();
 foreach ($Tags as $Tag) {

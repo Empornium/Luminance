@@ -31,13 +31,87 @@ function get_num_staff_pms($UserID, $UserLevel)
         return array($NumMy, $NumUnanswered, $NumOpen);
 }
 
+function print_staff_assign_select($AssignedToUser, $Level)
+{
+    global $master, $DB, $ClassLevels;
+?>
+        <select id="assign_to" name="assign">
+            <optgroup label="User classes">
+<?php       // FLS "class"
+                $Selected = (!$AssignedToUser && $Level == 0) ? ' selected="selected"' : '';
+?>
+                <option value="class_0"<?=$Selected?>>First Line Support</option>
+<?php       // Staff classes
+foreach ($ClassLevels as $Class) {
+    // Create one <option> for each staff user class  >= 650
+    if ($Class['Level'] >= 500) {
+        $Selected = (!$AssignedToUser && ($Level == $Class['Level'])) ? ' selected="selected"' : '';
+?>
+                <option value="class_<?=$Class['Level']?>"<?=$Selected?>><?=$Class['Name']?></option>
+<?php
+    }
+}
+?>
+            </optgroup>
+            <optgroup label="Staff">
+<?php       // Staff members
+$DB->query("
+    SELECT
+        m.ID,
+        m.Username
+    FROM permissions as p
+    JOIN users_main as m ON m.PermissionID=p.ID
+    WHERE p.DisplayStaff='1'
+    ORDER BY p.Level DESC, m.Username ASC"
+);
+while (list($ID, $Name) = $DB->next_record()) {
+    // Create one <option> for each staff member
+    $Selected = ($AssignedToUser == $ID) ? ' selected="selected"' : '';
+?>
+                <option value="user_<?=$ID?>"<?=$Selected?>><?=$Name?></option>
+<?php
+}
+?>
+            </optgroup>
+            <optgroup label="First Line Support">
+<?php
+// FLS users
+$DB->query("
+    SELECT
+        m.ID,
+        m.Username
+    FROM users_info as i
+    JOIN users_main as m ON m.ID=i.UserID
+    JOIN permissions as p ON p.ID=m.PermissionID
+    WHERE p.DisplayStaff!='1' AND i.SupportFor!=''
+    ORDER BY m.Username ASC
+");
+while (list($ID, $Name) = $DB->next_record()) {
+    // Create one <option> for each FLS user
+    $Selected = ($AssignedToUser == $ID) ? ' selected="selected"' : '';
+?>
+                <option value="user_<?=$ID?>"<?=$Selected?>><?=$Name?></option>
+<?php
+}
+?>
+            </optgroup>
+        </select>
+        <input type="button"  style="margin-right: 10px;" onClick="Assign();" value="Assign" />
+<?php
+}
+
 function print_compose_staff_pm($Hidden = true, $Assign = 0, $Subject ='', $Msg = '', $Text = false)
 {
         global $LoggedUser;
+
+        // forwarding a msg
+        if ($_POST['action']=='forward') {
+            list($MsgType, $Subject, $FwdBody) = getForwardedPostData();
+        }
+
         $IsStaff = $LoggedUser['DisplayStaff'] == 1;
         if (!$Text) {
-            include(SERVER_ROOT.'/classes/class_text.php');
-            $Text = new TEXT;
+            $Text = new Luminance\Legacy\Text;
         }
         if ($Msg=='changeusername') {
             $Subject='Change Username';
@@ -62,27 +136,42 @@ function print_compose_staff_pm($Hidden = true, $Assign = 0, $Subject ='', $Msg 
 
         ?>
         <div id="compose" class="<?=($Hidden ? 'hide' : '')?>">
-             <?php  if ($LoggedUser['SupportFor'] !="" || $IsStaff) {  ?>
+<?php       if ($LoggedUser['SupportFor'] !="" || $IsStaff) {  ?>
                     <div class="box pad">
                       <strong class="important_text">Are you sure you want to send a message to staff? You are staff yourself you know...</strong>
                     </div>
-             <?php  }  ?>
-                    <div id="preview" class="hidden"></div>
-                    <form action="staffpm.php" method="post" id="messageform">
-                    <div id="quickpost">
-                <input type="hidden" name="action" value="takepost" />
-                <input type="hidden" name="prependtitle" value="Staff PM - " />
+<?php       }
 
-                <label for="subject"><h3>Subject</h3></label>
-                <input class="long" type="text" name="subject" id="subject" value="<?=display_str($Subject)?>" />
-                <br />
+             if ($FwdBody) {
+?>
+                 <div class="head">
+                     <?=$MsgType;?> to be forwarded:
+                 </div>
+                 <div class="box vertical_space">
+                     <div class="body" >
+                         <?=$Text->full_format($FwdBody, true)?>
+                     </div>
+                 </div>
+<?php
+             }
+?>
+            <div id="preview" class="hidden"></div>
+            <form action="staffpm.php" method="post" id="messageform">
+                <div id="quickpost">
+                    <input type="hidden" name="action" value="takepost" />
+                    <input type="hidden" name="prependtitle" value="Staff PM - " />
+                    <input type="hidden" name="forwardbody" value="<?=display_str($FwdBody)?>" />
 
-                <label for="message"><h3>Message</h3></label>
-                            <?php  $Text->display_bbcode_assistant("message"); ?>
-                <textarea rows="10" class="long" name="message" id="message"><?=display_str($Msg)?></textarea>
-                <br />
+                    <label for="subject"><h3>Subject</h3></label>
+                    <input class="long" type="text" name="subject" id="subject" value="<?=display_str($Subject)?>" />
+                    <br />
 
-                    </div>
+                    <label for="message"><h3>Message</h3></label>
+                                <?php  $Text->display_bbcode_assistant("message"); ?>
+                    <textarea rows="10" class="long" name="message" id="message"><?=display_str($Msg)?></textarea>
+                    <br />
+                </div>
+
                 <input type="button" value="Hide" onClick="jQuery('#compose').toggle();return false;" />
                 <strong>Send to: </strong>
 <?php                   if ($AssignDirect) { ?>

@@ -20,7 +20,7 @@ if (!empty($_GET['torrentid']) && is_number($_GET['torrentid'])) {
         if (preg_match("/".TORRENT_REGEX."/i", $Link, $Matches) < 1) {
             $Err = "Your link didn't seem to be a valid torrent link";
         } else {
-            $GroupID = $Matches[3];
+            $GroupID = $Matches[2];
         }
     }
 

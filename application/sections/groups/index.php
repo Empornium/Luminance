@@ -34,9 +34,7 @@ if (empty($_POST['action'])) {
                 if (!$GroupID || !$UserID) error(0);
                 $DB->query("INSERT IGNORE INTO users_groups (GroupID, UserID, AddedTime, AddedBy)
                                  VALUES ('$GroupID', '$UserID','" . sqltime() . "','" . $LoggedUser['ID'] . "')");
-                $DB->query("SELECT Username FROM users_main WHERE ID=$UserID");
-                list($Username) = $DB->next_record();
-                $Log = sqltime() . " - User [user]{$Username}[/user] [color=blue]added[/color] by [user]{$LoggedUser['Username']}[/user]";
+                $Log = sqltime() . " - User [user]{$UserID}[/user] [color=blue]added[/color] by [user]{$LoggedUser['ID']}[/user]";
                 $DB->query("UPDATE groups SET Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
 
                 header('Location: groups.php?groupid=' . $GroupID);
@@ -44,7 +42,7 @@ if (empty($_POST['action'])) {
             } else {    // add group
 
                 if (!$P[name] || $P[name] == '') error("Name of new group cannot be empty");
-                $Log = sqltime() . " - Usergroup [color=green]$P[name][/color] [color=blue]created[/color] by [user]{$LoggedUser['Username']}[/user]";
+                $Log = sqltime() . " - Usergroup [color=green]$P[name][/color] [color=blue]created[/color] by [user]{$LoggedUser['ID']}[/user]";
                 $DB->query("INSERT IGNORE INTO groups (Name, Log) VALUES ('$P[name]', '$Log')");
                 $GroupID = (int) $DB->inserted_id();
                 if (!$GroupID) error("Error - Failed to create new group!");
@@ -73,9 +71,7 @@ if (empty($_POST['action'])) {
             if (!$UserID || !$GroupID) error(0);
 
             $DB->query("DELETE FROM users_groups WHERE GroupID='$GroupID' AND UserID='$UserID'");
-            $DB->query("SELECT Username FROM users_main WHERE ID=$UserID");
-            list($Username) = $DB->next_record();
-            $Log = sqltime() . " - User [user]{$Username}[/user] [color=red]removed[/color] by [user]{$LoggedUser['Username']}[/user]";
+            $Log = sqltime() . " - User [user]{$UserID}[/user] [color=red]removed[/color] by [user]{$LoggedUser['ID']}[/user]";
             $DB->query("UPDATE groups SET Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
 
             header('Location: groups.php?groupid=' . $GroupID . '&userid=' . $UserID);
@@ -91,7 +87,7 @@ if (empty($_POST['action'])) {
 
             if (!$GroupID) error(0);
             if (!$P['name'] || $P['name'] == '') error("Name of group cannot be empty");
-            $Log = sqltime() . " - Name [color=blue]changed[/color] to [color=green]$P[name][/color] by [user]{$LoggedUser['Username']}[/user]";
+            $Log = sqltime() . " - Name [color=blue]changed[/color] to [color=green]$P[name][/color] by [user]{$LoggedUser['ID']}[/user]";
             $DB->query("UPDATE groups SET Name='$P[name]', Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
             header('Location: groups.php?groupid=' . $GroupID);
 
@@ -175,7 +171,7 @@ if (empty($_POST['action'])) {
                 $Div =', ';
             }
 
-            $Log = sqltime() . " - User(s) $Log [color=blue]added[/color] by [user]{$LoggedUser['Username']}[/user]";
+            $Log = sqltime() . " - User(s) $Log [color=blue]added[/color] by [user]{$LoggedUser['ID']}[/user]";
             $DB->query("UPDATE groups SET Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
 
             header('Location: groups.php?groupid=' . $GroupID);
@@ -200,7 +196,7 @@ if (empty($_POST['action'])) {
                 }
 
                 $DB->query("DELETE FROM users_groups WHERE GroupID='$GroupID'");
-                $Log = sqltime() . " - [color=red]All Users[/color] ($Log) [color=red]removed[/color] by [user]{$LoggedUser['Username']}[/user]";
+                $Log = sqltime() . " - [color=red]All Users[/color] ($Log) [color=red]removed[/color] by [user]{$LoggedUser['ID']}[/user]";
                 $DB->query("UPDATE groups SET Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
             }
             header('Location: groups.php?groupid=' . $GroupID );
@@ -237,17 +233,18 @@ if (empty($_POST['action'])) {
                 if ( $AdjustCredits[0]=='+') $AdjustCredits = substr($AdjustCredits, 1);
                 if ( !is_number($AdjustCredits)) error(0);
                 $AdjustCredits = (int) $AdjustCredits;
-                if ($AdjustCredits>0) $AdjustCredits = "+$AdjustCredits";
-
+                $textCredits = number_format($AdjustCredits);
+                if ($AdjustCredits>0) {
+                    $AdjustCredits = "+$AdjustCredits";
+                    $textCredits = "+$textCredits";
+                }
                 $Users = $DB->collect('UserID');
                 $UserIDs = implode(',', $Users);
 
-                $BonusSummary = sqltime()." | $AdjustCredits | ".ucfirst("credits given by $LoggedUser[Username]");
-                $Summary = sqltime()." - Bonus Credits adjusted by $AdjustCredits (mass credit award) by $LoggedUser[Username]";
+                $BonusSummary = sqltime()." | $textCredits | Credit award given by $LoggedUser[Username]";
 
                 $DB->query("UPDATE users_main AS m JOIN users_info AS i ON m.ID=i.UserID
                                    SET Credits=Credits$AdjustCredits,
-                                       AdminComment=CONCAT_WS( '\n', '$Summary', AdminComment),
                                        BonusLog=CONCAT_WS( '\n', '$BonusSummary', BonusLog)
                                  WHERE m.ID IN ($UserIDs)");
 
@@ -256,7 +253,7 @@ if (empty($_POST['action'])) {
                 }
             }
 
-            $Log = db_string( sqltime()." - [color=purple]Credits awarded[/color] by $LoggedUser[Username] - amount: $AdjustCredits" );
+            $Log = db_string( sqltime()." - [color=purple]Credits awarded[/color] by $LoggedUser[Username] - amount: $textCredits" );
             $DB->query("UPDATE groups SET Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
 
             header('Location: groups.php?groupid=' . $GroupID );

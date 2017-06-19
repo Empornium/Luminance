@@ -1,5 +1,4 @@
 <?php
-require(SERVER_ROOT . '/classes/class_bitcoin.php');
 
 function get_donate_deduction($amount_euros)
 {
@@ -80,7 +79,7 @@ function get_btc_addresses($UserID)
         // no addresses, generate on if we can.
         if (BTC_LOCAL) {
             try {
-                $bitcoin  = new Bitcoin(BTC_USER, BTC_PASS);
+                $bitcoin  = new Luminance\Legacy\Bitcoin(BTC_USER, BTC_PASS);
                 $public   = $bitcoin->getnewaddress();
                 if (!$public) {
                     $Err = "Failed to get an address, if this error persists we probably need to add some addresses, please contact an admin";
@@ -123,7 +122,7 @@ function get_btc_addresses($UserID)
 function check_bitcoin_balance($address, $numtransactions=6)
 {
     if (BTC_LOCAL) {
-        $bitcoin  = new Bitcoin(BTC_USER, BTC_PASS);
+        $bitcoin  = new Luminance\Legacy\Bitcoin(BTC_USER, BTC_PASS);
         $btc = $bitcoin->getreceivedbyaddress($address, $numtransactions);
     } else {
         $satoshis = intval(file_get_contents("http://blockchain.info/q/addressbalance/{$address}?confirmations={$numtransactions}"));
@@ -224,9 +223,9 @@ function get_eur_coindesk($testing=flase)
 
 function get_eur_bitcoinaverage($testing=false)
 {
-        $currencyRate = file_get_contents("https://api.bitcoinaverage.com/ticker/global/EUR/24h_avg");
+        $currencyRate = json_decode(file_get_contents("https://apiv2.bitcoinaverage.com/indices/global/ticker/BTCEUR"))->averages->day;
 
-        if($testing || $currencyRate) return (double)str_replace(',', '', $currencyRate);;
+        if($testing || $currencyRate) return (double)str_replace(',', '', $currencyRate);
 
         return false;
 }

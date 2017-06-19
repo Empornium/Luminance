@@ -11,10 +11,11 @@ use Luminance\Responses\Rendered;
 class AuthenticationPlugin extends Plugin {
 
     protected static $useServices = [
-        'auth'     => 'Auth',
-        'guardian' => 'Guardian',
-        'flasher'  => 'Flasher',
-        'settings' => 'Settings',
+        'auth'      => 'Auth',
+        'guardian'  => 'Guardian',
+        'flasher'   => 'Flasher',
+        'settings'  => 'Settings',
+        'secretary' => 'Secretary',
     ];
 
     public $routes = [
@@ -70,6 +71,15 @@ class AuthenticationPlugin extends Plugin {
         if ($this->request->user) {
             return new Redirect('/');
         }
+        $this->guardian->check_ip_ban();
+        $this->guardian->detect();
+        if (!isset($this->request->post['token']))
+        {
+            $this->flasher->error("Authentication failure.");
+            return new Redirect('/');
+        }
+        $token=$this->request->post['token'];
+        $this->secretary->checkToken($token, 'users.login', 600);
         $Username = $this->request->post['username'];
         $Password = $this->request->post['password'];
         $Options = self::parse_cinfo($this->request->post['cinfo']);
@@ -96,9 +106,9 @@ class AuthenticationPlugin extends Plugin {
         }
         $this->guardian->check_ip_ban();
         $this->guardian->detect();
-	$flash = $this->flasher->grabFlashes()[0];
+	    $flash = $this->flasher->grabFlashes()[0];
 
-	$nick = '';
+	    $nick = '';
         if (isset($flash->data->username)) $nick = $flash->data->username;
 
         $nick = preg_replace('/[^a-zA-Z0-9\[\]\\`\^\{\}\|_]/', '', $nick);
@@ -108,7 +118,7 @@ class AuthenticationPlugin extends Plugin {
 
         $nick = "disabled_$nick";
 
-	$web_irc=$this->settings->site->help_url."nick=$nick".$this->settings->irc->disabled_chan;
+        $web_irc=$this->settings->site->help_url."nick=$nick".$this->settings->irc->disabled_chan;
         return new Rendered('@Authentication/disabled.html',
                                 ['web_irc' => $web_irc,
                                  'irc_server' => $this->settings->irc->server,

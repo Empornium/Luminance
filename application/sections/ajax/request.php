@@ -12,8 +12,7 @@ $MinimumVote = 20*1024*1024;
 include(SERVER_ROOT.'/sections/requests/functions.php');
 
 include(SERVER_ROOT.'/sections/bookmarks/functions.php'); // has_bookmarked()
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 if (empty($_GET['id']) || !is_number($_GET['id'])) {
     print

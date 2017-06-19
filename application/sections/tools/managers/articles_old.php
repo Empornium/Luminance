@@ -2,8 +2,7 @@
 enforce_login();
 if (!check_perms('admin_manage_articles')) { error(403); }
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 switch ($_REQUEST['action']) {
     case 'takeeditarticle':

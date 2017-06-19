@@ -2,14 +2,12 @@
 authorize();
 
 include(SERVER_ROOT . '/sections/torrents/functions.php');
-include(SERVER_ROOT.'/classes/class_validate.php');
-$Val = new VALIDATE;
+$Val = new Luminance\Legacy\Validate;
 
 $P = array();
 $P = db_array($_POST);
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 $Text->validate_bbcode($_POST['description'],  get_permissions_advtags($LoggedUser['ID']));
 
 if ($P['category'] > 0 || check_perms('site_collages_renamepersonal')) {

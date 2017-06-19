@@ -6,14 +6,13 @@ $c = isset($_REQUEST['c'])?$_REQUEST['c']:6.5;
 $d = isset($_REQUEST['d'])?$_REQUEST['d']:0;
 $cap = isset($_REQUEST['cap'])?$_REQUEST['cap']:0;
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 show_header();
 
 ?>
 <div class="thin">
-    <h2>sandbox 1</h2>
+    <h2>sandbox 1 (credits formula)</h2>
         <table style="width:100%">
             <tr>
                 <td colspan="3" class="center">
@@ -21,15 +20,15 @@ show_header();
                     <form action="" method="post">
                         <input type="hidden" name="action" value="sandbox1" />
                         &nbsp;&nbsp;&nbsp;&nbsp;<label for="a" >a:</label>
-                        <input size="6" type="text" name="a" value="<?=$a?>" />
+                        <input size="6" type="text" name="a" value="<?=display_str($a)?>" />
                         &nbsp;&nbsp;&nbsp;&nbsp;<label for="b" >b:</label>
-                        <input size="6" type="text" name="b" value="<?=$b?>" />
+                        <input size="6" type="text" name="b" value="<?=display_str($b)?>" />
                         &nbsp;&nbsp;&nbsp;&nbsp;<label for="c" >c:</label>
-                        <input size="6" type="text" name="c" value="<?=$c?>" />
+                        <input size="6" type="text" name="c" value="<?=display_str($c)?>" />
                         &nbsp;&nbsp;&nbsp;&nbsp;<label for="d" >d:</label>
-                        <input size="6" type="text" name="d" value="<?=$d?>" />
+                        <input size="6" type="text" name="d" value="<?=display_str($d)?>" />
                         &nbsp;&nbsp;&nbsp;&nbsp;<label for="cap" >cap:</label>
-                        <input size="6" type="text" name="cap" value="<?=$cap?>" />
+                        <input size="6" type="text" name="cap" value="<?=display_str($cap)?>" />
                         <input type="submit" value="calculate"/>
                     </form><br/>
                 </td>

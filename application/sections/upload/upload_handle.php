@@ -8,18 +8,14 @@
 
 ini_set('upload_max_filesize', MAX_FILE_SIZE_BYTES);
 ini_set('max_file_uploads', 100);
-require(SERVER_ROOT . '/classes/class_torrent.php');
-include(SERVER_ROOT . '/classes/class_validate.php');
-include(SERVER_ROOT . '/classes/class_feed.php');
-include(SERVER_ROOT . '/classes/class_text.php');
 include(SERVER_ROOT . '/sections/torrents/functions.php');
 
 enforce_login();
 authorize();
 
-$Validate = new VALIDATE;
-$Feed = new FEED;
-$Text = new TEXT;
+$Validate = new Luminance\Legacy\Validate;
+$Feed = new Luminance\Legacy\Feed;
+$Text = new Luminance\Legacy\Text;
 
 define('QUERY_EXCEPTION', true); // Shut up debugging
 //******************************************************************************//
@@ -36,14 +32,14 @@ $Properties = array();
 
 $Properties['Category'] = $_POST['category'];
 $Properties['Title'] = $_POST['title'];
-$Properties['TagList'] = $_POST['tags'];
+$Properties['TagList'] = $_POST['taglist'];
 $Properties['Image'] = $_POST['image'];
 $Properties['GroupDescription'] = $_POST['desc'];
 $Properties['TemplateFooter'] = $_POST['templatefooter'];
 $Properties['IgnoreDupes'] = $_POST['ignoredupes'];
 $Properties['FreeLeech'] = ($_POST['freeleech']=='1' && check_perms('torrents_freeleech'))?'1':'0';
-
 $Properties['Anonymous'] = ($_POST['anonymous']=='1' && check_perms('site_upload_anon'))?'1':'0';
+$Properties['Autocomplete'] = $_POST['autocomplete_toggle']=='1';
 
 $RequestID = $_POST['requestid'];
 
@@ -82,7 +78,7 @@ if ($Properties['tempfileid']) {
     }
 
     $Contents = unserialize(base64_decode($Contents));
-    $Tor = new TORRENT($Contents, true); // New TORRENT object
+    $Tor = new Luminance\Legacy\Torrent($Contents, true); // new Torrent object
 
 } else {
 
@@ -106,7 +102,7 @@ if ($Properties['tempfileid']) {
 
     $File = fopen($TorrentName, 'rb'); // open file for reading
     $Contents = fread($File, 10000000);
-    $Tor = new TORRENT($Contents); // New TORRENT object
+    $Tor = new Luminance\Legacy\Torrent($Contents); // new Torrent object
     fclose($File);
 }
 
@@ -126,11 +122,11 @@ if ($DB->record_count() > 0) {
     list($ID) = $DB->next_record();
     $DB->query("SELECT TorrentID FROM torrents_files WHERE TorrentID = " . $ID);
     if ($DB->record_count() > 0) {
-        $Err = '<a href="torrents.php?torrentid=' . $ID . '">The exact same torrent file already exists on the site!</a>';
+        $Err = '<a href="details.php?id=' . $ID . '">The exact same torrent file already exists on the site!</a>';
     } else {
         //One of the lost torrents.
         $DB->query("INSERT INTO torrents_files (TorrentID, File) VALUES ($ID, '" . db_string($Tor->dump_data()) . "')");
-        $Err = '<a href="torrents.php?torrentid=' . $ID . '">Thankyou for fixing this torrent</a>';
+        $Err = '<a href="details.php?id=' . $ID . '">Thank you for fixing this torrent</a>';
     }
 }
 
@@ -151,7 +147,7 @@ foreach ($FileList as $File) {
     list($Size, $Name) = $File;
 
     if (preg_match('/INCOMPLETE~\*/i', $Name)) {
-        $Err = 'The torrent contained one or more forbidden files (' . $Name . ').';
+        $Err = 'The torrent contained one or more forbidden files (' . display_str($Name) . ').';
     }
     if (preg_match('/\?/i', $Name)) {
         $Err = 'The torrent contains one or more files with a ?, which is a forbidden character. Please rename the files as necessary and recreate the .torrent file.';
@@ -201,7 +197,7 @@ if (empty($_POST['ignoredupes']) && $DupeResults['DupeResults']) { // Show the u
         $Properties['tempfileid'] = $DB->inserted_id();
         $Properties['tempfilename'] = $FileName;
     }
-    
+
     $Err = 'The torrent contained one or more possible dupes. Please check carefully!';
 	$DupeResults['TotalSize'] = $TotalSize;
     include(SERVER_ROOT . '/sections/upload/upload.php');
@@ -214,9 +210,9 @@ if (empty($_POST['ignoredupes']) && $DupeResults['DupeResults']) { // Show the u
 //** ie.. one test per field max, last one set for a specific field is what is used
 
 
-$Validate->SetFields('category', '1', 'inarray', 'Please select a category.', array('inarray' => array_keys($NewCategories)));
+$Validate->SetFields('category', '1', 'inarray', 'Please select a category.', array('inarray' => array_keys($OpenCategories)));
 $Validate->SetFields('title', '1', 'string', 'You must enter a Title.', array('maxlength' => 200, 'minlength' => 2, 'maxwordlength'=>TITLE_MAXWORD_LENGTH));
-$Validate->SetFields('tags', '1', 'string', 'You must enter at least one tag.', array('maxlength' => 10000, 'minlength' => 2));
+$Validate->SetFields('taglist', '1', 'string', 'You must enter at least one tag.', array('maxlength' => 10000, 'minlength' => 2));
 $whitelist_regex = get_whitelist_regex();
 $Validate->SetFields('image', '0', 'image', 'The image URL you entered was not valid.', array('regex' => $whitelist_regex, 'maxlength' => 255, 'minlength' => 12));
 $Validate->SetFields('desc', '1', 'desc', 'Description', array('regex' => $whitelist_regex, 'minimages'=>1, 'maxlength' => 1000000, 'minlength' => 20));
@@ -281,7 +277,7 @@ $GroupID = $DB->inserted_id();
 $Cache->increment('stats_group_count');
 
 // Use this section to control freeleeches
-if ($Properties['FreeLeech']==='1' || $TotalSize >= AUTO_FREELEECH_SIZE) {        // (20*1024*1024*1024)) {
+if ($Properties['FreeLeech']==='1' || $TotalSize >= $master->settings->torrents->auto_freeleech_size) {        // (20*1024*1024*1024)) {
     $Properties['FreeTorrent']='1';
 } else {
     $Properties['FreeTorrent']='0';
@@ -351,7 +347,8 @@ foreach ($Tags as $Tag) {
 // replace the original tag array with corrected tags
 $Tags = $TagsAdded;
 
-update_tracker('add_torrent', array('id' => $TorrentID, 'info_hash' => rawurlencode($InfoHash), 'freetorrent' => (int) $Properties['FreeTorrent']));
+//update_tracker('add_torrent', array('id' => $TorrentID, 'info_hash' => rawurlencode($InfoHash), 'freetorrent' => (int) $Properties['FreeTorrent']));
+$master->tracker->addTorrent($TorrentID, $InfoHash, (int) $Properties['FreeTorrent'], 0);
 
 //******************************************************************************//
 //--------------- Delete any temp torrent file -------------------------------------------//
@@ -410,16 +407,16 @@ if(!empty($_POST['ignoredupes']) && $DupeResults['DupeResults']) { // means uplo
 
     foreach ($DupeIDs as $ID) {
         $DupeKeys = array_keys(array_column($DupeResults['DupeResults'], 'ID'), $ID);
-        $Message .= "[size=2][b][url=/torrents.php?id=$ID]".$DupeResults['DupeResults'][$DupeKeys[0]]['Name']."[/url][/b][/size] ";
+        $Message .= "[size=2][b][id=url_{$ID}][url=/torrents.php?id=$ID]".$DupeResults['DupeResults'][$DupeKeys[0]]['Name']."[/url][/id][/b][/size] ";
         $Message .= "(".$DupeResults['DupeResults'][$DupeKeys[0]]['seeders']." Seeders)[br]";
         $Message .= "[table][tr][th]New File[/th][th]Duped File[/th][th]Size[/th][/tr]";
         foreach ($DupeKeys as $KEY) {
             $ThisDupe = $DupeResults['DupeResults'][$KEY];
             if (!isset($ThisDupe['excluded'])) {
                 $Message .= "[tr]";
-                $Message .= "[td=45%]".$ThisDupe['dupedfile']."[/td]";
-                $Message .= "[td=45%]".$ThisDupe['origfile']."[/td]";
-                $Message .= "[td=10%]".get_size($ThisDupe['dupedfilesize'])."[/td]";
+                $Message .= "[td=45%][id=newfile_{$ThisDupe[dupedfilesize]}]".$ThisDupe['dupedfile']."[/id][/td]";
+                $Message .= "[td=45%][id=oldfile_{$ThisDupe[dupedfilesize]}]".$ThisDupe['origfile']."[/id][/td]";
+                $Message .= "[td=10%][id=filesize_{$ThisDupe[dupedfilesize]}_{$ID}]".get_size($ThisDupe['dupedfilesize'])."[/id][/td]";
                 $Message .= "[/tr]";
             }
         }
@@ -428,14 +425,16 @@ if(!empty($_POST['ignoredupes']) && $DupeResults['DupeResults']) { // means uplo
     $Percent = round((($DupeResults['SizeUniqueMatches']/$TotalSize)*100),2);
 
 	// ### DEBUGGING #### (remove at some point) - mifune
-	//$DebuggingOutput = "[br][br][hr][br][b]Debugging:[/b][br][vr]Percent: {$Percent}[br][br]DupeResults['DupeResults']:[br][br]" . $DebuggingOutput;
+	//$DebuggingOutput = "[br][br][hr][br][b]Debugging:[/b][br][br]Percent: {$Percent}[br][br]\$DupeResults:[br][br]" . $DebuggingOutput;
 
+    if ($Percent >= 50) $bbPercent ='[color=#AA0000]([id=percent]'.$Percent.'[/id]%) :dupe:[/color]';
+    if ($Percent < 50) $bbPercent ='[color=#009900]([id=percent]'.$Percent.'[/id]%) :gjob:[/color]';
     //if ($Percent >= 40.00) {
-        $Message = db_string("Possible dupe was uploaded:[br][size=5][b][url=/torrents.php?id=$GroupID]{$LogName}[/url][/b] (" . get_size($TotalSize) . ")[/size][size=2] was uploaded by $LoggedUser[Username][/size]
+        $Message = db_string("[br]Possible dupe was uploaded:[br][br][align=center][size=4][b][id=urlnew][url=/torrents.php?id=$GroupID]{$LogName}[/url][/id][/b] (" . get_size($TotalSize) . ")[/size][size=2] was uploaded by $LoggedUser[Username][/size][/align]
 [br][br][table][tr][th]Duped files[/th][th]Duped size[/th][/tr][tr]
-[td=50%][align=center]".$UniqueResults."/".$NumChecked."[/align][/td]
-[td=50%][align=center]".get_size($DupeResults['SizeUniqueMatches'])."/".get_size($TotalSize)." ({$Percent}%)[/align][/td][/tr]
-[/table][br][br][br][br]{$Message}[br][br]($UniqueResults/$NumChecked files with matches, $NumDupes possible matches overall)[br][br][url=/torrents.php?id=$GroupID&action=dupe_check][size=2][b]View detailed possible dupelist for this torrent[/b][/size][/url]");
+[td=50%][align=center][size=3][id=numresults]{$UniqueResults}[/id] / [id=numchecked]{$NumChecked}[/id][/size][/align][/td]
+[td=50%][align=center][size=3][id=size]".get_size($DupeResults['SizeUniqueMatches'])."[/id] / [id=totalsize]".get_size($TotalSize)."[/id] {$bbPercent}[/size][/align][/td][/tr]
+[/table][br][br][align=right][id=copylink]initialising...[/id][/align][br]{$Message}[br][br]($UniqueResults/$NumChecked files with matches, $NumDupes possible matches overall)[br][br][url=/torrents.php?id=$GroupID&action=dupe_check][size=2][b]View detailed possible dupelist for this torrent[/b][/size][/url]$DebuggingOutput");
 
             $DB->query("INSERT INTO staff_pm_conversations
                                      (Subject, Status, Level, UserID, Date)
@@ -478,7 +477,8 @@ $Item = $Feed->torrent($Title,
                         'anon',
                         "torrents.php?filter_cat[".$_POST['category']."]=1",
                         $NewCategories[(int) $_POST['category']]['name'],
-                        implode($Tags, ' '));
+                        implode($Tags, ' '),
+                        (int)$Properties['FreeTorrent']);
 
 //Notifications
 $SQL = "SELECT unf.ID, unf.UserID, torrent_pass

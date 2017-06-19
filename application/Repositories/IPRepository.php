@@ -9,7 +9,9 @@ class IPRepository extends Repository {
     protected $entityName = 'IP';
 
     public function get_or_new($Address, $Netmask = null) {
-        $BinaryAddress = inet_pton($Address);
+        $BinaryAddress = @inet_pton($Address);
+        // IP is invalid?
+        if ($BinaryAddress === false) return false;
         $IP = $this->get('`Address` = ? AND `Netmask` <=> ?', [$BinaryAddress, $Netmask]);
         if (!$IP) {
             $IP = new IP();

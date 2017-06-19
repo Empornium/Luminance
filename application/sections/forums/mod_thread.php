@@ -80,9 +80,6 @@ if (isset($_POST['split'])) {
     $DB->query("SELECT AuthorID, AddedTime FROM forums_posts WHERE ID='$firstpostID'");
     list($FirstAuthorID, $FirstAddedTime) = $DB->next_record();
 
-    $DB->query("SELECT AuthorID, AddedTime FROM forums_posts WHERE ID='$lastpostID'");
-    list($LastAuthorID, $LastAddedTime) = $DB->next_record();
-
     if ($_POST['splitoption'] == 'mergesplit') {
         // merge into an exisiting thread
         if(!is_number($_POST['splitintothreadid'])) error("split into thread id is not a number!");
@@ -110,11 +107,15 @@ if (isset($_POST['split'])) {
 		if ($Title == '') $Title = $MergeTitle;
 
         $NewLastPostID = ($lastpostID>$NFLastPostID)? $lastpostID : $NFLastPostID;
+
+        $DB->query("SELECT AuthorID, AddedTime FROM forums_posts WHERE ID='$NewLastPostID'");
+        list($LastAuthorID, $LastAddedTime) = $DB->next_record();
+
         $NFPosts += ($NumSplitPosts+1); // 1 extra for system post
         $DB->query("UPDATE forums_topics SET Title='".db_string($Title)."',
                                         LastPostID='$NewLastPostID',
                                   LastPostAuthorID='$LastAuthorID',
-                                      LastPostTime='$sqltime',
+                                      LastPostTime='$LastAddedTime',
                                           NumPosts='$NFPosts' WHERE ID='$SplitTopicID'");
         $extra = "merged into";
         $numtopics = 0;
@@ -122,6 +123,9 @@ if (isset($_POST['split'])) {
         //$DB->query("DELETE FROM forums_last_read_topics WHERE TopicID='$SplitTopicID'");
 
     } elseif ($_POST['splitoption'] == 'trashsplit') {
+
+        $DB->query("SELECT AuthorID, AddedTime FROM forums_posts WHERE ID='$lastpostID'");
+        list($LastAuthorID, $LastAddedTime) = $DB->next_record();
 
         $ForumID = TRASH_FORUM_ID;
 
@@ -132,7 +136,7 @@ if (isset($_POST['split'])) {
         $DB->query("INSERT INTO forums_topics
               (Title, AuthorID, ForumID, LastPostID, LastPostTime, LastPostAuthorID, NumPosts)
               Values
-              ('".db_string($Title)."', '$FirstAuthorID', '$ForumID', '$lastpostID', '$sqltime', '$LastAuthorID','".($NumSplitPosts+1)."')");
+              ('".db_string($Title)."', '$FirstAuthorID', '$ForumID', '$lastpostID', '$LastAddedTime', '$LastAuthorID','".($NumSplitPosts+1)."')");
         $SplitTopicID = $DB->inserted_id();
         $extra = "trashed to";
         $numtopics = '+1';
@@ -147,10 +151,13 @@ if (isset($_POST['split'])) {
 
 		if ($Title == '') $Title = "Split thread - from \"$OldTitle\"";
 
+        $DB->query("SELECT AuthorID, AddedTime FROM forums_posts WHERE ID='$lastpostID'");
+        list($LastAuthorID, $LastAddedTime) = $DB->next_record();
+
         $DB->query("INSERT INTO forums_topics
               (Title, AuthorID, ForumID, LastPostID, LastPostTime, LastPostAuthorID, NumPosts)
               Values
-              ('".db_string($Title)."', '$FirstAuthorID', '$ForumID', '$lastpostID', '$sqltime', '$LastAuthorID','".($NumSplitPosts+1)."')");
+              ('".db_string($Title)."', '$FirstAuthorID', '$ForumID', '$lastpostID', '$LastAddedTime', '$LastAuthorID','".($NumSplitPosts+1)."')");
         $SplitTopicID = $DB->inserted_id();
         $extra = "moved to";
         $numtopics = '+1';
@@ -231,14 +238,15 @@ if (isset($_POST['split'])) {
         }
     }
 
+    $Cache->delete_value('latest_topics_forum_'.$ForumID);
+    $Cache->delete_value('latest_topics_forum_'.$OldForumID);
+
     if ($SplitTopicID>0 && $_POST['splitoption'] != 'trashsplit') {
         header("Location: forums.php?action=viewthread&threadid=$SplitTopicID&postid=$PrePostID#post$PrePostID");
     } else {
 
         header("Location: forums.php?action=viewthread&threadid=$TopicID&postid=$PostPostID#post$PostPostID");
     }
-
-    $Cache->delete_value('latest_topics_forum_'.$ForumID);
 
 // If we're merging a thread
 } elseif (isset($_POST['merge'])) {
@@ -282,6 +290,8 @@ if (isset($_POST['split'])) {
 
     $DB->query("UPDATE forums_posts SET TopicID='$MergeTopicID', Body=CONCAT_WS( '\n\n', Body, '[align=right][size=0][i]merged from thread[/i][br]\'$OldTitle\'[/size][/align]') WHERE TopicID='$TopicID'");
     $DB->query("UPDATE forums_topics SET Title='$Title',LastPostID='$NFLastPostID',LastPostTime='$NFLastPostTime',LastPostAuthorID='$NFLastPostAuthorID',NumPosts='$Posts' WHERE ID='$MergeTopicID'");
+
+    $DB->query("UPDATE users_subscriptions SET TopicID='$MergeTopicID' WHERE TopicID='$TopicID'");
 
     $DB->query("DELETE FROM forums_topics WHERE ID='$TopicID'");
 

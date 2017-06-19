@@ -6,13 +6,13 @@ if ($ID = (int) ($_GET['id'])) {
     $DB->query("SELECT UserID, Level, AssignedToUser FROM staff_pm_conversations WHERE ID=$ID");
     list($UserID, $Level, $AssignedToUser) = $DB->next_record();
 
-    if (($IsFLS && $Level == 0) || ($IsStaff && $Level <= $LoggedUser['Class'])) {
+    if (($IsFLS && $Level == 0) || ($AssignedToUser == $LoggedUser['ID']) || ($IsStaff && $Level <= $LoggedUser['Class'])) {
 
         // Change from Unanswered to Open
         $DB->query("UPDATE staff_pm_conversations SET Status='Open' WHERE ID=$ID");
 
         // Add a log message to the StaffPM
-        $Message = sqltime()." - Marked as read by ".$LoggedUser['Username'];
+        $Message = sqltime()." - Marked as read (set to Open) by ".$LoggedUser['Username'];
         make_staffpm_note($Message, $ID);
 
         if (isset($_GET['return']))

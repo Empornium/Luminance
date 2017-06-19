@@ -1,10 +1,8 @@
 <?php
 /* AJAX Previews, simple stuff. */
 
-include(SERVER_ROOT . '/classes/class_text.php'); // Text formatting class
-include(SERVER_ROOT . '/classes/class_validate.php');
-$Text = new TEXT;
-$Validate = new VALIDATE;
+$Text = new Luminance\Legacy\Text;
+$Validate = new Luminance\Legacy\Validate;
 
 //******************************************************************************//
 //--------------- Validate data in upload form ---------------------------------//
@@ -24,9 +22,9 @@ $Response = array();
 
 $Response[0] = $Err;
 
-$Content = $_REQUEST['desc']; // Don't use URL decode.
-$Content .= "[br][br]$_REQUEST[templatefooter]";
-$Imageurl = $_REQUEST['image']; // Don't use URL decode.
+$Content = $_POST['desc']; // Don't use URL decode.
+$Content .= "[br][br]$_POST[templatefooter]";
+$Imageurl = $_POST['image']; // Don't use URL decode.
 
 if (!empty($Imageurl)) {
     if ($Text->valid_url($Imageurl)) {

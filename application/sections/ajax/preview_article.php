@@ -2,8 +2,7 @@
 /* AJAX Previews, simple stuff. */
 
 include(SERVER_ROOT.'/sections/articles/functions.php');
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $Title = $_REQUEST['title'];
 $Body = $_REQUEST['body'];

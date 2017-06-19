@@ -35,8 +35,7 @@ if ($Short == "request_update") {
 } else {
     $Reason = $_POST['reason'];
 }
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 $Text->validate_bbcode($Reason,  get_permissions_advtags($LoggedUser['ID']));
 
 switch ($Short) {
@@ -107,6 +106,7 @@ foreach ($Channels as $Channel) {
     send_irc("PRIVMSG ".$Channel." :".$ReportID." - ".$LoggedUser['Username']." just reported a ".$Short.": http://".SITE_URL."/".$Link." : ".$Reason);
 }
 
+$Cache->delete_value('num_forum_reports');
 $Cache->delete_value('num_other_reports');
 
 header('Location: '.$Link);

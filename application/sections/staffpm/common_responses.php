@@ -4,7 +4,6 @@ if (!($IsFLS)) {
     error(403);
 }
 
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
 include(SERVER_ROOT.'/sections/staffpm/functions.php');
 include(SERVER_ROOT.'/common/functions.php');
 
@@ -13,7 +12,7 @@ show_header('Staff PMs', 'bbcode,staffpm,jquery');
 $View   = isset($_REQUEST['view'])?$_REQUEST['view']:'staff';
 $Action = isset($_REQUEST['action'])?$_REQUEST['action']:'staff';
 
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 list($NumMy, $NumUnanswered, $NumOpen) = get_num_staff_pms($LoggedUser['ID'], $LoggedUser['Class']);
 ?>

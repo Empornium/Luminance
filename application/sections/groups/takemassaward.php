@@ -64,7 +64,7 @@ if ($CountUsers > 0) {
         $Cache->delete_value('user_badges_'.$UserID.'_limit');
     }
 
-    $Log = sqltime() . " - [color=magenta]Mass Award given[/color] by [user]{$LoggedUser['Username']}[/user] - award: $Name";
+    $Log = sqltime() . " - [color=magenta]Mass Award given[/color] by [user]{$LoggedUser['ID']}[/user] - award: $Name";
     $DB->query("UPDATE groups SET Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
 }
 

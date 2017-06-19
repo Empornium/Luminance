@@ -14,7 +14,7 @@ if (isset($_REQUEST['ip']) && isset($_REQUEST['port']) && isset($_REQUEST['useri
     $Octets = explode(".", $_REQUEST['ip']);
     if(
         empty($_REQUEST['ip']) ||
-        !preg_match('/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/', $_REQUEST['ip']) ||
+        !preg_match('/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/', $_REQUEST['ip']) ||
         $Octets[0] < 0 ||
         $Octets[0] > 255 ||
         $Octets[1] < 0 ||

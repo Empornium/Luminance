@@ -1,5 +1,5 @@
 <?php
-if (!check_perms('site_manage_tags')) error(403,true);
+if (!check_perms('admin_manage_tags')) error(403,true);
 
 function get_rejected_message2($Tag, $Item, $Reason)
 {

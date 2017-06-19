@@ -29,8 +29,7 @@ $Name = isset($_POST['name'])? trim($_POST['name']):false;
 
 if ($Message && $Name && (trim($Message) != "") && ($Name != "")) {
 
-      include(SERVER_ROOT.'/classes/class_text.php');
-      $Text = new TEXT;
+      $Text = new Luminance\Legacy\Text;
       if (!$Text->validate_bbcode($Message,  get_permissions_advtags($LoggedUser['ID']), !$IsAjax)) {
         echo "There are errors in your bbcode (unclosed tags)";
         die();

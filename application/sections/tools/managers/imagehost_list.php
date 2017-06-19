@@ -25,7 +25,7 @@ $DB->query("SELECT
         <td width="25%"><span title="this field is matched against image urls. displayed on the upload page">
                     Imagehost</span></td>
         <td width="20%"><span title="optional, if a valid url is present then it appears as an icon that can be clicked to take you to the link in a new page">
-                    Link</span></td>
+                    Icon Link</span></td>
         <td width="30%" colspan="2"><span title="displayed in the imagehost whitelist">
                     Comment</span></td>
             <td width="8%"><span title="hidden items will not be displayed to the user but will still be allowed in bbcode">
@@ -62,11 +62,11 @@ $DB->query("SELECT
     </tr>
     <tr class="colhead">
         <td width="25%"><span title="this field is matched against image urls. displayed on the upload page">
-                    Imagehost</span></td>
+                    Imagehost<br/>(used for matching urls)</span></td>
         <td width="20%"><span title="optional, if a valid url is present then it appears as an icon that can be clicked to take you to the link in a new page">
-                    Link</span></td>
+                    Icon Link<br/>(icon link in the whitelist)</span></td>
         <td width="30%"><span title="displayed in the imagehost whitelist">
-                    Comment</span></td>
+                    Comment<br/>(displayed in the whitelist)</span></td>
             <td width="8%"><span title="hidden items will not be displayed to the user but will still be allowed in bbcode">
                     Show in whitelist</span></td>
         <td width="10%"><span title="Date added">

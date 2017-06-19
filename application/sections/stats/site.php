@@ -6,15 +6,15 @@ if (isset($_POST['builddata']) && check_perms('site_debug')) {
 
     $date_start = date('Y-m-d H:i:s', strtotime( "$_POST[start_year]-$_POST[start_month]-$_POST[start_day]" )  );
     if($date_start===false) error("Error in Start date input");
-    //$date = new DateTime('2011-02-01');
-    $date = new DateTime($date_start);
+    //$date = new Luminance\Legacy\DateTime('2011-02-01');
+    $date = new Luminance\Legacy\DateTime($date_start);
 
     $deleteend = date('Y-m-d H:i:s', strtotime( "$_POST[end_year]-$_POST[end_month]-$_POST[end_day]" )  );
     if($deleteend===false) error("Error in End date input");
     if (strtotime($deleteend)<strtotime($date_start)) error("End date is before data range ($deleteend < $date_start)");
     //if (strtotime($deleteend)>time()) $deleteend = sqltime();
 
-    $end = new DateTime($deleteend);
+    $end = new Luminance\Legacy\DateTime($deleteend);
 
     $DB->query("DELETE FROM site_stats_history WHERE TimeAdded <= '".$end->format('Y-m-d H:i:s')."'");
 

@@ -2,7 +2,6 @@
 if (!check_perms('site_stats_advanced')) error(403);
 
 if (!list($Countries,$Rank,$CountryUsers,$CountryMax,$CountryMin,$LogIncrements,$CountryUsersNum,$CountryName) = $Cache->get_value('geodistribution')) {
-    include_once(SERVER_ROOT.'/classes/class_charts.php');
     $DB->query('SELECT Code, Users, country FROM users_geodistribution AS ug LEFT JOIN countries AS c ON c.cc=ug.Code ORDER BY Users DESC');
     $Data = $DB->to_array();
     $Count = $DB->record_count()-1;
@@ -43,10 +42,9 @@ if (!list($Countries,$Rank,$CountryUsers,$CountryMax,$CountryMin,$LogIncrements,
 }
 
 if (!$ClassDistribution = $Cache->get_value('class_distribution')) {
-    include_once(SERVER_ROOT.'/classes/class_charts.php');
     $DB->query("SELECT p.Name, COUNT(m.ID) AS Users FROM users_main AS m JOIN permissions AS p ON m.PermissionID=p.ID WHERE m.Enabled='1' GROUP BY p.Name ORDER BY Users DESC");
     $ClassSizes = $DB->to_array();
-    $Pie = new PIE_CHART(750,400,array('Other'=>0.01,'Percentage'=>1));
+    $Pie = new Luminance\Legacy\PieChart(750,400,array('Other'=>0.01,'Percentage'=>1));
     foreach ($ClassSizes as $ClassSize) {
         list($Label,$Users) = $ClassSize;
         $Pie->add($Label,$Users);
@@ -58,11 +56,10 @@ if (!$ClassDistribution = $Cache->get_value('class_distribution')) {
     $Cache->cache_value('class_distribution',$ClassDistribution,3600*36); // 24*14
 }
 if (!$ClassDistributionWeek = $Cache->get_value('class_distribution_wk')) {
-    include_once(SERVER_ROOT.'/classes/class_charts.php');
     $DB->query("SELECT p.Name, COUNT(m.ID) AS Users FROM users_main AS m JOIN permissions AS p ON m.PermissionID=p.ID
                 WHERE m.Enabled='1' AND m.LastAccess>'".time_minus(3600*24*7, true)."' GROUP BY p.Name ORDER BY Users DESC");
     $ClassSizes = $DB->to_array();
-    $Pie = new PIE_CHART(750,400,array('Other'=>0.01,'Percentage'=>1));
+    $Pie = new Luminance\Legacy\PieChart(750,400,array('Other'=>0.01,'Percentage'=>1));
     foreach ($ClassSizes as $ClassSize) {
         list($Label,$Users) = $ClassSize;
         $Pie->add($Label,$Users);
@@ -74,11 +71,10 @@ if (!$ClassDistributionWeek = $Cache->get_value('class_distribution_wk')) {
     $Cache->cache_value('class_distribution_wk',$ClassDistributionWeek,3600*36); // 24*14
 }
 if (!$ClassDistributionMonth = $Cache->get_value('class_distribution_month')) {
-    include_once(SERVER_ROOT.'/classes/class_charts.php');
     $DB->query("SELECT p.Name, COUNT(m.ID) AS Users FROM users_main AS m JOIN permissions AS p ON m.PermissionID=p.ID
                 WHERE m.Enabled='1' AND m.LastAccess>'".time_minus(3600*24*30, true)."' GROUP BY p.Name ORDER BY Users DESC");
     $ClassSizes = $DB->to_array();
-    $Pie = new PIE_CHART(750,400,array('Other'=>0.01,'Percentage'=>1));
+    $Pie = new Luminance\Legacy\PieChart(750,400,array('Other'=>0.01,'Percentage'=>1));
     foreach ($ClassSizes as $ClassSize) {
         list($Label,$Users) = $ClassSize;
         $Pie->add($Label,$Users);
@@ -90,7 +86,6 @@ if (!$ClassDistributionMonth = $Cache->get_value('class_distribution_month')) {
     $Cache->cache_value('class_distribution_month',$ClassDistributionMonth,3600*36); // 24*14
 }
 if (!$PlatformDistribution = $Cache->get_value('platform_distribution')) {
-    include_once(SERVER_ROOT.'/classes/class_charts.php');
 
     $DB->query("SELECT cua.Platform, COUNT(s.UserID) AS Users
                   FROM sessions AS s
@@ -100,7 +95,7 @@ if (!$PlatformDistribution = $Cache->get_value('platform_distribution')) {
               ORDER BY Users DESC");
 
     $Platforms = $DB->to_array();
-    $Pie = new PIE_CHART(750,400,array('Other'=>1,'Percentage'=>1));
+    $Pie = new Luminance\Legacy\PieChart(750,400,array('Other'=>1,'Percentage'=>1));
     foreach ($Platforms as $Platform) {
         list($Label,$Users) = $Platform;
         $Pie->add($Label,$Users);
@@ -113,7 +108,6 @@ if (!$PlatformDistribution = $Cache->get_value('platform_distribution')) {
 }
 
 if (!$BrowserDistribution = $Cache->get_value('browser_distribution')) {
-    include_once(SERVER_ROOT.'/classes/class_charts.php');
 
     $DB->query("SELECT cua.Browser, COUNT(s.UserID) AS Users
                   FROM sessions AS s
@@ -123,7 +117,7 @@ if (!$BrowserDistribution = $Cache->get_value('browser_distribution')) {
               ORDER BY Users DESC");
 
     $Browsers = $DB->to_array();
-    $Pie = new PIE_CHART(750,400,array('Other'=>1,'Percentage'=>1));
+    $Pie = new Luminance\Legacy\PieChart(750,400,array('Other'=>1,'Percentage'=>1));
     foreach ($Browsers as $Browser) {
         list($Label,$Users) = $Browser;
         $Pie->add($Label,$Users);
@@ -137,16 +131,15 @@ if (!$BrowserDistribution = $Cache->get_value('browser_distribution')) {
 
 // clients we can get from current peers
 if (!$ClientDistribution = $Cache->get_value('client_distribution')) {
-    include_once(SERVER_ROOT.'/classes/class_charts.php');
 
     $DB->query("SELECT useragent, Count(uid) AS Users FROM xbt_files_users GROUP BY useragent ORDER BY Users DESC");
 
     $Clients = $DB->to_array();
     $Pies = array();
     //we will split the results to get minor/major/client only versions of the pie charts
-    $Pies[0]  = new PIE_CHART(750,400,array('Other'=>CLIENT_GRAPH_OTHER_PERCENT,'Percentage'=>1));
-    $Pies[1]  = new PIE_CHART(750,400,array('Other'=>CLIENT_GRAPH_OTHER_PERCENT,'Percentage'=>1));
-    $Pies[2]  = new PIE_CHART(750,400,array('Other'=>0.1,'Percentage'=>1));
+    $Pies[0]  = new Luminance\Legacy\PieChart(750,400,array('Other'=>CLIENT_GRAPH_OTHER_PERCENT,'Percentage'=>1));
+    $Pies[1]  = new Luminance\Legacy\PieChart(750,400,array('Other'=>CLIENT_GRAPH_OTHER_PERCENT,'Percentage'=>1));
+    $Pies[2]  = new Luminance\Legacy\PieChart(750,400,array('Other'=>0.1,'Percentage'=>1));
     $Results2=array();
     $Results3=array();
     foreach ($Clients as $Client) {

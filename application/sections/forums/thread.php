@@ -11,9 +11,8 @@ Things to expect in $_GET:
 
 //---------- Things to sort out before it can start printing/generating content
 
-include(SERVER_ROOT.'/classes/class_text.php');
 
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 // Check for lame SQL injection attempts
 if (!isset($_GET['threadid']) || !is_number($_GET['threadid'])) {
@@ -45,6 +44,7 @@ if (isset($LoggedUser['PostsPerPage'])) {
 
 // Thread information, constant across all pages
 $ThreadInfo = get_thread_info($ThreadID, true, true);
+if ($ThreadInfo === false) { error(404); }
 $ForumID = $ThreadInfo['ForumID'];
 
 // Make sure they're allowed to look at the page
@@ -135,7 +135,8 @@ if (in_array($ThreadID, $UserSubscriptions)) {
 }
 
 // Start printing
-show_header((empty($LoggedUser['ShortTitles'])?"Forums > {$Forums[$ForumID][Name]} > $ThreadInfo[Title]":$ThreadInfo['Title'] ),'comments,subscriptions,bbcode,jquery');
+$PageTitle = empty($LoggedUser['ShortTitles']) ? ("Forums > ".$Forums[$ForumID]['Name']." > ".$ThreadInfo['Title']) : $ThreadInfo['Title'];
+show_header(display_str($PageTitle), 'comments,subscriptions,bbcode,jquery');
 ?>
 <div class="thin">
 <?php print_latest_forum_topics(); ?>
@@ -169,7 +170,7 @@ echo $Pages;
 </div>
 <div class="head">
     <a href="forums.php">Forums</a> &gt;
-    <a href="forums.php?action=viewforum&amp;forumid=<?=$ThreadInfo['ForumID']?>"><?=$Forums[$ForumID]['Name']?></a> &gt;
+    <a href="forums.php?action=viewforum&amp;forumid=<?=$ThreadInfo['ForumID']?>"><?=display_str($Forums[$ForumID]['Name'])?></a> &gt;
     <?=display_str($ThreadInfo['Title'])?>
 </div>
 
@@ -418,28 +419,28 @@ foreach ($Thread as $Key => $Post) {
             <span style="float:left;"><a class="post_id" href='forums.php?action=viewthread&amp;threadid=<?=$ThreadID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>'>#<?=$PostID?></a>
                 <?=format_username($AuthorID, $Username, $Donor, $Warned, $Enabled, $PermissionID, $UserTitle, true, $GroupPermissionID, true)?>
                         <?=time_diff($AddedTime,2)?>
-<?php if (!$ThreadInfo['IsLocked'] || check_perms('site_moderate_forums')) { ?>
+<?php       if (!$ThreadInfo['IsLocked'] || check_perms('site_moderate_forums')) { ?>
                 - <a href="#quickpost" onclick="Quote('forums','<?=$PostID?>','f<?=$ThreadID?>','<?=$Username?>');">[Quote]</a>
-<?php }
-if (((!$ThreadInfo['IsLocked'] && check_forumperm($ForumID, 'Write')) && can_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime, $TimeLock)) || check_perms('site_moderate_forums')) { ?>
+<?php       }
+            if (((!$ThreadInfo['IsLocked'] && check_forumperm($ForumID, 'Write')) && can_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime, $TimeLock)) || check_perms('site_moderate_forums')) { ?>
                 - <a href="#post<?=$PostID?>" onclick="Edit_Form('forums','<?=$PostID?>','<?=$Key?>');">[Edit]</a>
-<?php }
-if ($ForumID != TRASH_FORUM_ID && check_perms('site_moderate_forums') && $ThreadInfo['Posts'] > 1) { ?>
+<?php       }
+            if ($ForumID != TRASH_FORUM_ID && check_perms('site_moderate_forums') && $ThreadInfo['Posts'] > 1) { ?>
                 - <a href="#post<?=$PostID?>" onclick="Trash('<?=$ThreadID?>','<?=$PostID?>');" title="moves this post to the trash forum">[Trash]</a>
-<?php }
-if (check_perms('site_admin_forums') && $ThreadInfo['Posts'] > 1) { ?>
+<?php       }
+            if (check_perms('site_admin_forums') && $ThreadInfo['Posts'] > 1) { ?>
                 - <a href="#post<?=$PostID?>" onclick="Delete('<?=$PostID?>');" title="permenantly delete this post">[Delete]</a>
-<?php }
-if (check_perms('site_admin_forums')) {
-    echo " - ";
-    if (($AuthorID != $EditedUserID) && (isset($EditedUserID) && !empty($EditedUserID))){ ?>
-                <a id="modunlock<?=$PostID?>" href="#post<?=$PostID?>" onclick="ModUnlock('<?=$PostID?>');" title="unlock this post">[U]</a> <?php //[&#x1f513;]</a> ?>
-<?php }
-          $UnlockSymbol = $TimeLock ? "T" : "<strike>T</strike>"; //"&#x1f550;" : "<strike>&#x1f550;</strike>";
-          $UnlockText   = $TimeLock ? "disable timelock for this post" : "enable timelock for this post";
+<?php       }
+            if (check_perms('site_admin_forums')) {
+                echo " - ";
+                if (($AuthorID != $EditedUserID) && (isset($EditedUserID) && !empty($EditedUserID))){ ?>
+                    <a id="modunlock<?=$PostID?>" href="#post<?=$PostID?>" onclick="ModUnlock('<?=$PostID?>');" title="unlock this post">[U]</a> <?php //[&#x1f513;]</a> ?>
+<?php           }
+                $UnlockSymbol = $TimeLock ? "T" : "<strike>T</strike>"; //"&#x1f550;" : "<strike>&#x1f550;</strike>";
+                $UnlockText   = $TimeLock ? "disable timelock for this post" : "enable timelock for this post";
 ?>
                 <a id="timeunlock<?=$PostID?>" href="#post<?=$PostID?>" onclick="TimeUnlock('<?=$PostID?>');" title="<?=$UnlockText?>">[<?=$UnlockSymbol?>]</a>
-<?php }
+<?php       }
 
 if ($PostID == $ThreadInfo['StickyPostID']) { ?>
                 <strong><span class="sticky_post">[Sticky]</span></strong>
@@ -485,20 +486,23 @@ if ($PostID == $ThreadInfo['StickyPostID']) { ?>
 $AllowTags= isset($PermissionValues['site_advanced_tags']) &&  $PermissionValues['site_advanced_tags'];
 ?>
         <td class="postbody" valign="top"<?php if (!empty($HeavyInfo['DisableAvatars'])) { echo ' colspan="2"'; } ?>>
-                    <div id="content<?=$PostID?>" class="post_container">
+            <div id="content<?=$PostID?>" class="post_container">
                       <div class="post_content"><?=$Text->full_format($Body, $AllowTags, false, false) ?> </div>
 
-<?php if ($EditedUserID) { ?>
-                        <div class="post_footer">
-<?php	if (check_perms('site_moderate_forums')) { ?>
-                <a href="#content<?=$PostID?>" onclick="LoadEdit('forums', <?=$PostID?>, 1); return false;">&laquo;</a>
-<?php 	} ?>
-                            <span class="editedby">Last edited by
-                            <?=format_username($EditedUserID, $EditedUsername) ?> <?=time_diff($EditedTime,2,true,true)?>
-                            </span>
-                        </div>
-        <?php }   ?>
-                    </div>
+<?php   if ($EditedUserID) { ?>
+                <div class="post_footer">
+<?php       if (check_perms('site_moderate_forums')) { ?>
+                    <a href="#content<?=$PostID?>" onclick="LoadEdit('forums', <?=$PostID?>, 1); return false;">&laquo;</a>
+<?php       } ?>
+                    <span class="editedby">Last edited by
+                        <?=format_username($EditedUserID, $EditedUsername) ?> <?=time_diff($EditedTime,2,true,true)?>
+                    </span>
+<?php       if (check_perms('site_admin_forums')) { ?>
+                    &nbsp;&nbsp;<a href="#content<?=$PostID?>" onclick="RevertEdit(<?=$PostID?>); return false;" title="remove last edit">&reg;</a>
+<?php       } ?>
+                </div>
+<?php   }   ?>
+            </div>
         </td>
     </tr>
 <?php
@@ -516,7 +520,7 @@ $AllowTags= isset($PermissionValues['site_advanced_tags']) &&  $PermissionValues
 
 <div class="breadcrumbs">
     <a href="forums.php">Forums</a> &gt;
-    <a href="forums.php?action=viewforum&amp;forumid=<?=$ThreadInfo['ForumID']?>"><?=$Forums[$ForumID]['Name']?></a> &gt;
+    <a href="forums.php?action=viewforum&amp;forumid=<?=$ThreadInfo['ForumID']?>"><?=display_str($Forums[$ForumID]['Name'])?></a> &gt;
     <?=display_str($ThreadInfo['Title'])?>
 </div>
 <div class="linkbox">
@@ -527,7 +531,7 @@ $AllowTags= isset($PermissionValues['site_advanced_tags']) &&  $PermissionValues
 
     if (check_perms('site_moderate_forums') && $ThreadInfo['Posts'] > 1) { ?>
 
-<div id="splittool" class="linkbox">
+<div id="splittool">
 
     <div class="head split hidden">Split thread (select posts to be split) <span style="float:right"><a href="#splittool" onclick="$('.split').toggle();">Show/Hide split tool</a></span></div>
     <table cellpadding="6" cellspacing="1" border="0" width="100%" class="border split hidden">
@@ -684,7 +688,7 @@ if (check_perms('site_moderate_forums')) {
             <tr>
                 <td class="label"></td>
                 <td>
-                    <input type="text" id="oldtitle" name="titleorig" class="long" onclick="$('#newtitle').raw().value = $('#oldtitle').raw().value;" title="click here to insert old title in the title field" value="<?=$ThreadInfo['Title']?>" readonly="readonly" />
+                    <input type="text" id="oldtitle" name="titleorig" class="long" onclick="$('#newtitle').raw().value = $('#oldtitle').raw().value; $('#newtitle').raw().focus(); $('#newtitle').raw().setSelectionRange(0,0);" title="click here to insert old title in the title field" value="<?=$ThreadInfo['Title']?>" readonly="readonly" />
                 </td>
             </tr>
             <tr>

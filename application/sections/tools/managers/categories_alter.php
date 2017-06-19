@@ -10,7 +10,8 @@ if ($_POST['submit'] == 'Delete') {
 } else {
     $Val->SetFields('name', '1','string','The name must be set, and has a max length of 30 characters', array('maxlength'=>30, 'minlength'=>1));
     $Val->SetFields('tag', '1','string','The tag must be set, and has a max length of 255 characters', array('maxlength'=>255, 'minlength'=>1));
-        $Val->SetFields('image', '1','string','The image must be set.', array('minlength'=>1));
+    $Val->SetFields('image', '1','string','The image must be set.', array('minlength'=>1));
+    $Val->SetFields('open', '1','inarray','The open field has invalid input.', array('inarray'=>array(0,1)));
     $Err=$Val->ValidateForm($_POST); // Validate the form
     if ($Err) { error($Err); }
 
@@ -22,17 +23,19 @@ if ($_POST['submit'] == 'Delete') {
         $DB->query("UPDATE categories SET
             name='$P[name]',
             image='$P[image]',
-            tag='$P[tag]'
+            tag='$P[tag]',
+            open='$P[open]'
             WHERE id='$P[id]'");
     } else { //Create
         $DB->query("INSERT INTO categories
-            (name, image, tag) VALUES
-            ('$P[name]','$P[image]', '$P[tag]')");
+            (name, image, tag, open) VALUES
+            ('$P[name]','$P[image]', '$P[tag]', '$P[open]')");
     }
 
 }
 
 $Cache->delete('new_categories');
+$Cache->delete('open_categories');
 
 // Go back
 header('Location: tools.php?action=categories');

@@ -3,8 +3,7 @@ if (!check_perms('admin_update_geoip')) error(403);
 
 set_time_limit(0);
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $num_users = isset($_REQUEST['numusers'])?(int) $_REQUEST['numusers']:10;
 

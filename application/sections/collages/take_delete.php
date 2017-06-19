@@ -37,4 +37,6 @@ if ($CategoryID == 0) {
 write_log("Collage ".$CollageID." (".$Name.") was deleted by ".$LoggedUser['Username'].": ".$Reason);
 
 $Cache->delete_value('collage_'.$CollageID);
+$Cache->delete_value('collage_torrents_'.$CollageID);
+$Cache->delete_value('collage_comments_'.$CollageID);
 header('Location: collages.php');

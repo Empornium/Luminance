@@ -15,6 +15,10 @@ if (!empty($_GET['page']) && is_number($_GET['page'])) {
     $Limit = 100;
 }
 
+if (!$master->options->EnableDownloads) {
+    error("Downloads are currently disabled.");
+}
+
 $DB->query("SELECT SQL_CALC_FOUND_ROWS
         ud.UserID,
         ud.Time

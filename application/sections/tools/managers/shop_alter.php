@@ -1,5 +1,5 @@
 <?php
-if (!check_perms('site_manage_shop')) { error(403); }
+if (!check_perms('admin_manage_shop')) { error(403); }
 
 authorize();
 

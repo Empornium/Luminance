@@ -1,5 +1,5 @@
 <?php
-if (!check_perms('site_manage_tags')) error(403, true);
+if (!check_perms('admin_manage_tags')) error(403, true);
 
 function get_rejected_message4($Tag, $Item, $Reason)
 {
@@ -48,7 +48,7 @@ function Add_Synonyms($ParentTagItem, $TagsItems, &$Result)
                          VALUES ('" . $TagName . "', " . $ParentTagID . ", " . $LoggedUser['ID'] . " )");
 
         $Result .= "Created tag synonym $TagName for $ParentTagName<br/>";
-        write_log("Created synonym $TagName for tag $ParentTagName" );
+        write_log("Created synonym $TagName for tag $ParentTagName by ".$LoggedUser['Username'] );
 
         if ($TagID>0) {
             // 'convert refrences to the original tag to parenttag and cleanup db

@@ -9,8 +9,7 @@ if (!check_perms('admin_reports')) {
     error(403);
 }
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = NEW TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $DB->query("SELECT
             r.ID,
@@ -357,7 +356,7 @@ $DB->query("SELECT
                                         $Extras = explode(" ", $ExtraIDs);
                                         $Value = "";
                                         foreach ($Extras as $ExtraID) {
-                                            $Value .= 'http://'.SITE_URL.'/torrents.php?torrentid='.$ExtraID.' ';
+                                            $Value .= 'http://'.SITE_URL.'/details.php?id='.$ExtraID.' ';
                                         }
                                         echo 'value="'.trim($Value).'"';
                                     } ?>/>

@@ -1,24 +1,26 @@
 
-
-function Add_Tag(){
-    // now as an ajax call... better user feedback
-    if ( $('#tagname').raw().value =='') return false;
-    ajax.post('torrents.php?action=add_tag', 'form_addtag', function (response) { 
-            display_tag_response(response);
+function addTag()
+{
+    if ( $('#taginput').raw().value =='') return false;
+    var ToPost = [];
+    ToPost['auth'] = authkey;
+    ToPost['groupid'] = $('#groupid').raw().value;
+    ToPost['tagname'] = $('#taginput').raw().value;
+    ajax.post('torrents.php?action=add_tag', ToPost, function (response) {
+        display_tag_response(response);
     });
-    $('#tagname').raw().value ='';
-    return false;
+    $('#taginput').raw().value ='';
 }
 
 function Del_Tag(tagid, groupid, tagsort){
-    
+
     var ToPost = [];
-    ToPost['tagid'] = tagid; 
-    ToPost['groupid'] = groupid;  
-    ToPost['tagsort'] = tagsort;  
-    ToPost['auth'] = authkey; 
-    ajax.post('torrents.php?action=delete_tag', ToPost, function (response) { 
-        display_tag_response(response); 
+    ToPost['tagid'] = tagid;
+    ToPost['groupid'] = groupid;
+    ToPost['tagsort'] = tagsort;
+    ToPost['auth'] = authkey;
+    ajax.post('torrents.php?action=delete_tag', ToPost, function (response) {
+        display_tag_response(response);
     });
     return false;
 }
@@ -33,14 +35,14 @@ var tag_uses_sort;
 
 function get_tags(groupid, tagsort, order) {
 	var ToPost = [];
-	ToPost['groupid'] = groupid;  
-	ToPost['auth'] = authkey; 
+	ToPost['groupid'] = groupid;
+	ToPost['auth'] = authkey;
 	tag_name_sort  = [];
 	tag_score_sort = [];
 	tag_uses_sort  = [];
-	ajax.post('torrents.php?action=get_tags', ToPost, function (response) { 
+	ajax.post('torrents.php?action=get_tags', ToPost, function (response) {
 		tag_list=json.decode(response);
-		console.log(tag_list);
+		//console.log(tag_list);
 		for (var key in tag_list) {
 			tag_name_sort.push( {key:key, name:tag_list[key].name});
 			tag_score_sort.push({key:key, score:tag_list[key].score});
@@ -66,9 +68,9 @@ function Resort_Tags(groupid, tagsort, order) {
 	// Clear the table and fetch the template
 	jQuery("#torrent_tags_list").empty();
 	template = jQuery("#tag_template").html();
-	if(sort_type == 'az')    tag_sort = tag_name_sort;
-	if(sort_type == 'score') tag_sort = tag_score_sort;
-	if(sort_type == 'uses')  tag_sort = tag_uses_sort;
+	if(sort_type == 'az')    tag_sort = tag_name_sort.slice(0);
+	if(sort_type == 'score') tag_sort = tag_score_sort.slice(0);
+	if(sort_type == 'uses')  tag_sort = tag_uses_sort.slice(0);
 
 	if(sort_order=='desc')   tag_sort.reverse();
 
@@ -101,38 +103,36 @@ function Resort_Tags(groupid, tagsort, order) {
 
 function display_tag_response(response)
 {
-	var x = json.decode(response);  
-	if ( is_array(x)){
-	if ( !is_array(x[0])){
-		alert('unforseen error :(');
-	} else { 
-		jQuery(".rmv").remove();
-		var len = x[0].length;
-		for(var i = 0; i < len; i++) {
-			var xtrclass = x[0][i][0]==0?' alert' : ''; // +x[0][i][0]; (numMsgs++)
-			jQuery("#messagebar").before('<div id="messagebar'+i+'" class="rmv messagebar'+xtrclass+'" title="'+ x[0][i][1]+'">'+ x[0][i][1]+'</div>');
-		}
-		//$('#messagebar'+displayID).raw().scrollIntoView(false);
-	}
-	if (x[1] != 0) $('#torrent_tags').html(x[1]);
-                
-	} else { // a non array == an error 
-		$('#messagebar').add_class('alert');
-		$('#messagebar').html(x);
-		$('#messagebar').show(); 
-	}
-	//$('#tags').raw().scrollIntoView();
+    var x = json.decode(response);
+    if (is_array(x)) {
+        if (!is_array(x[0])) {
+            alert('unforseen error :(');
+        } else {
+            jQuery(".rmv").remove();
+            var len = x[0].length;
+            for (var i = 0; i < len; i++) {
+                var xtrclass = x[0][i][0] == 0 ? ' alert' : '';
+                jQuery("#messagebar").before('<div id="messagebar' + i + '" class="rmv messagebar' + xtrclass + '" title="' + x[0][i][1] + '">' + x[0][i][1] + '</div>');
+            }
+        }
+        if (x[1] != 0) $('#torrent_tags').html(x[1]);
+    } else { // a non array == an error
+        $('#messagebar').add_class('alert');
+        $('#messagebar').html(x);
+        $('#messagebar').show();
+    }
+    //$('#tags').raw().scrollIntoView();
 }
 
 function Vote_Tag(tagname, tagid, groupid, way)
 {
 	var ToPost = [];
-	ToPost['tagid'] = tagid; 
-	ToPost['groupid'] = groupid; 
-	ToPost['way'] = way; 
-	ToPost['auth'] = authkey; 
-	ajax.post('torrents.php?action=vote_tag', ToPost, function (response) { 
-		var x = json.decode(response); 
+	ToPost['tagid'] = tagid;
+	ToPost['groupid'] = groupid;
+	ToPost['way'] = way;
+	ToPost['auth'] = authkey;
+	ajax.post('torrents.php?action=vote_tag', ToPost, function (response) {
+		var x = json.decode(response);
 		if ( is_array(x)){
 			if(x[0]==0){    // already voted so no vote
 				$('#messagebar').add_class('alert');
@@ -145,12 +145,12 @@ function Vote_Tag(tagname, tagid, groupid, way)
 					$('#tagscore' + tagid).html(score);
 			}
 			$('#messagebar').html(x[1] +tagname);
-		} else { // a non array == an error 
+		} else { // a non array == an error
 			$('#messagebar').add_class('alert');
 			$('#messagebar').html(x);
 		}
 		$('#messagebar').raw().title=$('#messagebar').raw().innerHTML;
-		$('#messagebar').show(); 
+		$('#messagebar').show();
 		//$('#messagebar').raw().scrollIntoView();
 	});
 	return false;
@@ -159,13 +159,13 @@ function Vote_Tag(tagname, tagid, groupid, way)
 function Send_Okay_Message(group_id, conv_id){
     if(conv_id==0) conv_id = null;
     if (confirm("Make sure you have really fixed the problem before sending this message!\n\nAre you sure it is fixed?")){
-        
+
 	  var ToPost = [];
-	  ToPost['groupid'] = group_id; 
-	  ToPost['auth'] = authkey; 
-	  if (conv_id) ToPost['convid'] = conv_id; 
+	  ToPost['groupid'] = group_id;
+	  ToPost['auth'] = authkey;
+	  if (conv_id) ToPost['convid'] = conv_id;
         ajax.post('?action=send_okay_message', ToPost, function (response) {
-            // show  user response 
+            // show  user response
             conv_id = response;
             $('#user_message').raw().innerHTML = '<div class="messagebar"><a href="staffpm.php?action=viewconv&id=' + conv_id + '">Message sent to staff</a></div>';
             $('#convid').raw().value = conv_id;
@@ -176,20 +176,20 @@ function Send_Okay_Message(group_id, conv_id){
 
 function Validate_Form_Reviews(status){
     if(status == 'Warned' || status== 'Pending'){
-        return confirm("Are you sure you want to override the warning already in process?"); 
+        return confirm("Are you sure you want to override the warning already in process?");
     } else if(status == 'Okay'){
-        return confirm("Are you sure you want to override the okay status?"); 
+        return confirm("Are you sure you want to override the okay status?");
     }
     return true;
 }
 
-function Select_Reason(overwrite_warn){ 
-   
+function Select_Reason(overwrite_warn){
+
     var value = $('#reasonid').raw().value;
     //if reason == -1 (not set)
     if(value == -1){
-        $('#mark_delete_button').disable(); 
-        $('#review_message').hide(); 
+        $('#mark_delete_button').disable();
+        $('#review_message').hide();
         $('#warn_insert').html('');
     } else { // is set
 	  var ToPost = [];
@@ -197,12 +197,12 @@ function Select_Reason(overwrite_warn){
 	  ToPost['reasonid'] = $('#reasonid').raw().value;
         ajax.post('?action=get_review_message', ToPost, function (response) {
             //enable button and show pm response
-            $('#mark_delete_button').disable(false); 
+            $('#mark_delete_button').disable(false);
             //if reason == other then show textarea
             if (value == 0 )$('#reason_other').show();
             else $('#reason_other').hide();
             $('#message_insert').raw().innerHTML = response;
-            $('#review_message').show(); 
+            $('#review_message').show();
             if (overwrite_warn){
                 $('#warn_insert').html("Are you sure you want to override the current status?");
             }
@@ -216,7 +216,7 @@ function Tools_Toggle() {
         jQuery.cookie('torrentDetailsToolState', 'collapsed', { expires: 100 });
         $('#slide_tools_button').raw().innerHTML=('Show Tools');
         jQuery('#staff_tools').hide();
-                            
+
     } else{
         jQuery.cookie('torrentDetailsToolState', 'expanded', { expires: 100 });
         $('#slide_tools_button').raw().innerHTML=('Hide Tools');
@@ -229,7 +229,7 @@ function Tools_Toggle() {
 function Load_Tools_Cookie()  {
 	var panel = jQuery('#staff_tools');
 	var button = jQuery('#slide_tools_button');
-    
+
 	if(jQuery.cookie('torrentDetailsToolState') == undefined) {
 		jQuery.cookie('torrentDetailsToolState', 'expanded', { expires: 100 });
 	}
@@ -246,19 +246,19 @@ function Details_Toggle() {
     //var state = new Array();
     //state[1]=((jQuery('#coverimage').is(':hidden'))?'0':'1');
     //state[2]=((jQuery('#tag_container').is(':hidden'))?'0':'1');
-    
+
     jQuery('#details_top').slideToggle('700', function(){
-            
-        if (jQuery('#details_top').is(':hidden')) 
-            jQuery('#slide_button').html('Show Info'); 
+
+        if (jQuery('#details_top').is(':hidden'))
+            jQuery('#slide_button').html('Show Info');
         else
             jQuery('#slide_button').html('Hide Info');
-            
+
         //state[0]=((jQuery('#details_top').is(':hidden'))?'0':'1');
         //jQuery.cookie('torrentDetailsState', json.encode(state), { expires: 100 });
-        
+
         jQuery.cookie('torrentDetailsState', Get_Cookie(), { expires: 100 });
-   
+
     });
     return false;
 }
@@ -266,12 +266,12 @@ function Details_Toggle() {
 function Cover_Toggle() {
 
     jQuery('#coverimage').toggle();
- 
-    if (jQuery('#coverimage').is(':hidden')) 
+
+    if (jQuery('#coverimage').is(':hidden'))
         jQuery('#covertoggle').html('(Show)');
-    else  
+    else
         jQuery('#covertoggle').html('(Hide)');
-            
+
     jQuery.cookie('torrentDetailsState', Get_Cookie(), { expires: 100 });
     return false;
 }
@@ -279,12 +279,12 @@ function Cover_Toggle() {
 function TagBox_Toggle() {
 
     jQuery('#tag_container').toggle();
- 
-    if (jQuery('#tag_container').is(':hidden')) 
+
+    if (jQuery('#tag_container').is(':hidden'))
         jQuery('#tagtoggle').html('(Show)');
-    else  
+    else
         jQuery('#tagtoggle').html('(Hide)');
-            
+
     jQuery.cookie('torrentDetailsState', Get_Cookie(), { expires: 100 });
     return false;
 }
@@ -292,12 +292,12 @@ function TagBox_Toggle() {
 function Desc_Toggle() {
 
     jQuery('#descbox').toggle();
- 
-    if (jQuery('#descbox').is(':hidden')) 
+
+    if (jQuery('#descbox').is(':hidden'))
         jQuery('#desctoggle').html('(Show)');
-    else  
+    else
         jQuery('#desctoggle').html('(Hide)');
-            
+
     jQuery.cookie('torrentDetailsState', Get_Cookie(), { expires: 100 });
     return false;
 }
@@ -305,21 +305,21 @@ function Desc_Toggle() {
 function BuyFL_Toggle() {
 
     jQuery('#donatediv').toggle();
- 
-    if (jQuery('#donatediv').is(':hidden')) 
+
+    if (jQuery('#donatediv').is(':hidden'))
         jQuery('#donatebutton').html('(Show)');
-    else  
+    else
         jQuery('#donatebutton').html('(Hide)');
-            
+
     jQuery.cookie('torrentDetailsState', Get_Cookie(), { expires: 100 });
     return false;
 }
 
 function Get_Cookie() {
-    return json.encode([((jQuery('#details_top').is(':hidden'))?'0':'1'), 
-                        ((jQuery('#coverimage').is(':hidden'))?'0':'1'), 
-                        ((jQuery('#tag_container').is(':hidden'))?'0':'1'), 
-                        ((jQuery('#donatediv').is(':hidden'))?'0':'1'), 
+    return json.encode([((jQuery('#details_top').is(':hidden'))?'0':'1'),
+                        ((jQuery('#coverimage').is(':hidden'))?'0':'1'),
+                        ((jQuery('#tag_container').is(':hidden'))?'0':'1'),
+                        ((jQuery('#donatediv').is(':hidden'))?'0':'1'),
                         ((jQuery('#descbox').is(':hidden'))?'0':'1')]);
 }
 
@@ -339,47 +339,47 @@ function Load_Tagsort_Cookie()  {
 
 
 function Load_Details_Cookie()  {
- 
+
 	// the div that will be hidden/shown
 	var panel = jQuery('#details_top');
 	var button = jQuery('#slide_button');
-    
+
 	if(jQuery.cookie('torrentDetailsState') == undefined) {
 		jQuery.cookie('torrentDetailsState', json.encode(['1', '1', '1', '1','1']));
 	}
 	var state = json.decode( jQuery.cookie('torrentDetailsState') );
-      
+
 	if(state[0] == '0') {
 		panel.hide();
 		button.text('Show Info');
 	} else
 		button.text('Hide Info');
-      
+
 	if(state[1] == '0') {
 		jQuery('#coverimage').hide();
 		jQuery('#covertoggle').text('(Show)');
-      } else 
+      } else
 		jQuery('#covertoggle').text('(Hide)');
- 
+
 	if(state[2] == '0') {
 		jQuery('#tag_container').hide();
 		jQuery('#tagtoggle').text('(Show)');
-      } else 
+      } else
 		jQuery('#tagtoggle').text('(Hide)');
-    
+
 	if(state[3] == '0') {
 		jQuery('#donatediv').hide();
 		jQuery('#donatebutton').text('(Show)');
-      } else 
+      } else
 		jQuery('#donatebutton').text('(Hide)');
-    
+
 	if(state[4] == '0') {
 		jQuery('#descbox').hide();
 		jQuery('#desctoggle').text('(Show)');
-      } else 
+      } else
 		jQuery('#desctoggle').text('(Hide)');
 }
- 
+
  function Say_Thanks() {
     $('#thanksbutton').raw().disabled=true;
     ajax.post("torrents.php?action=thank","thanksform", function (response) {
@@ -479,11 +479,9 @@ function show_reported(TorrentID){
 }
 
 
- 
 
 
-            
+
+
 addDOMLoadEvent(Load_Details_Cookie);
 addDOMLoadEvent(Load_Tagsort_Cookie);
-
-

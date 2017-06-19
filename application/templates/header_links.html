@@ -14,3 +14,5 @@
         {% endfor %}
     {% endif %}
     <link rel="alternate" type="application/rss+xml" href="feeds.php?feed=torrents_all&amp;user={{ ActiveUser.ID }}&amp;auth={{ ActiveUser.legacy.RSS_Auth }}&amp;passkey={{ ActiveUser.legacy.torrent_pass }}&amp;authkey={{ ActiveUser.legacy.AuthKey }}" title="{{ site_name }} - All Torrents" />
+
+    <link rel="preload" href="/static/common/nav_icons.svg?v={{ peon.public_file_mtime('/static/common/nav_icons.svg') }}">

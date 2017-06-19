@@ -2,8 +2,7 @@
 enforce_login();
 
 include(SERVER_ROOT.'/sections/articles/functions.php');
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $StaffClass = 0;
 if ($LoggedUser['Class']>=STAFF_LEVEL) { // only interested in staff classes

@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS `staff_pm_conversations` (
   `AssignedToUser` int(11) DEFAULT NULL,
   `Date` datetime DEFAULT NULL,
   `Unread` tinyint(1) DEFAULT NULL,
+  `Urgent` enum('No','Read','Respond') DEFAULT NULL,
   `ResolverID` int(11) DEFAULT NULL,
   PRIMARY KEY (`ID`),
   KEY `UserID` (`UserID`),

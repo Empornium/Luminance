@@ -43,8 +43,7 @@ $Body = $_POST['body'];
 if ($LoggedUser['DisablePosting']) {
     error('Your posting rights have been removed');
 }
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 $Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
 
 $Title = cut_string(trim($_POST['title']), 150, 1, 0);

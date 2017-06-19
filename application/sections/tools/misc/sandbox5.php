@@ -2,9 +2,13 @@
 show_header();
 ?>
 <div class="thin">
+    <h2>flags</h2>
+
+    <div class="head"></div>
 
     <table>
 <?php
+
     $DB->query("SELECT cc, country FROM countries");
 
     while (list($cc,$country)=$DB->next_record()) {
@@ -22,6 +26,7 @@ show_header();
     }
 ?>
     </table>
+
 </div>
 <?php
 show_footer();

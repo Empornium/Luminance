@@ -30,6 +30,9 @@ switch ($_GET['action']) {
     case 'get_taglist':
         require(SERVER_ROOT.'/sections/ajax/get_taglist.php');
         break;
+    case 'get_tagdetails':
+        require(SERVER_ROOT.'/sections/ajax/get_tagdetails.php');
+        break;
 
     case 'get_ip_dupes':
         require(SERVER_ROOT.'/sections/ajax/get_ip_dupes.php');
@@ -63,9 +66,15 @@ switch ($_GET['action']) {
     case 'preview_blog':
         require 'preview_blog.php';
         break;
-      case 'preview_edit_torrent':
+    case 'preview_edit_torrent':
         require 'preview_edit_torrent.php';
         break;
+
+    case 'takeedit_post':
+        require(SERVER_ROOT.'/common/takeedit_post.php');
+        break;
+
+
     case 'torrent_info':
         require 'torrent_info.php';
         break;

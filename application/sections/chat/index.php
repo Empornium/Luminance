@@ -2,8 +2,7 @@
     enforce_login();
     show_header('IRC');
 
-    include(SERVER_ROOT.'/classes/class_text.php');
-    $Text = new TEXT;
+    $Text = new Luminance\Legacy\Text;
     if (!$_POST["connect"] || (!isset($_POST["emp"]) && !isset($_POST["help"]) && !isset($_POST["staff"]))) {
 ?>
 <div class="thin">

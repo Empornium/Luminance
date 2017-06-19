@@ -39,11 +39,9 @@ if (substr($_REQUEST['action'], 0, 12) == 'update_geoip' && !isset($argv[1])) {
     }
 }
 
-include(SERVER_ROOT . "/classes/class_validate.php");
-$Val = NEW VALIDATE;
+$Val = new Luminance\Legacy\Validate;
 
-include(SERVER_ROOT . '/classes/class_feed.php');
-$Feed = new FEED;
+$Feed = new Luminance\Legacy\Feed;
 
 switch ($_REQUEST['action']) {
     case 'phpinfo':
@@ -61,34 +59,10 @@ switch ($_REQUEST['action']) {
 
     //Managers
     case 'site_options':
-        include(SERVER_ROOT . '/sections/tools/managers/site_options.php');
+        include(SERVER_ROOT . '/sections/tools/managers/site_options_list.php');
         break;
     case 'take_site_options':
-        if (!check_perms('admin_manage_site_options')) error(403);
-        $remove_freeleech = $_POST['remove_freeleech'];
-        //$freeleech = $_POST['freeleech'];
-        if ($remove_freeleech == 'on') {
-            $DB->query("UPDATE site_options SET FreeLeech='0000-00-00 00:00:00'");
-            update_tracker('site_option', array('set' => 'freeleech', 'time' => strtotime("0000-00-00 00:00:00")));
-        } else {
-            if ($_POST['freeleech'] != '0000-00-00 00:00:00') {
-                $freeleech = date('Y-m-d H:i:s', strtotime($_POST['freeleech']) + (int) $LoggedUser['TimeOffset']);
-                if (strtotime($freeleech)) {
-                    $DB->query('SELECT FreeLeech FROM site_options');
-                    list($f) = $DB->next_record();
-                    if ($f != $freeleech && $freeleech > sqltime()) {
-                        $DB->query("UPDATE site_options SET FreeLeech='" . db_string($freeleech) . "'");
-                        update_tracker('site_option', array('set' => 'freeleech', 'time' => strtotime($freeleech)));
-                    } else {
-                        error("The freeleech time is set in the past: $freeleech");
-                    }
-                } else {
-                    error("The freeleech date is not a valid date: $freeleech");
-                }
-            }
-        }
-
-        header('Location: tools.php?action=site_options');
+        include(SERVER_ROOT . '/sections/tools/managers/site_options_alter.php');
         break;
 
     case 'languages':
@@ -224,10 +198,9 @@ switch ($_REQUEST['action']) {
         if (!check_perms('admin_manage_cheats'))
             error(403);
 
-        $DelMins = (int) $_POST['delrecordmins'];
-        $KeepSpeed = (int) $_POST['keepspeed'];
+        $master->options->DeleteRecordsMins = (int) $_POST['delrecordmins'];
+        $master->options->KeepSpeed = (int) $_POST['keepspeed'];
 
-        $DB->query("UPDATE site_options SET DeleteRecordsMins='$DelMins', KeepSpeed='$KeepSpeed'");
         if (isset($_REQUEST['returnto']) && $_REQUEST['returnto']=='cheats') $returnto = 'speed_cheats';
         else $returnto = 'speed_records';
         header("Location: tools.php?action=$returnto&viewspeed=$_POST[viewspeed]");
@@ -255,47 +228,27 @@ switch ($_REQUEST['action']) {
         if (!check_perms('admin_manage_cheats'))
             error(403);
         //------------ Remove unwatched and unwanted speed records
-
-        $DB->query("SELECT DeleteRecordsMins, KeepSpeed FROM site_options");
-        list($DeleteRecordsMins, $KeepSpeed) = $DB->next_record();
-
         // as we are deleting way way more than keeping, and to avoid exceeding lockrow size in innoDB we do it another way:
-        $DB->query("DROP TABLE IF EXISTS temp_copy"); // jsut in case!
-        $DB->query("CREATE TABLE `temp_copy` (
-          `id` int(11) NOT NULL AUTO_INCREMENT,
-          `uid` int(11) NOT NULL,
-          `downloaded` bigint(20) NOT NULL,
-          `remaining` bigint(20) NOT NULL,
-          `uploaded` bigint(20) NOT NULL,
-          `upspeed` bigint(20) NOT NULL,
-          `downspeed` bigint(20) NOT NULL,
-          `timespent` bigint(20) NOT NULL,
-          `peer_id` binary(20) NOT NULL DEFAULT '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0',
-          `ip` varchar(15) NOT NULL DEFAULT '',
-          `fid` int(11) NOT NULL,
-          `mtime` int(11) NOT NULL,
-          PRIMARY KEY (`id`),
-          KEY `uid` (`uid`),
-          KEY `fid` (`fid`),
-          KEY `upspeed` (`upspeed`),
-          KEY `mtime` (`mtime`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+        $master->db->raw_query("DROP TABLE IF EXISTS temp_copy"); // jsut in case!
+        $master->db->raw_query("CREATE TABLE `temp_copy` LIKE xbt_peers_history");
 
         // insert the records we want to keep into the temp table
-        $DB->query("INSERT INTO temp_copy (uid, downloaded, remaining, uploaded, upspeed, downspeed, timespent, peer_id, ip, fid, mtime)
-                            SELECT x.uid, x.downloaded, x.remaining, x.uploaded, x.upspeed, x.downspeed, x.timespent, x.peer_id, x.ip, x.fid, x.mtime
-                              FROM xbt_peers_history AS x
-                         LEFT JOIN users_watch_list AS uw ON uw.UserID=x.uid
-                         LEFT JOIN torrents_watch_list AS tw ON tw.TorrentID=x.fid
-                             WHERE uw.UserID IS NOT NULL
-                                OR tw.TorrentID IS NOT NULL
-                                OR x.upspeed >= '$KeepSpeed'
-                                OR x.mtime>'" . (time() - ( $DeleteRecordsMins * 60)) . "'");
+        $master->db->raw_query("INSERT INTO temp_copy (
+                                     SELECT x.*
+                                       FROM xbt_peers_history AS x
+                                  LEFT JOIN users_watch_list AS uw ON uw.UserID=x.uid
+                                  LEFT JOIN torrents_watch_list AS tw ON tw.TorrentID=x.fid
+                                      WHERE uw.UserID IS NOT NULL
+                                         OR tw.TorrentID IS NOT NULL
+                                         OR x.upspeed >= :keepSpeed
+                                         OR x.mtime   >  :keepTime)",
+                                         [':keepSpeed' => $master->options->KeepSpeed,
+                                          ':keepTime' => (time() - ( $master->options->DeleteRecordsMins * 60))]);
 
         //Use RENAME TABLE to atomically move the original table out of the way and rename the copy to the original name:
-        $DB->query("RENAME TABLE xbt_peers_history TO temp_old, temp_copy TO xbt_peers_history");
+        $master->db->raw_query("RENAME TABLE xbt_peers_history TO temp_old, temp_copy TO xbt_peers_history");
         //Drop the original table:
-        $DB->query("DROP TABLE temp_old");
+        $master->db->raw_query("DROP TABLE temp_old");
 
         header("Location: tools.php?action=speed_records&viewspeed=$_POST[viewspeed]");
         break;
@@ -483,6 +436,10 @@ switch ($_REQUEST['action']) {
     case 'ocelot':
         include(SERVER_ROOT . '/sections/tools/managers/ocelot.php');
         break;
+    case 'ocelot_info':
+        include(SERVER_ROOT . '/sections/tools/data/ocelot_info.php');
+        break;
+
     case 'official_tags':
         include(SERVER_ROOT . '/sections/tools/managers/official_tags.php');
         break;
@@ -495,6 +452,31 @@ switch ($_REQUEST['action']) {
     case 'official_synonyms_alter':
         include(SERVER_ROOT . '/sections/tools/managers/official_synonyms_alter.php');
         break;
+    case 'synonyms_admin':
+        include(SERVER_ROOT . '/sections/tools/managers/synonyms_admin.php');
+        break;
+    case 'synonyms_admin_alter':
+        include(SERVER_ROOT . '/sections/tools/managers/synonyms_admin_alter.php');
+        break;
+    case 'official_goodtags':
+        include(SERVER_ROOT . '/sections/tools/managers/official_goodtags.php');
+        break;
+    case 'official_goodtags_alter':
+        include(SERVER_ROOT . '/sections/tools/managers/official_goodtags_alter.php');
+        break;
+    case 'tags_admin':
+        include(SERVER_ROOT . '/sections/tools/managers/tags_admin.php');
+        break;
+    case 'tags_admin_alter':
+        include(SERVER_ROOT . '/sections/tools/managers/tags_admin_alter.php');
+        break;
+    case 'tags_goodbad':
+        include(SERVER_ROOT . '/sections/tools/managers/tags_goodbad.php');
+        break;
+    case 'tags_goodbad_alter':
+        include(SERVER_ROOT . '/sections/tools/managers/tags_goodbad_alter.php');
+        break;
+
     case 'marked_for_deletion':
         include(SERVER_ROOT . '/sections/tools/managers/mfd_functions.php');
         include(SERVER_ROOT . '/sections/tools/managers/mfd_manager.php');
@@ -507,12 +489,10 @@ switch ($_REQUEST['action']) {
             error(403);
 
         if (isset($_POST['hours']) && is_number($_POST['hours']) &&
-                isset($_POST['autodelete']) && is_number($_POST['autodelete'])) {
+            isset($_POST['autodelete']) && is_number($_POST['autodelete'])) {
 
-            $Hours = (int) $_POST['hours'];
-            $AutoDelete = (int) $_POST['autodelete'] == 1 ? 1 : 0;
-            $DB->query("UPDATE site_options
-                                   SET ReviewHours='$Hours', AutoDelete='$AutoDelete'");
+            $master->options->MFDReviewHours = (int) $_POST['hours'];
+            $master->options->MFDAutoDelete  = (int) $_POST['autodelete'] == 1 ? 1 : 0;
         }
         include(SERVER_ROOT . '/sections/tools/managers/mfd_functions.php');
         include(SERVER_ROOT . '/sections/tools/managers/mfd_manager.php');

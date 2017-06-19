@@ -5,8 +5,7 @@ if (!check_perms('users_fls')) error(403);
 
 //---------- Things to sort out before it can start printing/generating content
 
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 if (isset($LoggedUser['PostsPerPage'])) {
     $PerPage = $LoggedUser['PostsPerPage'];
@@ -25,8 +24,6 @@ show_header('All forum posts' , 'comments,bbcode,jquery');
 
 if (is_array($ExcludeForums))
         $ANDWHERE = "AND ft.ForumID NOT IN (" . implode(",", $ExcludeForums) .") ";
-
-//var_dump($LoggedUser); die();
 
 $Level = $Classes[$LoggedUser['PermissionID']]['Level'];
 

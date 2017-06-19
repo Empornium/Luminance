@@ -101,81 +101,15 @@ $_GET['sizeall']     = trim($_GET['sizeall']);
 $_GET['filelist']    = trim($_GET['filelist']);
 $_GET['taglist']     = trim($_GET['taglist']);
 
-$AdvancedSearch = false;
-$Action = 'action=basic';
-if (((!empty($_GET['action']) && strtolower($_GET['action']) == "advanced") || (!empty($LoggedUser['SearchType']) && ((!empty($_GET['action']) && strtolower($_GET['action']) != "basic") || empty($_GET['action'])))) && check_perms('site_advanced_search')) {
-    $AdvancedSearch = true;
-    $Action = 'action=advanced';
-}
-
 $Queries = array();
 $UseCache = true;
 
-// Simple Search
-if (!$AdvancedSearch) {
-    if (!empty($_GET['searchtext'])) {
-        // Do not keep extended search signs
-        $SearchList = preg_split("/([!&|]| -| )/", $_GET['searchtext']);
 
-        foreach ($SearchList as $Key => &$Word) {
-            $Word = trim($Word);
-            if (strlen($Word) >= 2) {
-                $Word = $SS->EscapeString($Word);
-            } else {
-                unset($SearchList[$Key]);
-            }
-        }
-        unset($Word);
-
-        if (!empty($SearchList)) {
-            $UseCache = false;
-            $stype = 0 + $_GET['search_type'];
-            if ($stype == 0) {
-                $_GET['search_type'] = '0';
-                $Queries[] = '@searchtext ( ' . implode(' | ', $SearchList) . ' )';
-            } else {
-                $_GET['search_type'] = '1';
-                $Queries[] = '@searchtext ( ' . implode(' & ', $SearchList) . ' )';
-            }
-        }
-    }
-
-    if (!empty($_GET['taglist'])) {
-        $_GET['taglist'] = cleanup_tags($_GET['taglist']);
-        // Do not keep extended search signs.
-        $TagList = preg_split("/([!&|]| -| )/", $_GET['taglist']);
-
-        foreach ($TagList as $Key => &$Tag) {
-            $Tag = strtolower(trim($Tag)) ;
-            if (strlen($Tag) >= 2) {
-                    $Tag = get_tag_synonym($Tag, false);
-                    $Tag = str_replace('.', '_', $Tag);
-                    $Tag = $SS->EscapeString($Tag);
-            } else {
-                unset($TagList[$Key]);
-            }
-        }
-        unset($Tag);
-
-        if (!empty($TagList)) {
-            $UseCache = false;
-            $ttype = 0 + $_GET['tags_type'];
-            if ($ttype == 0) {
-                $_GET['tags_type'] = '0';
-                $Queries[] = '@taglist ( ' . implode(' | ', $TagList) . ' )';
-            } else {
-                $_GET['tags_type'] = '1';
-                $Queries[] = '@taglist ( ' . implode(' & ', $TagList) . ' )';
-            }
-        }
-    }
-
-} else {
     // Advanced search, and yet so much simpler in code.
     if (!empty($_GET['searchtext'])) {
         $UseCache = false;
         $SearchText = ' ' . trim($_GET['searchtext']);
-        $SearchText = preg_replace(array('/ not /', '/ or /', '/ and /'), array(' -', ' | ', ' & '), $SearchText);
+        $SearchText = preg_replace(['/ not /', '/ or /', '/ and /', '/\(/', '/\)/'], [' -', ' | ', ' & ', ' ( ', ' ) '], $SearchText);
         $SearchText = trim($SearchText);
 
         $Queries[] = '@searchtext ' . $SearchText; // *
@@ -184,7 +118,10 @@ if (!$AdvancedSearch) {
     if (!empty($_GET['taglist'])) {
         $UseCache = false;
         // Keep extended search signs.
-        $TagList = preg_split("/([!&|]| -| )/", $_GET['taglist'], NULL, PREG_SPLIT_DELIM_CAPTURE);
+        $TagList =  $_GET['taglist'];
+        // add whitespace around brackets to stop sphinx getting confused (do it before splitting and rebuilding taglist to avoid extra whitespace in final string)
+        $TagList = preg_replace(['/\(/', '/\)/'], [' ( ', ' ) '], $TagList);
+        $TagList = preg_split("/([!&|]| -| )/", $TagList, NULL, PREG_SPLIT_DELIM_CAPTURE);
 
         foreach ($TagList as $Key => &$Tag) {
             $Tag = strtolower(trim($Tag)) ;
@@ -203,37 +140,33 @@ if (!$AdvancedSearch) {
         }
         unset($Tag);
         $TagList = implode(' ', $TagList);
-        $TagList = preg_replace(array('/ not /', '/ or /', '/ and /'), array(' -', ' | ', ' & '), $TagList);
+        $TagList = preg_replace(['/ not /', '/ or /', '/ and /'], [' -', ' | ', ' & '], $TagList);
         $TagList = trim($TagList);
 
         $Queries[] = '@taglist ' . $TagList;
 
     }
-}
+
 
 foreach (array('title'=>'groupname') as $Search=>$Queryname) {
 
     if (!empty($_GET[$Search])) {
         $UseCache = false;
         $_GET[$Search] = str_replace(array('%'), '', $_GET[$Search]);
-        //if ($Search[0] == 'filelist') {
-        //    $Queries[] = '@filelist "' . $SS->EscapeString($_GET['filelist']) . '"~20';
-        //} else {
-            $Words = explode(' ', $_GET[$Search]);
-            foreach ($Words as $Key => &$Word) {
-                if ($Word[0] == '-' && strlen($Word) >= 3 && count($Words) >= 2) {
-                    $Word = '!' . $SS->EscapeString(substr($Word, 1));
-                } elseif (strlen($Word) >= 2) {
-                    $Word = $SS->EscapeString($Word);
-                } else {
-                    unset($Words[$Key]);
-                }
+        $Words = explode(' ', $_GET[$Search]);
+        foreach ($Words as $Key => &$Word) {
+            if ($Word[0] == '-' && strlen($Word) >= 3 && count($Words) >= 2) {
+                $Word = '!' . $SS->EscapeString(substr($Word, 1));
+            } elseif (strlen($Word) >= 2) {
+                $Word = $SS->EscapeString($Word);
+            } else {
+                unset($Words[$Key]);
             }
-            $Words = trim(implode(' ', $Words));
-            if (!empty($Words)) {
-                $Queries[] = "@{$Queryname} " . $Words;
-            }
-        //}
+        }
+        $Words = trim(implode(' ', $Words));
+        if (!empty($Words)) {
+            $Queries[] = "@{$Queryname} " . $Words;
+        }
     }
 }
 
@@ -317,12 +250,14 @@ if (empty($_GET['order_by']) || !in_array($_GET['order_by'], array('time', 'size
 
 $SS->SetSortMode($Way, $OrderBy);
 
+$didSearch = true;
 
 if (count($Queries) > 0) {
     $Query = implode(' ', $Queries);
 } else {
     $Query = '';
     if (empty($SS->Filters)) {
+        $didSearch = false;
         $SS->set_filter('size', array(0), true);
     }
 }
@@ -387,7 +322,7 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
         </div>
         <br class="clear"/>
         <script type="text/javascript">
-            setTimeout("Update_status();", 300);
+            setTimeout(Update_status, 300);
         </script>
 <?php
     }
@@ -395,12 +330,7 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
 ?>
 <form id="search_form" name="filter" method="get" action=''>
     <div id="search_box" class="filter_torrents">
-        <div class="head">
-            <?=($AdvancedSearch?'Advanced':'Basic')?> Search &nbsp;&nbsp;
-
-            [<a style="font-size:0.9em;" href="torrents.php?action=<?=($AdvancedSearch?'basic':'advanced')?>&amp;<?= get_url(array('action')) ?>">switch to <?=($AdvancedSearch?'basic':'advanced')?> search</a>]
-
-        </div>
+        <div class="head">Search</div>
         <div class="box pad">
             <table id="cat_list" class="cat_list on_cat_change <?php  if (!empty($LoggedUser['HideCats'])) { ?>hidden<?php  } ?>">
                 <?php
@@ -426,47 +356,29 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
                     <?php  } ?>
                     <td colspan="<?= 7 - ($x % 7) ?>"></td>
                 </tr>
-                <tr>
-                    <td colspan="7" style="text-align:right">
-                        <?php // We need this hidden button to determine the default behavior when
-                              // the user types something in and hits return. ?>
-                        <input class="hidden" type="submit" value="Filter Torrents" />
-                        <input type="button" value="Reset" onclick="location.href='torrents.php?action=<?php  if (isset($_GET['action']) && $_GET['action'] == "advanced") { ?>advanced<?php  } else { ?>basic<?php  } ?>'" />
-                &nbsp;&nbsp;
-                <?php  if (count($Queries) > 0 || count($SS->Filters) > 0) { ?>
-                    <input type="submit" name="setdefault" value="Make Default" />
-                    <?php
-                }
-
-                if (!empty($LoggedUser['DefaultSearch'])) {
-                    ?>
-                    <input type="submit" name="cleardefault" value="Clear Default" />
-                <?php  } ?>
-                    </td>
-                </tr>
             </table>
             <table class="noborder">
-                <tr class="on_cat_change <?php  if (!empty($LoggedUser['HideCats'])) { ?>hidden<?php  } ?>"><td colspan="3">&nbsp;</td></tr>
+                <tr class="on_cat_change <?php  if (!empty($LoggedUser['HideCats'])) { ?>hidden<?php  } ?>"><td colspan="4">&nbsp;</td></tr>
                 <tr>
                     <td class="label" style="width:140px">Order by:</td>
-                    <td colspan="<?= ($AdvancedSearch) ? '3' : '1' ?>">
+                    <td colspan="4">
                         <span style="float:left">
-                        <select name="order_by" style="width:auto;">
-                            <option value="time"<?php  selected('order_by', 'time') ?>>Time added</option>
-                            <option value="size"<?php  selected('order_by', 'size') ?>>Size</option>
-                            <option value="snatched"<?php  selected('order_by', 'snatched') ?>>Snatched</option>
-                            <option value="seeders"<?php  selected('order_by', 'seeders') ?>>Seeders</option>
-                            <option value="leechers"<?php  selected('order_by', 'leechers') ?>>Leechers</option>
-                            <option value="random"<?php  selected('order_by', 'random') ?>>Random</option>
-                        </select>
-                        <select name="order_way">
-                            <option value="desc"<?php  selected('order_way', 'desc') ?>>Descending</option>
-                            <option value="asc" <?php  selected('order_way', 'asc') ?>>Ascending</option>
-                        </select>
+                            <select name="order_by" style="width:auto;">
+                                <option value="time"<?php  selected('order_by', 'time') ?>>Time added</option>
+                                <option value="size"<?php  selected('order_by', 'size') ?>>Size</option>
+                                <option value="snatched"<?php  selected('order_by', 'snatched') ?>>Snatched</option>
+                                <option value="seeders"<?php  selected('order_by', 'seeders') ?>>Seeders</option>
+                                <option value="leechers"<?php  selected('order_by', 'leechers') ?>>Leechers</option>
+                                <option value="random"<?php  selected('order_by', 'random') ?>>Random</option>
+                            </select>
+                            <select name="order_way">
+                                <option value="desc"<?php  selected('order_way', 'desc') ?>>Descending</option>
+                                <option value="asc" <?php  selected('order_way', 'asc') ?>>Ascending</option>
+                            </select>
                         </span>
                         <span style="float:left">
-                        <label style="margin-left: 20px;" for="filter_freeleech" title="Limit results to ONLY freeleech torrents"><strong>Include only freeleech torrents.</strong></label>
-                        <input type="checkbox" name="filter_freeleech" value="1" <?php  selected('filter_freeleech', 1, 'checked') ?>/>
+                            <label style="margin-left: 20px;" for="filter_freeleech" title="Limit results to ONLY freeleech torrents"><strong>Include only freeleech torrents.</strong></label>
+                            <input type="checkbox" name="filter_freeleech" value="1" <?php  selected('filter_freeleech', 1, 'checked') ?>/>
                     <?php  if (check_perms('site_search_many')) { ?>
                             <label style="margin-left:20px;" for="limit_matches" title="Limit results to the first 100 matches"><strong>Limit results (max 100):</strong></label>
                             <input type="checkbox" value="1" name="limit_matches" <?php  selected('limit_matches', 1, 'checked') ?> />
@@ -476,34 +388,49 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
                             <label style="margin-left:16px;" for="filter_unmarked" title="Limit results to unmarked torrents only"><strong>Include only unmarked torrents.</strong></label>
                             <input type="checkbox" value="1" name="filter_unmarked" <?php  selected('filter_unmarked', 1, 'checked') ?> />
                     <?php  } ?>
-                    </span>
-                    <span style="float:right"><a href="#" onclick="$('.on_cat_change').toggle();$('.non_cat_change').toggle(); if (this.innerHTML=='(View Categories)') {this.innerHTML='(Hide Categories)';} else {this.innerHTML='(View Categories)';}; return false;"><?= (!empty($LoggedUser['HideCats'])) ? '(View Categories)' : '(Hide Categories)' ?></a></span>
-
-                    <input class="non_cat_change <?php  if (empty($LoggedUser['HideCats'])) { ?>hidden<?php  } ?>" style="float:right;position:relative;right:2px;top:45px;"
-                           type="submit" value="Filter Torrents" />
+                        </span>
+                        <span style="float:right">
+                            <a href="#" onclick="$('.on_cat_change').toggle(); if (this.innerHTML=='(View Categories)') {this.innerHTML='(Hide Categories)';} else {this.innerHTML='(View Categories)';}; return false;"><?= (!empty($LoggedUser['HideCats'])) ? '(View Categories)' : '(Hide Categories)' ?></a>
+                        </span>
                     </td>
                 </tr>
-                <?php  if ($AdvancedSearch) { ?>
                     <tr>
+                        <td class="label" style="width:140px"></td>
                         <td colspan="3">
-                            The advanced search supports full boolean search, click <a href="articles.php?topic=search">here</a> for more information.
+                            Search supports full boolean search, click here: <a href="articles.php?topic=search" style="font-weight:bold">Article on Searching</a> for more information.
+                        </td>
+                        <td rowspan="6" class="search_buttons">
+                            <span>
+                            <input type="submit" class="hidden" value="Search" />
+<?php
+                                if ($didSearch) {    // count($Queries) > 0 || count($SS->Filters) > 1 ?>
+                                    <input type="submit" name="setdefault" value="Make Default" /><br/>
+<?php                           }
+                                if (!empty($LoggedUser['DefaultSearch'])) {   ?>
+                                    <input type="submit" name="cleardefault" value="Clear Default" /><br/>
+<?php                           } ?>
+
+                                <input type="button" value="Reset" onclick="location.href='torrents.php?action=search'" /><br/>
+                                <br/><br/>
+                                <input type="submit" value="Search" />
+                            </span>
                         </td>
                     </tr>
                     <tr>
-                        <td class="label" style="width:140px" title="Searches Title and Description">Search Terms:</td>
+                        <td class="label" style="width:140px" title="Searches Title and Description fields, supports full boolean search">Search Terms:</td>
                         <td colspan="3">
-                            <input type="text" spellcheck="false" size="40" name="searchtext" class="inputtext" title="Supports full boolean search" value="<?php  form('searchtext') ?>" />
+                            <input type="text" spellcheck="false" size="40" name="searchtext" class="inputtext" title="Searches Title and Description fields, supports full boolean search" value="<?php  form('searchtext') ?>" />
                             <input type="hidden" name="action" value="advanced" />
                         </td>
                     </tr>
                     <tr>
-                        <td class="label" style="width:140px" title="Search Titles">Title:</td>
+                        <td class="label" style="width:140px" title="Search Title field only">Title:</td>
                         <td colspan="3">
-                            <input type="text" spellcheck="false" size="40" name="title" class="inputtext" title="Supports full boolean search" value="<?php  form('title') ?>" />
+                            <input type="text" spellcheck="false" size="40" name="title" class="inputtext" title="Search Title field only" value="<?php  form('title') ?>" />
                         </td>
                     </tr>
                     <tr>
-                        <td class="label" style="width:140px" title="Search Size">Size:</td>
+                        <td class="label" style="width:140px" title="Search Size field only">Size:</td>
                         <td colspan="3">
                             <input type="text" spellcheck="false" size="25" name="sizeall" class="smallish" title="Specify a size, IMPORTANT: because size is rounded from bytes there is a small margin each way - so not all matches will have the exact same number of bytes" value="<?php  form('sizeall') ?>" />
                             <select name="sizetype">
@@ -517,64 +444,35 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
                         </td>
                     </tr>
                     <tr>
-                        <td class="label" style="width:140px" title="Search Files">File List:</td>
+                        <td class="label" style="width:140px" title="Matches exact filenames, OR exact bytesize">File List:</td>
                         <td colspan="3">
                             <input type="text" spellcheck="false" size="40" name="filelist" class="inputtext" title="Matches exact filenames, OR exact bytesize" value="<?php  form('filelist') ?>" />
                         </td>
                     </tr>
-                <?php  } else { // BASIC SEARCH ?>
-                    <tr>
-                        <td class="label" style="width:140px" title="Searches Title and Description">Search Terms:</td>
-                        <td colspan="3">
-                            <input type="text" spellcheck="false" size="40" name="searchtext" class="inputtext" title="Use 'Any' or 'All' option to determine whether search is AND or OR" value="<?php  form('searchtext') ?>" />
-                            <input type="radio" name="search_type" id="search_type0" value="0" <?php  selected('search_type', 0, 'checked') ?> /><label for="search_type0"> Any</label>&nbsp;&nbsp;
-                            <input type="radio" name="search_type" id="search_type1" value="1"  <?php  selected('search_type', 1, 'checked') ?> /><label for="search_type1"> All</label>
-                            <?php  if (!empty($LoggedUser['SearchType'])) { ?>
-                                <input type="hidden" name="action" value="basic" />
-                            <?php  } ?>
-                        </td>
-                    </tr>
-                <?php  } ?>
                 <tr>
-                    <td class="label" style="width:140px" title="Search Tags">Tags:</td>
+                    <td class="label" style="width:140px" title="Search Tags, supports full boolean search">Tags:</td>
                     <td colspan="3">
-                <?php  if ($AdvancedSearch) { ?>
-
-                        <textarea id="tags" name="taglist" cols="50" rows="1" class="inputtext" onkeyup="resize('tags');" onkeypress="return submitOnEnter(event);" title="Supports full boolean search" ><?= str_replace('_', '.', form('taglist', true)) ?></textarea>&nbsp;
-
-                <?php  } else { // BASIC SEARCH ?>
-                        <input type="text" size="40" id="tags" name="taglist" class="inputtext" title="Use 'Any' or 'All' option to determine whether search is AND or OR" value="<?= str_replace('_', '.', form('taglist', true)) ?>" />
-                        <input type="radio" name="tags_type" id="tags_type0" value="0" <?php  selected('tags_type', 0, 'checked') ?> /><label for="tags_type0"> Any</label>&nbsp;&nbsp;
-                        <input type="radio" name="tags_type" id="tags_type1" value="1"  <?php  selected('tags_type', 1, 'checked') ?> /><label for="tags_type1"> All</label>&nbsp;&nbsp;
-
-                <?php  } ?>
-                        <div class="autoresults">
-                            <span style="float:left">
-                                <div id="tag_search">
-                                    <input type="text" id="torrentssearch" value="search tags"
-                                           onfocus="if (this.value == 'search tags') this.value='';"
-                                           onblur="if (this.value == '') this.value='search tags';"
-                                           onkeyup="return autocomp.keyup(event);"
-                                           onkeydown="return autocomp.keydown(event);"
-                                           autocomplete="off"
-                                           title="enter text to search for tags, click (or enter) to select a tag from the drop-down" />
-                                    <ul id="torrentscomplete"></ul>
-                                </div>
-                                <span style="float:right;padding-right:5px">
-                                    <a href="#" onclick="$('#taglist').toggle(); if (this.innerHTML=='(View Tags)') {this.innerHTML='(Hide Tags)';} else {this.innerHTML='(View Tags)';}; return false;"><?= (empty($LoggedUser['ShowTags'])) ? '(View Tags)' : '(Hide Tags)' ?></a>
-                                </span>
-                            </span>
-                            <span style="float:right;padding-left:5px">
-                                <input style="float:right;"
-                                       class="on_cat_change <?php  if (!empty($LoggedUser['HideCats'])) { ?>hidden<?php  } ?>"
-                                       type="submit"
-                                       value="Filter Torrents" />
-                            </span>
+                        <div id="autoresults" class="autoresults">
+                            <ul id="tagdropdown"></ul>
+                            <!-- we have to insert the font here for js to be able to grab it (js bug?) -->
+                            <textarea id="taginput" name="taglist" class="inputtext" style="font: 10pt monospace;"
+                                            onkeyup="return autocomp.keyup(event); resize('taginput');"
+                                            onkeydown="return autocomp.keydown(event);"
+                                            autocomplete="off"
+                                            title="Search Tags, supports full boolean search" ><?= str_replace('_', '.', form('taglist', true)) ?></textarea>
+                        </div>
+                        <div style="vertical-align:top;display:inline-block;" title="Toggle Autocomplete mode on/off (when off you can access browser form history)">
+                            <input id="autocomplete_toggle"  onclick="ToggleAutoComplete();" type="checkbox" value="1" name="autocomplete_toggle" checked="checked" />
+                                Autocomplete Tags
                         </div>
                     </td>
                 </tr>
-            </div>
             </table>
+
+                        <span style="float:right;padding-right:5px">
+                            <a href="#" onclick="$('#taglist').toggle(); if (this.innerHTML=='(View Tags)') {this.innerHTML='(Hide Tags)';} else {this.innerHTML='(View Tags)';}; return false;"><?= (empty($LoggedUser['ShowTags'])) ? '(View Tags)' : '(Hide Tags)' ?></a>
+                        </span>
+
             <table width="100%" class="taglist <?php  if (empty($LoggedUser['ShowTags'])) { ?>hidden<?php  } ?>" id="taglist">
                 <tr class="row<?=$row?>">
                     <?php
@@ -613,6 +511,7 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
 </form>
 <div id="filter_slidetoggle"><a href="#" id="search_button" onclick="Panel_Toggle();">Close Search Center</a> </div>
 
+<div class="linkbox"><a href="/torrents.php?action=clear_browse" title="click here to clear the (New!) tags">clear new</a></div>
 <div class="linkbox"><?= $Pages ?></div>
 <div class="head">Torrents</div>
 <?php
@@ -696,7 +595,7 @@ $Bookmarks = all_bookmarks('torrent');
         $numtags=0;
         foreach ($TagList as $Tag) {
             if ($numtags++>=$LoggedUser['MaxTags'])  break;
-            $TorrentTags[] = '<a href="torrents.php?' . $Action . '&amp;taglist=' . $Tag . '">' . $Tag . '</a>';
+            $TorrentTags[] = '<a href="torrents.php?taglist=' . $Tag . '">' . $Tag . '</a>';
         }
         $TorrentTags = implode(' ', $TorrentTags);
 
@@ -718,23 +617,29 @@ $Bookmarks = all_bookmarks('torrent');
 <?php
                 if ($Data['ReportCount'] > 0) {
                     $Title = "This torrent has ".$Data['ReportCount']." active ".($Data['ReportCount'] > 1 ?'reports' : 'report');
-                    $GroupName .= ' /<span class="reported" title="'.$Title.'"> Reported</span>';
+                    $Reported = ' /<span class="reported" title="'.$Title.'"> Reported</span>';
+                } else {
+                    $Reported = '';
                 }
 
+                $newtag = '';
+                if($Data['Time'] > $LoggedUser['LastBrowse']) { $newtag = '<span class="newtorrent">(New!)</span>'; }
+
                 if ($LoggedUser['HideFloat']) {?>
-                    <?=$AddExtra?> <a href="torrents.php?id=<?=$GroupID?>"><?=$GroupName?></a>
-<?php               } else {
+                    <?=$AddExtra.$newtag?> <a href="torrents.php?id=<?=$GroupID?>"><?=$GroupName?></a>
+<?php           } else {
                     if (preg_match('/(fapping.empornium.sx|jerking.empornium.me)/', $Image)) {
                         $Image = preg_replace('/(?<=[^(th|md)])\.(jpg|jpeg|png|bmp)/', '.th.$1', $Image);
                     }
                     $Overlay = get_overlay_html($GroupName, $TorrentUsername, $Image, $Data['Seeders'], $Data['Leechers'], $Data['Size'], $Data['Snatched']);
-                    ?>
+?>
                     <script>
                         var overlay<?=$GroupID?> = <?=json_encode($Overlay)?>
                     </script>
-                    <?=$AddExtra?>
-                    <a href="torrents.php?id=<?=$GroupID?>" onmouseover="return overlib(overlay<?=$GroupID?>, FULLHTML);" onmouseout="return nd();"><?=$GroupName?></a>
-<?php               }  ?>
+                    <?=$AddExtra.$newtag?>
+                    <a href="torrents.php?id=<?=$GroupID?>" onmouseover="return overlib(overlay<?=$GroupID?>, FULLHTML);" onmouseout="return nd();"><?=display_str($GroupName).$Reported?></a>
+
+<?php           }  ?>
                 <br />
                 <?php  if ($LoggedUser['HideTagsInLists'] !== 1) { ?>
                 <div class="tags">

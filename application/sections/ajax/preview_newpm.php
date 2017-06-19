@@ -1,6 +1,5 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $Subject = $_REQUEST['subject'];
 if( !empty($_REQUEST['prependtitle']))  $Subject = $_REQUEST['prependtitle'] . $Subject;

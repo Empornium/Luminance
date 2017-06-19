@@ -1,4 +1,9 @@
 
+// 1 gb
+var minNewBounty = 1024 * 1024 * 1024;
+// 100 mb
+var minVote = 100 * 1024 * 1024;
+
 
 function SynchInterface(){
     change_tagtext();
@@ -83,16 +88,6 @@ function Load_Details_Cookie()  {
 
 
 
-
-
-
-
-
-
-
-
-
-
 function Preview_Request() {
 	if ($('#preview').has_class('hidden')) {
 		var ToPost = [];
@@ -110,26 +105,18 @@ function Preview_Request() {
 	}
 }
 
-function ReadableAmount(size) {
-    var units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-    var i = 0;
-    while(size >= 1024) {
-        size /= 1024;
-        ++i;
-    }
-    return size.toFixed(1) + ' ' + units[i];
-}
 
 
 // used on the requests page and user profile
 function VotePromptMB(requestid) {
 	if(!requestid) return; // error
-    var amount = prompt("Please enter the amount in MB you want to add to the bounty\nmin vote: 20 MB\nmax vote 10,240 MB = 10 GB", 100);
+    var amount = prompt("Please enter the amount in MB you want to add to the bounty\nmin vote: "+get_size(minVote)+"\nmax vote 10,240 MB = 10 GB", 100);
     if(!amount || amount==0) return;
-    if(amount < 20 ) amount = 20 ;
-    if (amount> 10240 ) amount = 10240; // max vote 10gb from this prompt
-    //Vote(amountmb * 1024 * 1024, requestid);
+
     amount = amount * 1024 * 1024; // convert to bytes
+
+    if (amount < minVote) amount = minVote ;
+    if (amount > 10 * 1024 * 1024* 1024) amount = 10 * 1024 * 1024* 1024; // max vote 10gb from this prompt
 
     if (!confirm(get_size(amount) + ' will immediately be removed from your upload total, are you sure?')) return;
 
@@ -164,10 +151,10 @@ function Vote(amount, requestid) {
         amount = parseInt($('#amount').raw().value);
     }
 
-    if(amount == 0) amount = 100 * 1024 * 1024;
-    else if(amount < 20*1024*1024) amount = 20 * 1024 * 1024;
+    if(amount == 0) amount = minNewBounty;          // 100 * 1024 * 1024;
+    else if(amount < minVote) amount = minVote;     // 20 * 1024 * 1024;
 
-    if (!confirm(ReadableAmount(amount) + ' will immediately be removed from your upload total, are you sure?')) return;
+    if (!confirm(get_size(amount) + ' will immediately be removed from your upload total, are you sure?')) return;
 
     var votecount;
     if(!requestid) { // used on request page
@@ -246,12 +233,12 @@ function Calculate() {
         allow = false;
         info = 'Not a valid number!';
     } else {
-        if (window.location.search.indexOf('action=new') != -1 && amt < 100*1024*1024) {
+        if (window.location.search.indexOf('action=new') != -1 && amt < minNewBounty) {
             allow = false;
-            info = 'New Requests must have at least 100MB bounty';
-        } else if (window.location.search.indexOf('action=view') != -1 && amt < 20*1024*1024) {
+            info = 'New Requests must have at least '+get_size(minNewBounty)+' bounty';
+        } else if (window.location.search.indexOf('action=view') != -1 && amt < minVote) {
             allow = false;
-            info = 'Votes must add at least 20MB bounty';
+            info = 'Votes must add at least '+get_size(minVote)+' bounty';
         } else {
             allow = amt <= (uploaded - downloaded);
             if (allow) info = get_size(amt) + ' will immediately be removed from your upload total.';

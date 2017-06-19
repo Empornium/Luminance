@@ -5,6 +5,10 @@ if ($LoggedUser['DisableUpload']) {
     error('Your upload privileges have been revoked.');
 }
 
+if (!$master->options->EnableUploads) {
+    error('Uploads are currently disabled.');
+}
+
 include(SERVER_ROOT . '/sections/upload/functions.php');
 
 if (!empty($_POST['submit'])) {

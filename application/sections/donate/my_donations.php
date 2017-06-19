@@ -1,6 +1,5 @@
 <?php
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 if (!empty($_REQUEST['userid']) && is_numeric($_REQUEST['userid']))
     $UserID = $_REQUEST['userid'];

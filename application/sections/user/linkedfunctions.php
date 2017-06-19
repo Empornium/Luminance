@@ -1,5 +1,4 @@
 <?php
-include_once(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
 
 function link_users($UserID, $TargetID)
 {
@@ -56,7 +55,7 @@ function link_users($UserID, $TargetID)
         $DB->query("INSERT INTO users_dupes (UserID, GroupID) VALUES ($UserID, $GroupID)");
     }
 
-    $AdminComment = sqltime()." - Linked accounts updated: [user]".$UserInfo['Username']."[/user] and [user]".$TargetInfo['Username']."[/user] linked by ".$LoggedUser['Username'];
+    $AdminComment = sqltime()." - Linked accounts updated: [user]".$UserInfo['ID']."[/user] and [user]".$TargetInfo['ID']."[/user] linked by ".$LoggedUser['Username'];
     $DB->query("UPDATE users_info  AS i
                 JOIN   users_dupes AS d ON d.UserID = i.UserID
                 SET i.AdminComment = CONCAT('".db_string($AdminComment)."\n', i.AdminComment)
@@ -79,7 +78,7 @@ function unlink_user($UserID)
     if ($UserInfo === FALSE) {
         return;
     }
-    $AdminComment = sqltime()." - Linked accounts updated: [user]".$UserInfo['Username']."[/user] unlinked by ".$LoggedUser['Username'];
+    $AdminComment = sqltime()." - Linked accounts updated: [user]".$UserInfo['ID']."[/user] unlinked by ".$LoggedUser['Username'];
     $DB->query("UPDATE users_info  AS i
                 JOIN   users_dupes AS d1 ON d1.UserID = i.UserID
                 JOIN   users_dupes AS d2 ON d2.GroupID = d1.GroupID
@@ -133,7 +132,7 @@ function dupe_comments($GroupID, $Comments)
 function user_dupes_table($UserID, $Username)
 {
     global $DB, $LoggedUser;
-    $Text = new TEXT;
+    $Text = new Luminance\Legacy\Text;
 
     if (!check_perms('users_mod')) {
         error(403);

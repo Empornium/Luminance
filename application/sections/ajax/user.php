@@ -1,8 +1,7 @@
 <?php
 authorize(true);
 
-include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 require(SERVER_ROOT.'/sections/requests/functions.php');
 
@@ -100,8 +99,7 @@ if (check_paranoia_here('uploads+')) {
 }
 
 // Do the ranks.
-include(SERVER_ROOT.'/classes/class_user_rank.php');
-$Rank = new USER_RANK;
+$Rank = new Luminance\Legacy\UserRank;
 
 if (check_paranoia_here('uploaded')) {
     $UploadedRank = $Rank->get_rank('uploaded', $Uploaded);

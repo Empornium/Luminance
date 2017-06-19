@@ -1,5 +1,5 @@
 <?php
-if (!check_perms('site_manage_awards')) { error(403); }
+if (!check_perms('admin_manage_awards')) { error(403); }
 
 show_header('Automatic Awards schedule','badges');
 

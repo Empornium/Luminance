@@ -4,8 +4,8 @@ include(SERVER_ROOT.'/sections/requests/functions.php');
 
 // Minimum and default amount of upload to remove from the user when they vote.
 // Also change in static/functions/requests.js
-$MinimumVote = 20*1024*1024;
-$MinimumBounty = 100*1024*1024; // new requests
+$MinimumVote = 100*1024*1024;
+$MinimumBounty = 1024*1024*1024; // new requests
 
 if (!empty($LoggedUser['DisableRequests'])) {
     error('Your request privileges have been removed.');
@@ -61,16 +61,16 @@ if (!isset($_REQUEST['action'])) {
             if (!isset($_POST['requestid']) || !is_number($_POST['requestid'])) {
                 error(0);
             }
-                  if (empty($_POST['body'])) {
-                        error('You cannot post a comment with no content.');
-                  }
+
+            if (empty($_POST['body'])) {
+                error('You cannot post a comment with no content.');
+            }
 
             if ($LoggedUser['DisablePosting']) {
                 error('Your posting rights have been removed.');
             }
 
-            include(SERVER_ROOT.'/classes/class_text.php');
-            $Text = new TEXT;
+            $Text = new Luminance\Legacy\Text;
             $Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
 
             $RequestID = $_POST['requestid'];
@@ -100,6 +100,21 @@ if (!isset($_REQUEST['action'])) {
             $Cache->commit_transaction(0);
             $Cache->increment('request_comments_'.$RequestID);
 
+            // Comments notification
+            $Sql          = 'SELECT r.UserID, r.Title, CommentsNotify FROM requests AS r LEFT JOIN users_info AS u ON u.UserID = r.UserID WHERE r.ID = :ID';
+            $Prepare      = [':ID' => $RequestID];
+            $RequestInfos = $master->db->raw_query($Sql, $Prepare)->fetch(\PDO::FETCH_ASSOC);
+            if ($RequestInfos['UserID'] != $LoggedUser['ID'] && $RequestInfos['CommentsNotify']) {
+                $ToID    = (int) $RequestInfos['UserID'];
+                $FromID  = 0; // System
+                $Author  = "[url=/user.php?id={$LoggedUser['ID']}]{$LoggedUser['Username']}[/url]";
+                $Request = "[url=/requests.php?action=view&id={$RequestID}&page={$Pages}#post{$PostID}]{$RequestInfos['Title']}[/url]";
+                $Subject = "Comment received on your request by {$LoggedUser['Username']}";
+                $Body    = "[br]You have received a comment from {$Author} on your request {$Request}[br][br]";
+                $Body   .= "[quote={$LoggedUser['Username']},r{$RequestID},{$PostID}]{$_POST['body']}[/quote]";
+                send_pm($RequestInfos['UserID'], $FromID, db_string($Subject), db_string($Body));
+            }
+
             header('Location: requests.php?action=view&id='.$RequestID.'&page='.$Pages."#post$PostID");
             break;
 
@@ -108,75 +123,8 @@ if (!isset($_REQUEST['action'])) {
             break;
 
         case 'takeedit_comment':
-            enforce_login();
-            authorize();
-
-            include(SERVER_ROOT.'/classes/class_text.php'); // Text formatting class
-
-            $Text = new TEXT;
-            $Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
-
-            // Quick SQL injection check
-            if (!$_POST['post'] || !is_number($_POST['post'])) { error(0); }
-
-            // Mainly
-            $DB->query("SELECT
-                rc.Body,
-                rc.AuthorID,
-                rc.RequestID,
-                rc.AddedTime,
-                rc.EditedTime,
-                rc.EditedUserID
-                FROM requests_comments AS rc
-                WHERE rc.ID='".db_string($_POST['post'])."'");
-            if ($DB->record_count()==0) { error(404); }
-            list($OldBody, $AuthorID,$RequestID,$AddedTime,$EditedTime,$EditedUserID)=$DB->next_record();
-
-            $DB->query("SELECT ceil(COUNT(ID) / ".POSTS_PER_PAGE.") AS Page FROM requests_comments WHERE RequestID = $RequestID AND ID <= $_POST[post]");
-            list($Page) = $DB->next_record();
-
-            //if ($LoggedUser['ID']!=$AuthorID && !check_perms('site_moderate_forums')) { error(404); }
-            //if ($DB->record_count()==0) { error(404); }
-
-            validate_edit_comment($AuthorID, null, $AddedTime, $EditedTime);
-
-            // Perform the update
-            $DB->query("UPDATE requests_comments SET
-                Body = '".db_string($_POST['body'])."',
-                EditedUserID = '".db_string($LoggedUser['ID'])."',
-                EditedTime = '".sqltime()."'
-                WHERE ID='".db_string($_POST['post'])."'");
-
-            // Update the cache
-            $CatalogueID = floor((TORRENT_COMMENTS_PER_PAGE*$Page-TORRENT_COMMENTS_PER_PAGE)/THREAD_CATALOGUE);
-            $Cache->begin_transaction('request_comments_'.$RequestID.'_catalogue_'.$CatalogueID);
-
-            $Cache->update_row($_POST['key'], array(
-                'ID'=>$_POST['post'],
-                'AuthorID'=>$AuthorID,
-                'AddedTime'=>$AddedTime,
-                'Body'=>$_POST['body'],
-                'EditedUserID'=>db_string($LoggedUser['ID']),
-                'EditedTime'=>sqltime(),
-                'Username'=>$LoggedUser['Username']
-            ));
-            $Cache->commit_transaction(0);
-
-            $DB->query("INSERT INTO comments_edits (Page, PostID, EditUser, EditTime, Body)
-                                VALUES ('requests', ".db_string($_POST['post']).", ".db_string($LoggedUser['ID']).", '".sqltime()."', '".db_string($OldBody)."')");
-
-            // This gets sent to the browser, which echoes it in place of the old body
-            //echo '<div class="post_content">' .$Text->full_format($_POST['body'], get_permissions_advtags($LoggedUser['ID'], $LoggedUser['CustomPermissions'])). '</div>';
-?>
-<div class="post_content">
-    <?=$Text->full_format($_POST['body'], get_permissions_advtags($LoggedUser['ID'], $LoggedUser['CustomPermissions']));?>
-</div>
-<div class="post_footer">
-    <span class="editedby">Last edited by <a href="user.php?id=<?=$LoggedUser['ID']?>"><?=$LoggedUser['Username']?></a> just now</span>
-</div>
-<?php
-
-        break;
+            include(SERVER_ROOT.'/sections/requests/takeedit_comment.php');
+            break;
 
         case 'delete_comment':
             enforce_login();

@@ -4,8 +4,7 @@ enforce_login();
 // this page isnt actually linked to from anywhere... its not particularly useful unless you
 // are loading a batch of smilies and want to check the existing names in an a-z list lol
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 $Sorted = (isset($_REQUEST['sort']) && !$_REQUEST['sort'])?0:1;
 $ASC = (isset($_REQUEST['asc']) && !$_REQUEST['asc'])?0:1;

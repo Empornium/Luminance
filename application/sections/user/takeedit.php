@@ -28,7 +28,7 @@ $Val->SetFields('collagecovers',1,"number","You forgot to select your collage op
 $Val->SetFields('showtags',1,"number","You forgot to select your show tags option.",array('minlength'=>0,'maxlength'=>1));
 $Val->SetFields('maxtags',1,"number","You forgot to select your maximum tags to show in lists option.",array('minlength'=>0,'maxlength'=>10000));
 $Val->SetFields('avatar',0,'image', 'Avatar: The image URL you entered was not valid.',
-                 array('regex' => $whitelistregex, 'maxlength' => 255, 'minlength' => 6, 'maxfilesizeKB'=>-1, 'dimensions'=>array(300,500)));
+                 array('regex' => $whitelistregex, 'maxlength' => 255, 'minlength' => 6, 'maxfilesizeKB'=>$master->options->AvatarSizeKiB, 'dimensions'=>array(300,500)));
 $Val->SetFields('info',0,'desc','Info',array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>20000));
 $Val->SetFields('signature',0,'desc','Signature',array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>$Permissions['MaxSigLength'], 'dimensions'=>array(SIG_MAX_WIDTH, SIG_MAX_HEIGHT)));
 $Val->SetFields('torrentsignature',0,'desc','Signature',array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>$Permissions['MaxSigLength']));
@@ -37,9 +37,7 @@ $Val->SetFields('irckey',0,"string","You did not enter a valid IRCKey, must be b
 $Val->SetFields('cur_pass',0,"string","You did not enter a valid password, must be between 6 and 40 characters long.",array('minlength'=>6,'maxlength'=>40));
 $Val->SetFields('new_pass_1',0,"string","You did not enter a valid password, must be between 6 and 40 characters long.",array('minlength'=>6,'maxlength'=>40));
 $Val->SetFields('new_pass_2',1,"compare","Your passwords do not match.",array('comparefield'=>'new_pass_1'));
-if (check_perms('site_advanced_search')) {
-    $Val->SetFields('searchtype',1,"number","You forgot to select your default search preference.",array('minlength'=>0,'maxlength'=>1));
-}
+
 
 $Err = $Val->ValidateForm($_POST);
 
@@ -121,11 +119,6 @@ if ($CurEmail != $_POST['email']) {
     if (!$Err) {
         $NewEmail = db_string($_POST['email']);
         $this->master->emailManager->newEmail($UserID, $_POST['email']);
-        //This piece of code will update the time of their last email change to the current time *not* the current change.
-        $DB->query("UPDATE users_history_emails SET Time='".sqltime()."' WHERE UserID='$UserID' AND Time='0000-00-00 00:00:00'");
-        $DB->query("INSERT INTO users_history_emails
-                (UserID, Email, Time, IP, ChangedbyID) VALUES
-                ('$UserID', '$NewEmail', '0000-00-00 00:00:00', '".db_string($_SERVER['REMOTE_ADDR'])."','$LoggedUser[ID]')");
     } else {
         error($Err);
     }
@@ -185,6 +178,9 @@ $Options['HideFloat'] = (!empty($_POST['hidefloatinfo']) ? 1 : 0);
 $Options['NotForceLinks'] = (!empty($_POST['forcelinks']) ? 0 : 1);
 $Options['MaxTags'] = (isset($_POST['maxtags']) ? (int) $_POST['maxtags'] : 16);
 $Options['ShowGames'] = (!empty($_POST['showgames']) ? 1 : 0);
+$Options['NoNewsAlerts'] = (!empty($_POST['nonewsalerts']) ? 1 : 0);
+$Options['NoBlogAlerts'] = (!empty($_POST['noblogalerts']) ? 1 : 0);
+$Options['NoContestAlerts'] = (!empty($_POST['nocontestalerts']) ? 1 : 0);
 
 if (isset($LoggedUser['DisableFreeTorrentTop10'])) {
     $Options['DisableFreeTorrentTop10'] = $LoggedUser['DisableFreeTorrentTop10'];
@@ -197,11 +193,7 @@ if (!empty($_POST['hidetypes'])) {
 } else {
     $Options['HideTypes'] = array();
 }
-if (check_perms('site_advanced_search')) {
-    $Options['SearchType'] = $_POST['searchtype'];
-} else {
-    unset($Options['SearchType']);
-}
+
 
 // Handle the tons of Latest Forum Topics checkboxes
 // We store a blacklist rather than a whitelist here, as the majority of the users will
@@ -223,6 +215,7 @@ unset($Options['ShowQueryList']);
 unset($Options['ShowCacheList']);
 
 $DownloadAlt = (isset($_POST['downloadalt']))? 1:0;
+$TrackIPv6 = (isset($_POST['trackipv6']))? 1:0;
 $UnseededAlerts = (isset($_POST['unseededalerts']))? 1:0;
 
 // Information on how the user likes to download torrents is stored in cache
@@ -249,6 +242,7 @@ $SQL="UPDATE users_main AS m JOIN users_info AS i ON m.ID=i.UserID SET
     i.BlockPMs='".$BlockPMs."',
     i.CommentsNotify='".$CommentsNotify."',
     i.DownloadAlt='$DownloadAlt',
+    m.track_ipv6='$TrackIPv6',
     i.UnseededAlerts='$UnseededAlerts',
     m.Email='".db_string($_POST['email'])."',
     m.IRCKey='".db_string($_POST['irckey'])."',
@@ -256,15 +250,18 @@ $SQL="UPDATE users_main AS m JOIN users_info AS i ON m.ID=i.UserID SET
     i.TorrentSignature='".db_string($_POST['torrentsignature'])."',
     m.Signature='".db_string($_POST['signature'])."',";
 
+if ($LoggedUser['ID'] != $UserID) {
+    $SQL .= 'i.AdminComment = CONCAT("'.sqltime().' - User settings modified by '.$LoggedUser['Username'].'\n", i.AdminComment),';
+}
+
+if (!empty($_POST['resetlastbrowse'])) {
+    $SQL .= "i.LastBrowse='0000-00-00 00:00:00',";
+}
+
 $SQL .= "m.Paranoia='".db_string(serialize($Paranoia))."'";
 
-
 if ($ResetPassword) {
-    $ChangerIP = db_string($LoggedUser['IP']);
     $master->auth->set_password($UserID, $_POST['new_pass_1']);
-    $DB->query("INSERT INTO users_history_passwords
-        (UserID, ChangerIP, ChangeTime) VALUES
-        ('$UserID', '$ChangerIP', '".sqltime()."')");
 }
 
 if (isset($_POST['resetpasskey'])) {
@@ -279,7 +276,8 @@ if (isset($_POST['resetpasskey'])) {
     $master->repos->users->uncache($UserID);
     $Cache->delete_value('user_'.$OldPassKey);
 
-    update_tracker('change_passkey', array('oldpasskey' => $OldPassKey, 'newpasskey' => $NewPassKey));
+    //update_tracker('change_passkey', array('oldpasskey' => $OldPassKey, 'newpasskey' => $NewPassKey));
+    $master->tracker->changePasskey($OldPassKey, $NewPassKey);
 }
 
 $SQL.="WHERE m.ID='".db_string($UserID)."'";
@@ -307,6 +305,10 @@ if (check_perms('site_set_language')) {
         $Cache->delete_value('user_langs_'.$UserID);
     }
 }
+
+$trackerOptions = $master->db->raw_query("SELECT torrent_pass, can_leech, (Visible='1' AND IP!='127.0.0.1') AS visible, track_ipv6 FROM users_main WHERE ID=:userID", [':userID' => $UserID])->fetch();
+$master->tracker->updateUser($trackerOptions['torrent_pass'], $trackerOptions['can_leech'], $trackerOptions['visible'], $trackerOptions['track_ipv6']);
+
 
 if ($ResetPassword) {
     logout();

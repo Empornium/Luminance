@@ -84,8 +84,6 @@ $DB->query("UPDATE forums_topics SET $SET_LASTPOST_INFO
                                          StickyPostID = '$OldStickyPostID',
                                          NumPosts=(NumPosts-$NumSplitPosts) WHERE ID='$TopicID'");
 
-$DB->query("DELETE FROM forums_last_read_topics WHERE TopicID='$TopicID'");
-
 // move the selected posts
 $DB->query("UPDATE forums_posts SET TopicID='$SplitTopicID', Body=CONCAT_WS( '\n\n', Body, '[align=right][size=0][i]split from thread[/i][br]\'$OldTitle\'[/size][/align]') WHERE TopicID='$TopicID' AND ID='$PostID'");
 
@@ -108,5 +106,11 @@ for ($i=0;$i<=$CatalogueID;$i++) {
     $Cache->delete_value('thread_'.$TopicID.'_catalogue_'.$i);
     $Cache->delete_value('thread_'.$SplitTopicID.'_catalogue_'.$i);
 }
+
+// In rare occasions, a user may have been notified of a new post between its creation and deletion.
+// Because a direct deletion does not leave any notification in the thread
+// and in order to avoid a subscription counting bug (mantis issue #273),
+// we must delete the cache key of all users subscribed to this thread.
+deleteTopicSubCounter($TopicID);
 
 echo json_encode(array(true));

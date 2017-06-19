@@ -22,12 +22,13 @@ show_header('Manage Categories', 'jquery');
 
     <table>
         <tr class="head">
-            <td colspan="4">Add a new category</td>
+            <td colspan="5">Add a new category</td>
         </tr>
         <tr class="colhead">
             <td width="28%">Image</td>
             <td width="20%">Name</td>
-            <td width="39%">Tag</td>
+            <td width="29%">Tag</td>
+            <td width="10%">Open</td>
             <td width="13%">Submit</td>
         </tr>
         <tr>
@@ -51,6 +52,9 @@ show_header('Manage Categories', 'jquery');
                 <input class="long"  type="text" name="tag" />
             </td>
             <td>
+                <input type="checkbox" value="1" checked="checked" name="open" />
+            </td>
+            <td>
                 <input type="submit" value="Create" />
             </td>
         </form>
@@ -61,7 +65,8 @@ show_header('Manage Categories', 'jquery');
         <tr class="colhead">
             <td width="28%">Image</td>
             <td width="20%">Name</td>
-            <td width="39%">Tag</td>
+            <td width="29%">Tag</td>
+            <td width="10%">Open</td>
             <td width="13%">Submit</td>
         </tr>
         <?php
@@ -69,10 +74,11 @@ show_header('Manage Categories', 'jquery');
         id,
         name,
         image,
-        tag
+        tag,
+        open
         FROM categories");
 
-        while (list($id, $name, $image, $tag) = $DB->next_record()) {
+        while (list($id, $name, $image, $tag, $open) = $DB->next_record()) {
             ?>
             <tr>
             <form action="tools.php" method="post">
@@ -96,6 +102,9 @@ show_header('Manage Categories', 'jquery');
                 </td>
                 <td>
                     <input type="text" class="long"  name="tag" value="<?= display_str($tag) ?>" />
+                </td>
+                <td>
+                    <input type="checkbox" name="open" value="1" <?php  if($open)echo ' checked="checked"';?>/>
                 </td>
                 <td>
                     <input type="submit" name="submit" value="Edit" />

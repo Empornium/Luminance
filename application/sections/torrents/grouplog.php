@@ -2,8 +2,7 @@
 $GroupID = $_GET['groupid'];
 if (!is_number($GroupID)) { error(404); }
 
-include(SERVER_ROOT.'/classes/class_text.php');
-$Text = new TEXT;
+$Text = new Luminance\Legacy\Text;
 
 show_header("History for Group $GroupID");
 
