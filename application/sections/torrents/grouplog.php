@@ -9,7 +9,7 @@ show_header("History for Group $GroupID");
 $Groups = get_groups(array($GroupID), true, true);
 if (!empty($Groups['matches'][$GroupID])) {
     $Group = $Groups['matches'][$GroupID];
-    $Title = '<a href="torrents.php?id='.$GroupID.'">'.$Group['Name'].'</a>';
+    $Title = '<a href="/torrents.php?id='.$GroupID.'">'.$Group['Name'].'</a>';
     list($tID, $Torrents) = each($Group['Torrents']);
     $IsAnon = $Torrents['Anonymous'];
     $AuthorID = $Torrents['UserID'];

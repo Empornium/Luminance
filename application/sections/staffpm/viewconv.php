@@ -7,14 +7,11 @@ if ($IsFLS) {
 $Text = new Luminance\Legacy\Text;
 
 if ($ConvID = (int) $_GET['id']) {
+    // Is the user allowed to access this StaffPM
+    check_access($ConvID);
     // Get conversation info
     $DB->query("SELECT Subject, UserID, Level, AssignedToUser, Unread, Status, StealthResolved, ResolverID, Urgent FROM staff_pm_conversations WHERE ID=$ConvID");
     list($Subject, $TargetUserID, $Level, $AssignedToUser, $Unread, $Status, $StealthResolved, $ResolverID, $Urgent) = $DB->next_record();
-
-    if (!(($TargetUserID == $LoggedUser['ID']) || ($AssignedToUser == $LoggedUser['ID']) || (($Level > 0 && $Level <= $LoggedUser['Class']) || ($Level == 0 && $IsFLS)))) {
-    // User is trying to view someone else's conversation
-        error(403);
-    }
 
     $IsResolved = $Status == 'Resolved' || $Status == 'User Resolved';
 
@@ -54,21 +51,21 @@ if ($ConvID = (int) $_GET['id']) {
     <h2>Staff PM - <?=display_str($Subject)?></h2>
     <div class="linkbox">
 <?php  	if ($IsStaff) { ?>
-        [ &nbsp;<a href="staffpm.php?view=my">My unanswered<?=$NumMy>0?" ($NumMy)":''?></a>&nbsp; ] &nbsp;
+        [ &nbsp;<a href="/staffpm.php?view=my">My unanswered<?=$NumMy>0?" ($NumMy)":''?></a>&nbsp; ] &nbsp;
 <?php  	}
         if ($IsFLS) { ?>
-        [ &nbsp;<a href="staffpm.php?view=unanswered">All unanswered<?=$NumUnanswered>0?" ($NumUnanswered)":''?></a>&nbsp; ] &nbsp;
-        [ &nbsp;<a href="staffpm.php?view=open">Open<?=$NumOpen>0?" ($NumOpen)":''?></a>&nbsp; ] &nbsp;
-        [ &nbsp;<a href="staffpm.php?view=resolved">Resolved</a>&nbsp; ] &nbsp;
+        [ &nbsp;<a href="/staffpm.php?view=unanswered">All unanswered<?=$NumUnanswered>0?" ($NumUnanswered)":''?></a>&nbsp; ] &nbsp;
+        [ &nbsp;<a href="/staffpm.php?view=open">Open<?=$NumOpen>0?" ($NumOpen)":''?></a>&nbsp; ] &nbsp;
+        [ &nbsp;<a href="/staffpm.php?view=resolved">Resolved</a>&nbsp; ] &nbsp;
 <?php       if (check_perms('admin_stealth_resolve')) { ?>
-        [ &nbsp;<a href="staffpm.php?view=stealthresolved">Stealth Resolved</a>&nbsp; ] &nbsp;
+        [ &nbsp;<a href="/staffpm.php?view=stealthresolved">Stealth Resolved</a>&nbsp; ] &nbsp;
 <?php       } ?>
-        [ &nbsp;<a href="staffpm.php?action=responses">Common Answers</a>&nbsp; ] &nbsp;
+        [ &nbsp;<a href="/staffpm.php?action=responses">Common Answers</a>&nbsp; ] &nbsp;
 <?php       if (check_perms('admin_staffpm_stats')) { ?>
-        [ &nbsp;<a href="staffpm.php?action=stats">StaffPM Stats</a>&nbsp; ]
+        [ &nbsp;<a href="/staffpm.php?action=stats">StaffPM Stats</a>&nbsp; ]
 <?php       }
         } else { ?>
-        [ &nbsp;<a href="staffpm.php">Back to inbox</a>&nbsp; ]
+        [ &nbsp;<a href="/staffpm.php">Back to inbox</a>&nbsp; ]
 <?php   } ?>
 
         <br />

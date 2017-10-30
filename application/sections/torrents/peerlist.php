@@ -95,9 +95,9 @@ $DB->set_query_id($Result);
             <td><?php
                 if ($Active && $Port && (check_perms('users_mod') || $PeerUserID==$LoggedUser['ID'] ) ) {
                     $link = 'user.php?action=connchecker&checkuser='.$PeerUserID.'&checkip='.$IP.'&checkport='.$Port;
-                    if ($Connectable=='yes') echo '<a href="'.$link.'" style="color:green">Yes</a>' ;
-                    elseif ($Connectable=='no') echo'<a href="'.$link.'" style="color:red">No</a>';
-                    else echo'<a href="'.$link.'" style="color:darkgrey">?</a>';
+                    if ($Connectable=='yes') echo '<a href="/'.$link.'" style="color:green">Yes</a>' ;
+                    elseif ($Connectable=='no') echo'<a href="/'.$link.'" style="color:red">No</a>';
+                    else echo'<a href="/'.$link.'" style="color:darkgrey">?</a>';
                 } else {
                     if ($Connectable=='yes') echo '<span style="color:green">Yes</span>' ;
                     elseif ($Connectable=='no') echo'<span style="color:red">No</span>';

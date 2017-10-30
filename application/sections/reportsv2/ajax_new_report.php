@@ -66,7 +66,7 @@ $DB->query("SELECT
         <table>
             <tr>
                 <td class='center'>
-                    <a href="reportsv2.php?view=report&amp;id=<?=$ReportID?>">Report <?=$ReportID?></a> for torrent <?=$TorrentID?> (deleted) has been automatically resolved. <input type="button" value="Clear" onclick="ClearReport(<?=$ReportID?>);" />
+                    <a href="/reportsv2.php?view=report&amp;id=<?=$ReportID?>">Report <?=$ReportID?></a> for torrent <?=$TorrentID?> (deleted) has been automatically resolved. <input type="button" value="Clear" onclick="ClearReport(<?=$ReportID?>);" />
                 </td>
             </tr>
         </table>
@@ -110,16 +110,16 @@ $DB->query("SELECT
                 </div>
                 <table cellpadding="5">
                     <tr>
-                        <td class="label"><a href="reportsv2.php?view=report&amp;id=<?=$ReportID?>">Reported </a>Torrent:</td>
+                        <td class="label"><a href="/reportsv2.php?view=report&amp;id=<?=$ReportID?>">Reported </a>Torrent:</td>
                         <td colspan="3">
 <?php 		if (!$GroupID) { ?>
-                            <a href="log.php?search=Torrent+<?=$TorrentID?>"><?=$TorrentID?></a> (Deleted)
+                            <a href="/log.php?search=Torrent+<?=$TorrentID?>"><?=$TorrentID?></a> (Deleted)
 <?php 		} else { ?>
                             <?=$LinkName?>
-                            <a href="torrents.php?action=download&amp;id=<?=$TorrentID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
-                            uploaded by <a href="user.php?id=<?=$UploaderID?>"><?=$UploaderName?></a> <?=time_diff($Time)?>
+                            <a href="/torrents.php?action=download&amp;id=<?=$TorrentID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
+                            uploaded by <a href="/user.php?id=<?=$UploaderID?>"><?=$UploaderName?></a> <?=time_diff($Time)?>
                             <br />
-                            <div style="text-align: right;">was reported by <a href="user.php?id=<?=$ReporterID?>"><?=$ReporterName?></a> <?=time_diff($ReportedTime)?> for the reason: <strong><?=$ReportType['title']?></strong></div>
+                            <div style="text-align: right;">was reported by <a href="/user.php?id=<?=$ReporterID?>"><?=$ReporterName?></a> <?=time_diff($ReportedTime)?> for the reason: <strong><?=$ReportType['title']?></strong></div>
         <?php 		$DB->query("SELECT r.ID
                             FROM reportsv2 AS r
                             LEFT JOIN torrents AS t ON t.ID=r.TorrentID
@@ -129,7 +129,7 @@ $DB->query("SELECT
 
                 if ($GroupOthers > 0) { ?>
                             <div style="text-align: right;">
-                                <a href="reportsv2.php?view=group&amp;id=<?=$GroupID?>">There <?=(($GroupOthers > 1) ? "are $GroupOthers other reports" : "is 1 other report")?> for torrent(s) in this group</a>
+                                <a href="/reportsv2.php?view=group&amp;id=<?=$GroupID?>">There <?=(($GroupOthers > 1) ? "are $GroupOthers other reports" : "is 1 other report")?> for torrent(s) in this group</a>
                             </div>
         <?php  		$DB->query("SELECT t.UserID
                             FROM reportsv2 AS r
@@ -140,7 +140,7 @@ $DB->query("SELECT
 
                 if ($UploaderOthers > 0) { ?>
                             <div style="text-align: right;">
-                                <a href="reportsv2.php?view=uploader&amp;id=<?=$UploaderID?>">There <?=(($UploaderOthers > 1) ? "are $UploaderOthers other reports" : "is 1 other report")?> for torrent(s) uploaded by this user</a>
+                                <a href="/reportsv2.php?view=uploader&amp;id=<?=$UploaderID?>">There <?=(($UploaderOthers > 1) ? "are $UploaderOthers other reports" : "is 1 other report")?> for torrent(s) uploaded by this user</a>
                             </div>
         <?php  		}
 
@@ -160,7 +160,7 @@ $DB->query("SELECT
                     while (list($RequestID, $FillerID, $FillerName, $FilledTime) = $DB->next_record()) {
             ?>
                                 <div style="text-align: right;">
-                                    <a href="user.php?id=<?=$FillerID?>"><?=$FillerName?></a> used this torrent to fill <a href="requests.php?action=view&amp;id=<?=$RequestID?>">this request</a> <?=time_diff($FilledTime)?>
+                                    <a href="/user.php?id=<?=$FillerID?>"><?=$FillerName?></a> used this torrent to fill <a href="/requests.php?action=view&amp;id=<?=$RequestID?>">this request</a> <?=time_diff($FilledTime)?>
                                 </div>
             <?php 		}
                 }
@@ -191,7 +191,7 @@ $DB->query("SELECT
                         $Link = $local_url;
                     }
         ?>
-                            <a href="<?=$Link?>"><?=$Link?></a>
+                            <a href="/<?=$Link?>"><?=$Link?></a>
         <?php
                 }
         ?>
@@ -234,8 +234,8 @@ $DB->query("SELECT
             ?>
                                 <?=($First ? "" : "<br />")?>
                                 <?=$ExtraLinkName?>
-                                <a href="torrents.php?action=download&amp;id=<?=$ExtraID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
-                                uploaded by <a href="user.php?id=<?=$ExtraUploaderID?>"><?=$ExtraUploaderName?></a>
+                                <a href="/torrents.php?action=download&amp;id=<?=$ExtraID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
+                                uploaded by <a href="/user.php?id=<?=$ExtraUploaderID?>"><?=$ExtraUploaderName?></a>
                                     <?=time_diff($ExtraTime)?>
                                 [<a title="Close this report and create a new dupe report with this torrent as the reported one"
                                     href="#"
@@ -356,7 +356,7 @@ $DB->query("SELECT
                                         $Extras = explode(" ", $ExtraIDs);
                                         $Value = "";
                                         foreach ($Extras as $ExtraID) {
-                                            $Value .= 'http://'.SITE_URL.'/details.php?id='.$ExtraID.' ';
+                                            $Value .= "/details.php?id={$ExtraID} ";
                                         }
                                         echo 'value="'.trim($Value).'"';
                                     } ?>/>

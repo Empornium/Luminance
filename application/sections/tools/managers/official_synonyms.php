@@ -80,7 +80,7 @@ printRstMessage();
                         <input type="hidden" name="parenttagid" value="<?= $ParentTagID ?>" />
                         <tr class="colhead" >
                             <td style="width:20px;text-align:right;"><input type="checkbox" onclick="toggleChecks('tt_<?=$ParentTagID?>',this)"  /></td>
-                            <td style="width:170px"><a href="torrents.php?taglist=<?= $ParentTagName ?>" ><?= $ParentTagName ?></a>&nbsp;(<?= $Uses ?>)</td>
+                            <td style="width:170px"><a href="/torrents.php?taglist=<?= $ParentTagName ?>" ><?= $ParentTagName ?></a>&nbsp;(<?= $Uses ?>)</td>
                         </tr>
                         <?php
                         $LastParentTagName = $ParentTagName;

@@ -1,4 +1,6 @@
 <?php
+authorize();
+
 if (isset($_POST['delete'])) {
     $Action = "delete";
 } elseif (isset($_POST['unread'])) {

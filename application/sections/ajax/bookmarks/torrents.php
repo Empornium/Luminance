@@ -78,20 +78,20 @@ foreach ($TorrentList as $GroupID=>$Group) {
         } else {
             $Tags[$Tag]['count']++;
         }
-        $TorrentTags[]='<a href="torrents.php?taglist='.$Tag.'">'.$Tag.'</a>';
+        $TorrentTags[]='<a href="/torrents.php?taglist='.$Tag.'">'.$Tag.'</a>';
     }
     $PrimaryTag = $TagList[0];
     $TorrentTags = implode(' ', $TorrentTags);
     $TorrentTags='<br /><div class="tags">'.$TorrentTags.'</div>';
 
-    $DisplayName = '<a href="torrents.php?id='.$GroupID.'" title="View Torrent">'.$GroupName.'</a>';
+    $DisplayName = '<a href="/torrents.php?id='.$GroupID.'" title="View Torrent">'.$GroupName.'</a>';
 
     // Start an output buffer, so we can store this output in $TorrentTable
     ob_start();
 
         list($TorrentID, $Torrent) = each($Torrents);
 
-        $DisplayName = '<a href="torrents.php?id='.$GroupID.'" title="View Torrent">'.$GroupName.'</a>';
+        $DisplayName = '<a href="/torrents.php?id='.$GroupID.'" title="View Torrent">'.$GroupName.'</a>';
 
         if (!empty($Torrent['FreeTorrent'])) {
                 $DisplayName .=' <strong>Freeleech!</strong>';

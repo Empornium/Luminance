@@ -38,12 +38,14 @@ body { background: #0d245a url('doodle/background_.png') repeat fixed !important
 }
 html {
     width: 100%;
+    height: 100%;
 }
 
 
 body {
     position: relative;
     width: 100%;
+    height: 100%;
     background: #1A2844; /*url('images/bg.jpg') no-repeat fixed;*/
     background-size: cover;
     font: normal 11pt "Lucida Grande", Helvetica, Arial, Verdana, sans-serif;
@@ -249,6 +251,19 @@ ul.thin li { margin:0px 0px; padding:0px; }
     padding: 0px 0px 35px;
     border-radius: 14px 14px 0 0;
 }
+
+#modal_content {
+    width: 90%;
+    min-width: 350px;
+    max-width: 1300px;
+    background: #334B7B;  /* ie fallback */
+    box-shadow: 0px 3px 30px -5px black;
+    margin: 40px auto 0px auto;
+    border: 1px solid rgba(30,60,120,.5);
+    padding: 0px 0px 15px;
+    border-radius: 14px 14px 0 0;
+}
+
 #schedule #content {
     color:#eee;
 }
@@ -386,6 +401,14 @@ span.inside_stat {
     fill: #d2d2d2;
 }
 
+.misc_icons {
+    fill: #2d3f68;
+}
+
+.misc_icons:hover {
+    fill: #5c7cbc;
+}
+
 #nav_userinfo > ul > .nav_icons {
     padding-right: 4px;
 }
@@ -440,7 +463,7 @@ li#nav_userinfo, #userinfo_tools{
     -webkit-transition: opacity ease-in 150ms, visibility 150ms, -webkit-transform ease-in 150ms;
 }
 #userinfo_username li ul {
-    left: 74px;
+    left: -54px;
     min-width: 140px;
 }
 li#nav_userinfo:hover ul, #userinfo_tools:hover li ul {
@@ -480,6 +503,9 @@ li#nav_userinfo:hover ul, #userinfo_tools:hover li ul {
     color:#F3F3F3;
     transition: background-color 0s;
     -webkit-transition: background-color 0s;
+}
+#userinfo_username li ul li a:hover > .nav_icons, #userinfo_tools li ul li a:hover > .nav_icons {
+    fill: #F3F3F3;
 }
 
 #nav_tools > a:after, #nav_userinfo > a:after {
@@ -2654,6 +2680,11 @@ img.win.flash {
 }
 .pager_on {
     color: #abf;
+}
+
+#site_debug {
+    color: black;
+    font-size: 1.2em;
 }
 
 div#site_debug {

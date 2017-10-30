@@ -56,19 +56,20 @@ class SetupPlugin extends Plugin {
         } else {
 
             // Important site related stuff
-            define('SITE_NAME',       $this->readline("Site name: "));
-            define('NONSSL_SITE_URL', $this->readline("Site URL: "));
-            define('SSL_SITE_URL',    $this->readline("Site TLS URL: "));
+            define('SITE_NAME',          $this->readline("Site name: "));
+            define('NONSSL_SITE_URL',    $this->readline("Site URL: "));
+            define('SSL_SITE_URL',       $this->readline("Site TLS URL: "));
 
             // Database credentials
-            define('SQLDB',           $this->readline("Database name: "));
-            define('SQLLOGIN',        $this->readline("Database username: "));
-            define('SQLPASS',         $this->readline("Database password: "));
+            define('SQLDB',              $this->readline("Database name: "));
+            define('SQLLOGIN',           $this->readline("Database username: "));
+            define('SQLPASS',            $this->readline("Database password: "));
 
             // Auto generated keys
-            define('ENCKEY',          $this->crypto->random_string(32));
-            define('RSS_HASH',        $this->crypto->random_string(32));
-            define('TRACKER_SECRET',  $this->crypto->random_string(32));
+            define('ENCKEY',             $this->crypto->random_string(32));
+            define('RSS_HASH',           $this->crypto->random_string(32));
+            define('TRACKER_SECRET',     $this->crypto->random_string(32));
+            define('TRACKER_REPORTKEY',  $this->crypto->random_string(32));
 
         }
         $settings = parse_ini_file($this->master->application_path."/Builtins/Setup/settings.ini.template", true);
@@ -171,10 +172,10 @@ class SetupPlugin extends Plugin {
         $this->auth->createUser($adminUsername, $adminPassword, $adminEmail);
 
         // Won't work yet.
-        //$adminUserID = $this->users->get('Username = :username', [':username'=>$adminUsername])->ID;
-        //$adminAccount = $this->users->load($adminUserID);
-        //$adminAccount->PermissionID = 1;
-        //$this->users->save($adminAccount);
+        $adminUserID = $this->users->get('Username = :username', [':username'=>$adminUsername])->ID;
+        $adminAccount = $this->users->load($adminUserID);
+        $adminAccount->PermissionID = 1;
+        $this->users->save($adminAccount);
     }
 
     protected function populateTables() {
@@ -192,7 +193,7 @@ class SetupPlugin extends Plugin {
         if($this->db->raw_query("SELECT COUNT(*) FROM permissions")->fetchColumn() == 0) {
             $adminClass = new Permission();
             $adminClass->ID    = 1;
-            $adminClass->Name  = 'Admin';
+            $adminClass->Name  = 'SysOp';
             $adminClass->Level = 1000;
             $adminClass->Color = 'FF0000';
             $adminClass->MaxSigLength = 0;
@@ -202,7 +203,9 @@ class SetupPlugin extends Plugin {
             $adminClass->IsUserClass = 1;
             $adminClass->isAutoPromote = 0;
 
-            $adminClass->Values = serialize(['admin_manage_permissions' => 1]);
+            // Generate an array with every permission set
+            include_once(SERVER_ROOT.'/Legacy/permissions_form.php');
+            $adminClass->Values = serialize(array_fill_keys(array_keys($PermissionsArray), '1'));
             $this->permissions->save($adminClass);
         }
     }
@@ -295,9 +298,9 @@ class SetupPlugin extends Plugin {
                 if (count($parts) != 2) {
                     $oldUser['Email'] = $oldUser['Email']."@".$this->settings->main->site_url;
                 }
-                $email = $this->emailManager->newEmail(intval($ID), $oldUser['Email']);
+                $email = $this->emailManager->newEmail(intval($ID), $oldUser['Email'], false);
             } else {
-                $email = $this->emailManager->newEmail(intval($ID), $oldUser['Username']."@".$this->settings->main->site_url);
+                $email = $this->emailManager->newEmail(intval($ID), $oldUser['Username']."@".$this->settings->main->site_url, false);
             }
             $user->EmailID = $email->ID;
 
@@ -320,7 +323,9 @@ class SetupPlugin extends Plugin {
 
         $email = $this->emails->load($user->EmailID);
         if (!$email) {
-            $email = $this->emailManager->newEmail(intval($ID), $oldUser['Email']);
+            $email = $this->emailManager->newEmail(intval($ID), $oldUser['Email'], false);
+            $email->setFlags(Email::IS_DEFAULT);
+            $this->emails->save($email);
             $user->EmailID = $email->ID;
             $this->users->save($user);
         }
@@ -332,7 +337,7 @@ class SetupPlugin extends Plugin {
         $email = $this->emails->get('Address = :email', [':email'=>$Email]);
         $oldEmail = $this->db->raw_query("SELECT uhe.`UserID`, uhe.`Email`, uhe.`Time` FROM `users_history_emails` AS uhe WHERE uhe.`Email` = ?", [$Email])->fetch();
         if (!$email) {
-            $email = $this->emailManager->newEmail($oldEmail['UserID'], $oldEmail['Email']);
+            $email = $this->emailManager->newEmail($oldEmail['UserID'], $oldEmail['Email'], false);
             $email->Changed = $oldEmail['Time'];
             $this->emails->save($email);
         }

@@ -126,8 +126,8 @@ foreach ($Blog as $BlogItem) {
                 <div class="head">
                     <?=$Title?> - <?=time_diff($BlogTime);?> by <?=$Author?>
         <?php  if (check_perms('admin_manage_blog')) { ?>
-                    - <a href="staffblog.php?action=editblog&amp;id=<?=$BlogID?>">[Edit]</a>
-                    <a href="staffblog.php?action=deleteblog&amp;id=<?=$BlogID?>&amp;auth=<?=$LoggedUser['AuthKey']?>" onClick="return confirm('Do you want to delete this?')">[Delete]</a>
+                    - <a href="/staffblog.php?action=editblog&amp;id=<?=$BlogID?>">[Edit]</a>
+                    <a href="/staffblog.php?action=deleteblog&amp;id=<?=$BlogID?>&amp;auth=<?=$LoggedUser['AuthKey']?>" onClick="return confirm('Do you want to delete this?')">[Delete]</a>
          <?php  } ?>
                 </div>
 

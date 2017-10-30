@@ -32,12 +32,7 @@ $Val->SetFields('avatar',0,'image', 'Avatar: The image URL you entered was not v
 $Val->SetFields('info',0,'desc','Info',array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>20000));
 $Val->SetFields('signature',0,'desc','Signature',array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>$Permissions['MaxSigLength'], 'dimensions'=>array(SIG_MAX_WIDTH, SIG_MAX_HEIGHT)));
 $Val->SetFields('torrentsignature',0,'desc','Signature',array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>$Permissions['MaxSigLength']));
-$Val->SetFields('email',1,"email","You did not enter a valid email address.");
 $Val->SetFields('irckey',0,"string","You did not enter a valid IRCKey, must be between 6 and 32 characters long.",array('minlength'=>6,'maxlength'=>32));
-$Val->SetFields('cur_pass',0,"string","You did not enter a valid password, must be between 6 and 40 characters long.",array('minlength'=>6,'maxlength'=>40));
-$Val->SetFields('new_pass_1',0,"string","You did not enter a valid password, must be between 6 and 40 characters long.",array('minlength'=>6,'maxlength'=>40));
-$Val->SetFields('new_pass_2',1,"compare","Your passwords do not match.",array('comparefield'=>'new_pass_1'));
-
 
 $Err = $Val->ValidateForm($_POST);
 
@@ -108,33 +103,6 @@ foreach ($Bounties as $B) {
     }
 }
 // End building $Paranoia
-
-//Email change
-$DB->query("SELECT Email FROM users_main WHERE ID=".$UserID);
-list($CurEmail) = $DB->next_record();
-if ($CurEmail != $_POST['email']) {
-    if (!$master->auth->check_login($UserID, $_POST['cur_pass'])) {
-        $Err = "You did not enter the correct password.";
-    }
-    if (!$Err) {
-        $NewEmail = db_string($_POST['email']);
-        $this->master->emailManager->newEmail($UserID, $_POST['email']);
-    } else {
-        error($Err);
-    }
-}
-//End Email change
-
-if (!$Err && ($_POST['cur_pass'] || $_POST['new_pass_1'] || $_POST['new_pass_2'])) {
-
-    if ($master->auth->check_login($UserID, $_POST['cur_pass'])) {
-        if ($_POST['new_pass_1'] && $_POST['new_pass_2']) {
-            $ResetPassword = true;
-        }
-    } else {
-        $Err = "You did not enter the correct password.";
-    }
-}
 
 if (!$Err && ($UserID == $LoggedUser['ID'])) {
     if ($LoggedUser['DisableAvatar'] && $_POST['avatar'] != $U['Avatar']) {
@@ -244,7 +212,6 @@ $SQL="UPDATE users_main AS m JOIN users_info AS i ON m.ID=i.UserID SET
     i.DownloadAlt='$DownloadAlt',
     m.track_ipv6='$TrackIPv6',
     i.UnseededAlerts='$UnseededAlerts',
-    m.Email='".db_string($_POST['email'])."',
     m.IRCKey='".db_string($_POST['irckey'])."',
     m.Flag='".db_string($Flag)."',
     i.TorrentSignature='".db_string($_POST['torrentsignature'])."',
@@ -259,10 +226,6 @@ if (!empty($_POST['resetlastbrowse'])) {
 }
 
 $SQL .= "m.Paranoia='".db_string(serialize($Paranoia))."'";
-
-if ($ResetPassword) {
-    $master->auth->set_password($UserID, $_POST['new_pass_1']);
-}
 
 if (isset($_POST['resetpasskey'])) {
     $UserInfo = user_heavy_info($UserID);
@@ -308,10 +271,5 @@ if (check_perms('site_set_language')) {
 
 $trackerOptions = $master->db->raw_query("SELECT torrent_pass, can_leech, (Visible='1' AND IP!='127.0.0.1') AS visible, track_ipv6 FROM users_main WHERE ID=:userID", [':userID' => $UserID])->fetch();
 $master->tracker->updateUser($trackerOptions['torrent_pass'], $trackerOptions['can_leech'], $trackerOptions['visible'], $trackerOptions['track_ipv6']);
-
-
-if ($ResetPassword) {
-    logout();
-}
 
 header('Location: user.php?action=edit&userid='.$UserID);

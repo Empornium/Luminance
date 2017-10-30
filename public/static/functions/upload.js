@@ -158,6 +158,8 @@ function Upload_Quick_Preview() {
             else $('#messagebar').hide()
             $('#contentpreview').raw().innerHTML = x[1];
             $('.uploadbody').hide();
+			Prism.highlightAll();
+			lazy_load();
         }
 	});
 }

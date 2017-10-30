@@ -158,6 +158,17 @@ ul.thin li { margin:0px 0px; padding:0px; }
     /* overflow: hidden; */
 }
 
+#modal_content {
+    width: 90%;
+    min-width: 350px;
+    max-width: 1200px;
+    background-color: #e0e8eb;
+    margin: 0px auto 0px auto;
+    padding: 0.6em 0.6em 30px;
+    border: 1px solid #98AAB1;
+    /* overflow: hidden; */
+}
+
 #footer {
     margin-top: 40px;
     width: 100%;
@@ -286,6 +297,9 @@ table.userinfo_stats td {
     background-color: #fff;
     color: #0261a3;
 }
+#header_bottom a:hover > .nav_icons {
+    fill: #0261a3;
+}
 #header_bottom {
   /*  background-color: #036;        #024;      #024a7c;  #0261a3 */
     background: #0261a3 url('images/pagetop.jpg') repeat-x;
@@ -304,6 +318,14 @@ table.userinfo_stats td {
 
 .nav_icons {
     fill: #d2d2d2;
+}
+
+.misc_icons {
+    fill: #00436b;
+}
+
+.misc_icons:hover {
+    fill: #248ecd;
 }
 
 #minor_stats {
@@ -342,7 +364,7 @@ table.userinfo_stats td {
     z-index: 10;
 }
 #userinfo_username li ul {
-    left: 66px;
+    left: -54px;
     top: 17px;
 }
 
@@ -354,6 +376,9 @@ table.userinfo_stats td {
     background-color: white;
     color: #00436b;
 }
+#userinfo_username li ul li a:hover > .nav_icons, #userinfo_tools li ul li a:hover > .nav_icons {
+    fill: #00436b;
+}
 
 #userinfo_username {
     margin-right: 20px;
@@ -363,14 +388,16 @@ table.userinfo_stats td {
     position: relative;
 }
 
-#nav_userinfo, #nav_tools {
-    padding-right: 8px !important;
-    margin: 0px 7px !important;
-    background-image: url(images/dropdown_arrow.png);
-    background-repeat:no-repeat;
-    background-position: right center;
+#nav_tools > a:after, #nav_userinfo > a:after {
+    content:"\25BC";
+    font-weight: bold;
 }
-#nav_upload,#nav_donate,#nav_useredit,#nav_logout {
+#major_stats > ul {
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+#nav_upload, #nav_donate {
     margin: 0px 7px !important;
 }
 
@@ -673,8 +700,7 @@ input.hidden {
 /* Layout (Any page) */
 
 .thin {
-    width: 90%;
-    min-width: 960px;
+    width: 96%;
     margin-left:auto;
     margin-right:auto;
 }

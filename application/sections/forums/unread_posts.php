@@ -46,11 +46,11 @@ $Pages=get_pages($Page,$Results,$PerPage,9);
 ?>
 <div class="thin">
     <?php  print_latest_forum_topics(); ?>
-    <div class="linkbox">[<a href="forums.php?action=catchup&amp;forumid=all&amp;auth=<?=$LoggedUser['AuthKey']?>">Catch up all</a>]</div>
+    <div class="linkbox">[<a href="/forums.php?action=catchup&amp;forumid=all&amp;auth=<?=$LoggedUser['AuthKey']?>">Catch up all</a>]</div>
     <div class="linkbox pager">
         <?=$Pages?>
     </div>
-    <div class="head"><a href="forums.php">Forums</a> &gt; Unread Posts</div>
+    <div class="head"><a href="/forums.php">Forums</a> &gt; Unread Posts</div>
     <table class="forum_index">
         <tr class="colhead">
             <td style="width:2%;"></td>
@@ -85,15 +85,15 @@ $Pages=get_pages($Page,$Results,$PerPage,9);
                     <td class="<?=$Read?>" title="<?=ucfirst($Read)?>"></td>
                     <td>
                           <h4 class="min_padding">
-                                <a href="forums.php?action=viewforum&amp;forumid=<?=$ForumID?>" title="<?=display_str($ForumDescription)?>"><?=display_str($ForumName)?></a>
+                                <a href="/forums.php?action=viewforum&amp;forumid=<?=$ForumID?>" title="<?=display_str($ForumDescription)?>"><?=display_str($ForumName)?></a>
                           </h4>
                     </td>
                     <td>
                           <span style="float:left;" class="last_topic">
-                                <a href="forums.php?action=viewthread&amp;threadid=<?=$ThreadID?>" title="<?=display_str($Title)?>"><?=display_str(cut_string($Title, 50, 0))?></a>
+                                <a href="/forums.php?action=viewthread&amp;threadid=<?=$ThreadID?>" title="<?=display_str($Title)?>"><?=display_str(cut_string($Title, 50, 0))?></a>
                           </span>
                           <span style="float: left;" class="last_read" title="Jump to last read">
-                                <a href="forums.php?action=viewthread&amp;threadid=<?=$ThreadID;if($LastReadPostID>0)echo"&amp;postid=$LastReadPostID#post$LastReadPostID"?>"></a>
+                                <a href="/forums.php?action=viewthread&amp;threadid=<?=$ThreadID;if($LastReadPostID>0)echo"&amp;postid=$LastReadPostID#post$LastReadPostID"?>"></a>
                           </span>
                           <span style="float:right;" class="last_poster">by <?=format_username($LastAuthorID, $LastPostAuthorName)?> <?=time_diff($LastPostTime,1)?></span>
                     </td>
@@ -107,7 +107,7 @@ $Pages=get_pages($Page,$Results,$PerPage,9);
     <div class="linkbox pager">
         <?=$Pages?>
     </div>
-    <div class="linkbox">[<a href="forums.php?action=catchup&amp;forumid=all&amp;auth=<?=$LoggedUser['AuthKey']?>">Catch up all</a>]</div>
+    <div class="linkbox">[<a href="/forums.php?action=catchup&amp;forumid=all&amp;auth=<?=$LoggedUser['AuthKey']?>">Catch up all</a>]</div>
 </div>
 
 <?php

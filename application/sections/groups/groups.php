@@ -81,7 +81,7 @@ if ($DB->record_count()==0) {
                 <input type="hidden" name="action" value="delete" />
                 <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
                 <td class="center" width="70%">
-                    <h3><a href="groups.php?groupid=<?=$ID?>"><?=display_str($Name)?></a></h3>
+                    <h3><a href="/groups.php?groupid=<?=$ID?>"><?=display_str($Name)?></a></h3>
                 </td>
                 <td width="20%">
                     <?=$Count?> members

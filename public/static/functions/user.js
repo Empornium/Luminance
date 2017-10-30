@@ -174,7 +174,7 @@ function ChangeTo(to) {
 			for(var i = 0; i < buttons.length; i++) {
 				buttons[i].setAttribute('onclick',"ChangeTo('text'); return false;");
 			}
-		})
+		});
 	}
 }
 

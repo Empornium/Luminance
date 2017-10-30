@@ -108,21 +108,21 @@ foreach ($Forums as $Forum) {
         <td class="<?=$Read?>" title="<?=ucfirst($Read)?>"></td>
         <td>
             <h4 class="min_padding">
-                <a href="forums.php?action=viewforum&amp;forumid=<?=$ForumID?>" title="<?=$ForumDescription?>"><?=display_str($ForumName)?></a>
+                <a href="/forums.php?action=viewforum&amp;forumid=<?=$ForumID?>" title="<?=$ForumDescription?>"><?=display_str($ForumName)?></a>
             </h4>
         </td>
 <?php if ($NumPosts == 0) { ?>
         <td colspan="3">
-            There are no topics here<?=($MinCreate<=$LoggedUser['Class']) ? ', <a href="forums.php?action=new&amp;forumid='.$ForumID.'">'.'create one'.'</a>' : ''?>.
+            There are no topics here<?=($MinCreate<=$LoggedUser['Class']) ? ', <a href="/forums.php?action=new&amp;forumid='.$ForumID.'">'.'create one'.'</a>' : ''?>.
         </td>
 <?php } else { ?>
         <td>
             <span style="float:left;" class="last_topic">
-                <a href="forums.php?action=viewthread&amp;threadid=<?=$LastTopicID?>" title="<?=display_str($LastTopic)?>"><?=display_str(cut_string($LastTopic, 50, 0))?></a>
+                <a href="/forums.php?action=viewthread&amp;threadid=<?=$LastTopicID?>" title="<?=display_str($LastTopic)?>"><?=display_str(cut_string($LastTopic, 50, 0))?></a>
             </span>
 <?php if (!empty($LastRead[$LastTopicID])) { ?>
             <span style="float: left;" class="last_read" title="Jump to last read">
-                <a href="forums.php?action=viewthread&amp;threadid=<?=$LastTopicID?>&amp;page=<?=$LastRead[$LastTopicID]['Page']?>#post<?=$LastRead[$LastTopicID]['PostID']?>"></a>
+                <a href="/forums.php?action=viewthread&amp;threadid=<?=$LastTopicID?>&amp;page=<?=$LastRead[$LastTopicID]['Page']?>#post<?=$LastRead[$LastTopicID]['PostID']?>"></a>
             </span>
 <?php } ?>
             <span style="float:right;" class="last_poster">by <?=format_username($LastAuthorID, $LastPostAuthorName)?> <?=time_diff($LastTime,1)?></span>

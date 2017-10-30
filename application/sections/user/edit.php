@@ -17,7 +17,6 @@ $DB->query("SELECT
             i.Avatar,
             i.Country,
             i.StyleID,
-            i.StyleURL,
             i.SiteOptions,
             i.UnseededAlerts,
             i.TimeZone,
@@ -26,14 +25,16 @@ $DB->query("SELECT
             m.Flag,
             i.DownloadAlt,
             i.TorrentSignature,
-            i.LastBrowse
+            i.LastBrowse,
+            i.RestrictedForums,
+            i.PermittedForums
             FROM users_main AS m
             JOIN users_info AS i ON i.UserID = m.ID
             LEFT JOIN permissions AS p ON p.ID=m.PermissionID
             WHERE m.ID = '".db_string($UserID)."'");
 
 list($Username,$Email,$IRCKey,$Paranoia,$Signature,$PermissionID,$CustomPermissions,$TrackIPv6,$Info,$Avatar,$Country,
-        $StyleID,$StyleURL,$SiteOptions,$UnseededAlerts,$TimeZone,$BlockPms,$CommentsNotify,$flag,$DownloadAlt,$TorrentSignature,$LastBrowse)=$DB->next_record(MYSQLI_NUM, array(3,6,13));
+        $StyleID,$SiteOptions,$UnseededAlerts,$TimeZone,$BlockPms,$CommentsNotify,$flag,$DownloadAlt,$TorrentSignature,$LastBrowse,$RestrictedForums,$PermittedForums)=$DB->next_record(MYSQLI_NUM, array(3,6,12));
 
 $Permissions = get_permissions($PermissionID);
 list($Class,$PermissionValues,$MaxSigLength,$MaxAvatarWidth,$MaxAvatarHeight)=array_values($Permissions);
@@ -133,8 +134,8 @@ $Forums = get_forums_info();
 $ForumCats = get_forum_cats();
 
 $Level = $Classes[$PermissionID]['Level'];
-$RestrictedForums = array_keys($LoggedUser['CustomForums'], 0);
-$PermittedForums = array_keys($LoggedUser['CustomForums'], 1);
+$RestrictedForums = (array)explode(',', $RestrictedForums);
+$PermittedForums  = (array)explode(',', $PermittedForums);
 
 $ForumsCatsInfo = array();
 foreach ($ForumCats as $ForumCatID => $ForumCatName)
@@ -452,7 +453,7 @@ echo $Val->GenerateJS('userform');
                               FROM users_languages AS ul
                               JOIN languages AS l ON l.ID=ul.LangID
                              WHERE UserID=$UserID");
-                    $Userlangs = $DB->to_array('LangID', MYSQL_ASSOC);
+                    $Userlangs = $DB->to_array('LangID', MYSQLI_ASSOC);
                     $Cache->cache_value('user_langs_'.$UserID, $Userlangs);
                 }
                 if ($Userlangs) {
@@ -473,7 +474,7 @@ echo $Val->GenerateJS('userform');
                 $SiteLanguages = $Cache->get_value('site_languages');
                 if ($SiteLanguages===false) {
                     $DB->query("SELECT ID, language FROM languages WHERE active='1' ORDER BY language");
-                    $SiteLanguages = $DB->to_array('ID', MYSQL_ASSOC);
+                    $SiteLanguages = $DB->to_array('ID', MYSQLI_ASSOC);
                     $Cache->cache_value('site_languages', $SiteLanguages);
                 }
 ?>
@@ -496,13 +497,6 @@ echo $Val->GenerateJS('userform');
 <?php
         }
 ?>
-            <tr>
-                <td class="label"><strong>Email</strong></td>
-                <td><input class="long" type="text" name="email" id="email" value="<?=display_str($Email)?>" />
-                    <p class="min_padding">If changing this field you must enter your current password in the "Current password" field before saving your changes.</p>
-                </td>
-            </tr>
-
 
             <tr>
                 <td colspan="2" class="right">
@@ -783,24 +777,8 @@ list($Invited) = $DB->next_record();
             </tr>
             <tr class="colhead">
                 <td colspan="2">
-                    <strong>Change password</strong>
+                    <strong>Reset passkey</strong>
                 </td>
-            </tr>
-            <tr>
-                <td class="label">&nbsp;</td>
-                <td><p>note: when changing your password you will be logged out of the site automatically, please login with your new password</p></td>
-            </tr>
-            <tr>
-                <td class="label"><strong>Current password</strong></td>
-                <td><input class="long" type="password" name="cur_pass" id="cur_pass" value="" /></td>
-            </tr>
-            <tr>
-                <td class="label"><strong>New password</strong></td>
-                <td><input class="long" type="password" name="new_pass_1" id="new_pass_1" value="" /></td>
-            </tr>
-            <tr>
-                <td class="label"><strong>Re-type new password</strong></td>
-                <td><input class="long" type="password" name="new_pass_2" id="new_pass_2" value="" /></td>
             </tr>
             <tr>
                 <td class="label"><strong>Reset passkey</strong></td>

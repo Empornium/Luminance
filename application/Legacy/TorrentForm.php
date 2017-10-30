@@ -121,7 +121,7 @@ class TorrentForm
                         <br/>[already loaded file]
 <?php                  } else {    ?>
                         <input type="hidden" name="MAX_FILE_SIZE" value="<?=MAX_FILE_SIZE_BYTES?>" />
-                        <input id="file" type="file" name="file_input" size="70" />
+                        <input id="file" type="file" name="file_input" size="70" accept=".torrent"/>
                         <span style="float:right">
                             <input type="submit" name="checkonly" title="to just do a dupecheck you can select a torrent file and click" value="check for dupes" />
                         </span>

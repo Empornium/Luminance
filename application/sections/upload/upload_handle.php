@@ -25,7 +25,6 @@ define('QUERY_EXCEPTION', true); // Shut up debugging
 
 // trim whitespace before setting/evaluating these fields
 $_POST['image'] = trim($_POST['image']);
-$_POST['desc'] = $_POST['desc'];
 $_POST['title'] = trim($_POST['title']);
 
 $Properties = array();
@@ -122,11 +121,11 @@ if ($DB->record_count() > 0) {
     list($ID) = $DB->next_record();
     $DB->query("SELECT TorrentID FROM torrents_files WHERE TorrentID = " . $ID);
     if ($DB->record_count() > 0) {
-        $Err = '<a href="details.php?id=' . $ID . '">The exact same torrent file already exists on the site!</a>';
+        $Err = '<a href="/details.php?id=' . $ID . '">The exact same torrent file already exists on the site!</a>';
     } else {
         //One of the lost torrents.
         $DB->query("INSERT INTO torrents_files (TorrentID, File) VALUES ($ID, '" . db_string($Tor->dump_data()) . "')");
-        $Err = '<a href="details.php?id=' . $ID . '">Thank you for fixing this torrent</a>';
+        $Err = '<a href="/details.php?id=' . $ID . '">Thank you for fixing this torrent</a>';
     }
 }
 
@@ -219,7 +218,7 @@ $Validate->SetFields('desc', '1', 'desc', 'Description', array('regex' => $white
 
 $Err = $Validate->ValidateForm($_POST, $Text); // Validate the form
 
-if (!$Err && !$Text->validate_bbcode($_POST['desc'],  get_permissions_advtags($LoggedUser['ID']), false)) {
+if (!$Err && !$Text->validate_bbcode($_POST['desc'],  get_permissions_advtags($LoggedUser['ID']), false, false)) {
         $Err = "There are errors in your bbcode (unclosed tags)";
 }
 
@@ -451,19 +450,8 @@ if(!empty($_POST['ignoredupes']) && $DupeResults['DupeResults']) { // means uplo
 
 //******************************************************************************//
 //--------------- IRC announce and feeds ---------------------------------------//
-$Announce = "";
 
-$Announce .= trim($Properties['Title']) . " ";
-$Title = $Announce;
-
-$AnnounceSSL = $Announce . " - https://" . SSL_SITE_URL . "/torrents.php?id=$GroupID / https://" . SSL_SITE_URL . "/torrents.php?action=download&id=$TorrentID";
-$Announce .= " - http://" . SITE_URL . "/torrents.php?id=$GroupID / http://" . SITE_URL . "/torrents.php?action=download&id=$TorrentID";
-
-$AnnounceSSL .= " - " . trim($Properties['TagList']);
-$Announce .= " - " . trim($Properties['TagList']);
-
-send_irc('PRIVMSG #' . SSL_SITE_URL . '-announce-ssl :' . $AnnounceSSL);
-send_irc('PRIVMSG #' . SITE_URL . '-announce :' . html_entity_decode($Announce));
+$Title = trim($Properties['Title']) . ' ';
 
 $Item = $Feed->torrent($Title,
                         $Text->strip_bbcode($Body),
@@ -544,7 +532,7 @@ if (!$Private) {
     <div class="thin">
         <div class="box pad shadow">
             <span style="font-size: 1.5em;">
-                Your torrent has been uploaded however, because you didn't choose the private option you <span class="red">must</span> download the torrent file from <a href="torrents.php?id=<?= $GroupID ?>">here</a> before you can start seeding.
+                Your torrent has been uploaded however, because you didn't choose the private option you <span class="red">must</span> download the torrent file from <a href="/torrents.php?id=<?= $GroupID ?>">here</a> before you can start seeding.
             </span>
         </div>
     </div>

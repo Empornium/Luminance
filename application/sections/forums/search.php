@@ -31,6 +31,9 @@ if (!empty($_GET['user'])) {
     $User = $_GET['user'];
     $DB->query("SELECT ID FROM users_main WHERE Username='".db_string($User)."'");
     list($AuthorID) = $DB->next_record();
+    if (is_null($AuthorID)) {
+        error('User does not exist.');
+    }
 } else {
     $User = '';
 }
@@ -74,7 +77,7 @@ if (!empty($_GET['threadid'])) {
 show_header('Forums'.' > '.'Search');
 ?>
 <div class="thin">
-    <h2><a href="forums.php">Forums</a> &gt; Search<?=$Title?></h2>
+    <h2><a href="/forums.php">Forums</a> &gt; Search<?=$Title?></h2>
     <form action="" method="get">
         <input type="hidden" name="action" value="search" />
         <table cellpadding="6" cellspacing="1" border="0" class="border" width="100%">
@@ -136,7 +139,7 @@ if (empty($ThreadID)) { ?>
 <?php 		} ?>
                 <td>
                     <input type="checkbox" name="forums[]" value="<?=$Forum['ID']?>" id="forum_<?=$Forum['ID']?>"<?php  if (isset($_GET['forums']) && in_array($Forum['ID'], $_GET['forums'])) { echo ' checked="checked"';} ?> />
-                    <label for="forum_<?=$Forum['ID']?>"><?=$Forum['Name']?></label>
+                    <label for="forum_<?=$Forum['ID']?>"><?=display_str($Forum['Name'])?></label>
                 </td>
 <?php  	}
     if ($Columns%5 == 0) { ?>
@@ -277,16 +280,16 @@ while (list($ID, $Title, $ForumID, $ForumName, $LastTime, $PostID) = $DB->next_r
 ?>
         <tr class="row<?=$Row?>">
             <td>
-                <a href="forums.php?action=viewforum&amp;forumid=<?=$ForumID?>"><?=$ForumName?></a>
+                <a href="/forums.php?action=viewforum&amp;forumid=<?=$ForumID?>"><?=display_str($ForumName)?></a>
             </td>
             <td>
 <?php  if (empty($ThreadID)) { ?>
-                <a href="forums.php?action=viewthread&amp;threadid=<?=$ID?>"><?=cut_string($Title, 80); ?></a>
+                <a href="/forums.php?action=viewthread&amp;threadid=<?=$ID?>"><?=cut_string($Title, 80); ?></a>
 <?php  } else { ?>
                 <?=cut_string($Title, 80); ?>
 <?php  }
    if ($Type == 'body') { ?>
-                <span style="float: right;" class="last_read" title="Jump to post"><a href="forums.php?action=viewthread&amp;threadid=<?=$ID?><?php  if (!empty($PostID)) { echo '&amp;postid='.$PostID.'#post'.$PostID; } ?>"></a></span>
+                <span style="float: right;" class="last_read" title="Jump to post"><a href="/forums.php?action=viewthread&amp;threadid=<?=$ID?><?php  if (!empty($PostID)) { echo '&amp;postid='.$PostID.'#post'.$PostID; } ?>"></a></span>
 <?php  } ?>
             </td>
             <td>

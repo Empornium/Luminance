@@ -74,7 +74,7 @@ show_header('Edit torrent','bbcode,edittorrent');
         </form>
     </div>
 
-    <h2>Edit <a href="torrents.php?id=<?=$GroupID?>"><?=$Name?></a></h2>
+    <h2>Edit <a href="/torrents.php?id=<?=$GroupID?>"><?=$Name?></a></h2>
     <div class="box pad">
         <form id="edit_torrent" action="torrents.php" method="post">
             <div>

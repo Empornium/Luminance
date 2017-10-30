@@ -34,8 +34,8 @@ function submitted()
         // if on torrent details page then add the tag
         addTag();
         return false;
-    } else if (location.href.match(/torrents\.php/)) {
-        // if on torrents browse page submit search
+    } else if (location.href.match(/(torrents|requests)\.php/)) {
+        // if on torrents/requests browse page submit search
         jQuery('#search_form').submit();
         return false;
     }

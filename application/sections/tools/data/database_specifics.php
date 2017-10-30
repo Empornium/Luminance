@@ -89,13 +89,13 @@ show_header('Database Specifics');
 <br />
 <table>
     <tr class="colhead">
-        <td><a href="tools.php?action=database_specifics&amp;order_by=name&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'name' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Name</a></td>
-        <td><a href="tools.php?action=database_specifics&amp;order_by=engine&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'engine' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Engine</a></td>
-        <td><a href="tools.php?action=database_specifics&amp;order_by=rows&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'rows' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Rows</td>
-        <td><a href="tools.php?action=database_specifics&amp;order_by=rowsize&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'rowsize' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Row Size</a></td>
-        <td><a href="tools.php?action=database_specifics&amp;order_by=datasize&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'datasize' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Data Size</a></td>
-        <td><a href="tools.php?action=database_specifics&amp;order_by=indexsize&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'indexsize' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Index Size</a></td>
-        <td><a href="tools.php?action=database_specifics&amp;order_by=totalsize&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'totalsize' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Total Size</td>
+        <td><a href="/tools.php?action=database_specifics&amp;order_by=name&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'name' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Name</a></td>
+        <td><a href="/tools.php?action=database_specifics&amp;order_by=engine&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'engine' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Engine</a></td>
+        <td><a href="/tools.php?action=database_specifics&amp;order_by=rows&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'rows' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Rows</td>
+        <td><a href="/tools.php?action=database_specifics&amp;order_by=rowsize&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'rowsize' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Row Size</a></td>
+        <td><a href="/tools.php?action=database_specifics&amp;order_by=datasize&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'datasize' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Data Size</a></td>
+        <td><a href="/tools.php?action=database_specifics&amp;order_by=indexsize&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'indexsize' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Index Size</a></td>
+        <td><a href="/tools.php?action=database_specifics&amp;order_by=totalsize&amp;order_way=<?=(!empty($_GET['order_by']) && $_GET['order_by'] == 'totalsize' && !empty($_GET['order_way']) && $_GET['order_way'] == 'desc')?'asc':'desc'?>">Total Size</td>
         <td>Tools</td>
     </tr>
 <?php
@@ -119,7 +119,7 @@ foreach ($Tables as $Table) {
         <td><?=get_size($DataSize)?></td>
         <td><?=get_size($IndexSize)?></td>
         <td><?=get_size($DataSize + $IndexSize)?></td>
-        <td>[<a href="tools.php?action=database_specifics&amp;table=<?=display_str($Name)?>">Schema</a>]</td>
+        <td>[<a href="/tools.php?action=database_specifics&amp;table=<?=display_str($Name)?>">Schema</a>]</td>
     </tr>
 <?php
 }

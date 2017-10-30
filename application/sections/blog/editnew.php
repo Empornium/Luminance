@@ -32,7 +32,7 @@ $lcSection = lcfirst($blogSection);
     </div>
 
     <div class="linkbox">
-        [<a href="<?=$thispage?>">View <?=$lcSection?></a>]
+        [<a href="/<?=$thispage?>">View <?=$lcSection?></a>]
     </div>
 
     <div class="thin">

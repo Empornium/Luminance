@@ -297,6 +297,8 @@ function PreviewResponse(id) {
 			document.getElementById('response_div_'+id).innerHTML = data;
 			$(div).toggle();
 			$('#response_editor_'+id).toggle();
+      Prism.highlightAll();
+      lazy_load();
 		});
 	} else {
 		$(div).toggle();
@@ -312,11 +314,15 @@ function PreviewMessage() {
 			document.getElementById('preview').innerHTML = data;
 			$('#preview').toggle();
 			$('#quickpost').toggle();
+			$('.bb_holder').toggle();
 			$('#previewbtn').raw().value = "Edit";
+      Prism.highlightAll();
+      lazy_load();
 		});
 	} else {
 		$('#preview').toggle();
 		$('#quickpost').toggle();
+    $('.bb_holder').toggle();
 		$('#previewbtn').raw().value = "Preview";
 	}
 }

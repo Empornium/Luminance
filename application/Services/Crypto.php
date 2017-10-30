@@ -23,8 +23,9 @@ class Crypto extends Service {
         }
     }
 
-    public function encrypt($Message, $KeyIdentifier = 'default') {
+    public function encrypt($Message, $KeyIdentifier = 'default', $Hex = false) {
         $Key = $this->get_derived_key($KeyIdentifier);
+        if (is_array($Message)) $Message = serialize($Message);
         try {
             $Ciphertext = DCrypto::encrypt($Message, $Key);
         } catch (DCryptoEx\CryptoTestFailedException $ex) {
@@ -32,12 +33,14 @@ class Crypto extends Service {
         } catch (DCryptoEx\CannotPerformOperationException $ex) {
             throw new SystemError('Cannot safely perform encryption');
         }
+        if ($Hex) $Ciphertext = $this->bin2hex($Ciphertext);
         return $Ciphertext;
     }
 
-    public function decrypt($Ciphertext, $KeyIdentifier = 'default') {
+    public function decrypt($Ciphertext, $KeyIdentifier = 'default', $Hex = false) {
         # Always check for return value === false when using this!
         # It implies the ciphertext was invalid.
+        if ($Hex) $Ciphertext = $this->hex2bin($Ciphertext);
         $Key = $this->get_derived_key($KeyIdentifier);
         try {
             $Message = DCrypto::decrypt($Ciphertext, $Key);
@@ -49,6 +52,7 @@ class Crypto extends Service {
         } catch (DCryptoEx\CannotPerformOperationException $ex) {
             throw new SystemError('Cannot safely perform encryption');
         }
+        if (@unserialize($Message)) $Message = unserialize($Message);
         return $Message;
     }
 

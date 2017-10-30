@@ -15,7 +15,7 @@ if (array_key_exists($_POST['type'], $Types)) {
 
 if ( is_array($ReportType['article'])  ) {
 ?>
-<p><strong>Relevant Rules section: <a href="articles.php?topic=<?=$ReportType['article'][0]?>" title="The rule infingement you are reporting"><?=$ReportType['article'][1]?></a></strong>
+<p><strong>Relevant Rules section: <a href="/articles.php?topic=<?=$ReportType['article'][0]?>" title="The rule infingement you are reporting"><?=$ReportType['article'][1]?></a></strong>
 </p>
 <br/>
     <?php

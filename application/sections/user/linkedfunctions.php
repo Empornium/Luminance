@@ -207,7 +207,8 @@ function user_dupes_table($UserID, $Username)
 <?php
                     if ( !array_key_exists($EUserID, $Dupes) ) {
 ?>
-                        [<a href="user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>">link</a>]
+                        [<a href="/user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>">link</a>]
+                        [<a href="/tools.php?action=compare_users&usera=<?=$UserID?>&userb=<?=$EUserID?>">compare</a>]
 <?php
                     }
 ?>
@@ -257,7 +258,7 @@ function user_dupes_table($UserID, $Username)
                 <td>
 <?php
                     if ( !array_key_exists($EUserID, $Dupes) ) {   ?>
-                        [<a href="user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>">link</a>]
+                        [<a href="/user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>">link</a>]
 <?php                   }       ?>
                 </td>
             </tr>
@@ -291,7 +292,7 @@ function user_dupes_table($UserID, $Username)
         $Row = ($Row == 'b') ? 'a' : 'b';
 ?>
                     <td class="row<?=$Row?>" align="left"><?=format_username($DupeID, $DupeInfo['Username'], $DupeInfo['Donor'], $DupeInfo['Warned'], $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
-                        [<a href="user.php?action=dupes&dupeaction=remove&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&removeid=<?=$DupeID?>" onClick="return confirm('Are you sure you wish to remove <?=$DupeInfo['Username']?> from this group?');">x</a>]</td>
+                        [<a href="/user.php?action=dupes&dupeaction=remove&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&removeid=<?=$DupeID?>" onClick="return confirm('Are you sure you wish to remove <?=$DupeInfo['Username']?> from this group?');">x</a>]</td>
 <?php
         if ($i == 4) {
             $i = 0;

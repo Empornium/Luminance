@@ -14,6 +14,7 @@ use Luminance\Responses\Redirect;
 use Luminance\Responses\Rendered;
 use Luminance\Responses\Response;
 
+use PHPQRCode\QRcode;
 
 class Master {
 
@@ -21,6 +22,7 @@ class Master {
     public $superglobals;
     public $legacy_handler;
     public $ssl;
+    public $request;
 
     public $routes = [
         # [method] [path match] [auth level] [target function] <extra arguments>
@@ -30,6 +32,9 @@ class Master {
         [ 'CLI',  'btcupdate',       0, 'legacy', 'btcupdate'  ],
         [ 'CLI',  'schedule',        0, 'legacy', 'schedule'   ],
 //        [ 'CLI',  'script',          0, 'legacy', 'script'     ],
+
+        // Small stuff
+        [ 'GET',  'render/qr/**',    0, 'func', 'render_qrcode'],
 
         // Redirects
         [ '*',    'browse.php',      0, 'redirect_handler',        'torrents.php'               ],
@@ -102,6 +107,7 @@ class Master {
             $this->profiler->disable();
         }
         $this->request = new Request($this);
+        $this->debug->start();
         $this->registerPlugins();
 
         require_once($this->application_path . '/common/main_functions.php');
@@ -149,7 +155,8 @@ class Master {
             return null; # We're done now
 
         } catch (AuthError $e) {
-            $response = new Rendered($errorTemplate, $e->get_template_vars(), $e->http_status);
+            $this->flasher->error($e->public_message);
+            $response = new Redirect($e->redirect);
 
         } catch (UserError $e) {
             $response = new Rendered($errorTemplate, $e->get_template_vars(), $e->http_status);
@@ -172,7 +179,7 @@ class Master {
     public function process_response($response) {
         if ($response instanceof Rendered) {
             http_response_code($response->status);
-            $this->peon->display($response->template, $response->variables);
+            $this->peon->display_page($response->template, $response->variables);
 
         } elseif ($response instanceof Redirect) {
             $this->redirect($response->target, $response->parameters, $response->status);
@@ -197,6 +204,8 @@ class Master {
             case 'auth':
             case 'cache':
             case 'crypto':
+            case 'debug':
+            case 'flasher':
             case 'guardian':
             case 'log':
             case 'options':
@@ -204,6 +213,7 @@ class Master {
             case 'profiler':
             case 'repos':
             case 'router':
+            case 'search':
             case 'secretary':
             case 'emailManager':
             case 'settings':
@@ -243,17 +253,27 @@ class Master {
             $this->handle_trivial_cases();
         }
         $route_match = $this->router->resolve($this->routes, $this->request, $this->request->path);
+
         if (is_array($route_match)) {
             $func = $route_match[0];
             $authLevel = $route_match[1];
             $args = array_slice($route_match, 2);
             if ($this->request->authLevel < $authLevel)
-                throw new AuthError("Insufficient authentication level", "Unauthorized");
+                throw new AuthError("Insufficient authentication level", "Unauthorized", '/');
             if (method_exists($this, $func)) {
                 return call_user_func_array(array($this, $func), $args);
             } else {
                 throw new InternalError("Route resolved to nonexistant Master method: {$func}");
             }
+        } else {
+            throw new NotFoundError();
+        }
+    }
+
+    public function func($func, $args) {
+        $args = array_slice(func_get_args(), 1);
+        if (method_exists($this, $func)) {
+            return call_user_func_array(array($this, $func), (array)$args);
         } else {
             throw new NotFoundError();
         }
@@ -327,6 +347,23 @@ class Master {
             $path = implode('/', $path);
         }
         return $this->redirect('/' . $path, $this->request->values);
+    }
+
+    public function render_qrcode() {
+        // QR code data to be encoded can contain slashes
+        $data = $this->request->uri;
+        $prefix = '/render/qr/';
+
+        if (substr($data, 0, strlen($prefix)) == $prefix) {
+            $data = substr($data, strlen($prefix));
+        }
+
+        // Skip when $data is empty or false because
+        // PHPQRCode returns an inelegant 500 error (Bug: Class not found)
+        if (!empty($data))
+            echo QRcode::svg($data, false, 'H');
+
+        die();
     }
 
 }

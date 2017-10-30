@@ -212,7 +212,7 @@ if (count($Reports) == 0) {
         <table>
             <tr>
                 <td class='center'>
-                    <a href="reportsv2.php?view=report&amp;id=<?=$ReportID?>">Report <?=$ReportID?></a> for torrent <?=$TorrentID?> (deleted) has been automatically resolved. <input type="button" value="Hide" onclick="ClearReport(<?=$ReportID?>);" />
+                    <a href="/reportsv2.php?view=report&amp;id=<?=$ReportID?>">Report <?=$ReportID?></a> for torrent <?=$TorrentID?> (deleted) has been automatically resolved. <input type="button" value="Hide" onclick="ClearReport(<?=$ReportID?>);" />
                 </td>
             </tr>
         </table>
@@ -253,18 +253,18 @@ if (count($Reports) == 0) {
                     </div>
                     <table cellpadding="5">
                         <tr>
-                            <td class="label"><a href="reportsv2.php?view=report&amp;id=<?=$ReportID?>">Reported </a>Torrent:</td>
+                            <td class="label"><a href="/reportsv2.php?view=report&amp;id=<?=$ReportID?>">Reported </a>Torrent:</td>
                             <td colspan="4">
             <?php 	if (!$GroupID) { ?>
-                                <a href="log.php?search=Torrent+<?=$TorrentID?>"><?=$TorrentID?></a> (Deleted)
+                                <a href="/log.php?search=Torrent+<?=$TorrentID?>"><?=$TorrentID?></a> (Deleted)
             <?php   } else {
                                 $PeerInfo = get_peers($TorrentID);
                                 //$Torrent[5]=$PeerInfo['Snatched'];
                                 echo $LinkName; ?>
-                                <a href="torrents.php?action=download&amp;id=<?=$TorrentID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
-                                uploaded by <a href="user.php?id=<?=$UploaderID?>"><?=$UploaderName?></a> <?=time_diff($Time)?>
+                                <a href="/torrents.php?action=download&amp;id=<?=$TorrentID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
+                                uploaded by <a href="/user.php?id=<?=$UploaderID?>"><?=$UploaderName?></a> <?=time_diff($Time)?>
                                 &nbsp;(<?=str_plural('file',$Filecount)?>)&nbsp;[ <span title="Seeders"><?=$PeerInfo['Seeders']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="seeders" title="seeders" /></span> | <span title="Leechers"><?=$PeerInfo['Leechers']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="leechers" title="leechers" /></span> ]
-                                &nbsp;[<a href="torrents.php?action=dupe_check&amp;id=<?=$GroupID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
+                                &nbsp;[<a href="/torrents.php?action=dupe_check&amp;id=<?=$GroupID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
                                 <br />
             <?php 	if ($Status != 'Resolved') {
 
@@ -277,7 +277,7 @@ if (count($Reports) == 0) {
 
                     if ($GroupOthers > 0) { ?>
                                 <div style="text-align: right;">
-                                    <a href="reportsv2.php?view=group&amp;id=<?=$GroupID?>">There <?=(($GroupOthers > 1) ? "are $GroupOthers other reports" : "is 1 other report")?> for torrent(s) in this group</a>
+                                    <a href="/reportsv2.php?view=group&amp;id=<?=$GroupID?>">There <?=(($GroupOthers > 1) ? "are $GroupOthers other reports" : "is 1 other report")?> for torrent(s) in this group</a>
                                 </div>
             <?php  		}
 
@@ -290,7 +290,7 @@ if (count($Reports) == 0) {
 
                     if ($UploaderOthers > 0) { ?>
                                 <div style="text-align: right;">
-                                    <a href="reportsv2.php?view=uploader&amp;id=<?=$UploaderID?>">There <?=(($UploaderOthers > 1) ? "are $UploaderOthers other reports" : "is 1 other report")?> for torrent(s) uploaded by this user</a>
+                                    <a href="/reportsv2.php?view=uploader&amp;id=<?=$UploaderID?>">There <?=(($UploaderOthers > 1) ? "are $UploaderOthers other reports" : "is 1 other report")?> for torrent(s) uploaded by this user</a>
                                 </div>
             <?php  		}
 
@@ -310,7 +310,7 @@ if (count($Reports) == 0) {
                         while (list($RequestID, $FillerID, $FillerName, $FilledTime) = $DB->next_record()) {
                 ?>
                                     <div style="text-align: right;">
-                                        <a href="user.php?id=<?=$FillerID?>"><?=$FillerName?></a> used this torrent to fill <a href="requests.php?action=view&amp;id=<?=$RequestID?>">this request</a> <?=time_diff($FilledTime)?>
+                                        <a href="/user.php?id=<?=$FillerID?>"><?=$FillerName?></a> used this torrent to fill <a href="/requests.php?action=view&amp;id=<?=$RequestID?>">this request</a> <?=time_diff($FilledTime)?>
                                     </div>
                 <?php 		}
                     }
@@ -322,7 +322,7 @@ if (count($Reports) == 0) {
                         <tr>
                             <td class="label">Reported By:</td>
                             <td colspan="4">
-                                <a href="user.php?id=<?=$ReporterID?>"><?=$ReporterName?></a> <?=time_diff($ReportedTime)?> for the reason: <strong><?=$ReportType['title']?></strong>
+                                <a href="/user.php?id=<?=$ReporterID?>"><?=$ReporterName?></a> <?=time_diff($ReportedTime)?> for the reason: <strong><?=$ReportType['title']?></strong>
                             </td>
                         </tr>
             <?php  if ($Tracks) { ?>
@@ -347,7 +347,7 @@ if (count($Reports) == 0) {
                             $Link = $local_url;
                         }
             ?>
-                                <a href="<?=$Link?>"><?=$Link?></a>
+                                <a href="/<?=$Link?>"><?=$Link?></a>
             <?php
                     }
             ?>
@@ -392,15 +392,15 @@ if (count($Reports) == 0) {
                             $ExtraPeerInfo = get_peers($ExtraID);
                             echo ($First ? "" : "<br />");
                             echo $ExtraLinkName;            ?>
-                            <a href="torrents.php?action=download&amp;id=<?=$ExtraID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
-                            uploaded by <a href="user.php?id=<?=$ExtraUploaderID?>"><?=$ExtraUploaderName?></a>  <?=time_diff($ExtraTime)?> [<a title="Close this report and create a new dupe report with this torrent as the reported one" href="#" onclick="Switch(<?=$ReportID?>, <?=$ReporterID?>, '<?=urlencode($UserComment)?>', <?=$TorrentID?>, <?=$ExtraID?>); return false;">Switch</a>]
+                            <a href="/torrents.php?action=download&amp;id=<?=$ExtraID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
+                            uploaded by <a href="/user.php?id=<?=$ExtraUploaderID?>"><?=$ExtraUploaderName?></a>  <?=time_diff($ExtraTime)?> [<a title="Close this report and create a new dupe report with this torrent as the reported one" href="#" onclick="Switch(<?=$ReportID?>, <?=$ReporterID?>, '<?=urlencode($UserComment)?>', <?=$TorrentID?>, <?=$ExtraID?>); return false;">Switch</a>]
                             &nbsp;(<?=str_plural('file',$ExtraFilecount)?>)&nbsp;[ <span title="Seeders"><?=$ExtraPeerInfo['Seeders']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="seeders" title="seeders" /></span> | <span title="Leechers"><?=$ExtraPeerInfo['Leechers']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="leechers" title="leechers" /></span> ]
-                            &nbsp;[<a href="torrents.php?action=dupe_check&amp;id=<?=$ExtraID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
+                            &nbsp;[<a href="/torrents.php?action=dupe_check&amp;id=<?=$ExtraID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
                 <?php
                             $First = false;
                         } else {
 ?>
-                                <a href="torrents.php?id=<?=$ExtraID?>">(deleted torrent) #<?=$ExtraID?></a>
+                                <a href="/torrents.php?id=<?=$ExtraID?>">(deleted torrent) #<?=$ExtraID?></a>
 <?php
                         }
                     }
@@ -439,7 +439,7 @@ if (count($Reports) == 0) {
                         <tr>
                             <td class="label">In Progress by:</td>
                             <td colspan="4">
-                                <a href="user.php?id=<?=$ResolverID?>"><?=$ResolverName?></a>
+                                <a href="/user.php?id=<?=$ResolverID?>"><?=$ResolverName?></a>
                             </td>
                         </tr>
             <?php 	}
@@ -534,7 +534,7 @@ if (count($Reports) == 0) {
                                             $Extras = explode(" ", $ExtraIDs);
                                             $Value = "";
                                             foreach ($Extras as $ExtraID) {
-                                                $Value .= 'http://'.SITE_URL.'/details.php?id='.$ExtraID.' ';
+                                                $Value .= "/details.php?id={$ExtraID} ";
                                             }
                                             echo 'value="'.trim($Value).'"';
                                         } ?>/>
@@ -582,8 +582,8 @@ if (count($Reports) == 0) {
                                 list($cID, $cUserID, $cUsername, $cType, $cDate)=$Conv;
                                 ?>
                                 <div style="text-align: right;">
-                                    <em>(<?=  time_diff($cDate)?>)</em> &nbsp;view existing conversation with <a href="user.php?id=<?= $cUserID ?>"><?= $cUsername ?></a> (<?=$cType?>) about this report: &nbsp;&nbsp
-                                    <a href="staffpm.php?action=viewconv&id=<?= $cID ?>" target="_blank">[View Message]</a> &nbsp;
+                                    <em>(<?=  time_diff($cDate)?>)</em> &nbsp;view existing conversation with <a href="/user.php?id=<?= $cUserID ?>"><?= $cUsername ?></a> (<?=$cType?>) about this report: &nbsp;&nbsp
+                                    <a href="/staffpm.php?action=viewconv&id=<?= $cID ?>" target="_blank">[View Message]</a> &nbsp;
                                 </div>
                                 <?php
                             }
@@ -659,7 +659,7 @@ if (count($Reports) == 0) {
                         <tr>
                             <td class="label">Resolver</td>
                             <td colspan="3">
-                                <a href="user.php?id=<?=$ResolverID?>"><?=$ResolverName?></a>
+                                <a href="/user.php?id=<?=$ResolverID?>"><?=$ResolverName?></a>
                             </td>
                         </tr>
                         <tr>
@@ -710,8 +710,8 @@ if (count($Reports) == 0) {
                                 list($cID, $cUserID, $cUsername, $cType, $cDate)=$Conv;
                                 ?>
                                 <div style="text-align: right;">
-                                    <em>(<?=  time_diff($cDate)?>)</em> &nbsp;view existing conversation with <a href="user.php?id=<?= $cUserID ?>"><?= $cUsername ?></a> (<?=$cType?>) about this report: &nbsp;&nbsp
-                                    <a href="staffpm.php?action=viewconv&id=<?= $cID ?>" target="_blank">[View Message]</a> &nbsp;
+                                    <em>(<?=  time_diff($cDate)?>)</em> &nbsp;view existing conversation with <a href="/user.php?id=<?= $cUserID ?>"><?= $cUsername ?></a> (<?=$cType?>) about this report: &nbsp;&nbsp
+                                    <a href="/staffpm.php?action=viewconv&id=<?= $cID ?>" target="_blank">[View Message]</a> &nbsp;
                                 </div>
                                 <?php
                             }

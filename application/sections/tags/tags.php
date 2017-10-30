@@ -25,8 +25,8 @@ show_header('Tags');
     <h2>Tags</h2>
 
     <div class="linkbox">
-        <a style="font-weight: bold" href="tags.php">[Tags & Search]</a>
-        <a href="tags.php?action=synonyms">[Synonyms]</a>
+        <a style="font-weight: bold" href="/tags.php">[Tags & Search]</a>
+        <a href="/tags.php?action=synonyms">[Synonyms]</a>
     </div>
 
     <div class="">
@@ -216,9 +216,9 @@ show_header('Tags');
             <div class="tag_results">
             <table class="box shadow">
                 <tr class="colhead">
-                    <td><a href="<?=header_link('Tag') ?>">Tag</a> <a class="tagtype" href="<?=header_link('TagType') ?>">(*official)</a></td>
-                    <td class="center"><a href="<?=header_link('Uses') ?>">Uses</a></td>
-                    <td class="center" colspan="2"><a href="<?=header_link('Votes') ?>">Votes</a></td>
+                    <td><a href="/<?=header_link('Tag') ?>">Tag</a> <a class="tagtype" href="/<?=header_link('TagType') ?>">(*official)</a></td>
+                    <td class="center"><a href="/<?=header_link('Uses') ?>">Uses</a></td>
+                    <td class="center" colspan="2"><a href="/<?=header_link('Votes') ?>">Votes</a></td>
                     <td class="center">Synonyms</td>
                 </tr>
 <?php
@@ -271,9 +271,9 @@ show_header('Tags');
             <div class="tag_results">
             <table class="box shadow">
                 <tr class="colhead">
-                    <td><a href="<?=header_link('Tag') ?>">Tag</a> <a class="tagtype" href="<?=header_link('TagType') ?>">(*official)</a></td>
-                    <td class="center"><a href="<?=header_link('Uses') ?>">Uses</a></td>
-                    <td class="center"  colspan="2"><a href="<?=header_link('Votes') ?>">Votes</a></td>
+                    <td><a href="/<?=header_link('Tag') ?>">Tag</a> <a class="tagtype" href="/<?=header_link('TagType') ?>">(*official)</a></td>
+                    <td class="center"><a href="/<?=header_link('Uses') ?>">Uses</a></td>
+                    <td class="center"  colspan="2"><a href="/<?=header_link('Votes') ?>">Votes</a></td>
                     <td class="center">Synonyms</td>
                 </tr>
 <?php

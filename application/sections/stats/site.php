@@ -119,9 +119,9 @@ show_header('Site Statistics', 'charts,jquery');
 <div class="thin">
     <h2>Site stats</h2>
     <div class="linkbox">
-        <a href="stats.php?action=users">[User graphs]</a>
-        <strong><a href="stats.php?action=site">[Site stats]</a></strong>
-        <a href="stats.php?action=torrents">[Torrent stats]</a>
+        <a href="/stats.php?action=users">[User graphs]</a>
+        <strong><a href="/stats.php?action=site">[Site stats]</a></strong>
+        <a href="/stats.php?action=torrents">[Torrent stats]</a>
     </div>
     <br/>
     <div class="head">Site history</div>

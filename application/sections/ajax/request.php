@@ -1,10 +1,6 @@
 <?php
 authorize(true);
 
-// Minimum and default amount of upload to remove from the user when they vote.
-// Also change in static/functions/requests.js
-$MinimumVote = 20*1024*1024;
-
 /*
  * This is the page that displays the request to the end user after being created.
  */
@@ -155,7 +151,7 @@ print
                 'timeAdded' => $TimeAdded,
                 'canEdit' => $CanEdit,
                 'canVote' => $CanVote,
-                'minimumVote' => $MinimumVote,
+                'minimumVote' => $master->options->MinVoteBounty,
                 'voteCount' => $VoteCount,
                 'lastVote' => $LastVote,
                 'topContributors' => $JsonTopContributors,

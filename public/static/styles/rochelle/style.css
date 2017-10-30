@@ -251,6 +251,16 @@ ul.thin li { margin:0px 0px; padding:0px; }
     border: none;
     /* overflow: hidden; */
 }
+#modal_content {
+    width: 90%;
+    min-width: 350px;
+    max-width: 1200px;
+    background-color: transparent;
+    margin: 0px auto 0px auto;
+    padding: 0.6em 0.6em 30px;
+    border: none;
+    /* overflow: hidden; */
+}
 
 #footer {
     margin-top: 40px;
@@ -448,6 +458,14 @@ table.userinfo_stats td {
     fill: #d2d2d2;
 }
 
+.misc_icons {
+    fill: #ff5200;
+}
+
+.misc_icons:hover {
+    fill: #ff0000;
+}
+
 #major_stats_left {
     position: absolute;
     margin: 0px 0 0 10px;
@@ -486,7 +504,7 @@ table.userinfo_stats td {
     border-radius: 10px;
 }
 #userinfo_username li ul {
-    left: 66px;
+    left: -54px;
     top: 17px;
 }
 
@@ -498,6 +516,9 @@ table.userinfo_stats td {
     background-color: white;
     color: #00436b;
     border-radius: 0px;
+}
+#userinfo_username li ul li a:hover > .nav_icons, #userinfo_tools li ul li a:hover > .nav_icons {
+    fill: #00436b;
 }
 
 #userinfo_username li ul li:first-child a:hover, #userinfo_tools li ul li:first-child a:hover {
@@ -516,14 +537,16 @@ table.userinfo_stats td {
     position: relative;
 }
 
-#nav_userinfo, #nav_tools {
-    padding-right: 8px !important;
-    margin: 0px 7px !important;
-    background-image: url('images/dropdown_arrow.png');
-    background-repeat:no-repeat;
-    background-position: right center;
+#nav_tools > a:after, #nav_userinfo > a:after {
+    content:"\25BC";
+    font-weight: bold;
 }
-#nav_upload,#nav_donate,#nav_useredit,#nav_logout {
+#major_stats > ul {
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+#nav_upload, #nav_donate {
     margin: 0px 7px !important;
 }
 
@@ -870,8 +893,7 @@ input.hidden {
 */
 
 .thin {
-    width: 90%;
-    min-width: 960px;
+    width: 96%;
     margin-left:auto;
     margin-right:auto;
 }

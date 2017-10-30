@@ -125,13 +125,13 @@ if (check_perms('admin_reports')) {
                     <td colspan="3">
 <?php
         if (!$torrentgroup['ID']) { ?>
-                        <a href="log.php?search=Torrent+<?=$TorrentID?>"><?=$TorrentID?></a> (Deleted)
+                        <a href="/log.php?search=Torrent+<?=$TorrentID?>"><?=$TorrentID?></a> (Deleted)
 <?php
         } else {
 ?>
                         <?=$LinkName?>
-                        <a href="torrents.php?action=download&amp;id=<?=$TorrentID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
-                        uploaded by <a href="user.php?id=<?=$torrentgroup['UploaderID']?>"><?=$torrentgroup['Uploader']?></a> <?=time_diff($torrentgroup['Time'])?>
+                        <a href="/torrents.php?action=download&amp;id=<?=$TorrentID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
+                        uploaded by <a href="/user.php?id=<?=$torrentgroup['UploaderID']?>"><?=$torrentgroup['Uploader']?></a> <?=time_diff($torrentgroup['Time'])?>
                         <br />
 <?php
 
@@ -145,7 +145,7 @@ if (check_perms('admin_reports')) {
             if ($GroupOthers > 0) {
 ?>
                         <div style="text-align: right;">
-                            <a href="reportsv2.php?view=group&amp;id=<?=$torrentgroup['ID']?>">There <?=(($GroupOthers > 1) ? "are $GroupOthers reports" : "is 1 other report")?> for torrent(s) in this group</a>
+                            <a href="/reportsv2.php?view=group&amp;id=<?=$torrentgroup['ID']?>">There <?=(($GroupOthers > 1) ? "are $GroupOthers reports" : "is 1 other report")?> for torrent(s) in this group</a>
                         </div>
 <?php
             }
@@ -160,7 +160,7 @@ if (check_perms('admin_reports')) {
             if ($UploaderOthers > 0) {
 ?>
                         <div style="text-align: right;">
-                            <a href="reportsv2.php?view=uploader&amp;id=<?=$torrentgroup['UploaderID']?>">There <?=(($UploaderOthers > 1) ? "are $UploaderOthers reports" : "is 1 other report")?> for torrent(s) uploaded by this user</a>
+                            <a href="/reportsv2.php?view=uploader&amp;id=<?=$torrentgroup['UploaderID']?>">There <?=(($UploaderOthers > 1) ? "are $UploaderOthers reports" : "is 1 other report")?> for torrent(s) uploaded by this user</a>
                         </div>
 <?php
             }
@@ -178,7 +178,7 @@ if (check_perms('admin_reports')) {
                 foreach ($requests as $request) {
 ?>
                     <div style="text-align: right;">
-                        <a href="user.php?id=<?=$request['FillerID']?>"><?=$request['Username']?></a> used this torrent to fill <a href="requests.php?action=viewrequest&amp;id=<?=$request['ID']?>">this request</a> <?=time_diff($request['TimeFilled'])?>
+                        <a href="/user.php?id=<?=$request['FillerID']?>"><?=$request['Username']?></a> used this torrent to fill <a href="/requests.php?action=viewrequest&amp;id=<?=$request['ID']?>">this request</a> <?=time_diff($request['TimeFilled'])?>
                     </div>
 <?php
                 }
@@ -217,23 +217,23 @@ if (check_perms('admin_reports')) {
                                             [':torrentid' => $ExtraID])->fetch(\PDO::FETCH_ASSOC);
 
                         if ($extra['Name']) {
-                            $ExtraLinkName = '<a href="torrents.php?id='.$extra['GroupID'].'">'.display_str($extra['Name']).'</a> ('. get_size($extra['Size']).")";
+                            $ExtraLinkName = '<a href="/torrents.php?id={$extra[GroupID]}">'.display_str($extra['Name']).'</a> ('. get_size($extra['Size']).")";
 
                             $ExtraPeerInfo = get_peers($ExtraID);
                             echo ($First ? "" : "<br />");
                             echo $ExtraLinkName;            ?>
-                                    <a href="torrents.php?action=download&amp;id=<?=$ExtraID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
-                                    uploaded by <a href="user.php?id=<?=$extra['UploaderID']?>"><?=$extra['Uploader']?></a>  <?=time_diff($extra['Time'])?> &nbsp;(<?=str_plural('file',$extra['FileCount'])?>)&nbsp;
+                                    <a href="/torrents.php?action=download&amp;id=<?=$ExtraID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
+                                    uploaded by <a href="/user.php?id=<?=$extra['UploaderID']?>"><?=$extra['Uploader']?></a>  <?=time_diff($extra['Time'])?> &nbsp;(<?=str_plural('file',$extra['FileCount'])?>)&nbsp;
                                     [ <span title="Seeders"><?=$ExtraPeerInfo['Seeders']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="seeders" title="seeders" /></span> | <span title="Leechers"><?=$ExtraPeerInfo['Leechers']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="leechers" title="leechers" /></span> ]
-                                    &nbsp;[<a href="torrents.php?action=dupe_check&amp;id=<?=$ExtraID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
+                                    &nbsp;[<a href="/torrents.php?action=dupe_check&amp;id=<?=$ExtraID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
 
 <?php
                             if (!$First) $SiteLog .= ' ';
-                            $SiteLog .= 'http://'.SITE_URL.'/torrents.php?id='.$extra['GroupID'];
+                            $SiteLog .= "/torrents.php?id={$extra[GroupID]}";
                             $First = false;
                         } else {
 ?>
-                                <a href="torrents.php?id=<?=$ExtraID?>">(deleted torrent) #<?=$ExtraID?></a>
+                                <a href="/torrents.php?id=<?=$ExtraID?>">(deleted torrent) #<?=$ExtraID?></a>
 <?php
                         }
                     }

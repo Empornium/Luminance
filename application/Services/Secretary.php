@@ -44,6 +44,18 @@ class Secretary extends Service {
         }
     }
 
+    public function getExternalToken($ident, $action = '') {
+        $token = $this->crypto->generateAuthToken('token', $ident, $action);
+        return $token;
+    }
+
+    public function checkExternalToken($token, $ident, $action = '', $duration = 86400) {
+        if ($this->crypto->checkAuthToken('token', $token, $ident, $action, $duration)) {
+            return true;
+        }
+        throw new UserError('Authorization token expired or invalid');
+    }
+
     public function getToken($action = '') {
         if (is_null($this->CID)) {
             throw new UserError('CID cookie not found or invalid');

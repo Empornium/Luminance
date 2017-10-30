@@ -5,6 +5,13 @@ ob_end_flush();
 gc_enable();
 //TODO: make it awesome, make it flexible!
 
+print("$sqltime\n");
+$LockStatus = $master->db->raw_query("SELECT GET_LOCK('{$master->settings->main->site_name}:scheduler', 3)")->fetchColumn();
+if ($LockStatus != '1') {
+    print("Scheduler failed to aquire lock (another scheduler process is running!)\n");
+    die();
+}
+
 /*************************************************************************\
 //--------------Schedule page -------------------------------------------//
 
@@ -55,7 +62,6 @@ $DB->query("UPDATE schedule SET NextHour = ".next_hour().", NextDay = ".next_day
 $sqltime = sqltime();
 $Minute=next_min();
 $Quarter=floor($Minute/15);
-print("$sqltime\n");
 print("Schedule quarter: $Quarter\n");
 
 /*************************************************************************\
@@ -361,14 +367,19 @@ if ($Quarter == 1 || $_GET['runhour'] || isset($argv[2])) {
     $DB->query("DELETE FROM clients WHERE Updated<'$AgoDays' ");
 
     print("Various login/warning stats things\n");
-    print("Lower login attempts\n");
-    //------------- Lower Login Attempts ------------------------------------//
+    print("Lower request floods\n");
+    //------------- Lower Request Floods ------------------------------------//
     if($Hour % 2 == 0){
-        $DB->query("UPDATE login_attempts SET Attempts=Attempts-1 WHERE Attempts>0");
-        $DB->query("DELETE FROM login_attempts WHERE LastAttempt<'".time_minus(3600*24*90)."'");
+        $floods = $master->repos->floods->find('Requests > ?', [0]);
+        foreach ($floods as $flood) {
+            $flood->Requests--;
+            $master->repos->floods->save($flood);
+        }
 
-        $DB->query("UPDATE login_floods SET Attempts=Attempts-1 WHERE Attempts>0");
-        $DB->query("DELETE FROM login_floods WHERE LastAttempt<'".time_minus(3600*24*90)."'");
+        $floods = $master->repos->floods->find('LastRequest < ?', [time_minus(3600*24*90)]);
+        foreach ($floods as $flood) {
+            $master->repos->floods->delete($flood);
+        }
     }
     print("Remove expired warnings\n");
     //------------- Remove expired warnings ---------------------------------//
@@ -728,15 +739,27 @@ if ($Day != next_day() || $_GET['runday']) {
     //------------- Disable inactive user accounts --------------------------//
     sleep(5);
     // Send email
-    $DB->query("SELECT Username, Email FROM users_main
-        WHERE PermissionID IN ('".APPRENTICE."', '".PERV."')
+    $DB->query("SELECT Username, Email, LastAccess FROM users_main
+        WHERE (PermissionID IN ('".APPRENTICE."', '".PERV."')
         AND LastAccess<'".time_minus(3600*24*110, true)."'
         AND LastAccess>'".time_minus(3600*24*111, true)."'
         AND LastAccess!='0000-00-00 00:00:00'
-        AND Enabled!='2'");
-    while (list($Username, $Email) = $DB->next_record()) {
-        $Body = "Hi $Username, \n\nIt has been almost 4 months since you used your account at http://".SITE_URL.". This is an automated email to inform you that your account will be disabled in 10 days if you do not sign in. ";
-        send_email($Email, 'Your '.SITE_NAME.' account is about to be disabled', $Body);
+        AND Enabled!='2') OR
+        (PermissionID IN ('".GOOD_PERV."', '".GREAT_PERV."',  '".SEXTREME_PERV."', '".SMUT_PEDDLER."')
+        AND LastAccess<'".time_minus(3600*24*365)."'
+        AND LastAccess!='0000-00-00 00:00:00'
+        AND Enabled!='2')");
+    while (list($Username, $Email, $LastAccess) = $DB->next_record()) {
+        $subject = 'Your '.$master->settings->main->site_name.' account is about to be disabled';
+        $email_body = [];
+        $email_body['settings'] = $master->settings;
+        $email_body['username'] = $Username;
+        $email_body['scheme']   = 'https';
+        $email_body['time']     = time_ago($LastAccess);
+
+
+        $body = $master->tpl->render('inactivity_warning.email', $email_body);
+        $master->secretary->send_email($Email, 'Your '.SITE_NAME.' account is about to be disabled', $email_body);
     }
 
     $DB->query("SELECT ID FROM users_main
@@ -747,17 +770,6 @@ if ($Day != next_day() || $_GET['runday']) {
 
     if ($DB->record_count() > 0) {
         disable_users($DB->collect('ID'), "Disabled for inactivity.", 3);
-    }
-
-    $DB->query("SELECT Username, Email FROM users_main
-        WHERE PermissionID IN ('".GOOD_PERV."', '".GREAT_PERV."',  '".SEXTREME_PERV."', '".SMUT_PEDDLER."')
-        AND LastAccess<'".time_minus(3600*24*337, true)."'
-        AND LastAccess>'".time_minus(3600*24*338, true)."'
-        AND LastAccess!='0000-00-00 00:00:00'
-        AND Enabled!='2'");
-    while (list($Username, $Email) = $DB->next_record()) {
-        $Body = "Hi $Username, \n\nIt has been almost 1 year since you used your account at http://".SITE_URL.". This is an automated email to inform you that your account will be disabled in 28 days if you do not sign in. ";
-        send_email($Email, 'Your '.SITE_NAME.' account is about to be disabled', $Body);
     }
 
     $DB->query("SELECT ID FROM users_main
@@ -1019,9 +1031,8 @@ if ($Day != next_day() || $_GET['runday']) {
 
             if (!array_key_exists($UserID, $TorrentAlerts))
                 $TorrentAlerts[$UserID] = array('Count' => 0, 'Msg' => '');
-
-                        $TorrentAlerts[$UserID]['Msg'] .= "\n[url=http://".SITE_URL."/details.php?id=$ID]".$Name."[/url]";
-            $TorrentAlerts[$UserID]['Count']++;
+                $TorrentAlerts[$UserID]['Msg'] .= "\n[url=/details.php?id=$ID]".$Name."[/url]";
+                $TorrentAlerts[$UserID]['Count']++;
         }
         foreach ($TorrentAlerts as $UserID => $MessageInfo) {
             send_pm($UserID, 0, db_string('Unseeded torrent notification'), db_string($MessageInfo['Count']." of your upload".($MessageInfo['Count']>1?'s':'')." will be deleted for inactivity soon.  Unseeded torrents are deleted after 4 weeks. If you still have the files, you can seed your uploads by ensuring the torrents are in your client and that they aren't stopped. You can view the time that a torrent has been unseeded by clicking on the torrent description line and looking for the \"Last active\" time. For more information, please go [url=/articles.php?topic=unseeded]here[/url].\n\nThe following torrent".($MessageInfo['Count']>1?'s':'')." will be removed for inactivity:".$MessageInfo['Msg']."\n\nIf you no longer wish to recieve these notifications, please disable them in your profile settings."));
@@ -1056,6 +1067,22 @@ if ($Day != next_day() || $_GET['runday']) {
               );
 
     print("Deleted ".$DB->affected_rows()." old system PMs\n");
+
+    //-- Regenerate TagLists --//
+    $DB->query("UPDATE torrents_group AS tg
+                  JOIN (SELECT
+                            REPLACE(GROUP_CONCAT(tags.Name ORDER BY  (t.PositiveVotes-t.NegativeVotes) DESC SEPARATOR ' '),'.','_') AS TagList,
+                            t.GroupID
+                          FROM torrents_tags AS t
+                    INNER JOIN tags ON tags.ID=t.TagID
+                      GROUP BY t.GroupID) AS taglists ON tg.ID=taglists.GroupID
+                   SET tg.TagList=taglists.TagList");
+    print("Updated ".$DB->affected_rows()." taglists\n");
+
+    // Correct Tag uses columns
+    $DB->query("UPDATE tags JOIN (SELECT COUNT(*) AS Uses, TagID FROM torrents_tags GROUP BY TagID) AS tt ON tt.TagID=tags.ID SET tags.Uses=tt.Uses;");
+    print("Updated ".$DB->affected_rows()." tag usage counts\n");
+
 }
 
 /*************************************************************************\
@@ -1069,7 +1096,7 @@ if ($BiWeek != next_biweek() || $_GET['runbiweek']) {
     echo "Running bi-weekly functions\n";
 
     //------------- Cycle auth keys -----------------------------------------//
-
+    sleep(5);
     $DB->query("UPDATE users_info
     SET AuthKey =
         MD5(
@@ -1084,8 +1111,14 @@ if ($BiWeek != next_biweek() || $_GET['runbiweek']) {
         );"
     );
 
-    //------------- Give out invites! ---------------------------------------//
+    //------------- Cleanup bookmarks ---------------------------------------//
+    sleep(5);
+    $DB->query("DELETE bt FROM bookmarks_torrents AS bt
+             LEFT JOIN torrents AS t ON t.GroupID=bt.GroupID
+                 WHERE t.ID IS NULL");
 
+    //------------- Give out invites! ---------------------------------------//
+    sleep(5);
     /*
     PUs have a cap of 2 invites.  Elites have a cap of 4.
     Every month, on the 8th and the 22nd, each PU/Elite User gets one invite up to their max.
@@ -1175,13 +1208,14 @@ sleep(5);
 //------------- Apply IP range bans to curb brute force attacks quicker ------//
 print("Apply IP range bans\n");
 $DB->query("INSERT INTO ip_bans (FromIP, ToIP, UserID, StaffID, EndTime, Reason)
-               (SELECT  (INET_ATON(IP) & 0xFFFF0000) as FromIP,
-                        (INET_ATON(IP) | 0x0000FFFF) as ToIP,
+               (SELECT  (ip.Address & 0xFFFF0000) as FromIP,
+                        (ip.Address | 0x0000FFFF) as ToIP,
                         0,0, DATE_ADD(NOW(), INTERVAL 8 hour), 'brute force'
-                  FROM login_attempts
-                 WHERE LastAttempt >= DATE_SUB(NOW(), INTERVAL 1 DAY)
+                  FROM request_flood AS rf
+                  JOIN ips AS ip ON ip.ID=rf.IPID
+                 WHERE LastRequest >= DATE_SUB(NOW(), INTERVAL 1 DAY)
               GROUP BY FromIP
-                HAVING  count(INET_NTOA(INET_ATON(IP) & 0xFFFF0000)) > 10)
+                HAVING  count(ip.Address & 0xFFFF0000) > 10)
             ON DUPLICATE KEY UPDATE EndTime=DATE_ADD(NOW(), INTERVAL 8 hour)
            ");
 
@@ -1201,59 +1235,8 @@ while (list($UserID) = $DB->next_record()) {
     $Cache->delete_value('users_tokens_'.$UserID[0]);
 }
 
-/*
- * No need to do this, Ocelot will not apply a FL/DS token if it has expired.
- * We'll add token removal to the tracker soon so the token hash table doesn't
- * get out of control, however, the tracker does load the entire table on
- * startup, even ones we've previously deleted.
- */
-//print("Find tokens to delete\n");
-//$DB->query("SELECT us.UserID, t.info_hash
-//            FROM users_slots AS us
-//            JOIN torrents AS t ON us.TorrentID = t.ID
-//            WHERE FreeLeech < '$sqltime' AND DoubleSeed < '$sqltime'
-//            AND ( FreeLeech > '2016-06-01' OR DoubleSeed > '2016-06-01' )
-//");
-//print("Remove tokens from tracker\n");
-//while (list($UserID,$InfoHash) = $DB->next_record(MYSQLI_NUM, false)) {
-//    update_tracker('remove_tokens', array('info_hash' => rawurlencode($InfoHash), 'userid' => $UserID));
-//}
-
 //-------Gives credits to users with active torrents-------------------------//
 sleep(3);
-/*
-// method 1 : capped at 60 - linear rate,  ~2.8s with 650k seeders
-$DB->query("update users_main
-            set Credits = Credits +
-                (select if(count(*) < 60, count(*), 60) * 0.25 from xbt_files_users
-                where users_main.ID = xbt_files_users.uid AND xbt_files_users.remaining = 0 AND xbt_files_users.active = 1)");
-
- // method 2 : no cap, diminishing returns, ~3.2s with 650k seeders
-$DB->query("UPDATE users_main SET Credits = Credits +
-           ( SELECT ROUND( ( SQRT( 8.0 * ( COUNT(*)/20 ) + 1.0 ) - 1.0 ) / 2.0 *20 ) * 0.25
-                    FROM xbt_files_users
-                    WHERE users_main.ID = xbt_files_users.uid
-                    AND xbt_files_users.remaining =0
-                    AND xbt_files_users.active =1 )");
-
-// method 3 : no cap, diminishing returns , rewritten as join and also records seedhours, ~2.1s with 650k seeders
-$DB->query("UPDATE users_main AS um
-              JOIN (
-                      SELECT xbt_files_users.uid AS UserID,
-                           (ROUND( ( SQRT( 8.0 * ( COUNT(*)/20 ) + 1.0 ) - 1.0 ) / 2.0 *20 ) * 0.25 ) AS SeedCount,
-                           (COUNT(*) * 0.25 ) AS SeedHours
-                        FROM xbt_files_users
-                       WHERE xbt_files_users.remaining =0
-                         AND xbt_files_users.active =1
-                    GROUP BY xbt_files_users.uid
-                   ) AS s ON s.UserID=um.ID
-               SET Credits=Credits+SeedCount,
-              CreditsDaily=CreditsDaily+SeedCount,
-              um.SeedHours=um.SeedHours+s.SeedHours,
-         um.SeedHoursDaily=um.SeedHoursDaily+s.SeedHours ");
- */
-
-// method 4 : cap, diminishing returns , rewritten as join and also records seedhours, ~2.1s with 650k seeders
 print("Update credits\n");
 $CAP = BONUS_TORRENTS_CAP;
 $DB->query("UPDATE users_main AS um
@@ -1299,6 +1282,26 @@ if ($master->options->MFDAutoDelete) {
         echo "Num of torrents auto-deleted: $NumDeleted\n";
     }
 }
+
+//-- Ban passkey leakers --//
+$UserIDs = $master->db->raw_query(
+         "SELECT um.ID
+            FROM xbt_files_users AS xfu
+            JOIN users_main AS um ON um.ID=xfu.uid
+           WHERE um.Enabled='1'
+           GROUP BY xfu.uid
+          HAVING COUNT(DISTINCT xfu.useragent) >= :clients
+             AND COUNT(DISTINCT xfu.ipv4) >= :ips",
+    [':clients' => $master->options->LeakingClients,
+     ':ips'     => $master->options->LeakingIPs])->fetchColumn();
+
+if($UserIDs && count($UserIDs) > 0) {
+        disable_users($UserIDs, "Disabled for suspected passkey leak.", 2);
+        foreach($UserIDs as $UserID) {
+                echo "Passkey leaking user disabled : $UserID\n";
+        }
+}
+
 
 //------------ Remove unwatched and unwanted speed records
 

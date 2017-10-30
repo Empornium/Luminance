@@ -126,7 +126,7 @@ if (empty($_POST['action'])) {
                         $result = '<img src="'. STATIC_SERVER .'common/symbols/warned.png" alt="No result" title="Could not find user with id='.$UserID.'" /> Could not find user with id='.$UserID.'<br/>';
                     else  {
                         list($Username) = $DB->next_record();
-                        $result = '<img src="'. STATIC_SERVER .'common/symbols/tick.png" alt="found" title="Found '.$Username.'" /> <a href="user.php?id='.$UserID.'">'.$Username.'</a><br/>';
+                        $result = '<img src="'. STATIC_SERVER .'common/symbols/tick.png" alt="found" title="Found '.$Username.'" /> <a href="/user.php?id='.$UserID.'">'.$Username.'</a><br/>';
                         $IDs[] = $UserID;
                     }
                 } else {
@@ -137,7 +137,7 @@ if (empty($_POST['action'])) {
                     else  {
                         list($UserID) = $DB->next_record();
                         if(in_array($UserID, $IDs)) continue;
-                        $result = '<img src="'. STATIC_SERVER .'common/symbols/tick.png" alt="found" title="Found '.$Username.'" /> <a href="user.php?id='.$UserID.'">'.$Username.'</a><br/>';
+                        $result = '<img src="'. STATIC_SERVER .'common/symbols/tick.png" alt="found" title="Found '.$Username.'" /> <a href="/user.php?id='.$UserID.'">'.$Username.'</a><br/>';
                         $IDs[] = $UserID;
                     }
                 }
@@ -224,6 +224,7 @@ if (empty($_POST['action'])) {
             break;
 
         case 'give credits':
+            authorize();
             if (!check_perms('users_edit_credits')) error(403);
             if (!$GroupID) error(0);
             $DB->query('SELECT UserID FROM users_groups WHERE GroupID='.$GroupID);
@@ -261,6 +262,7 @@ if (empty($_POST['action'])) {
             break;
 
         case 'adjust download':
+            authorize();
             if (!check_perms('users_edit_ratio')) error(403);
             if (!$GroupID) error(0);
             $DB->query('SELECT UserID FROM users_groups WHERE GroupID='.$GroupID);

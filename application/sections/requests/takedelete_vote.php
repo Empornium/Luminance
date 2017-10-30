@@ -35,7 +35,7 @@ if (is_number($RequestID) && is_number($VoterID)) {
             send_pm($UploaderID,
                     0,
                     db_string("A request you created has been deleted"),
-                    db_string("The request '".$Title."' was deleted (last vote removed) by [url=http://".SITE_URL."/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url]\n\nReason: ".$_POST['reason']));
+                    db_string("The request '".$Title."' was deleted (last vote removed) by [url=/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url]\n\nReason: ".$_POST['reason']));
         }
         write_log("Request $RequestID ($Title) was deleted (last vote removed) by ".$LoggedUser['Username']." for the reason: ".$_POST['reason']);
     }

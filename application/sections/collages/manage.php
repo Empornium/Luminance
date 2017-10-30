@@ -40,7 +40,7 @@ if (count($GroupIDs)>0) {
 show_header('Manage collage '.$Name);
 ?>
 <div class="thin">
-    <h2>Manage collage <a href="collages.php?id=<?=$CollageID?>"><?=$Name?></a></h2>
+    <h2>Manage collage <a href="/collages.php?id=<?=$CollageID?>"><?=$Name?></a></h2>
     <table>
         <tr class="colhead">
             <td>Sort</td>
@@ -57,7 +57,7 @@ foreach ($TorrentList as $GroupID=>$Group) {
     $Number++;
 
     $DisplayName = $Number.' - ';
-    $DisplayName .= '<a href="torrents.php?id='.$GroupID.'" title="View Torrent">'.$GroupName.'</a>';
+    $DisplayName .= '<a href="/torrents.php?id='.$GroupID.'" title="View Torrent">'.$GroupName.'</a>';
 ?>
         <tr>
             <form action="collages.php" method="post">

@@ -91,10 +91,10 @@ if (!empty($Properties))
     <h2><?=($NewRequest ? "Create a request" : "Edit a request")?></h2>
 
     <div class="linkbox">
-            <a href="requests.php">[Search requests]</a>
-            <a href="requests.php?type=created">[My requests]</a>
+            <a href="/requests.php">[Search requests]</a>
+            <a href="/requests.php?type=created">[My requests]</a>
 <?php 	 if (check_perms('site_vote')) { ?>
-            <a href="requests.php?type=voted">[Requests I've voted on]</a>
+            <a href="/requests.php?type=voted">[Requests I've voted on]</a>
 <?php 		}  ?>
 
     </div>
@@ -145,7 +145,7 @@ foreach ($Whitelist as $ImageHost) {
     <?php
     // if a goto link is supplied and is a validly formed url make a link icon for it
     if (!empty($Link) && $Text->valid_url($Link)) {
-        ?><a href="<?= $Link ?>"  target="_blank"><img src="<?=STATIC_SERVER?>common/symbols/offsite.gif" width="16" height="16" style="" alt="Goto <?= $Host ?>" /></a>
+        ?><a href="/<?= $Link ?>"  target="_blank"><img src="<?=STATIC_SERVER?>common/symbols/offsite.gif" width="16" height="16" style="" alt="Goto <?= $Host ?>" /></a>
     <?php  } // endif has a link to imagehost  ?>
                     </td>
                     <td><?=$Text->full_format($Comment)?></td>
@@ -164,7 +164,7 @@ foreach ($Whitelist as $ImageHost) {
 
             <table>
                 <tr>
-                    <td colspan="2" class="center">Please make sure your request follows <a href="articles.php?topic=requests">the request rules!</a></td>
+                    <td colspan="2" class="center">Please make sure your request follows <a href="/articles.php?topic=requests">the request rules!</a></td>
                 </tr>
 <?php 	if ($NewRequest || $CanEdit) { ?>
                 <tr class="pad">
@@ -259,7 +259,7 @@ foreach ($Whitelist as $ImageHost) {
                 <tr id="voting">
                     <td class="label" id="bounty">Bounty</td>
                     <td>
-                        <input type="text" id="amount_box" size="8" value="<?=((!empty($Bounty) ? $Bounty : $MinimumBounty) / (1024*1024*1024) )?>" onchange="Calculate();" onkeyup="Calculate();" />
+                        <input type="text" id="amount_box" size="8" value="<?=((!empty($Bounty) ? $Bounty : $master->options->MinCreateBounty) / (1024*1024*1024) )?>" onchange="Calculate();" onkeyup="Calculate();" />
                         <select id="unit" name="unit" onchange="Calculate();">
                             <option value='gb'<?=(!empty($_POST['unit']) && $_POST['unit'] == 'gb' ? ' selected="selected"' : '') ?>>GB</option>
                             <option value='tb'<?=(!empty($_POST['unit']) && $_POST['unit'] == 'tb' ? ' selected="selected"' : '') ?>>TB</option>
@@ -271,10 +271,10 @@ foreach ($Whitelist as $ImageHost) {
                 <tr>
                     <td class="label">Post request information</td>
                     <td>
-                        <input type="hidden" id="amount" name="amount" value="<?=(!empty($Bounty) ? $Bounty : $MinimumBounty )?>" />
+                        <input type="hidden" id="amount" name="amount" value="<?=(!empty($Bounty) ? $Bounty : $master->options->MinCreateBounty )?>" />
                         <input type="hidden" id="current_uploaded" value="<?=$LoggedUser['BytesUploaded']?>" />
                         <input type="hidden" id="current_downloaded" value="<?=$LoggedUser['BytesDownloaded']?>" />
-                        If you add the entered <strong><span id="new_bounty"><?=get_size($MinimumBounty);?></span></strong> of bounty, your new stats will be: <br/>
+                        If you add the entered <strong><span id="new_bounty"><?=get_size($master->options->MinCreateBounty);?></span></strong> of bounty, your new stats will be: <br/>
                         Uploaded: <span id="new_uploaded"><?=get_size($LoggedUser['BytesUploaded'])?></span><br/>
                         Ratio: <span id="new_ratio"><?=ratio($LoggedUser['BytesUploaded'],$LoggedUser['BytesDownloaded'])?></span>
                     </td>

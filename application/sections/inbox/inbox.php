@@ -15,9 +15,9 @@ show_header('Inbox');
 <?php
 
 if ($Section == 'inbox') { ?>
-        <a href="inbox.php?action=sentbox">[Sentbox]</a>
+        <a href="/inbox.php?action=sentbox">[Sentbox]</a>
 <?php  } elseif ($Section == 'sentbox') { ?>
-        <a href="inbox.php">[Inbox]</a>
+        <a href="/inbox.php">[Inbox]</a>
 <?php  } ?>
         <br /><br />
 <?php
@@ -38,7 +38,8 @@ if ($Section == 'sentbox') {
           ui.Warned,
           um.Enabled,
           cu.SentDate AS Date,
-          um.PermissionID
+          um.PermissionID,
+          um.GroupPermissionID
           FROM pm_conversations AS c
           LEFT JOIN pm_conversations_users AS cu ON cu.ConvID=c.ID AND cu.UserID='$UserID'
           LEFT JOIN pm_conversations_users AS cu2 ON cu2.ConvID=c.ID AND cu2.UserID!='$UserID' AND cu2.ForwardedTo=0
@@ -119,9 +120,9 @@ echo $Pages;
                 <input type="radio" name="searchtype" value="message" /> Message
                 <span style="float: right;">
 <?php 			if (empty($_GET['sort']) || $_GET['sort'] != "unread") { ?>
-                    <a href="<?=$CurURL?>sort=unread">List unread first</a>
+                    <a href="/<?=$CurURL?>sort=unread">List unread first</a>
 <?php 			} else { ?>
-                    <a href="<?=$CurURL?>">List latest first</a>
+                    <a href="/<?=$CurURL?>">List latest first</a>
 <?php 			} ?>
                 </span>
                 <br />
@@ -157,7 +158,7 @@ echo $Pages;
 <?php 		if ($Unread) { echo '<strong>'; } ?>
 <?php 		if ($Sticky) { echo 'Sticky: '; }
 ?>
-                        <a href="inbox.php?action=viewconv&amp;id=<?=$ConvID?>"><?=$Subject?></a>
+                        <a href="/inbox.php?action=viewconv&amp;id=<?=$ConvID?>"><?=$Subject?></a>
 <?php
         if ($Unread) { echo '</strong>';} ?>
                     </td>

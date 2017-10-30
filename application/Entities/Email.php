@@ -25,12 +25,30 @@ class Email extends Entity {
         'Flags'   => [ 'columns' => [ 'Flags'   ] ],
     ];
 
-    const VALIDATED = 1;
-    const CANCELLED = 2;
+    const VALIDATED  = 1;
+    const CANCELLED  = 2;
+    const IS_DEFAULT = 4;
+    const ENCRYPTED  = 8;
 
-    public function readyToResend() {
+    public function ready_to_resend() {
         $treshold = new \DateTime('-1 hour');
         return ($this->Changed < $treshold);
+    }
+
+    public function is_default() {
+        return $this->getFlag(self::IS_DEFAULT);
+    }
+
+    public function is_encrypted() {
+        return $this->getFlag(self::ENCRYPTED);
+    }
+
+    public function is_confirmed() {
+        return $this->getFlag(self::VALIDATED);
+    }
+
+    public function is_cancelled() {
+        return $this->getFlag(self::CANCELLED);
     }
 
 }

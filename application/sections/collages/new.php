@@ -69,7 +69,7 @@ foreach ($Whitelist as $ImageHost) {
     <?php
     // if a goto link is supplied and is a validly formed url make a link icon for it
     if (!empty($Link) && $Text->valid_url($Link)) {
-        ?><a href="<?= $Link ?>"  target="_blank"><img src="<?=STATIC_SERVER?>common/symbols/offsite.gif" width="16" height="16" style="" alt="Goto <?= $Host ?>" /></a>
+        ?><a href="/<?= $Link ?>"  target="_blank"><img src="<?=STATIC_SERVER?>common/symbols/offsite.gif" width="16" height="16" style="" alt="Goto <?= $Host ?>" /></a>
     <?php  } // endif has a link to imagehost  ?>
                     </td>
                     <td><?=$Text->full_format($Comment)?></td>
@@ -157,7 +157,7 @@ if (($CollageCount < $LoggedUser['Permissions']['MaxCollages']) && check_perms('
             </tr>
             <tr>
                 <td colspan="2" class="center">
-                    <strong>Please ensure your collage will be allowed under the <a href="articles.php?topic=collages">rules</a></strong>
+                    <strong>Please ensure your collage will be allowed under the <a href="/articles.php?topic=collages">rules</a></strong>
                 </td>
             </tr>
             <tr>

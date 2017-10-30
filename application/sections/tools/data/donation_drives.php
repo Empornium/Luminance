@@ -62,7 +62,7 @@ show_header('Donation Drives', 'bitcoin,user,bbcode,jquery');
 <?php
     $DB->query("SELECT ID, name, start_time, target_euros, description, threadid, end_time, raised_euros, state
                       FROM donation_drives ORDER BY state, end_time DESC, start_time DESC, ID desc");
-    $Drives = $DB->to_array(false, MYSQL_NUM);
+    $Drives = $DB->to_array(false, MYSQLI_NUM);
     foreach ($Drives as $Drive) {
         list($ID, $name, $start_time, $target_euros, $description, $threadid, $end_date, $raised_euros, $state) = $Drive;
         $disabled_html = $state == 'finished' ? 'disabled="disabled"' : '';

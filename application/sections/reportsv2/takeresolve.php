@@ -92,7 +92,7 @@ if (($Escaped['resolve_type'] == "manual" || $Escaped['resolve_type'] == "dismis
         <table cellpadding="5">
             <tr>
                 <td>
-                    <a href="reportsv2.php?view=report&amp;id=<?=$ReportID?>">Somebody has already resolved this report</a>
+                    <a href="/reportsv2.php?view=report&amp;id=<?=$ReportID?>">Somebody has already resolved this report</a>
                     <input type="button" value="Clear" onclick="ClearReport(<?=$ReportID?>);" />
                 </td>
             </tr>
@@ -249,7 +249,7 @@ if ($DB->affected_rows() > 0 || !$Report) {
               $DB->query("UPDATE users_main AS m JOIN users_info AS i ON m.ID=i.UserID SET $SET WHERE m.ID='$ReporterID'");
               $Cache->delete_value('user_stats_'.$ReporterID);
 
-              $Body = "Thank-you for your {$ResolveType['title']} report re: [url=http://".SITE_URL."/details.php?id=$TorrentID]{$RawName}[/url]\n\nYou received a bounty payment of $Bounty credits.";
+              $Body = "Thank-you for your {$ResolveType['title']} report re: [url=/details.php?id=$TorrentID]{$RawName}[/url]\n\nYou received a bounty payment of $Bounty credits.";
 
               send_pm($ReporterID, 0, "Received Bounty Payment", db_string($Body));
         }
@@ -337,7 +337,7 @@ if ($DB->affected_rows() > 0 || !$Report) {
     <table cellpadding="5">
         <tr>
             <td>
-                <a href="reportsv2.php?view=report&amp;id=<?=$ReportID?>">Somebody has already resolved this report</a>
+                <a href="/reportsv2.php?view=report&amp;id=<?=$ReportID?>">Somebody has already resolved this report</a>
                 <input type="button" value="Clear" onclick="ClearReport(<?=$ReportID?>);" />
             </td>
         </tr>

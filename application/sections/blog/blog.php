@@ -28,7 +28,7 @@ show_header($blogSection,'bbcode');
 ?>
 <div class="thin">
     <h2>
-        <a style="float:left;margin-top:4px" href="feeds.php?feed=feed_blog&amp;user=<?=$LoggedUser['ID']?>&amp;auth=<?=$LoggedUser['RSS_Auth']?>&amp;passkey=<?=$LoggedUser['torrent_pass']?>&amp;authkey=<?=$LoggedUser['AuthKey']?>" title="<?=SITE_NAME?> - Blog" ><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
+        <a style="float:left;margin-top:4px" href="/feeds.php?feed=feed_blog&amp;user=<?=$LoggedUser['ID']?>&amp;auth=<?=$LoggedUser['RSS_Auth']?>&amp;passkey=<?=$LoggedUser['torrent_pass']?>&amp;authkey=<?=$LoggedUser['AuthKey']?>" title="<?=SITE_NAME?> - Blog" ><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
         <?=$master->settings->main->site_name." $blogSection"?>
     </h2>
 </div>
@@ -37,7 +37,7 @@ show_header($blogSection,'bbcode');
 if (check_perms('admin_manage_blog')) {
 ?>
     <div class="linkbox">
-        [<a href="<?=$thispage?>?action=newpost">Add new <?=lcfirst($blogSection)?> post</a>]
+        [<a href="/<?=$thispage?>?action=newpost">Add new <?=lcfirst($blogSection)?> post</a>]
     </div>
 <?php
 }
@@ -52,8 +52,8 @@ if ($blog) {
             <div id="blog<?=$item['ID']?>" class="head">
                 <strong><?=$item['Title']?></strong> - posted <?=time_diff($item['Time']);?> by <?=$item['Username']?>
 <?php       if (check_perms('admin_manage_blog')) { ?>
-                - <a href="<?=$thispage?>?action=editpost&amp;id=<?=$item['ID']?>">[Edit]</a>
-                <a href="<?=$thispage?>?action=deletepost&amp;id=<?=$item['ID']?>&amp;auth=<?=$LoggedUser['AuthKey']?>">[Delete]</a>
+                - <a href="/<?=$thispage?>?action=editpost&amp;id=<?=$item['ID']?>">[Edit]</a>
+                <a href="/<?=$thispage?>?action=deletepost&amp;id=<?=$item['ID']?>&amp;auth=<?=$LoggedUser['AuthKey']?>">[Delete]</a>
 <?php       }       ?>
             </div>
             <div class="box blog">
@@ -67,9 +67,9 @@ if ($blog) {
                     <?=$Text->full_format($item['Body'], true)?>
 <?php       if ($item['ThreadID']) { ?>
                     <br /><br />
-                    <em><a href="forums.php?action=viewthread&amp;threadid=<?=$item['ThreadID']?>">Discuss this post here</a></em>
+                    <em><a href="/forums.php?action=viewthread&amp;threadid=<?=$item['ThreadID']?>">Discuss this post here</a></em>
 <?php           if (check_perms('admin_manage_blog')) { ?>
-                    &nbsp;<a href="<?=$thispage?>?action=removelink&amp;id=<?=$item['ID']?>&amp;auth=<?=$LoggedUser['AuthKey']?>">[Remove link]</a>
+                    &nbsp;<a href="/<?=$thispage?>?action=removelink&amp;id=<?=$item['ID']?>&amp;auth=<?=$LoggedUser['AuthKey']?>">[Remove link]</a>
 <?php           }
             } ?>
                 </div>

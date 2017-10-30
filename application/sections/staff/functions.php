@@ -7,7 +7,7 @@ function get_fls()
             m.ID,
             p.Level,
             m.Username,
-                  m.Title,
+            m.Title,
             m.Paranoia,
             m.LastAccess,
             i.SupportFor
@@ -102,7 +102,7 @@ function get_user_languages($UserID)
                               FROM users_languages AS ul
                               JOIN languages AS l ON l.ID=ul.LangID
                              WHERE UserID=$UserID");
-        $Userlangs = $DB->to_array('LangID', MYSQL_ASSOC);
+        $Userlangs = $DB->to_array('LangID', MYSQLI_ASSOC);
         $Cache->cache_value('user_langs_' . $UserID, $Userlangs);
     }
     $Str = '';
@@ -118,4 +118,69 @@ function get_user_languages($UserID)
     }
 
     return $Str;
+}
+
+/**
+ * Parse staff notes block into several sections
+ * @param string $Notes
+ * @return array $ParsedNotes
+ */
+function parse_staff_notes($Notes)
+{
+    $ParsedNotes = [];
+
+    # Gather needed regexes
+    $DateRegEx = "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"; // 2017-07-11 17:41:30
+    $Filters = require(SERVER_ROOT.'/sections/staff/notes_filters.php');
+
+    // Misc is a fallback filter we initialize last
+    $MiscIndex = count($Filters) + 1;
+    $Filters[$MiscIndex] = ['name' => 'Misc', 'count' => 0];
+
+    # Parsing
+    $Delimiter = '_DELIM';
+    $Notes = preg_replace("/(?:^|\n)(".$DateRegEx.")/", $Delimiter.'$1', $Notes); // Do not capture inline dates
+    $Notes = substr($Notes, strlen($Delimiter)); // Remove first, unnecessary $Delimiter
+    $Notes = explode($Delimiter, trim($Notes));
+
+    # Identification
+    foreach ($Notes as $Note) {
+        if (empty($Note)) continue;
+
+        $Found = false;
+        foreach ($Filters as &$Filter) {
+            // Init filter count
+            if (!isset($Filter['count']))
+                $Filter['count'] = 0;
+
+            if (preg_match("/^".$DateRegEx.' - '.$Filter['rule']."/i", $Note)) {
+                $ParsedNotes[] = "<span class=\"staffnote-".trim_filter($Filter['name'])."\">$Note</span>";
+                $Filter['count']++;
+                $Found = true;
+                break;
+            }
+        }
+
+        // Fallback in case no rule matches
+        if (!$Found) {
+            $ParsedNotes[] = "<span class=\"staffnote-Misc\">$Note</span>";
+            $Filters[$MiscIndex]['count']++;
+        }
+    }
+
+    # Post-processing
+    // Remove empty filters
+    $Filters = array_filter($Filters, 'filter_count');
+
+    return [implode('', $ParsedNotes), $Filters];
+}
+
+function trim_filter($Filter)
+{
+    return preg_replace('/\W/', '', $Filter);
+}
+
+function filter_count($Filter)
+{
+    return $Filter['count'] > 0;
 }

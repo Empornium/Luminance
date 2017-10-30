@@ -15,10 +15,10 @@ show_header('Top 10 Tags');
 <div class="thin">
     <h2> Top 10 Tags </h2>
     <div class="linkbox">
-        <a href="top10.php?type=torrents">[Torrents]</a>
-        <a href="top10.php?type=users">[Users]</a>
-        <a href="top10.php?type=tags"><strong>[Tags]</strong></a>
-        <a href="top10.php?type=taggers">[Taggers]</a>
+        <a href="/top10.php?type=torrents">[Torrents]</a>
+        <a href="/top10.php?type=users">[Users]</a>
+        <a href="/top10.php?type=tags"><strong>[Tags]</strong></a>
+        <a href="/top10.php?type=taggers">[Taggers]</a>
     </div>
 
 <?php
@@ -102,9 +102,9 @@ function generate_tag_table($Caption, $Tag, $Details, $Limit, $ShowVotes=true, $
 ?>
     <div class="head top10_tags">Top <?=$Limit.' '.$Caption?>
         <small>
-            - [<a href="top10.php?type=tags&amp;limit=100&amp;details=<?=$Tag?>">Top 100</a>]
-            - [<a href="top10.php?type=tags&amp;limit=250&amp;details=<?=$Tag?>">Top 250</a>]
-            - [<a href="top10.php?type=tags&amp;limit=500&amp;details=<?=$Tag?>">Top 500</a>]
+            - [<a href="/top10.php?type=tags&amp;limit=100&amp;details=<?=$Tag?>">Top 100</a>]
+            - [<a href="/top10.php?type=tags&amp;limit=250&amp;details=<?=$Tag?>">Top 250</a>]
+            - [<a href="/top10.php?type=tags&amp;limit=500&amp;details=<?=$Tag?>">Top 500</a>]
         </small>
     </div>
     <table class="top10_tags">
@@ -140,7 +140,7 @@ function generate_tag_table($Caption, $Tag, $Details, $Limit, $ShowVotes=true, $
 ?>
     <tr class="row<?=$Highlight?>">
         <td class="tags_rank"><?=$Rank?></td>
-        <td class="tags_tag"><a href="<?=$URLString?><?=$Detail['Name']?>"><?=$Detail['Name']?></a></td>
+        <td class="tags_tag"><a href="/<?=$URLString?><?=$Detail['Name']?>"><?=$Detail['Name']?></a></td>
         <td class="tags_uses"><?=$Detail['Uses']?></td>
 <?php 		if ($ShowVotes) { ?>
         <td class="tags_votes"><span class="total_votes"><?=($Detail['PosVotes']-$Detail['NegVotes'])?></span></td>

@@ -17,18 +17,20 @@ abstract class Controller extends Slave {
 
     public function __construct(Master $master) {
         parent::__construct($master);
-        $this->request = $this->master->request;
     }
 
     public function handle_path() {
         $path = func_get_args();
+        # implode/explode to ensure path is as we expect
+        $path = explode('/', implode('/',$path));
         $route_match = $this->master->router->resolve($this->routes, $this->request, $path);
+
         if (is_array($route_match)) {
             $func = $route_match[0];
             $authLevel = $route_match[1];
             $args = array_slice($route_match, 2);
             if ($this->request->authLevel < $authLevel)
-                throw new AuthError("Insufficient authentication level", "Unauthorized");
+                throw new AuthError("Insufficient authentication level", "Unauthorized", '/');
             if (method_exists($this, $func)) {
                 $result = call_user_func_array(array($this, $func), $args);
 

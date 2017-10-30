@@ -62,14 +62,15 @@ if ($BookmarkView) {
     $BookmarkJoin = '';
 }
 
-$BaseSQL = $SQL = "SELECT SQL_CALC_FOUND_ROWS
+$BaseSQL = $SQL = "SELECT
+    SQL_CALC_FOUND_ROWS
     c.ID,
     c.Name,
     Count(ct.GroupID) AS NumTorrents,
     c.TagList,
     c.CategoryID,
     c.UserID,
-    um.Username ,
+    um.Username,
     Min(ct.AddedOn) AS StartDate,
     Max(ct.AddedOn) AS LastDate
     FROM collages AS c
@@ -103,7 +104,7 @@ if (!empty($_GET['userid'])) {
     $Perms = get_permissions($User['PermissionID']);
     $UserClass = $Perms['Class'];
 
-    $UserLink = '<a href="user.php?id='.$UserID.'">'.$User['Username'].'</a>';
+    $UserLink = '<a href="/user.php?id='.$UserID.'">'.$User['Username'].'</a>';
     if (!empty($_GET['contrib'])) {
         if (!check_force_anon($UserID) || !check_paranoia('collagecontribs', $User['Paranoia'], $UserClass, $UserID)) { error(PARANOIA_MSG); }
         $DB->query("SELECT DISTINCT CollageID FROM collages_torrents WHERE UserID = $UserID");
@@ -186,10 +187,15 @@ show_header(($BookmarkView)?'Your bookmarked collages':'Browse collages');
     <div class="linkbox">
 <?php if (!$BookmarkView) {
 if (check_perms('site_collages_create')) { ?>
-        <a href="collages.php?action=new">[New collage]</a>
-<?php		} else { ?>
-            <em> <a href="articles.php?topic=collagehelp">You must be a Good Perv with a ratio of at least 1.05 to be able to create a collage.</a></em><br/>
-<?php          }
+        <a href="/collages.php?action=new">[New collage]</a>
+<?php		} else {
+            $Class = $master->repos->permissions->getMinClassPermission('site_collages_create');
+            if ($Class !== false) {
+?>
+            <em> <a href="/articles.php?topic=collagehelp">You must be a <?=$Class->Name?> with a ratio of at least 1.05 to be able to create a collage.</a></em><br/>
+<?php       }
+        }
+
 if (check_perms('site_collages_personal')) {
     $DB->query("SELECT ID FROM collages WHERE UserID='$LoggedUser[ID]' AND CategoryID='0' AND Deleted='0'");
     $CollageCount = $DB->record_count();
@@ -197,16 +203,16 @@ if (check_perms('site_collages_personal')) {
     if ($CollageCount == 1) {
         list($CollageID) = $DB->next_record();
 ?>
-        <a href="collages.php?id=<?=$CollageID?>">[My personal collage]</a>
+        <a href="/collages.php?id=<?=$CollageID?>">[My personal collage]</a>
 <?php	} elseif ($CollageCount > 1) { ?>
-        <a href="collages.php?action=mine">[My personal collages]</a>
+        <a href="/collages.php?action=mine">[My personal collages]</a>
 <?php	}
 }
 if (check_perms('site_collages_subscribe')) { ?>
-        <a href="userhistory.php?action=subscribed_collages">[My Subscribed Collages]</a>
+        <a href="/userhistory.php?action=subscribed_collages">[My Subscribed Collages]</a>
 <?php }
 if (check_perms('site_collages_recover')) { ?>
-        <a href="collages.php?action=recover">[Recover collage]</a>
+        <a href="/collages.php?action=recover">[Recover collage]</a>
 <?php
 }
 if (check_perms('site_collages_create') || check_perms('site_collages_personal') || check_perms('site_collages_subscribe') || check_perms('site_collages_recover')) {
@@ -215,12 +221,12 @@ if (check_perms('site_collages_create') || check_perms('site_collages_personal')
 <?php
 }
 ?>
-        <a href="collages.php?userid=<?=$LoggedUser['ID']?>">[Collages you started]</a>
-        <a href="collages.php?userid=<?=$LoggedUser['ID']?>&amp;contrib=1">[Collages you've contributed to]</a>
+        <a href="/collages.php?userid=<?=$LoggedUser['ID']?>">[Collages you started]</a>
+        <a href="/collages.php?userid=<?=$LoggedUser['ID']?>&amp;contrib=1">[Collages you've contributed to]</a>
 <?php } else { ?>
-        <a href="bookmarks.php?type=torrents">[Torrents]</a>
-        <a href="bookmarks.php?type=collages">[Collages]</a>
-        <a href="bookmarks.php?type=requests">[Requests]</a>
+        <a href="/bookmarks.php?type=torrents">[Torrents]</a>
+        <a href="/bookmarks.php?type=collages">[Collages]</a>
+        <a href="/bookmarks.php?type=requests">[Requests]</a>
 <?php }
 
 $Pages=get_pages($Page,$NumResults,COLLAGES_PER_PAGE,9);
@@ -247,11 +253,11 @@ echo "<br />$Pages";
 <table width="100%">
     <tr class="colhead">
         <td class="center"></td>
-        <td><a href="<?=header_link('Name') ?>">Collage</a></td>
-        <td class="center"><a href="<?=header_link('NumTorrents') ?>">Torrents</a></td>
-        <td><a href="<?=header_link('StartDate') ?>">Started</a></td>
-        <td class="nobr"><a href="<?=header_link('LastDate') ?>">Last Added</a></td>
-        <td class="center"><a href="<?=header_link('Username') ?>">Author</a></td>
+        <td><a href="/<?=header_link('Name') ?>">Collage</a></td>
+        <td class="center"><a href="/<?=header_link('NumTorrents') ?>">Torrents</a></td>
+        <td><a href="/<?=header_link('StartDate') ?>">Started</a></td>
+        <td class="nobr"><a href="/<?=header_link('LastDate') ?>">Last Added</a></td>
+        <td class="center"><a href="/<?=header_link('Username') ?>">Author</a></td>
     </tr>
 <?php
 $Row = 'a'; // For the pretty colours
@@ -261,7 +267,7 @@ foreach ($Collages as $Collage) {
     $TagList = explode(' ', $TagList);
     $Tags = array();
     foreach ($TagList as $Tag) {
-        $Tags[]='<a href="collages.php?action=search&amp;tags='.$Tag.'">'.$Tag.'</a>';
+        $Tags[]='<a href="/collages.php?action=search&amp;tags='.$Tag.'">'.$Tag.'</a>';
     }
     $Tags = implode(', ', $Tags);
 
@@ -269,10 +275,10 @@ foreach ($Collages as $Collage) {
 ?>
     <tr class="row<?=$Row?> <?=($BookmarkView)?'bookmark_'.$ID:''?>">
         <td class="center">
-            <a href="collages.php?action=search&amp;cats[<?=(int) $CategoryID?>]=1"><img src="static/common/collageicons/<?=$CollageIcons[(int) $CategoryID]?>" alt="<?=$CollageCats[(int) $CategoryID]?>" title="<?=$CollageCats[(int) $CategoryID]?>" /></a>
+            <a href="/collages.php?action=search&amp;cats[<?=(int) $CategoryID?>]=1"><img src="static/common/collageicons/<?=$CollageIcons[(int) $CategoryID]?>" alt="<?=$CollageCats[(int) $CategoryID]?>" title="<?=$CollageCats[(int) $CategoryID]?>" /></a>
         </td>
         <td>
-            <a href="collages.php?id=<?=$ID?>"><?=$Name?></a>
+            <a href="/collages.php?id=<?=$ID?>"><?=$Name?></a>
 <?php	if ($BookmarkView) { ?>
             <span style="float:right">
                 <a href="#" onclick="Unbookmark('collage', <?=$ID?>,'');return false;">[Remove bookmark]</a>

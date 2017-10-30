@@ -311,7 +311,7 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
 
 <div class="thin">
     <h2>
-        <a style="float:left;margin-top:4px" href="feeds.php?feed=torrents_all&amp;user=<?=$LoggedUser['ID']?>&amp;auth=<?=$LoggedUser['RSS_Auth']?>&amp;passkey=<?=$LoggedUser['torrent_pass']?>&amp;authkey=<?=$LoggedUser['AuthKey']?>" title="<?=SITE_NAME?> : All Torrents" ><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
+        <a style="float:left;margin-top:4px" href="/feeds.php?feed=torrents_all&amp;user=<?=$LoggedUser['ID']?>&amp;auth=<?=$LoggedUser['RSS_Auth']?>&amp;passkey=<?=$LoggedUser['torrent_pass']?>&amp;authkey=<?=$LoggedUser['AuthKey']?>" title="<?=SITE_NAME?> : All Torrents" ><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
     Browse Torrents</h2>
 <?php
     if (check_perms('torrents_review')) {
@@ -351,7 +351,7 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
                         ?>
                         <td>
                             <input type="checkbox" name="filter_cat[<?= ($Cat['id']) ?>]" id="cat_<?= ($Cat['id']) ?>" value="1" <?php  if (isset($_GET['filter_cat'][$Cat['id']])) { ?>checked="checked"<?php  } ?>/>
-                            <label for="cat_<?= ($Cat['id']) ?>" class="cat_label"><span><a href="torrents.php?filter_cat[<?=$Cat['id']?>]=1"><?= $Cat['name'] ?></a></span></label>
+                            <label for="cat_<?= ($Cat['id']) ?>" class="cat_label"><span><a href="/torrents.php?filter_cat[<?=$Cat['id']?>]=1"><?= $Cat['name'] ?></a></span></label>
                         </td>
                     <?php  } ?>
                     <td colspan="<?= 7 - ($x % 7) ?>"></td>
@@ -397,7 +397,7 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
                     <tr>
                         <td class="label" style="width:140px"></td>
                         <td colspan="3">
-                            Search supports full boolean search, click here: <a href="articles.php?topic=search" style="font-weight:bold">Article on Searching</a> for more information.
+                            Search supports full boolean search, click here: <a href="/articles.php?topic=search" style="font-weight:bold">Article on Searching</a> for more information.
                         </td>
                         <td rowspan="6" class="search_buttons">
                             <span>
@@ -537,7 +537,7 @@ if ($TorrentCount == 0) {
     <div class="box pad" align="center">
         <h2>Your search did not match anything.</h2>
         <p>Make sure all names are spelled correctly, or try making your search less specific.</p>
-        <p>You might like (Beta): <?php  while (list($Tag) = $DB->next_record()) { ?><a href="torrents.php?taglist=<?= $Tag ?>"><?= $Tag ?></a> <?php  } ?></p>
+        <p>You might like (Beta): <?php  while (list($Tag) = $DB->next_record()) { ?><a href="/torrents.php?taglist=<?= $Tag ?>"><?= $Tag ?></a> <?php  } ?></p>
     </div></div>
     <?php
     show_footer();
@@ -555,11 +555,11 @@ $Bookmarks = all_bookmarks('torrent');
         <td width="100%">Name</td>
         <td>Files</td>
         <td>Comm</td>
-        <td><a href="<?= header_link('time') ?>">Time</a></td>
-        <td><a href="<?= header_link('size') ?>">Size</a></td>
-        <td class="sign"><a href="<?= header_link('snatched') ?>"><img src="static/styles/<?= $LoggedUser['StyleName'] ?>/images/snatched.png" alt="Snatches" title="Snatches" /></a></td>
-        <td class="sign"><a href="<?= header_link('seeders') ?>"><img src="static/styles/<?= $LoggedUser['StyleName'] ?>/images/seeders.png" alt="Seeders" title="Seeders" /></a></td>
-        <td class="sign"><a href="<?= header_link('leechers') ?>"><img src="static/styles/<?= $LoggedUser['StyleName'] ?>/images/leechers.png" alt="Leechers" title="Leechers" /></a></td>
+        <td><a href="/<?= header_link('time') ?>">Time</a></td>
+        <td><a href="/<?= header_link('size') ?>">Size</a></td>
+        <td class="sign"><a href="/<?= header_link('snatched') ?>"><img src="static/styles/<?= $LoggedUser['StyleName'] ?>/images/snatched.png" alt="Snatches" title="Snatches" /></a></td>
+        <td class="sign"><a href="/<?= header_link('seeders') ?>"><img src="static/styles/<?= $LoggedUser['StyleName'] ?>/images/seeders.png" alt="Seeders" title="Seeders" /></a></td>
+        <td class="sign"><a href="/<?= header_link('leechers') ?>"><img src="static/styles/<?= $LoggedUser['StyleName'] ?>/images/leechers.png" alt="Leechers" title="Leechers" /></a></td>
         <td>Uploader</td>
     </tr>
     <?php
@@ -595,7 +595,7 @@ $Bookmarks = all_bookmarks('torrent');
         $numtags=0;
         foreach ($TagList as $Tag) {
             if ($numtags++>=$LoggedUser['MaxTags'])  break;
-            $TorrentTags[] = '<a href="torrents.php?taglist=' . $Tag . '">' . $Tag . '</a>';
+            $TorrentTags[] = '<a href="/torrents.php?taglist=' . $Tag . '">' . $Tag . '</a>';
         }
         $TorrentTags = implode(' ', $TorrentTags);
 
@@ -611,7 +611,7 @@ $Bookmarks = all_bookmarks('torrent');
         <tr class="torrent <?=($IsMarkedForDeletion?'redbar':"row$row")?>">
             <td class="center cats_col">
                 <?php  $CatImg = 'static/common/caticons/' . $NewCategories[$NewCategoryID]['image']; ?>
-                <div title="<?= $NewCategories[$NewCategoryID]['tag'] ?>"><a href="torrents.php?filter_cat[<?=$NewCategoryID?>]=1"><img src="<?= $CatImg ?>" /></a></div>
+                <div title="<?= $NewCategories[$NewCategoryID]['tag'] ?>"><a href="/torrents.php?filter_cat[<?=$NewCategoryID?>]=1"><img src="<?= $CatImg ?>" /></a></div>
             </td>
             <td>
 <?php
@@ -626,7 +626,7 @@ $Bookmarks = all_bookmarks('torrent');
                 if($Data['Time'] > $LoggedUser['LastBrowse']) { $newtag = '<span class="newtorrent">(New!)</span>'; }
 
                 if ($LoggedUser['HideFloat']) {?>
-                    <?=$AddExtra.$newtag?> <a href="torrents.php?id=<?=$GroupID?>"><?=$GroupName?></a>
+                    <?=$AddExtra.$newtag?> <a href="/torrents.php?id=<?=$GroupID?>"><?=$GroupName?></a>
 <?php           } else {
                     if (preg_match('/(fapping.empornium.sx|jerking.empornium.me)/', $Image)) {
                         $Image = preg_replace('/(?<=[^(th|md)])\.(jpg|jpeg|png|bmp)/', '.th.$1', $Image);
@@ -637,7 +637,7 @@ $Bookmarks = all_bookmarks('torrent');
                         var overlay<?=$GroupID?> = <?=json_encode($Overlay)?>
                     </script>
                     <?=$AddExtra.$newtag?>
-                    <a href="torrents.php?id=<?=$GroupID?>" onmouseover="return overlib(overlay<?=$GroupID?>, FULLHTML);" onmouseout="return nd();"><?=display_str($GroupName).$Reported?></a>
+                    <a href="/torrents.php?id=<?=$GroupID?>" onmouseover="return overlib(overlay<?=$GroupID?>, FULLHTML);" onmouseout="return nd();"><?=display_str($GroupName).$Reported?></a>
 
 <?php           }  ?>
                 <br />

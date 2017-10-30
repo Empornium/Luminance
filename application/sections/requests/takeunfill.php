@@ -54,12 +54,12 @@ if ( $FillerID == $UploaderID || $UploaderID == 0) {
         $DB->query("UPDATE users_main SET Downloaded = Downloaded + ".($RequestVotes['TotalBounty']-$FillerUploaded)." WHERE ID = ".$FillerID);
 
         write_user_log($FillerID, "Removed -". get_size($FillerUploaded). " from Download AND added +". get_size(($RequestVotes['TotalBounty']-$FillerUploaded)). " to Upload because request [url=/requests.php?action=view&id={$RequestID}]{$Title}[/url] was unfilled.".$Reason);
-        send_pm($FillerID, 0, db_string("A request you filled has been unfilled"), db_string("The request '[url=http://".SITE_URL."/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=http://".SITE_URL."/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason."\nThe bounty of ".get_size(($RequestVotes['TotalBounty']-$FillerUploaded))." has been removed from your upload stats.\nYour account lacked sufficient upload for the full bounty to be removed, ".get_size($FillerUploaded)." was removed from your upload and the remaining bounty of ".get_size(($RequestVotes['TotalBounty']-$FillerUploaded))." has been added to your download stats."));
+        send_pm($FillerID, 0, db_string("A request you filled has been unfilled"), db_string("The request '[url=/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason."\nThe bounty of ".get_size(($RequestVotes['TotalBounty']-$FillerUploaded))." has been removed from your upload stats.\nYour account lacked sufficient upload for the full bounty to be removed, ".get_size($FillerUploaded)." was removed from your upload and the remaining bounty of ".get_size(($RequestVotes['TotalBounty']-$FillerUploaded))." has been added to your download stats."));
     } else {
         $DB->query("UPDATE users_main SET Uploaded = Uploaded - ".$RequestVotes['TotalBounty']." WHERE ID = ".$FillerID);
 
         write_user_log($FillerID, "Removed -". get_size($RequestVotes['TotalBounty']). " because request [url=/requests.php?action=view&id={$RequestID}]{$Title}[/url] was unfilled.".$Reason);
-        send_pm($FillerID, 0, db_string("A request you filled has been unfilled"), db_string("The request '[url=http://".SITE_URL."/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=http://".SITE_URL."/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason."\nThe bounty of ".get_size($RequestVotes['TotalBounty'])." has been removed from your upload stats."));
+        send_pm($FillerID, 0, db_string("A request you filled has been unfilled"), db_string("The request '[url=/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason."\nThe bounty of ".get_size($RequestVotes['TotalBounty'])." has been removed from your upload stats."));
     }
     $Cache->delete_value('user_stats_'.$FillerID);
 } else {
@@ -70,12 +70,12 @@ if ( $FillerID == $UploaderID || $UploaderID == 0) {
         $DB->query("UPDATE users_main SET Downloaded = Downloaded + ".(($RequestVotes['TotalBounty']/2)-$FillerUploaded)." WHERE ID = ".$FillerID);
 
         write_user_log($FillerID, "Removed -". get_size($FillerUploaded). " from Download AND added +". get_size((($RequestVotes['TotalBounty']/2)-$FillerUploaded)). " to Upload because request [url=/requests.php?action=view&id={$RequestID}]{$Title}[/url] was unfilled.".$Reason);
-        send_pm($FillerID, 0, db_string("A request you filled has been unfilled"), db_string("The request '[url=http://".SITE_URL."/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=http://".SITE_URL."/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason."\nThe bounty of ".get_size((($RequestVotes['TotalBounty']/2)-$FillerUploaded))." has been removed from your upload stats.\nYour account lacked sufficient upload for the full bounty to be removed, ".get_size($FillerUploaded)." was removed from your upload and the remaining bounty of ".get_size((($RequestVotes['TotalBounty']/2)-$FillerUploaded))." has been added to your download stats."));
+        send_pm($FillerID, 0, db_string("A request you filled has been unfilled"), db_string("The request '[url=/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason."\nThe bounty of ".get_size((($RequestVotes['TotalBounty']/2)-$FillerUploaded))." has been removed from your upload stats.\nYour account lacked sufficient upload for the full bounty to be removed, ".get_size($FillerUploaded)." was removed from your upload and the remaining bounty of ".get_size((($RequestVotes['TotalBounty']/2)-$FillerUploaded))." has been added to your download stats."));
     } else {
         $DB->query("UPDATE users_main SET Uploaded = Uploaded - ".($RequestVotes['TotalBounty']/2)." WHERE ID = ".$FillerID);
 
         write_user_log($FillerID, "Removed -". get_size(($RequestVotes['TotalBounty'])/2). " because request [url=/requests.php?action=view&id={$RequestID}]{$Title}[/url] was unfilled.".$Reason);
-        send_pm($FillerID, 0, db_string("A request you filled has been unfilled"), db_string("The request '[url=http://".SITE_URL."/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=http://".SITE_URL."/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason."\nThe bounty of ".get_size((($RequestVotes['TotalBounty']/2)))." has been removed from your upload stats."));
+        send_pm($FillerID, 0, db_string("A request you filled has been unfilled"), db_string("The request '[url=/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason."\nThe bounty of ".get_size((($RequestVotes['TotalBounty']/2)))." has been removed from your upload stats."));
     }
 
     // Remove from uploader
@@ -85,19 +85,19 @@ if ( $FillerID == $UploaderID || $UploaderID == 0) {
         $DB->query("UPDATE users_main SET Downloaded = Downloaded + ".(($RequestVotes['TotalBounty']/2)-$UploaderUploaded)." WHERE ID = ".$UploaderID);
 
         write_user_log($UploaderID, "Removed -". get_size($UploaderUploaded). " from Download AND added +". get_size((($RequestVotes['TotalBounty']/2)-$UploaderUploaded)). " to Upload because request [url=/requests.php?action=view&id={$RequestID}]{$Title}[/url] was unfilled.".$Reason);
-        send_pm($UploaderID, 0, db_string("A request which was filled with one of your torrents has been unfilled"), db_string("The request '[url=http://".SITE_URL."/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=http://".SITE_URL."/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason."\nThe bounty of ".get_size((($RequestVotes['TotalBounty']/2)-$UploaderUploaded))." has been removed from your upload stats.\nYour account lacked sufficient upload for the full bounty to be removed, ".get_size($UploaderUploaded)." was removed from your upload and the remaining bounty of ".get_size((($RequestVotes['TotalBounty']/2)-$UploaderUploaded))." has been added to your download stats."));
+        send_pm($UploaderID, 0, db_string("A request which was filled with one of your torrents has been unfilled"), db_string("The request '[url=/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason."\nThe bounty of ".get_size((($RequestVotes['TotalBounty']/2)-$UploaderUploaded))." has been removed from your upload stats.\nYour account lacked sufficient upload for the full bounty to be removed, ".get_size($UploaderUploaded)." was removed from your upload and the remaining bounty of ".get_size((($RequestVotes['TotalBounty']/2)-$UploaderUploaded))." has been added to your download stats."));
     } else {
         $DB->query("UPDATE users_main SET Uploaded = Uploaded - ".($RequestVotes['TotalBounty']/2)." WHERE ID = ".$UploaderID);
 
         write_user_log($UploaderID, "Removed -". get_size(($RequestVotes['TotalBounty']/2)). " because request [url=/requests.php?action=view&id={$RequestID}]{$Title}[/url] was unfilled.".$Reason);
-        send_pm($UploaderID, 0, db_string("A request which was filled with one of your torrents has been unfilled"), db_string("The request '[url=http://".SITE_URL."/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=http://".SITE_URL."/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason."\nThe bounty of ".get_size((($RequestVotes['TotalBounty']/2)))." has been removed from your upload stats."));
+        send_pm($UploaderID, 0, db_string("A request which was filled with one of your torrents has been unfilled"), db_string("The request '[url=/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason."\nThe bounty of ".get_size((($RequestVotes['TotalBounty']/2)))." has been removed from your upload stats."));
     }
 
     $Cache->delete_value('user_stats_'.$FillerID);
     $Cache->delete_value('user_stats_'.$UploaderID);
 }
 
-send_pm($UserID, 0, db_string("A request you created has been unfilled"), db_string("The request '[url=http://".SITE_URL."/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=http://".SITE_URL."/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason));
+send_pm($UserID, 0, db_string("A request you created has been unfilled"), db_string("The request '[url=/requests.php?action=view&id=".$RequestID."]".$FullName."[/url]' was unfilled by [url=/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url].".$Reason));
 write_log("Request $RequestID ($FullName), with a ".get_size($RequestVotes['TotalBounty'])." bounty, was un-filled by ".$LoggedUser['Username']." for the reason: ".$_POST['reason']);
 
 $Cache->delete_value('request_'.$RequestID);

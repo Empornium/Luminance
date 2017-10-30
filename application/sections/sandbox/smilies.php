@@ -38,9 +38,9 @@ foreach ($Unadded as $file) {
 
         <div class="linkbox" >
 
-          [<a href="sandbox.php?action=smilies&amp;sort=0"> unsorted </a>] &nbsp;&nbsp;&nbsp;
-          [<a href="sandbox.php?action=smilies&amp;sort=1&amp;asc=1"> sort A-Z </a>] &nbsp;&nbsp;&nbsp;
-          [<a href="sandbox.php?action=smilies&amp;sort=1&amp;asc=0"> sort Z-A </a>] &nbsp;&nbsp;&nbsp;
+          [<a href="/sandbox.php?action=smilies&amp;sort=0"> unsorted </a>] &nbsp;&nbsp;&nbsp;
+          [<a href="/sandbox.php?action=smilies&amp;sort=1&amp;asc=1"> sort A-Z </a>] &nbsp;&nbsp;&nbsp;
+          [<a href="/sandbox.php?action=smilies&amp;sort=1&amp;asc=0"> sort Z-A </a>] &nbsp;&nbsp;&nbsp;
 
         </div>
 <?php

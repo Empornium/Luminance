@@ -105,7 +105,7 @@ show_header(empty($LoggedUser['ShortTitles'])?"Forums > {$forumName}":$forumName
     </div>
 <?php if (check_perms('site_moderate_forums')) { ?>
     <div class="linkbox">
-        <a href="forums.php?action=edit_rules&amp;forumid=<?=$ForumID?>">Change specific rules</a>
+        <a href="/forums.php?action=edit_rules&amp;forumid=<?=$ForumID?>">Change specific rules</a>
     </div>
 <?php } ?>
 <?php if (!empty($Forums[$ForumID]['SpecificRules'])) { ?>
@@ -117,7 +117,7 @@ show_header(empty($LoggedUser['ShortTitles'])?"Forums > {$forumName}":$forumName
     $Thread = get_thread_info($ThreadIDs);
     if ($Thread === false) { error(404); }
 ?>
-            &nbsp;&nbsp;[<a href="forums.php?action=viewthread&amp;threadid=<?=$ThreadIDs?>"><?=$Thread['Title']?></a>]&nbsp;&nbsp;
+            &nbsp;&nbsp;[<a href="/forums.php?action=viewthread&amp;threadid=<?=$ThreadIDs?>"><?=$Thread['Title']?></a>]&nbsp;&nbsp;
 <?php } ?>
     </div>
 <?php } ?>
@@ -127,7 +127,7 @@ $Pages=get_pages($Page,$Forums[$ForumID]['NumTopics'],TOPICS_PER_PAGE,9);
 echo $Pages;
 ?>
     </div>
-        <div class="head"><a href="forums.php">Forums</a> &gt; <?=display_str($Forums[$ForumID]['Name'])?></div>
+        <div class="head"><a href="/forums.php">Forums</a> &gt; <?=display_str($Forums[$ForumID]['Name'])?></div>
     <table class="forum_list" width="100%">
         <tr class="colhead">
             <td style="width:2%;"></td>
@@ -186,7 +186,7 @@ if (count($Forum) == 0) {
                     }
                     continue;
                 }
-                $PageLinks[]='<a href="forums.php?action=viewthread&amp;threadid='.$TopicID.'&amp;page='.$i.'">'.$i.'</a>';
+                $PageLinks[]='<a href="/forums.php?action=viewthread&amp;threadid='.$TopicID.'&amp;page='.$i.'">'.$i.'</a>';
             }
             $PagesText.=implode(' ', $PageLinks);
             $PagesText.=')';
@@ -212,13 +212,13 @@ if (count($Forum) == 0) {
         unset($PageLinks);
 ?>
                 <strong>
-                    <a href="forums.php?action=viewthread&amp;threadid=<?=$TopicID?>" title="<?=display_str($Title)?>"><?=display_str(cut_string($Title, $TopicLength)) ?></a>
+                    <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>" title="<?=display_str($Title)?>"><?=display_str(cut_string($Title, $TopicLength)) ?></a>
                 </strong>
                 <?=$PagesText?>
             </span>
 <?php		if (!empty($LastRead[$TopicID])) { ?>
             <span style="float: left;" class="last_read" title="Jump to last read">
-                <a href="forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;page=<?=$LastRead[$TopicID]['Page']?>#post<?=$LastRead[$TopicID]['PostID']?>"></a>
+                <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;page=<?=$LastRead[$TopicID]['Page']?>#post<?=$LastRead[$TopicID]['PostID']?>"></a>
             </span>
 <?php		} ?>
             <span style="float: right;" class="first_poster">
@@ -232,7 +232,7 @@ if (count($Forum) == 0) {
                     by <?=format_username($LastAuthorID, $LastAuthorName)?> <?=time_diff($LastTime,1)?>
                 </span>
             <span style="float: left;" class="last_post" title="Jump to last post">
-                <a href="forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$LastID?>#post<?=$LastID?>"></a>
+                <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$LastID?>#post<?=$LastID?>"></a>
             </span>
             </td>
     </tr>

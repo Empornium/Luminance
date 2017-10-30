@@ -11,28 +11,35 @@ var BBCode = {
 };
 
 function Validate_Form(message_div, fields) {
-    if ( !is_array(fields)) {
+    var failed    = false;
+    var err_mess  = '';
+
+    if (!is_array(fields)) {
         if (fields == null) return false;
         fields = new Array(fields);
     }
-    message_div = '#' + message_div;
-    failed = false;
-    for (i=0;i<fields.length;i++) {
-        var message =  jQuery.trim($('#'+fields[i]).raw().value);
-        //alert('checking field: #'+fields[i] + ' msg: '+ message);
-        if (message==null || message==""){
-            failed=true;
+
+    for (var i = 0, len = fields.length; i < len; i++) {
+        var message = jQuery.trim($('#'+fields[i]).raw().value);
+
+        // Empty posts
+        if (message == null || message == ""){
+            failed = true;
+            err_mess = 'One or more fields were blank.';
             break;
         }
     }
+
     if (failed) {
-	  $(message_div).raw().innerHTML = 'One or more fields were blank.';
+        message_div = '#' + message_div;
+        $(message_div).raw().innerHTML = err_mess;
         $(message_div).add_class('alert');
         $(message_div).show();
         jQuery(message_div).fadeIn(0);
-        setTimeout("jQuery('" + message_div + "').fadeOut(400)", 2000);
+        setTimeout("jQuery('" + message_div + "').fadeOut(400)", 5000);
         return false;
     }
+
     return true;
 }
 
@@ -59,6 +66,7 @@ function Sandbox_Preview() {
         $('#preview_content').raw().innerHTML = response;
         $('#preview').show();
         $('#preview_button').raw().value = "Update Preview";
+		Prism.highlightAll();
         lazy_load();
     });
 }
@@ -71,6 +79,7 @@ function Quick_Preview_Blog() {
 		$('#quickreplypreview').show();
 		$('#contentpreview').raw().innerHTML = response;
 		$('#quickreplytext').hide();
+		Prism.highlightAll();
         lazy_load();
 	});
 }
@@ -90,6 +99,7 @@ function Preview_Article() {
 		$('#quickreplypreview').show();
 		$('#contentpreview').raw().innerHTML = response;
 		$('#quickreplytext').hide();
+		Prism.highlightAll();
         lazy_load();
 	});
 }

@@ -44,6 +44,12 @@ class Repos extends Service {
             case 'options':
                 $cls = 'OptionRepository';
                 break;
+            case 'permissions':
+                $cls = 'PermissionRepository';
+                break;
+            case 'floods':
+                $cls = 'RequestFloodRepository';
+                break;
             default:
                 throw new InternalError("No such repository: {$name}");
         }

@@ -12,9 +12,10 @@ abstract class Slave {
         $this->master = $master;
         $this->prepareRepositories();
         $this->prepareServices();
+        $this->request = $this->master->request;
     }
 
-    public function registerOptions(Master $master) {
+    public static function registerOptions(Master $master) {
         if (isset(static::$defaultOptions)) {
             $master->options->register(static::$defaultOptions);
         }

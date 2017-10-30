@@ -168,7 +168,7 @@ show_header('Manage articles','bbcode');
             <tr class="row<?=$Row?>">
                 <td class="nobr topic_link">
                     <span style="float:left">
-                        <a href="articles.php?topic=<?=$TopicID?>" target="_blank" title="goto article"><?=display_str($Title)?></a>
+                        <a href="/articles.php?topic=<?=$TopicID?>" target="_blank" title="goto article"><?=display_str($Title)?></a>
                     </span>
                     <span style="float:right" class="small">posted <?=time_diff($ArticleTime)?></span>
                 </td>
@@ -176,8 +176,8 @@ show_header('Manage articles','bbcode');
                     <span style="float:left"><?=display_str($Description)?></span>
                     <span style="float:right">
                         <?php  if($MinClass)echo "[{$ClassLevels[$MinClass][Name]}+] "; ?>
-                        <a href="tools.php?action=editarticle&amp;id=<?=$ArticleID?>">[Edit]</a>
-                        <a href="tools.php?action=deletearticle&amp;id=<?=$ArticleID?>&amp;auth=<?=$LoggedUser['AuthKey']?>" onClick="return confirm('Are you sure you want to delete this article?');">[Delete]</a>
+                        <a href="/tools.php?action=editarticle&amp;id=<?=$ArticleID?>">[Edit]</a>
+                        <a href="/tools.php?action=deletearticle&amp;id=<?=$ArticleID?>&amp;auth=<?=$LoggedUser['AuthKey']?>" onClick="return confirm('Are you sure you want to delete this article?');">[Delete]</a>
                     </span>
                 </td>
             </tr>

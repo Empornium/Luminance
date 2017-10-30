@@ -3,7 +3,9 @@ namespace Luminance\Builtins\Authentication;
 
 use Luminance\Core\Master;
 use Luminance\Core\Plugin;
+use Luminance\Errors\UserError;
 use Luminance\Errors\AuthError;
+use Luminance\Entities\Session;
 use Luminance\Responses\Redirect;
 use Luminance\Responses\Response;
 use Luminance\Responses\Rendered;
@@ -18,21 +20,31 @@ class AuthenticationPlugin extends Plugin {
         'secretary' => 'Secretary',
     ];
 
+    protected static $useRepositories = [
+        'users'         => 'UserRepository',
+    ];
+
     public $routes = [
         # [method] [path match] [target function] [auth level] <extra arguments>
-        [ 'GET',  'login',    0, 'login_form'    ],
-        [ 'POST', 'login',    0, 'login'         ],
-        [ 'GET',  'logout',   2, 'logout'        ],
-        [ 'GET',  'disabled', 0, 'disabled_form' ],
-        [ 'GET',  'index',    0, 'index'         ],
+        [ 'GET',  'login',               0, 'login_form'             ],
+        [ 'POST', 'login',               0, 'login'                  ],
+        [ 'GET',  'twofactor/login',     2, 'twofactor_login_form'   ],
+        [ 'POST', 'twofactor/login',     2, 'twofactor_login'        ],
+        [ 'GET',  'twofactor/recover',   2, 'twofactor_recover_form' ],
+        [ 'POST', 'twofactor/recover',   2, 'twofactor_recover'      ],
+        [ 'GET',  'logout',              2, 'logout'                 ],
+        [ 'GET',  'disabled',            0, 'disabled_form'          ],
+        [ 'GET',  'index',               0, 'index'                  ],
     ];
 
     public static function register(Master $master) {
-        $master->prependRoute([ '*', '',          0, 'plugin', 'Authentication', 'index' ]);
-        $master->prependRoute([ '*', 'index.php', 0, 'plugin', 'Authentication', 'index' ]);
-        $master->prependRoute([ '*', 'login',     0, 'plugin', 'Authentication', 'login' ]);
-        $master->prependRoute([ '*', 'logout',    0, 'plugin', 'Authentication', 'logout' ]);
-        $master->prependRoute([ '*', 'disabled',  0, 'plugin', 'Authentication', 'disabled' ]);
+        $master->prependRoute([ '*', '',                   0, 'plugin', 'Authentication', 'index'             ]);
+        $master->prependRoute([ '*', 'index.php',          0, 'plugin', 'Authentication', 'index'             ]);
+        $master->prependRoute([ '*', 'login',              0, 'plugin', 'Authentication', 'login'             ]);
+        $master->prependRoute([ '*', 'logout',             2, 'plugin', 'Authentication', 'logout'            ]);
+        $master->prependRoute([ '*', 'disabled',           0, 'plugin', 'Authentication', 'disabled'          ]);
+        $master->prependRoute([ '*', 'twofactor/login',    2, 'plugin', 'Authentication', 'twofactor/login'   ]);
+        $master->prependRoute([ '*', 'twofactor/recover',  2, 'plugin', 'Authentication', 'twofactor/recover' ]);
     }
 
     public function index() {
@@ -49,7 +61,6 @@ class AuthenticationPlugin extends Plugin {
             return new Redirect('/');
         }
         $this->guardian->check_ip_ban();
-        $this->guardian->detect();
         return new Rendered('@Authentication/login.html');
     }
 
@@ -72,7 +83,6 @@ class AuthenticationPlugin extends Plugin {
             return new Redirect('/');
         }
         $this->guardian->check_ip_ban();
-        $this->guardian->detect();
         if (!isset($this->request->post['token']))
         {
             $this->flasher->error("Authentication failure.");
@@ -88,11 +98,78 @@ class AuthenticationPlugin extends Plugin {
 
         try {
             $Session = $this->auth->authenticate($Username, $Password, $Options);
-            return new Redirect('/');
+            $user = $this->users->load($Session->UserID);
+            if (isset($user->twoFactorSecret) && !$Session->getFlag(SESSION::TWO_FACTOR)) {
+                return new Redirect('/twofactor/login');
+            } else {
+                return new Redirect('/');
+            }
         } catch (AuthError $e) {
             $this->flasher->error($e->public_message, ['username' => $Username]);
             return new Redirect($e->redirect);
         }
+    }
+
+    public function twofactor_login_form() {
+        if ($this->request->session->getFlag(SESSION::TWO_FACTOR)) {
+            return new Redirect('/');
+        }
+        $user = $this->request->user;
+        if (!isset($user->twoFactorSecret)) {
+            throw new AuthError('Two Factor Authentication is not enabled on this account', 'Unauthorized', '/');
+        }
+
+        // Force public page display
+        $this->request->session = null;
+        $this->request->user = null;
+
+        $code = $this->auth->twofactor_getCode($user);
+        return new Rendered('@Authentication/twofactor_login.html', ['user' => $user]);
+    }
+
+    public function twofactor_login() {
+        if (!isset($this->request->post['token']) || !isset($this->request->post['code'])) {
+            $this->flasher->error("Authentication failure.");
+            return new Redirect('/twofactor/login');
+        }
+        try {
+            $token=$this->request->post['token'];
+            $this->secretary->checkToken($token, 'users.twofactor.login', 600);
+        } catch (UserError $e) {
+            throw new AuthError($e->public_message, $e->public_description, '/twofactor/login');
+        }
+
+        $user = $this->request->user;
+        $code = $this->request->post['code'];
+
+        $this->auth->twofactor_authenticate($user, $code);
+        return new Redirect('/');
+    }
+
+    public function twofactor_recover_form() {
+        if ($this->request->session->getFlag(SESSION::TWO_FACTOR)) {
+            return new Redirect('/');
+        }
+        $user = $this->request->user;
+        $nick = $user->Username;
+
+        // Force public page display
+        $this->request->session = null;
+        $this->request->user = null;
+
+        $nick = preg_replace('/[^a-zA-Z0-9\[\]\\`\^\{\}\|_]/', '', $nick);
+        if (strlen($nick) == 0) {
+            $nick = "EmpGuest?";
+        }
+
+        $web_irc=$this->settings->site->help_url."nick=$nick".$this->settings->irc->disabled_chan;
+        return new Rendered('@Authentication/twofactor_recover.html',
+            ['web_irc' => $web_irc,
+             'irc_server' => $this->settings->irc->server,
+             'disabled_chan' => $this->settings->irc->disabled_chan]);
+    }
+
+    public function twofactor_recover() {
     }
 
     public function logout() {
@@ -105,10 +182,10 @@ class AuthenticationPlugin extends Plugin {
             return new Redirect('/');
         }
         $this->guardian->check_ip_ban();
-        $this->guardian->detect();
-	    $flash = $this->flasher->grabFlashes()[0];
+	      $flash = $this->flasher->grabFlashes();
+        if(!is_null($flash)) $flash = $flash[0];
 
-	    $nick = '';
+	      $nick = '';
         if (isset($flash->data->username)) $nick = $flash->data->username;
 
         $nick = preg_replace('/[^a-zA-Z0-9\[\]\\`\^\{\}\|_]/', '', $nick);
@@ -120,9 +197,9 @@ class AuthenticationPlugin extends Plugin {
 
         $web_irc=$this->settings->site->help_url."nick=$nick".$this->settings->irc->disabled_chan;
         return new Rendered('@Authentication/disabled.html',
-                                ['web_irc' => $web_irc,
-                                 'irc_server' => $this->settings->irc->server,
-                                 'disabled_chan' => $this->settings->irc->disabled_chan]);
+            ['web_irc' => $web_irc,
+             'irc_server' => $this->settings->irc->server,
+             'disabled_chan' => $this->settings->irc->disabled_chan]);
     }
 
 }

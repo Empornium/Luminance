@@ -39,10 +39,10 @@ show_header('Top '.$Limit.' Torrents','overlib');
 <div class="thin">
     <h2> Top <?=$Limit?> Torrents </h2>
     <div class="linkbox">
-        <a href="top10.php?type=torrents"><strong>[Torrents]</strong></a>
-        <a href="top10.php?type=users">[Users]</a>
-        <a href="top10.php?type=tags">[Tags]</a>
-        <a href="top10.php?type=taggers">[Taggers]</a>
+        <a href="/top10.php?type=torrents"><strong>[Torrents]</strong></a>
+        <a href="/top10.php?type=users">[Users]</a>
+        <a href="/top10.php?type=tags">[Tags]</a>
+        <a href="/top10.php?type=taggers">[Taggers]</a>
     </div>
 <?php
 
@@ -99,7 +99,7 @@ $FreeleechToggleQuery .= 'freeleech=' . $FreeleechToggleName;
 
 ?>
     <div class="linkbox" style="text-align: right;">
-        <a href="top10.php?<?=$FreeleechToggleQuery?>">[<?=ucfirst($FreeleechToggleName)?> Freeleech in Top 10]</a>
+        <a href="/top10.php?<?=$FreeleechToggleQuery?>">[<?=ucfirst($FreeleechToggleName)?> Freeleech in Top 10]</a>
     </div>
 <?php
 
@@ -237,9 +237,9 @@ function generate_torrent_table($Caption, $Tag, $Details, $Limit)
         <div class="head">Top <?=$Limit.' '.$Caption?>
 <?php 	if (empty($_GET['advanced'])) { ?>
         <small>
-            - [<a href="top10.php?type=torrents&amp;limit=100&amp;details=<?=$Tag?>">Top 100</a>]
-            - [<a href="top10.php?type=torrents&amp;limit=250&amp;details=<?=$Tag?>">Top 250</a>]
-            - [<a href="top10.php?type=torrents&amp;limit=500&amp;details=<?=$Tag?>">Top 500</a>]
+            - [<a href="/top10.php?type=torrents&amp;limit=100&amp;details=<?=$Tag?>">Top 100</a>]
+            - [<a href="/top10.php?type=torrents&amp;limit=250&amp;details=<?=$Tag?>">Top 250</a>]
+            - [<a href="/top10.php?type=torrents&amp;limit=500&amp;details=<?=$Tag?>">Top 500</a>]
         </small>
 <?php 	} ?>
         </div>
@@ -292,7 +292,7 @@ function generate_torrent_table($Caption, $Tag, $Details, $Limit)
             $TorrentTags=explode(' ',$TorrentTags);
             foreach ($TorrentTags as $TagKey => $TagName) {
                 $TagName = str_replace('_','.',$TagName);
-                $TagList[]='<a href="torrents.php?taglist='.$TagName.'">'.$TagName.'</a>';
+                $TagList[]='<a href="/torrents.php?taglist='.$TagName.'">'.$TagName.'</a>';
             }
             $PrimaryTag = $TorrentTags[0];
             $TagList = implode(' ', $TagList);
@@ -313,7 +313,7 @@ function generate_torrent_table($Caption, $Tag, $Details, $Limit)
         <td>
  <?php
                 if ($LoggedUser['HideFloat']) {?>
-                    <?=$Icons?> <a href="torrents.php?id=<?=$GroupID?>"><?=$GroupName?></a>
+                    <?=$Icons?> <a href="/torrents.php?id=<?=$GroupID?>"><?=$GroupName?></a>
 <?php               } else {
                     $Overlay = get_overlay_html($GroupName, anon_username($UploaderName, $IsAnon), $Image, $Seeders, $Leechers, $Size, $Snatched);
                     ?>
@@ -321,7 +321,7 @@ function generate_torrent_table($Caption, $Tag, $Details, $Limit)
                         var overlay<?=$GroupID?> = <?=json_encode($Overlay)?>
                     </script>
                     <?=$Icons?>
-                    <a href="torrents.php?id=<?=$GroupID?>" onmouseover="return overlib(overlay<?=$GroupID?>, FULLHTML);" onmouseout="return nd();"><?=$GroupName?></a>
+                    <a href="/torrents.php?id=<?=$GroupID?>" onmouseover="return overlib(overlay<?=$GroupID?>, FULLHTML);" onmouseout="return nd();"><?=$GroupName?></a>
 <?php               }  ?>
 
     <?php  if ($LoggedUser['HideTagsInLists'] !== 1) { ?>

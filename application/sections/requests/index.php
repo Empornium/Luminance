@@ -2,11 +2,6 @@
 enforce_login();
 include(SERVER_ROOT.'/sections/requests/functions.php');
 
-// Minimum and default amount of upload to remove from the user when they vote.
-// Also change in static/functions/requests.js
-$MinimumVote = 100*1024*1024;
-$MinimumBounty = 1024*1024*1024; // new requests
-
 if (!empty($LoggedUser['DisableRequests'])) {
     error('Your request privileges have been removed.');
 }
@@ -161,6 +156,30 @@ if (!isset($_REQUEST['action'])) {
             // Delete thread info cache (eg. number of pages)
             $Cache->delete('request_comments_'.$GroupID);
         break;
+
+        case 'next':
+            enforce_login();
+
+            if(empty($_GET['id']) || !is_number($_GET['id'])) error(0);
+
+            $DB->query("SELECT ID FROM requests WHERE ID>'".$_GET['id']."' ORDER BY ID ASC LIMIT 1" );
+            list($RequestID) = $DB->next_record();
+            if(!$RequestID) error('Cannot find a next record after <a href="/requests.php?action=view&id='.$_GET['id'].'">the request you came from</a>');
+
+            header("Location: requests.php?action=view&id=".$RequestID);
+            break;
+
+        case 'prev':
+            enforce_login();
+
+            if(empty($_GET['id']) || !is_number($_GET['id'])) error(0);
+
+            $DB->query("SELECT ID FROM requests WHERE ID<'".$_GET['id']."' ORDER BY ID DESC LIMIT 1" );
+            list($RequestID) = $DB->next_record();
+            if(!$RequestID) error('Cannot find a previous record to <a href="/requests.php?action=view&id='.$_GET['id'].'">the request you came from</a>');
+
+            header("Location: requests.php?action=view&id=".$RequestID);
+            break;
 
         default:
             error(0);

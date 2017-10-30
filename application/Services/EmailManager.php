@@ -15,10 +15,16 @@ class EmailManager extends Service {
 
     protected static $useRepositories = [
         'emails' => 'EmailRepository',
+        'users'  => 'UserRepository',
     ];
 
     protected static $useServices = [
-        'db' => 'DB',
+        'db'        => 'DB',
+        'secretary' => 'Secretary',
+        'crypto'    => 'Crypto',
+        'tpl'       => 'TPL',
+        'settings'  => 'Settings',
+        'flasher'   => 'Flasher',
     ];
 
     public function reduceEmail($address) {
@@ -43,13 +49,30 @@ class EmailManager extends Service {
         return "{$user}@{$domain}";
     }
 
-    public function checkEmailAvailable($address) {
+    public function validateAddress($address) {
+        $email = $this->emails->get('Address=:address', [':address' => $address]);
+        if (!$email) throw new UserError("Unknown email.");
+        $email->setFlags(Email::VALIDATED);
+        $default = $this->emails->get('UserID=:userID AND Flags & :default != 0',
+            [':userID' => $email->UserID, ':default' => Email::IS_DEFAULT]);
+        if (is_null($default)) {
+            $email->setFlags(Email::IS_DEFAULT);
+            $user = $this->users->load($email->userID);
+            $user->emailID = $email->ID;
+            $this->users->save($user);
+        }
+        $this->emails->save($email);
+    }
+
+    public function checkEmailAvailable($address, $checkLegacy = true) {
         // reduce fannies around with the domain. :(
         //$address = $this->reduceEmail($address);
         $email = $this->emails->get_by_address($address);
         if ($email) {
             return false;
         }
+
+        if (!$checkLegacy) return true;
 
         $stmt = $this->db->raw_query("SELECT ID FROM users_main WHERE Email = ?", [$address]);
         $user_legacy = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -59,12 +82,17 @@ class EmailManager extends Service {
         return true;
     }
 
-    public function newEmail($userID, $address) {
+    public function newEmail($userID, $address, $checkLegacy = true) {
         $email = new Email();
         $email->UserID = $userID;
         $email->Address = $address;
         $email->Reduced = $this->reduceEmail($address);
+        $email->changed = new \DateTime;
         $email->Flags = 0;
+
+        if (!$this->checkEmailAvailable($address, $checkLegacy))
+            throw new UserError("Email address already in use");
+
         $this->emails->save($email);
 
         /*
@@ -93,5 +121,29 @@ class EmailManager extends Service {
         return $email;
     }
 
+    public function send_confirmation($emailID) {
+        $email = $this->emails->load($emailID);
+        $token = $this->secretary->getExternalToken($email->Address, 'users.email.confirm');
+        $token = $this->crypto->encrypt(['email' => $email->Address, 'token' => $token], 'default', true);
 
+        $subject = 'Confirm email address';
+        $email_body = [];
+        $email_body['userID']   = $email->UserID;
+        $email_body['token']    = $token;
+        $email_body['settings'] = $this->settings;
+        $email_body['scheme']   = $this->master->request->ssl ? 'https' : 'http';
+
+        if ($this->settings->site->debug_mode) {
+            $body = $this->tpl->render('confirm_email.flash', $email_body);
+            $this->flasher->notice($body);
+        } else {
+            $body = $this->tpl->render('confirm_email.email', $email_body);
+            $this->secretary->send_email($email->Address, $subject, $body);
+            $this->flasher->notice("An e-mail with further instructions has been sent to the provided address.");
+        }
+
+        $email->Changed = new \DateTime;
+        $this->emails->save($email);
+
+    }
 }

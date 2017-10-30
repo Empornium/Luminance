@@ -165,13 +165,13 @@ if ($Old) {
 // Start page with current email
 ?>
 <div class="thin">
-        <div class="head">Old email history for <a href="user.php?id=<?=$UserID ?>"><?=$Username ?></a></div>
+        <div class="head">Old email history for <a href="/user.php?id=<?=$UserID ?>"><?=$Username ?></a></div>
     <table width="100%">
         <tr class="colhead">
             <td>Current email</td>
             <td>Start</td>
             <td>End</td>
-            <td>Current IP [<a href="userhistory.php?action=ips&amp;userid=<?=$UserID ?>">History</a>]</td>
+            <td>Current IP [<a href="/userhistory.php?action=ips&amp;userid=<?=$UserID ?>">History</a>]</td>
             <td>Set from IP</td>
             <td>Set by</td>
         </tr>
@@ -180,11 +180,11 @@ if ($Old) {
             <td><?=time_diff($Current['StartTime'])?></td>
             <td>&nbsp;</td>
             <td>
-                <?=display_ip($Current['CurrentIP'], geoip($Current['CurrentIP']))?> [<a href="user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Current['CurrentIP'])?>" title="Search">S</a>] [<a href="http://whatismyipaddress.com/ip/<?=display_str($Current['CurrentIP'])?>" title="WIPA">WI</a>]<br />
+                <?=display_ip($Current['CurrentIP'], geoip($Current['CurrentIP']))?> [<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Current['CurrentIP'])?>" title="Search">S</a>] [<a href="https://whatismyipaddress.com/ip/<?=display_str($Current['CurrentIP'])?>" title="WIPA">WI</a>]<br />
                 <?=get_host($Current['CurrentIP'])?>
             </td>
             <td>
-                <?=display_ip($Current['IP'], geoip($Current['IP']))?> [<a href="user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Current['IP'])?>" title="Search">S</a>] [<a href="http://whatismyipaddress.com/ip/<?=display_str($Current['IP'])?>" title="WIPA">WI</a>]<br />
+                <?=display_ip($Current['IP'], geoip($Current['IP']))?> [<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Current['IP'])?>" title="Search">S</a>] [<a href="https://whatismyipaddress.com/ip/<?=display_str($Current['IP'])?>" title="WIPA">WI</a>]<br />
                 <?=get_host($Current['IP'])?>
             </td>
             <td><?=format_username($Current['ChangedbyID'],$Current['CUsername'])?></td>
@@ -200,7 +200,7 @@ if ($CurrentMatches) {
             <td><?=time_diff($Match['EndTime'])?></td>
             <td></td>
             <td>
-                <?=display_ip($Match['IP'], geoip($Match['IP']))?> [<a href="user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Match['IP'])?>" title="Search">S</a>] [<a href="http://whatismyipaddress.com/ip/<?=display_str($Match['IP'])?>" title="WIPA">WI</a>]<br />
+                <?=display_ip($Match['IP'], geoip($Match['IP']))?> [<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Match['IP'])?>" title="Search">S</a>] [<a href="https://whatismyipaddress.com/ip/<?=display_str($Match['IP'])?>" title="WIPA">WI</a>]<br />
                 <?=get_host($Match['IP'])?>
             </td>
             <td><?=format_username($Match['ChangedbyID'],$Match['CUsername'])?></td>
@@ -239,7 +239,7 @@ if ($Old) {
             <td><?=time_diff($Match['EndTime'])?></td>
             <td></td>
             <td>
-                <?=display_ip($Match['IP'], geoip($Match['IP']))?> [<a href="user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Match['IP'])?>" title="Search">S</a>] [<a href="http://whatismyipaddress.com/ip/<?=display_str($Match['IP'])?>" title="WIPA">WI</a>]<br />
+                <?=display_ip($Match['IP'], geoip($Match['IP']))?> [<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Match['IP'])?>" title="Search">S</a>] [<a href="https://whatismyipaddress.com/ip/<?=display_str($Match['IP'])?>" title="WIPA">WI</a>]<br />
                 <?=get_host($Match['IP'])?>
             </td>
             <td><?=format_username($Match['ChangedbyID'],$Match['CUsername'])?></td>
@@ -259,7 +259,7 @@ if ($Old) {
             <td><?=time_diff($Record['EndTime'])?></td>
             <td><?=time_diff($Record['ElapsedTime'])?></td>
             <td>
-                <?=display_ip($Record['IP'], geoip($Record['IP']))?> [<a href="user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Record['IP'])?>" title="Search">S</a>] [<a href="http://whatismyipaddress.com/ip/<?=display_str($Record['IP'])?>" title="WIPA">WI</a>]<br />
+                <?=display_ip($Record['IP'], geoip($Record['IP']))?> [<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Record['IP'])?>" title="Search">S</a>] [<a href="https://whatismyipaddress.com/ip/<?=display_str($Record['IP'])?>" title="WIPA">WI</a>]<br />
                 <?=get_host($Record['IP'])?>
             </td>
             <td><?=format_username($Record['ChangedbyID'],$Record['CUsername'])?></td>
@@ -300,7 +300,7 @@ if ($OldMatches) {
             <td><?=time_diff($Match['EndTime'])?></td>
             <td></td>
             <td>
-                <?=display_ip($Match['IP'], geoip($Match['IP']))?> [<a href="user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Match['IP'])?>" title="Search">S</a>] [<a href="http://whatismyipaddress.com/ip/<?=display_str($Match['IP'])?>" title="WIPA">WI</a>]<br />
+                <?=display_ip($Match['IP'], geoip($Match['IP']))?> [<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Match['IP'])?>" title="Search">S</a>] [<a href="https://whatismyipaddress.com/ip/<?=display_str($Match['IP'])?>" title="WIPA">WI</a>]<br />
                 <?=get_host($Match['IP'])?>
             </td>
             <td><?=format_username($Match['ChangedbyID'],$Match['CUsername'])?></td>
@@ -319,7 +319,7 @@ if ($OldMatches) {
             <td><?=time_diff($Invite['EndTime'])?></td>
             <td><?=time_diff($Invite['AccountAge'])?></td>
             <td>
-                <?=display_ip($Invite['IP'], geoip($Invite['IP']))?> [<a href="user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Invite['IP'])?>" title="Search">S</a>] [<a href="http://whatismyipaddress.com/ip/<?=display_str($Invite['IP'])?>" title="WIPA">WI</a>]<br />
+                <?=display_ip($Invite['IP'], geoip($Invite['IP']))?> [<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Invite['IP'])?>" title="Search">S</a>] [<a href="https://whatismyipaddress.com/ip/<?=display_str($Invite['IP'])?>" title="WIPA">WI</a>]<br />
                 <?=get_host($Invite['IP'])?>
             </td>
             <td><?=format_username($Invite['ChangedbyID'],$Invite['CUsername'])?></td>

@@ -51,7 +51,7 @@ show_header('Add tokens sitewide');
 <div class="thin">
 <h2>Add freeleech tokens to all enabled users</h2>
 
-<div class="linkbox"><a href="tools.php?action=tokens&showabusers=1">[Show Abusers]</a></div>
+<div class="linkbox"><a href="/tools.php?action=tokens&showabusers=1">[Show Abusers]</a></div>
 <div class="box pad" style="margin-left: auto; margin-right: auto; text-align:center; max-width: 40%">
     <?=$message?>
     <form action="" method="post">

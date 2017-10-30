@@ -3,12 +3,11 @@
  ************ Permissions form ********************** user.php and tools.php ****
  ********************************************************************************
  ** This function is used to create both the class permissions form, and the   **
- ** user custom permissions form.					       **
+ ** user custom permissions form.                                              **
  ********************************************************************************/
 // Not a class... dafuq it doing in classes?
 $PermissionsArray = [
-    'site_force_anon_uploaders'          => 'Hide all uploader info from this user',
-    'site_leech'                         => 'Can leech (Does this work?).',
+    'site_view_uploaders'                => 'Can see uploader info',
     'site_upload'                        => 'Upload torrent access.',
     'site_upload_anon'                   => 'Can upload anonymously',
     'site_edit_torrents'                 => 'Can edit own torrents',
@@ -33,7 +32,6 @@ $PermissionsArray = [
     'site_collages_subscribe'            => 'Collage subscription access.',
     'site_collages_personal'             => 'Can have a personal collage.',
     'site_collages_renamepersonal'       => 'Can rename own personal collages.',
-    'site_make_bookmarks'                => 'Bookmarks access.',
     'site_can_invite_always'             => 'Can invite past user limit.',
     'site_send_unlimited_invites'        => 'Unlimited invites.',
     'site_advanced_tags'                 => 'Advanced bbcode tags.',
@@ -55,11 +53,10 @@ $PermissionsArray = [
     'site_add_tag'                       => 'Can add tags.',
     'site_add_multiple_tags'             => 'Can add multiple tags at once.',
     'site_delete_tag'                    => 'Can delete tags.',
-    'site_vote_tag_enhanced'             => 'Has extra tag voting power (&plusmn;'. ENHANCED_VOTE_POWER . ')',
+    'site_vote_tag_enhanced'             => 'Has extra tag voting power.',
     'site_disable_ip_history'            => 'Disable IP history.',
     'site_zip_downloader'                => 'Download multiple torrents at once.',
     'site_debug'                         => 'Developer access.',
-    'site_proxy_images'                  => 'Image proxy & Anti-Canary.',
     'site_search_many'                   => 'Can go past low limit of search results.',
     'site_give_specialgift'              => 'Can give a special gift.',
     'site_play_slots'                    => 'Can play the slot machine.',
@@ -80,17 +77,14 @@ $PermissionsArray = [
     'users_edit_credits'                 => 'Can edit other\'s Bonus Credits',
     'users_edit_own_credits'             => 'Can edit own Bonus Credits',
     'users_edit_titles'                  => 'Can edit titles.',
-    'users_edit_avatars'                 => 'Can edit avatars.',
     'users_edit_badges'                  => 'Can edit other\s badges.',
     'users_edit_own_badges'              => 'Can edit own badges.',
     'users_edit_invites'                 => 'Can edit invite numbers and cancel sent invites.',
-    'users_edit_watch_hours'             => 'Can edit contrib watch hours.',
     'users_edit_reset_keys'              => 'Can reset passkey/authkey.',
     'users_edit_profiles'                => 'Can edit anyone\'s profile.',
-    'users_view_friends'                 => 'Can view anyone\'s friends.',
-    'users_reset_own_keys'               => 'Can reset own passkey/authkey.',
     'users_edit_password'                => 'Can change passwords.',
     'users_edit_email'                   => 'Can change user email address.',
+    'users_edit_2fa'                     => 'Can change user 2fa setting.',
     'users_promote_below'                => 'Can promote users to below current level.',
     'users_promote_to'                   => 'Can promote users up to current level.',
     'users_group_permissions'            => 'Can manage group permissions.',
@@ -104,7 +98,6 @@ $PermissionsArray = [
     'users_view_invites'                 => 'Can view who user has invited.',
     'users_view_seedleech'               => 'Can view what a user is seeding or leeching.',
     'users_view_bonuslog'                => 'Can view bonus logs.',
-    'users_view_uploaded'                => 'Can view a user\'s uploads, regardless of privacy level.',
     'users_view_keys'                    => 'Can view passkeys.',
     'users_view_ips'                     => 'Can view IP addresses.',
     'users_view_email'                   => 'Can view email addresses.',
@@ -113,7 +106,9 @@ $PermissionsArray = [
     'users_make_invisible'               => 'Can make users invisible.',
     'users_mod'                          => 'Basic moderator tools.',
     'users_fls'                          => 'Basic support tools.',
-    'users_admin_notes'                  => 'Can edit Admin comment.',
+    'users_view_notes'                   => 'Can view Staff Notes.',
+    'users_add_notes'                    => 'Can add Staff Notes.',
+    'users_edit_notes'                   => 'Can edit Staff Notes.',
     'users_groups'                       => 'Can use Group tools.',
     'users_manage_cheats'                => 'Can manage watchlist.',
     'users_set_suppressconncheck'        => 'Can set Suppress ConnCheck prompt for users.',
@@ -121,7 +116,6 @@ $PermissionsArray = [
     'users_view_anon_uploaders'          => 'Can view anonymous uploaders names.',
 
      //-------------------------
-    'torrents_edit_override_timelock'    => 'Can edit own torrents after edit timelock.',
     'torrents_edit'                      => 'Can edit any torrent.',
     'torrents_review'                    => 'Can mark torrents for deletion.',
     'torrents_review_override'           => 'Can overide ongoing marked for deletion process.',
@@ -130,7 +124,6 @@ $PermissionsArray = [
     'torrents_delete'                    => 'Can delete torrents.',
     'torrents_delete_fast'               => 'Can delete more than 3 torrents at a time.',
     'torrents_freeleech'                 => 'Can make torrents freeleech.',
-    'torrents_search_fast'               => 'Rapid search (for scripts).',
     'torrents_hide_dnu'                  => 'Hide the Do Not Upload list by default.',
     'torrents_hide_imagehosts'           => 'Hide the Imagehost Whitelist list by default.',
 
@@ -143,7 +136,6 @@ $PermissionsArray = [
     'admin_manage_news'                  => 'Can manage news.',
     'admin_manage_articles'              => 'Can manage articles',
     'admin_manage_blog'                  => 'Can manage blog.',
-    'admin_manage_polls'                 => 'Can manage polls.',
     'admin_manage_forums'                => 'Can manage forums (add/edit/delete).',
     'admin_manage_fls'                   => 'Can manage FLS.',
     'admin_manage_tags'                  => 'Can manage official tag list and synonyms.',
@@ -165,7 +157,6 @@ $PermissionsArray = [
     'admin_manage_permissions'           => 'Can edit permission classes/user permissions.',
     'admin_schedule'                     => 'Can run the site schedule.',
     'admin_login_watch'                  => 'Can manage login watch.',
-    'admin_manage_wiki'                  => 'Can manage wiki access.',
     'admin_update_geoip'                 => 'Can update geoip data.',
     'admin_data_viewer'                  => 'Can access data viewer.',
     'admin_stealth_resolve'              => 'Can stealth resolve.',

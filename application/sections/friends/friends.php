@@ -68,7 +68,7 @@ if ($Results > 0) {
 }
         $OtherType=( $FType=='friends'?'blocked':'friends' );
 ?>
-        <span style="float:left;">&nbsp;[<a href="friends.php?type=<?=$OtherType?>" ><?=$OtherType?> list</a>]</span>&nbsp;
+        <span style="float:left;">&nbsp;[<a href="/friends.php?type=<?=$OtherType?>" ><?=$OtherType?> list</a>]</span>&nbsp;
     </div>
     <div class="head"><?=ucfirst($FType)?> list</div>
     <div class="box pad">
@@ -110,9 +110,6 @@ if ($Results == 0) {
     <?php
           if (empty($HeavyInfo['DisableAvatars'])) {
                 if (!empty($Avatar)) {
-                      if (check_perms('site_proxy_images')) {
-                            $Avatar = '//'.SITE_URL.'/image.php?c=1&i='.urlencode($Avatar);
-                      }
           ?>
                                   <img src="<?=$Avatar?>" alt="<?=$Username?>'s avatar" width="50px" />
           <?php 	} else { ?>

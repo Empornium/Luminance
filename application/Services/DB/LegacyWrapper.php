@@ -90,7 +90,6 @@ class LegacyWrapper {
             case MYSQLI_BOTH:
                 return $row;
             case MYSQLI_ASSOC:
-            case MYSQL_ASSOC:
                 $filtered_row = [];
                 foreach ($row as $key => $value) {
                     if (!is_int($key)) {
@@ -99,7 +98,6 @@ class LegacyWrapper {
                 }
                 return $filtered_row;
             case MYSQLI_NUM:
-            case MYSQL_NUM:
                 $filtered_row = [];
                 foreach ($row as $key => $value) {
                     if (is_int($key)) {

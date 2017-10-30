@@ -52,17 +52,14 @@ class LegacyHandler {
 
         $SSL = $this->master->request->ssl;
 
-        $ScriptStartTime = microtime(true); //To track how long a page takes to create
-
-        $Debug = new Debug;
+        $Debug = $this->master->debug;
         $Debug->handle_errors();
         $Debug->set_flag('Debug constructed');
 
         $DB = $this->master->olddb;
         $Cache = $this->master->cache;
         $Tracker = $this->master->tracker;
-
-        $SS = new SphinxSearch;
+        $SS = $this->master->search;
 
         $Debug->set_flag('start user handling');
 

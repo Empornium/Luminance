@@ -6,7 +6,7 @@ $Queries = array();
 
 $OrderWays = array('votes', 'bounty', 'created', 'lastvote', 'filled');
 list($Page,$Limit) = page_limit(REQUESTS_PER_PAGE);
-$Submitted = !empty($_GET['submit']);
+$Submitted = !empty($_GET['submitted']);
 
 //Paranoia
 $UserInfo = user_info((int) $_GET['userid']);
@@ -209,7 +209,7 @@ $Requests = $SphinxResults['matches'];
 
 $CurrentURL = get_url(array('order', 'sort'));
 
-show_header($Title, 'requests,autocomplete,tag_autocomplete,jquery,jquery.cookie');
+show_header($Title, 'requests,jquery,jquery.cookie,tag_autocomplete,autocomplete');
 
 ?>
 <div class="thin">
@@ -217,25 +217,29 @@ show_header($Title, 'requests,autocomplete,tag_autocomplete,jquery,jquery.cookie
 
     <div class="linkbox">
 <?php 	if (!$BookmarkView) { ?>
-        <a href="requests.php">[Search requests]</a>
+        <a href="/requests.php">[Search requests]</a>
 <?php 		if (check_perms('site_submit_requests')) { ?>
-            <a href="requests.php?action=new">[New request]</a>
-            <a href="requests.php?type=created">[My requests]</a>
+            <a href="/requests.php?action=new">[New request]</a>
+            <a href="/requests.php?type=created">[My requests]</a>
 <?php 		}
         if (check_perms('site_vote')) {?>
-            <a href="requests.php?type=voted">[Requests I've voted on]</a>
+            <a href="/requests.php?type=voted">[Requests I've voted on]</a>
 <?php 		}
-        if (!check_perms('site_submit_requests')) { ?>
-            <br/><em> <a href="articles.php?topic=requests">You must be a Good Perv with a ratio of at least 1.05 to be able to make a Request.</a></em>
+        if (!check_perms('site_submit_requests')) {
+            $Class = $master->repos->permissions->getMinClassPermission('site_submit_requests');
+            if ($Class !== false) {
+?>
+            <br/><em> <a href="/articles.php?topic=requests">You must be a <?=$Class->Name?> with a ratio of at least 1.05 to be able to make a Request.</a></em>
 <?php       }
+        }
     } else { ?>
-        <a href="bookmarks.php?type=torrents">[Torrents]</a>
-        <a href="bookmarks.php?type=collages">[Collages]</a>
-        <a href="bookmarks.php?type=requests">[Requests]</a>
+        <a href="/bookmarks.php?type=torrents">[Torrents]</a>
+        <a href="/bookmarks.php?type=collages">[Collages]</a>
+        <a href="/bookmarks.php?type=requests">[Requests]</a>
 <?php 	} ?>
     </div>
 
-        <form action="" method="get">
+        <form id="search_form" action="" method="get">
     <div class="head"><?=$Title?></div>
     <div class="box pad">
 <?php 	if ($BookmarkView) { ?>
@@ -244,7 +248,7 @@ show_header($Title, 'requests,autocomplete,tag_autocomplete,jquery,jquery.cookie
 <?php 	} else { ?>
             <input type="hidden" name="type" value="<?=$_GET['type']?>" />
 <?php 	} ?>
-            <input type="hidden" name="submit" value="true" />
+            <input type="hidden" name="submitted" value="true" />
 <?php 	if (!empty($_GET['userid']) && is_number($_GET['userid'])) { ?>
             <input type="hidden" name="userid" value="<?=$_GET['userid']?>" />
 <?php 	} ?>
@@ -313,7 +317,7 @@ foreach ($NewCategories as $Cat) {
 ?>
                 <td>
                     <input type="checkbox" name="filter_cat[<?=($Cat['id'])?>]" id="cat_<?=($Cat['id'])?>" value="1" <?php  if (isset($_GET['filter_cat'][$Cat['id']])) { ?>checked="checked"<?php  } ?>/>
-                    <label for="cat_<?=($Cat['id'])?>"><a href="requests.php?filter_cat[<?=$Cat['id']?>]=1"><?= $Cat['name'] ?></a></label>
+                    <label for="cat_<?=($Cat['id'])?>"><a href="/requests.php?filter_cat[<?=$Cat['id']?>]=1"><?= $Cat['name'] ?></a></label>
                 </td>
 <?php }?>
                                 <td colspan="<?=7-($x%7)?>"></td>
@@ -391,7 +395,7 @@ foreach ($NewCategories as $Cat) {
             <td class="center ">
                 <?php  $CatImg = 'static/common/caticons/' . $NewCategories[$CategoryID]['image']; ?>
                 <div title="<?= $NewCategories[$CategoryID]['tag'] ?>">
-                    <a href="requests.php?filter_cat[<?=$CategoryID?>]=1"><img src="<?= $CatImg ?>" /></a>
+                    <a href="/requests.php?filter_cat[<?=$CategoryID?>]=1"><img src="<?= $CatImg ?>" /></a>
                 </div>
             </td>
             <td>
@@ -424,7 +428,7 @@ foreach ($NewCategories as $Cat) {
             </td>
             <td>
 <?php    		if ($IsFilled) { ?>
-                <a href="torrents.php?id=<?=$TorrentID?>"><strong><?=time_diff($TimeFilled)?></strong></a>
+                <a href="/torrents.php?id=<?=$TorrentID?>"><strong><?=time_diff($TimeFilled)?></strong></a>
 <?php    		} else { ?>
                 <strong>No</strong>
 <?php    		} ?>
@@ -437,7 +441,7 @@ foreach ($NewCategories as $Cat) {
                 } ?>
             </td>
             <td>
-                <a href="user.php?id=<?=$RequestorID?>"><?=$RequestorName?></a>
+                <a href="/user.php?id=<?=$RequestorID?>"><?=$RequestorName?></a>
             </td>
             <td>
                 <?=time_diff($TimeAdded)?>

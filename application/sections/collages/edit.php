@@ -16,7 +16,7 @@ if (!check_perms('site_collages_manage') && $UserID != $LoggedUser['ID']) {
 show_header('Edit collage','bbcode,jquery');
 ?>
 <div class="thin">
-      <h2>Edit collage <a href="collages.php?id=<?=$CollageID?>"><?=$Name?></a></h2>
+      <h2>Edit collage <a href="/collages.php?id=<?=$CollageID?>"><?=$Name?></a></h2>
 
     <form action="collages.php" method="post" id="quickpostform" >
         <input type="hidden" name="action" value="edit_handle" />

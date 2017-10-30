@@ -32,7 +32,12 @@ switch ($_REQUEST['action']) {
         if (check_perms('admin_advanced_user_search') && check_perms('users_view_ips') && check_perms('users_view_email')) {
             include 'advancedsearch.php';
         } else {
-            include 'search.php';
+            if ($LoggedUser['SupportFor'] !== '') {
+                include 'search.php';
+            } else {
+                error(403);
+                die();
+            }
         }
         break;
     case 'edit':
@@ -72,14 +77,13 @@ switch ($_REQUEST['action']) {
         if ($_REQUEST['action']=='reset_login_watch' && is_number($_POST['loginid']) ) {
             authorize();
             if (!check_perms('admin_login_watch')) error(403);
-            $DB->query("DELETE FROM login_attempts WHERE ID='$_POST[loginid]'");
+            $flood = $master->repos->floods->load($_POST['loginid']);
+            $master->repos->floods->delete($flood);
+            $IP = $master->repos->ips->load($flood->IPID);
+            $master->repos->ips->unban($IP);
         }
         if (isset($_REQUEST['id'])) {
-            if (isset($_REQUEST['lite'])) {
-                include(SERVER_ROOT.'/sections/user/userlite.php');
-            } else {
-                include(SERVER_ROOT.'/sections/user/user.php');
-            }
+            include(SERVER_ROOT.'/sections/user/user.php');
         } else {
             header('Location: index.php');
         }

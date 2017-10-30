@@ -1,23 +1,22 @@
 <?php
 include(SERVER_ROOT.'/sections/staffpm/functions.php');
 
-if ($ID = (int) ($_GET['id'])) {
-    // Check if conversation belongs to user
-    $DB->query("SELECT UserID, AssignedToUser FROM staff_pm_conversations WHERE ID=$ID");
-    list($UserID, $AssignedToUser) = $DB->next_record();
+if ($ConvID = (int) ($_GET['id'])) {
+    // Is the user allowed to access this StaffPM
+    check_access($ConvID);
 
     if (check_perms('admin_stealth_resolve')) {
         // Conversation belongs to user or user is staff, resolve it
-        $DB->query("UPDATE staff_pm_conversations SET StealthResolved=0 WHERE ID=$ID");
+        $DB->query("UPDATE staff_pm_conversations SET StealthResolved=0 WHERE ID=$ConvID");
         $Cache->delete_value('staff_pm_new_'.$LoggedUser['ID']);
 
         // Add a log message to the StaffPM
         $Message = sqltime()." - Stealth Unresolved by ".$LoggedUser['Username'];
-        make_staffpm_note($Message, $ID);
+        make_staffpm_note($Message, $ConvID);
 
         header('Location: staffpm.php?view=open');
     } else {
-        // Conversation does not belong to user
+        // User cannot stealth unresolve
         error(403);
     }
 } else {

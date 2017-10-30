@@ -41,6 +41,12 @@ switch ($_GET['action']) {
     case 'get_badge_info':
         require(SERVER_ROOT.'/sections/ajax/get_badge_info.php');
         break;
+
+    case 'get_options':
+        echo json_encode(['MinCreateBounty' => $master->options->MinCreateBounty,
+                          'MinVoteBounty'   => $master->options->MinVoteBounty,
+                         ]);
+        break;
     case 'upload_section':
         // Gets one of the upload forms
         require(SERVER_ROOT.'/sections/ajax/upload.php');

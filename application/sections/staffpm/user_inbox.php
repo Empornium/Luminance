@@ -104,7 +104,7 @@ if ($DB->record_count() == 0) {
         // Table row
 ?>
             <tr class="<?=$RowClass?>">
-                <td><a href="staffpm.php?action=viewconv&amp;id=<?=$ID?>"><?=display_str($Subject)?><?=$UrgentStr?></a></td>
+                <td><a href="/staffpm.php?action=viewconv&amp;id=<?=$ID?>"><?=display_str($Subject)?><?=$UrgentStr?></a></td>
                 <td><?=time_diff($Date, 2, true)?></td>
                 <td><?=$Assigned?></td>
                 <td><?=$Status?></td>

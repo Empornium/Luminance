@@ -67,8 +67,8 @@ show_header( "$User[Username]$TitleEnd" );
     <h2><?=format_username($UserID, $User['Username']).$TitleEnd;?></h2>
     <div class="linkbox">
 
-        [<a href="userhistory.php?action=tag_history&amp;type=added&amp;<?=get_url(array('action','type','page'))?>" title="View <?=$User['Username']?>'s added tags">Tags added</a>]
-  &nbsp;[<a href="userhistory.php?action=tag_history&amp;type=votes&amp;<?=get_url(array('action','type','page'))?>" title="View <?=$User['Username']?>'s added tags">Tags voted on</a>]
+        [<a href="/userhistory.php?action=tag_history&amp;type=added&amp;<?=get_url(array('action','type','page'))?>" title="View <?=$User['Username']?>'s added tags">Tags added</a>]
+  &nbsp;[<a href="/userhistory.php?action=tag_history&amp;type=votes&amp;<?=get_url(array('action','type','page'))?>" title="View <?=$User['Username']?>'s added tags">Tags voted on</a>]
     </div>
 
     <div class="head">options</div>
@@ -137,19 +137,19 @@ show_header( "$User[Username]$TitleEnd" );
     <table>
         <tr class="colhead">
             <td>Tag <span style="margin-left:60px">
-                    <a href="<?=header_link('TagID')?>" title="sort by tag ID">(id)</a> <a href="<?=header_link('TagName', 'asc')?>" title="sort by Tag Name">(az)</a>
+                    <a href="/<?=header_link('TagID')?>" title="sort by tag ID">(id)</a> <a href="/<?=header_link('TagName', 'asc')?>" title="sort by Tag Name">(az)</a>
                 </span>
             </td>
-            <td class="right"><a href="<?=header_link('IsAdder')?>" title="sort by is tag adder">adder</a></td>
-            <td><a href="<?=header_link('AddedBy')?>" title="sort by added by">Added By</a></td>
-            <td><a href="<?=header_link('Way')?>" title="sort by vote direction">Way</a></td>
-            <td><a href="<?=header_link('Votes')?>" title="sort by number of votes">Votes</a></td>
+            <td class="right"><a href="/<?=header_link('IsAdder')?>" title="sort by is tag adder">adder</a></td>
+            <td><a href="/<?=header_link('AddedBy')?>" title="sort by added by">Added By</a></td>
+            <td><a href="/<?=header_link('Way')?>" title="sort by vote direction">Way</a></td>
+            <td><a href="/<?=header_link('Votes')?>" title="sort by number of votes">Votes</a></td>
             <td>Torrent <span style="margin-left:60px">
-                    <a href="<?=header_link('TorrentID')?>" title="sort by torrent ID">(id)</a> <a href="<?=header_link('TorrentName', 'asc')?>" title="sort by torrent name">(az)</a>
+                    <a href="/<?=header_link('TorrentID')?>" title="sort by torrent ID">(id)</a> <a href="/<?=header_link('TorrentName', 'asc')?>" title="sort by torrent name">(az)</a>
                 </span>
             </td>
-            <td class="right"><a href="<?=header_link('IsOwner')?>" title="sort by is torrent owner">owner</a></td>
-            <td><a href="<?=header_link('Uploader')?>" title="sort by uploader">Uploader</a></td>
+            <td class="right"><a href="/<?=header_link('IsOwner')?>" title="sort by is torrent owner">owner</a></td>
+            <td><a href="/<?=header_link('Uploader')?>" title="sort by uploader">Uploader</a></td>
         </tr>
 <?php
     foreach ($Tags as $TagInfo) {
@@ -157,7 +157,7 @@ show_header( "$User[Username]$TitleEnd" );
         $row = $row== 'a'? 'b':'a';
 ?>
         <tr class="row<?=$row?>">
-            <td><a href="torrents.php?taglist=<?=$TagName?>"><?=$TagName?></a></td>
+            <td><a href="/torrents.php?taglist=<?=$TagName?>"><?=$TagName?></a></td>
             <td class="right"><?php if($IsAdder && ($AdderID!=$UploaderID || !is_anon($IsAnon)))echo'<img src="static/common/symbols/tick.png" title="tag was added by '.$AddedBy.'" />'; ?></td>
             <td><?= torrent_username($AdderID, $AddedBy, $IsAnon && $AdderID===$UploaderID) ?></td>
             <td>
@@ -166,7 +166,7 @@ show_header( "$User[Username]$TitleEnd" );
                 else echo '<span class="red">Down</span>';?>
             </td>
             <td><?=$Votes?></td>
-            <td><a href="torrents.php?id=<?=$GroupID?>" title="<?=$TorrentName?>"><?=cut_string($TorrentName,50)?></a></td>
+            <td><a href="/torrents.php?id=<?=$GroupID?>" title="<?=$TorrentName?>"><?=cut_string($TorrentName,50)?></a></td>
             <td class="right"><?php
                 if($IsOwner && !is_anon($IsAnon))echo'<img src="static/common/symbols/tick.png" title="torrent was uploaded by '.anon_username($Uploader, $IsAnon).'" />';?></td>
 

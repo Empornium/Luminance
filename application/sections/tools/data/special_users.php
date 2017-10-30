@@ -27,7 +27,7 @@ if ($DB->record_count()) {
 ?>
         <tr>
             <td><?=format_username($UserID, $Username, $Donor, $Warned, $Enabled, $PermissionID, '', false, $GroupPermissionID, true)?></td>
-            <td><a href="user.php?action=permissions&amp;userid=<?=$UserID?>">Manage</a></td>
+            <td><a href="/user.php?action=permissions&amp;userid=<?=$UserID?>">Manage</a></td>
         </tr>
 <?php } ?>
     </table>

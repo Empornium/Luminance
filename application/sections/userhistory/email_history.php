@@ -65,12 +65,12 @@ if ($UsersOnly == 1) {
 }
 $History = $DB->to_array();
 ?>
-<div class="head">Email history for <a href="user.php?id=<?=$UserID ?>"><?=$Username ?></a></div>
+<div class="head">Email history for <a href="/user.php?id=<?=$UserID ?>"><?=$Username ?></a></div>
 <table width="100%">
     <tr class="colhead">
         <td>Email</td>
         <td>Set</td>
-        <td>IP [<a href="userhistory.php?action=ips&amp;userid=<?=$UserID ?>">H</a>]</td>
+        <td>IP [<a href="/userhistory.php?action=ips&amp;userid=<?=$UserID ?>">H</a>]</td>
 <?php  if ($UsersOnly == 1) {
 ?>
     <td>User</td>
@@ -89,7 +89,7 @@ foreach ($History as $Key => $Values) {
     <tr class="rowa">
         <td><?=display_str($Values['Email'])?></td>
         <td><?=time_diff($Values['Time'])?></td>
-        <td><?=display_str($Values['IP'])?> (<?=display_str($Values['Code'])?>) [<a href="user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Values['IP'])?>" title="Search">S</a>]</td>
+        <td><?=display_str($Values['IP'])?> (<?=display_str($Values['Code'])?>) [<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($Values['IP'])?>" title="Search">S</a>]</td>
 <?php
     if ($UsersOnly == 1) {
         $ueQuery = $DB->query("SELECT ue.UserID, Username, ue.Time, ue.IP FROM users_history_emails AS ue, users_main WHERE ue.Email = '".db_string($Values['Email'])."' AND UserID != ".$UserID." AND ID = UserID");
@@ -104,7 +104,7 @@ foreach ($History as $Key => $Values) {
             list($Enabled)=$DB->next_record();
             $DB->set_query_id($ueQuery);
 ?>
-        <td><a href="<?=display_str($UserURL)?>"><?=format_username($UserID2, $Username, 0, 0, $Enabled, "")?></a></td>
+        <td><a href="/<?=display_str($UserURL)?>"><?=format_username($UserID2, $Username, 0, 0, $Enabled, "")?></a></td>
     </tr>
 <?php
         }

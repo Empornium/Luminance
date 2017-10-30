@@ -113,7 +113,7 @@ if (!$BrowserDistribution = $Cache->get_value('browser_distribution')) {
                   FROM sessions AS s
                   JOIN clients AS c ON s.ClientID=c.ID
                   JOIN client_user_agents AS cua ON c.ClientUserAgentID=cua.ID
-              GROUP BY Platform
+              GROUP BY Browser
               ORDER BY Users DESC");
 
     $Browsers = $DB->to_array();
@@ -298,9 +298,9 @@ show_header('User Statistics', 'charts,jquery');
 <div class="thin">
     <h2>User graphs</h2>
     <div class="linkbox">
-        <strong><a href="stats.php?action=users">[User graphs]</a></strong>
-        <a href="stats.php?action=site">[Site stats]</a>
-        <a href="stats.php?action=torrents">[Torrent stats]</a>
+        <strong><a href="/stats.php?action=users">[User graphs]</a></strong>
+        <a href="/stats.php?action=site">[Site stats]</a>
+        <a href="/stats.php?action=torrents">[Torrent stats]</a>
     </div>
     <br/>
     <div class="head">User Flow</div>
@@ -467,7 +467,7 @@ show_header('User Statistics', 'charts,jquery');
 ?>
           </table>
           <br /><br />
-          <p class="small">GeoLite data used under Creative Commons Attribution-ShareAlike 3.0 Unported License<br/>GeoLite data from MaxMind, available from http://www.maxmind.com</p>
+          <p class="small">GeoLite data used under Creative Commons Attribution-ShareAlike 3.0 Unported License<br/>GeoLite data from MaxMind, available from https://www.maxmind.com</p>
     </div>
 </div>
 <?php

@@ -3,8 +3,8 @@ Luminance Installation
 
 Dependencies
 ------------
- - PHP >= 5.4
- - MySQL >= 5.1
+ - PHP >= 5.6
+ - MySQL >= 5.6
  - Memcached
  - Nginx (recommended) or Apache
  - Sphinx 2.0.x

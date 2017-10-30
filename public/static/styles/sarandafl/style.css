@@ -281,6 +281,16 @@ ul.thin li {
     border: 1px solid #202020;
     padding: 0 0 35px;
 }
+#modal_content {
+    width: 90%;
+    min-width: 350px;
+    max-width: 1300px;
+    background: rgba(32, 32, 32, 0.6);
+    box-shadow: 0 0 30 -5px black;
+    margin: 40px auto 0 auto;
+    border: 1px solid #202020;
+    padding: 0 0 35px;
+}
 #schedule #content {
     color: #eee;
 }
@@ -418,6 +428,9 @@ span.inside_stat {
     text-decoration: none;
     color: #FF6600;
 }
+#header_bottom a:hover > .nav_icons{
+    fill: #FF6600;
+}
 #header_bottom {
     background: rgba(0, 0, 0, 0);
     padding: 15px 10px 10px;
@@ -428,6 +441,15 @@ span.inside_stat {
 .nav_icons {
     fill: #d2d2d2;
 }
+
+.misc_icons {
+    fill: #d2d2d2;
+}
+
+.misc_icons:hover {
+    fill: #ff6600;
+}
+
 #major_stats_left {
     position: absolute;
 }
@@ -480,7 +502,7 @@ span.inside_stat {
     -webkit-transition: opacity ease-in 200ms, visibility 200ms, -webkit-transform ease-in 200ms;
 }
 #userinfo_username li ul {
-    left: 80px;
+    left: -54px;
     min-width: 50%;
 }
 #nav_userinfo:hover ul,
@@ -567,7 +589,6 @@ span.inside_stat {
 #nav_upload,
 #nav_donate,
 #nav_userinfo,
-#nav_useredit,
 #nav_conncheck {
     margin-left: 3px !important;
 }
@@ -663,13 +684,20 @@ li.searchbars {
     float: left;
     margin: 16px 0px 12px 25px;
 }
+
 #alerts {
     margin: 0 auto;
     text-align: center;
     width: 51.5%;
     top: -10px;
     position: relative;
+    display: none
 }
+
+#header_top:hover #alerts, #header_top.hover #alerts {
+    display: block;
+}
+
 .alertbar {
     min-height: 16px;
     padding: 2px 20px 2px;
@@ -828,7 +856,6 @@ input.hidden {
 
 .thin {
     width: 96%;
-    min-width: 920px;
     margin-left: auto;
     margin-right: auto;
 }

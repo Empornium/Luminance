@@ -130,11 +130,11 @@ show_header('Donation log','jquery,bitcoin,flot/excanvas,flot/jquery.flot.min,fl
 
     <div class="linkbox">
         <?php  if (check_perms('admin_donor_addresses')) { ?>
-        <a href="tools.php?action=btc_address_input">[Unused address pool]</a>
+        <a href="/tools.php?action=btc_address_input">[Unused address pool]</a>
         <?php  } ?>
-        <a href="tools.php?action=donation_log&view=issued">[Issued addresses]</a>
-        <a href="tools.php?action=donation_log&view=submitted">[Submitted donations]</a>
-        <a href="tools.php?action=donation_log&view=cleared">[Cleared donations]</a>
+        <a href="/tools.php?action=donation_log&view=issued">[Issued addresses]</a>
+        <a href="/tools.php?action=donation_log&view=submitted">[Submitted donations]</a>
+        <a href="/tools.php?action=donation_log&view=cleared">[Cleared donations]</a>
     </div>
     <br/>
 
@@ -208,7 +208,7 @@ show_header('Donation log','jquery,bitcoin,flot/excanvas,flot/jquery.flot.min,fl
     ?>
                 <tr class="row<?=$row?> record<?=$i?>">
                     <td><?=format_username($UserID, $Username, $Donor, $Warned, $Enabled, $PermissionID)?>
-                        <a style="font-style: italic;font-size:0.8em;" href="donate.php?action=my_donations&userid=<?=$UserID?>" target="_blank" title="view users my donations page">[view log]</a></td>
+                        <a style="font-style: italic;font-size:0.8em;" href="/donate.php?action=my_donations&userid=<?=$UserID?>" target="_blank" title="view users my donations page">[view log]</a></td>
                     <td>
                         <a href="https://blockchain.info/address/<?=$public?>">
                             <span class="address" id="address_<?=$i?>" <?=$add_title?>><?=$public?></span>

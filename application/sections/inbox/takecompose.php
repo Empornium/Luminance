@@ -34,7 +34,7 @@ if (!$Err && empty($Body)) {
 if(!empty($Err)) error($Err);
 
 $Text = new Luminance\Legacy\Text;
-$Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
+$Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']), true, false);
 
 if (isset($_POST['forwardbody'])) {
     $_POST['body'] = "$_POST[forwardbody]$_POST[body]";

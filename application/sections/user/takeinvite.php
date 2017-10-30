@@ -1,17 +1,13 @@
 <?php
 if (!$UserCount = $Cache->get_value('stats_user_count')) {
-    $DB->query("SELECT COUNT(ID) FROM users_main WHERE Enabled='1'");
-    list($UserCount) = $DB->next_record();
+    $UserCount = $master->db->raw_query("SELECT COUNT(ID) FROM users_main WHERE Enabled='1'")->fetchColumn();
     $Cache->cache_value('stats_user_count', $UserCount, 0);
 }
-
-$UserID = $LoggedUser['ID'];
 
 //This is where we handle things passed to us
 authorize();
 
-$DB->query("SELECT can_leech FROM users_main WHERE ID = ".$UserID);
-list($CanLeech) = $DB->next_record();
+$CanLeech = $master->db->raw_query("SELECT can_leech FROM users_main WHERE ID = ?", [$LoggedUser['ID']])->fetchColumn();
 
 if($LoggedUser['RatioWatch'] ||
     !$CanLeech ||
@@ -23,6 +19,7 @@ if($LoggedUser['RatioWatch'] ||
 }
 
 $Email = $_POST['email'];
+$Anon = isset($_POST['anon']) ? true : false;
 $Username = $LoggedUser['Username'];
 $SiteName = SITE_NAME;
 $SiteURL = SITE_URL;
@@ -46,39 +43,49 @@ foreach ($Emails as $CurEmail) {
             die();
         }
     }
-    $DB->query("SELECT Expires FROM invites WHERE InviterID = ".$LoggedUser['ID']." AND Email LIKE '".$CurEmail."'");
-    if ($DB->record_count() > 0) {
+    $dupeInvite = $master->db->raw_query(
+        "SELECT COUNT(*) FROM invites WHERE InviterID = :userID and Email LIKE :email",
+        [':userID' => $LoggedUser['ID'], ':email' => $CurEmail])->fetchColumn();
+    if ($dupeInvite > 0) {
         error("You already have a pending invite to that address!");
         header('Location: user.php?action=invite');
         die();
     }
-    $InviteKey = db_string(make_secret());
 
-$Message = <<<EOT
-The user $Username has invited you to join $SiteName, and has specified this address ($CurEmail) as your email address. If you do not know this person, please ignore this email, and do not reply.
+    $token = $master->secretary->getExternalToken($CurEmail, 'users.register');
 
-Please note that selling invites, trading invites, and giving invites away publicly (eg. on a forum) is strictly forbidden. If you have received your invite as a result of any of these things, do not bother signing up - you will be banned and lose your chances of ever signing up legitimately.
-
-To confirm your invite, click on the following link:
-
-$Scheme://$SiteURL/users/register?invite=$InviteKey
-
-After you register, you will be able to use your account. Please take note that if you do not use this invite in the next 3 days, it will expire. We urge you to read the RULES and the wiki immediately after you join.
-
-Thank you,
-$SiteName Staff
-EOT;
-
-    $DB->query("INSERT INTO invites
-        (InviterID, InviteKey, Email, Expires) VALUES
-        ('$LoggedUser[ID]', '$InviteKey', '".db_string($CurEmail)."', '$InviteExpires')");
+    $master->db->raw_query("INSERT INTO invites (InviterID, InviteKey, Email, Expires)
+                            VALUES (:userID, :token, :email, :expires)",
+                           [':userID'  => $LoggedUser['ID'],
+                            ':token'   => $token,
+                            ':email'   => $CurEmail,
+                            ':expires' => $InviteExpires]);
+    $inviteID = $master->db->last_insert_id();
 
     if (!check_perms('site_send_unlimited_invites')) {
-        $DB->query("UPDATE users_main SET Invites=GREATEST(Invites,1)-1 WHERE ID='$LoggedUser[ID]'");
+        $master->db->raw_query("UPDATE users_main SET Invites=GREATEST(Invites,1)-1 WHERE ID=?", [$LoggedUser['ID']]);
         $master->repos->users->uncache($LoggedUser['ID']);
     }
 
-    send_email($CurEmail, 'You have been invited to '.SITE_NAME, $Message,'noreply');
+    $token = $master->crypto->encrypt(['email' => $CurEmail, 'inviteID' => $inviteID, 'token' => $token], 'default', true);
+
+    $subject = 'You have been invited to '.$master->settings->main->site_name;
+
+    $email_body = [];
+    $email_body['username'] = $Username;
+    $email_body['email']    = $CurEmail;
+    $email_body['token']    = $token;
+    $email_body['anon']     = $Anon;
+    $email_body['settings'] = $master->settings;
+    $email_body['scheme']   = $Scheme;
+    if (DEBUG_MODE) {
+        $body = $master->tpl->render('invite_email.flash', $email_body);
+        $master->flasher->notice($body);
+        error($body);
+    } else {
+        $body = $master->tpl->render('invite_email.email', $email_body);
+        $master->secretary->send_email($CurEmail, $subject, $body);
+    }
 }
 
 header('Location: user.php?action=invite');

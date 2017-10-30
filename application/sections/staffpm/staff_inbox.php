@@ -191,14 +191,14 @@ if ($DB->record_count() == 0) {
 <?php  				if ($ViewString != 'Resolved' && $IsStaff) { ?>
                     <td width="10"><input type="checkbox" onclick="toggleChecks('messageform',this)" /></td>
 <?php  				} ?>
-                    <td><a href="<?=header_link('Subject') ?>">Subject</td>
-                    <td width="14%"><a href="<?=header_link('UserID') ?>">User</td>
-                    <td width="14%"><a href="<?=header_link('Date') ?>">Date</td>
-                    <td width="14%"><a href="<?=header_link('Level') ?>">Assigned to</td>
+                    <td><a href="/<?=header_link('Subject') ?>">Subject</td>
+                    <td width="14%"><a href="/<?=header_link('UserID') ?>">User</td>
+                    <td width="14%"><a href="/<?=header_link('Date') ?>">Date</td>
+                    <td width="14%"><a href="/<?=header_link('Level') ?>">Assigned to</td>
 <?php 				if ($ViewString == 'Resolved') { ?>
-                    <td width="14%"><a href="<?=header_link('ResolverID') ?>">Resolved by</td>
+                    <td width="14%"><a href="/<?=header_link('ResolverID') ?>">Resolved by</td>
 <?php 				} else { ?>
-                    <td width="14%"><a href="<?=header_link('Status') ?>">Status</td>
+                    <td width="14%"><a href="/<?=header_link('Status') ?>">Status</td>
 <?php 				}  ?>
                 </tr>
 <?php
@@ -211,7 +211,8 @@ if ($DB->record_count() == 0) {
         $UserInfo = user_info($UserID);
         $UserStr = format_username($UserID, $UserInfo['Username'], $UserInfo['Donor'], $UserInfo['Warned'], $UserInfo['Enabled'], $UserInfo['PermissionID']);
 
-        $AssignedStr = format_username();
+        // Unused and triggers a PHP Warning
+        //$AssignedStr = format_username();
 
         // Get assigned
         if ($AssignedToUser == '') {
@@ -261,7 +262,7 @@ if ($DB->record_count() == 0) {
 <?php  				if ($ViewString != 'Resolved' && $IsStaff) { ?>
                     <td class="center"><input type="checkbox" name="id[]" value="<?=$ID?>" /></td>
 <?php  				} ?>
-                    <td><a href="staffpm.php?action=viewconv&amp;id=<?=$ID?>"><?=display_str($Subject)?></a></td>
+                    <td><a href="/staffpm.php?action=viewconv&amp;id=<?=$ID?>"><?=display_str($Subject)?></a></td>
                     <td><?=$UserStr?></td>
                     <td><?=time_diff($Date, 2, true)?></td>
                     <td><?=$Assigned?></td>

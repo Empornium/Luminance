@@ -48,14 +48,14 @@ function get_votes_html($RequestVotes, $RequestID)
 ?>
                 <tr>
                     <td>
-                        <a href="user.php?id=<?=$User['UserID']?>"><?=$Boldify?'<strong>':''?><?=display_str($User['Username'])?><?=$Boldify?'</strong>':''?></a>
+                        <a href="/user.php?id=<?=$User['UserID']?>"><?=$Boldify?'<strong>':''?><?=display_str($User['Username'])?><?=$Boldify?'</strong>':''?></a>
                     </td>
                     <td>
                         <?=$Boldify?'<strong>':''?><?=get_size($User['Bounty'])?><?=$Boldify?'</strong>':''?>
                     </td>
 <?php       if (check_perms("site_moderate_requests")) { ?>
                     <td>
-                        <a href="requests.php?action=delete_vote&amp;id=<?=$RequestID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;voterid=<?=$User['UserID']?>">[-]</a>
+                        <a href="/requests.php?action=delete_vote&amp;id=<?=$RequestID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;voterid=<?=$User['UserID']?>">[-]</a>
                     </td>
                 </tr>
 <?php 	    }
@@ -66,7 +66,7 @@ function get_votes_html($RequestVotes, $RequestID)
             if ($User['UserID'] == $LoggedUser['ID']) { ?>
                 <tr>
                     <td>
-                        <a href="user.php?id=<?=$User['UserID']?>"><strong><?=display_str($User['Username'])?></strong></a>
+                        <a href="/user.php?id=<?=$User['UserID']?>"><strong><?=display_str($User['Username'])?></strong></a>
                     </td>
                     <td>
                         <strong><?=get_size($User['Bounty'])?></strong>

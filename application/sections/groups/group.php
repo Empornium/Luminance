@@ -51,7 +51,7 @@ list($Results) = $DB->next_record();
 ?>
 <div class="thin">
     <h2>User Group <?=$Name?></h2>
-    <div class="head"><a href="groups.php">Groups</a>  &gt; <?=$Name?></div>
+    <div class="head"><a href="/groups.php">Groups</a>  &gt; <?=$Name?></div>
 
     <form action="groups.php" method="post">
           <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
@@ -206,10 +206,7 @@ if ($Results == 0) {
                       <td width="50px" valign="top">
     <?php
           if (empty($HeavyInfo['DisableAvatars'])) {
-                if (!empty($Avatar)) {
-                      if (check_perms('site_proxy_images')) {
-                            $Avatar = '//'.SITE_URL.'/image.php?c=1&i='.urlencode($Avatar);
-                      }  ?>
+                if (!empty($Avatar)) { ?>
                             <img src="<?=$Avatar?>" alt="<?=$Username?>'s avatar" width="50px" />
           <?php 	} else { ?>
                             <img src="<?=STATIC_SERVER?>common/avatars/default.png" width="50px" alt="Default avatar" />

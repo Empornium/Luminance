@@ -32,7 +32,7 @@ $Awards = $DB->to_array(false, MYSQLI_BOTH);
 
             $Str .= "$Name (Rank $Rank)\n";
             $Str .= "$Desc \n";
-            $Str .= "[img]http://".SITE_URL."/".STATIC_SERVER."common/badges/{$Image}[/img]\n";
+            $Str .= "[img]/common/badges/{$Image}[/img]\n";
             $Str .= "[quote]criteria: [/quote]\n\n";
 
         }

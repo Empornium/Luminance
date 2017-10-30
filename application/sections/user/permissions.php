@@ -23,7 +23,7 @@ $Query = $master->db->raw_query("SELECT u.CustomPermissions, p1.Name, p2.Name
 
 list($Customs, $PermName, $GroupPermName) = $Query->fetch(\PDO::FETCH_NUM);
 
-$Defaults = get_permissions_for_user($UserID, array());
+$Defaults = get_permissions_for_user($UserID, false);
 $Delta    = array();
 
 if (isset($_POST['action'])) {
@@ -44,12 +44,12 @@ if (isset($_POST['action'])) {
             $Delta[$Perm] = $Setting;
     }
 
-    $master->repos->users->uncache($UserID);
-
     // Update custom permissions in DB
     $CustomPermissions = !empty($Delta) ? serialize($Delta) : '';
     $master->db->raw_query("UPDATE users_main SET CustomPermissions = :CustomPermissions WHERE ID = :UserID",
                             [':CustomPermissions' => $CustomPermissions, ':UserID' => $UserID]);
+
+    $master->repos->users->uncache($UserID);
 
 } elseif (!empty($Customs)) {
     $Delta = unserialize($Customs);

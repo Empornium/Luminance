@@ -39,7 +39,7 @@ printRstMessage();
                         ?>
                         <tr class="<?= (($i % 2) ? 'rowa' : 'rowb') ?>">
                             <td><input type="checkbox" name="oldtags[]" value="<?= $TagID1 ?>" /></td>
-                            <td><a href="torrents.php?taglist=<?= $TagName1 ?>" ><?= $TagName1 ?></a></td>
+                            <td><a href="/torrents.php?taglist=<?= $TagName1 ?>" ><?= $TagName1 ?></a></td>
                             <td><?= $TagUses1 ?></td>
                             <td>&nbsp;&nbsp;</td>
                             <td>
@@ -47,7 +47,7 @@ printRstMessage();
                                     <input type="checkbox" name="oldtags[]" value="<?= $TagID2 ?>" />
                                 <?php  } ?>
                             </td>
-                            <td><a href="torrents.php?taglist=<?= $TagName2 ?>" ><?= $TagName2 ?></a></td>
+                            <td><a href="/torrents.php?taglist=<?= $TagName2 ?>" ><?= $TagName2 ?></a></td>
                             <td><?= $TagUses2 ?></td>
                             <td>&nbsp;&nbsp;</td>
                             <td>
@@ -55,7 +55,7 @@ printRstMessage();
                                     <input type="checkbox" name="oldtags[]" value="<?= $TagID3 ?>" />
                         <?php  } ?>
                             </td>
-                            <td><a href="torrents.php?taglist=<?= $TagName3 ?>" ><?= $TagName3 ?></a></td>
+                            <td><a href="/torrents.php?taglist=<?= $TagName3 ?>" ><?= $TagName3 ?></a></td>
                             <td><?= $TagUses3 ?></td>
                         </tr>
 <?php

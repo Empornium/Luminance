@@ -15,10 +15,10 @@ show_header('Top 10 Users');
 <div class="thin">
     <h2> Top 10 Users </h2>
     <div class="linkbox">
-        <a href="top10.php?type=torrents">[Torrents]</a>
-        <a href="top10.php?type=users"><strong>[Users]</strong></a>
-        <a href="top10.php?type=tags">[Tags]</a>
-        <a href="top10.php?type=taggers">[Taggers]</a>
+        <a href="/top10.php?type=torrents">[Torrents]</a>
+        <a href="/top10.php?type=users"><strong>[Users]</strong></a>
+        <a href="/top10.php?type=tags">[Tags]</a>
+        <a href="/top10.php?type=taggers">[Taggers]</a>
     </div>
 
 <?php
@@ -121,9 +121,9 @@ function generate_user_table($Caption, $Tag, $Details, $Limit)
 ?>
     <div class="head">Top <?=$Limit.' '.$Caption;?>
         <small>
-            - [<a href="top10.php?type=users&amp;limit=100&amp;details=<?=$Tag?>">Top 100</a>]
-            - [<a href="top10.php?type=users&amp;limit=250&amp;details=<?=$Tag?>">Top 250</a>]
-            - [<a href="top10.php?type=users&amp;limit=500&amp;details=<?=$Tag?>">Top 500</a>]
+            - [<a href="/top10.php?type=users&amp;limit=100&amp;details=<?=$Tag?>">Top 100</a>]
+            - [<a href="/top10.php?type=users&amp;limit=250&amp;details=<?=$Tag?>">Top 250</a>]
+            - [<a href="/top10.php?type=users&amp;limit=500&amp;details=<?=$Tag?>">Top 500</a>]
         </small>
     </div>
     <table>

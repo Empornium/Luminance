@@ -28,12 +28,21 @@ $DB->query("SELECT
     WHERE c.ID='$ConvID' AND UserID='$UserID'");
 list($Subject, $Sticky, $UnRead, $ForwardedID, $ForwardedName) = $DB->next_record();
 
+// If it's more than 2 users then it's a System PM or a Staff Mass PM
 $DB->query("SELECT pm.UserID, Username, PermissionID, GroupPermissionID, CustomPermissions, Enabled, Donor, Warned, Title
     FROM pm_conversations_users AS pm
     JOIN users_info AS ui ON ui.UserID=pm.UserID
     JOIN users_main AS um ON um.ID=pm.UserID
-    WHERE pm.ConvID='$ConvID'");
+    WHERE pm.ConvID='$ConvID'
+    LIMIT 2");
 $UsersInMessages = $DB->to_array();
+
+// Ensure the reader is included
+$DB->query("SELECT um.ID, Username, PermissionID, GroupPermissionID, CustomPermissions, Enabled, Donor, Warned, Title
+    FROM users_main AS um
+    JOIN users_info AS ui ON ui.UserID=um.ID
+    WHERE um.ID='$UserID'");
+$UsersInMessages = array_merge($UsersInMessages, $DB->to_array());
 
 foreach ($UsersInMessages as $UserM) {
     list($PMUserID, $Username, $PermissionID, $GroupPermID, $CustomPermissions, $Enabled, $Donor, $Warned, $Title) = $UserM;
@@ -59,7 +68,7 @@ show_header('View conversation '.$Subject, 'comments,inbox,bbcode');
 <div class="thin">
     <h2><?=$Subject.($ForwardedID > 0 ? ' (Forwarded to '.$ForwardedName.')':'')?></h2>
     <div class="linkbox">
-        <a href="inbox.php">[Back to inbox]</a>
+        <a href="/inbox.php">[Back to inbox]</a>
     </div>
 <?php
 // Get messages

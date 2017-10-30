@@ -57,6 +57,14 @@ class PermissionRepository extends Repository {
         return $this->minStaffLevel;
     }
 
+    public function getMinClassPermission($perm = "") {
+        $Classes = $this->db->raw_query("SELECT ID, `Values` FROM permissions ORDER BY Level")->fetchAll(\PDO::FETCH_COLUMN|\PDO::FETCH_GROUP);
+        foreach($Classes as $Class => $Permissions) {
+            if(unserialize($Permissions[0])[$perm] == 1) return $this->load($Class);
+        }
+        return false;
+    }
+
     // for now we will just override uncache($ID) and put these here, when we add something to replace the classes arrays this might move --mifune
     public function uncache($ID) {
         $this->cache->delete_value('min_user_level');

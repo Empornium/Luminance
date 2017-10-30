@@ -113,7 +113,7 @@ foreach ($Results as $Index => $Result) {
         <tr class="rowa">
             <td>
                 <?php  $cc = geoip($IP);  echo display_ip($IP, $cc);
-                if (check_perms('admin_manage_ipbans')) echo ' [<a href="tools.php?action=ip_ban&userid='.$UserID.'&uip='.display_str($IP).'" title="Ban this users IP ('.display_str($IP).')">IP Ban</a>]';
+                if (check_perms('admin_manage_ipbans')) echo ' [<a href="/tools.php?action=ip_ban&userid='.$UserID.'&uip='.display_str($IP).'" title="Ban this users IP ('.display_str($IP).')">IP Ban</a>]';
                 echo '<br />'.get_host($IP)?><br />
             <?=($HasDupe ?
             '<a id="toggle'.$Index.'" href="#" onclick="ShowIPs('.$Index.'); return false;">show/hide dupes ('.count($UserIDs).')</a>'

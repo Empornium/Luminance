@@ -37,7 +37,7 @@ if (check_perms('site_staff_page')) {
 ?>
     <div class="head">First-line Support</div>
     <div class="box pad" style="padding:10px;">
-        <p><strong>These users are not official staff members</strong> - they're users who have volunteered their time to help people in need. Please treat them with respect and read <a href="articles.php?topic=ranks#fls">this</a> before contacting them. </p>
+        <p><strong>These users are not official staff members</strong> - they're users who have volunteered their time to help people in need. Please treat them with respect and read <a href="/articles.php?topic=ranks#fls">this</a> before contacting them. </p>
         <table class="staff" width="100%">
             <tr class="colhead">
                 <td width="300px">Username</td>

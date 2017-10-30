@@ -10,11 +10,11 @@ class User extends Entity {
     public $legacy;
 
     static $properties = [
-        'ID'            => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'primary' => true, 'auto_increment' => true ],
-        'EmailID'       => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'nullable' => false ],
-        'Username'      => [ 'type' => 'str', 'nullable' => false ],
-        'Password'      => [ 'type' => 'str', 'sqltype' => 'VARCHAR(255)', 'nullable' => true ],
-        'ResetToken'    => [ 'type' => 'str', 'sqltype' => 'VARCHAR(48)', 'nullable' => true],
+        'ID'                => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'primary' => true, 'auto_increment' => true ],
+        'EmailID'           => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'nullable' => false ],
+        'Username'          => [ 'type' => 'str', 'nullable' => false ],
+        'Password'          => [ 'type' => 'str', 'sqltype' => 'VARCHAR(255)', 'nullable' => true ],
+        'twoFactorSecret'   => [ 'type' => 'str', 'sqltype' => 'VARCHAR(255)', 'nullable' => true ],
 //        'StatusFlags'   => [ 'type' => 'int', 'sqltype' => 'TINYINT UNSIGNED', 'nullable' => false ],
 //        'SecurityFlags' => [ 'type' => 'int', 'sqltype' => 'TINYINT UNSIGNED', 'nullable' => false ],
     ];
@@ -79,7 +79,6 @@ class User extends Entity {
             'RatioWatchEnds' => $l['RatioWatchEnds'],
             'RatioWatchDownload' => $l['RatioWatchDownload'],
             'StyleID' => $l['StyleID'],
-            'StyleURL' => $l['StyleURL'],
             'DisableInvites' => $l['DisableInvites'],
             'DisablePosting' => $l['DisablePosting'],
             'DisableUpload' => $l['DisableUpload'],
@@ -123,14 +122,14 @@ class User extends Entity {
         }
 
         if (!empty($HeavyInfo['RestrictedForums'])) {
-            $RestrictedForums = explode(',', $HeavyInfo['RestrictedForums']);
+            $RestrictedForums = (array)explode(',', $HeavyInfo['RestrictedForums']);
         } else {
             $RestrictedForums = array();
         }
         unset($HeavyInfo['RestrictedForums']);
 
         if (!empty($HeavyInfo['PermittedForums'])) {
-            $PermittedForums = explode(',', $HeavyInfo['PermittedForums']);
+            $PermittedForums = (array)explode(',', $HeavyInfo['PermittedForums']);
         } else {
             $PermittedForums = array();
         }

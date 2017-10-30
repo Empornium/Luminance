@@ -40,9 +40,9 @@ show_header();
             <div id="messagebar" class="messagebar alert"><?=$ResultMessage?></div>
     <?php } ?>
     <div class="head">
-        <a href="forums.php">Forums</a>
+        <a href="/forums.php">Forums</a>
         &gt;
-        <a href="forums.php?action=viewforum&amp;forumid=<?= $ForumID ?>"><?= $Forums[$ForumID]['Name'] ?></a>
+        <a href="/forums.php?action=viewforum&amp;forumid=<?= $ForumID ?>"><?= $Forums[$ForumID]['Name'] ?></a>
         &gt;
         Edit forum specific rules
     </div>

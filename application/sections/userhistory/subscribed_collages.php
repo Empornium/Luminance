@@ -47,19 +47,19 @@ $CollageSubs = $DB->to_array();
         if ($ShowAll) {
             ?>
             <br /><br />
-            [<a href="userhistory.php?action=subscribed_collages&showall=0">Only display collages with new additions</a>]&nbsp;&nbsp;&nbsp;
+            [<a href="/userhistory.php?action=subscribed_collages&showall=0">Only display collages with new additions</a>]&nbsp;&nbsp;&nbsp;
             <?php
         } else {
             ?>
             <br /><br />
-            [<a href="userhistory.php?action=subscribed_collages&showall=1">Show all subscribed collages</a>]&nbsp;&nbsp;&nbsp;
+            [<a href="/userhistory.php?action=subscribed_collages&showall=1">Show all subscribed collages</a>]&nbsp;&nbsp;&nbsp;
             <?php
         }
         ?>
-        [<a href="userhistory.php?action=catchup_collages&auth=<?= $LoggedUser['AuthKey'] ?>">Catch up</a>]&nbsp;&nbsp;&nbsp;
-        <a href="userhistory.php?action=subscriptions">Go to forum subscriptions</a>&nbsp;&nbsp;&nbsp;
-        <a href="userhistory.php?action=posts&amp;group=0&amp;showunread=0">Go to post history</a>&nbsp;&nbsp;&nbsp;
-        <a href="userhistory.php?action=comments&amp;userid=<?=$LoggedUser['ID']?>">Go to comment history</a>
+        [<a href="/userhistory.php?action=catchup_collages&auth=<?= $LoggedUser['AuthKey'] ?>">Catch up</a>]&nbsp;&nbsp;&nbsp;
+        <a href="/userhistory.php?action=subscriptions">Go to forum subscriptions</a>&nbsp;&nbsp;&nbsp;
+        <a href="/userhistory.php?action=posts&amp;group=0&amp;showunread=0">Go to post history</a>&nbsp;&nbsp;&nbsp;
+        <a href="/userhistory.php?action=comments&amp;userid=<?=$LoggedUser['ID']?>">Go to comment history</a>
     </div>
     <?php
     if (!$NumResults) {
@@ -117,13 +117,13 @@ $CollageSubs = $DB->to_array();
                     } else {
                         $Tags[$Tag]['count']++;
                     }
-                    $TorrentTags[] = '<a href="torrents.php?taglist=' . $Tag . '">' . $Tag . '</a>';
+                    $TorrentTags[] = '<a href="/torrents.php?taglist=' . $Tag . '">' . $Tag . '</a>';
                 }
                 $PrimaryTag = $TagList[0];
                 $TorrentTags = implode(' ', $TorrentTags);
                 $TorrentTags = '<br /><div class="tags">' . $TorrentTags . '</div>';
 
-                $DisplayName .= '<a href="torrents.php?id=' . $GroupID . '" title="View Torrent">' . $GroupName . '</a>';
+                $DisplayName .= '<a href="/torrents.php?id=' . $GroupID . '" title="View Torrent">' . $GroupName . '</a>';
 
                 // Start an output buffer, so we can store this output in $TorrentTable
                 ob_start();
@@ -131,7 +131,7 @@ $CollageSubs = $DB->to_array();
 
                 list($TorrentID, $Torrent) = each($Torrents);
 
-                $DisplayName = '<a href="torrents.php?id=' . $GroupID . '" title="View Torrent">' . $GroupName . '</a>';
+                $DisplayName = '<a href="/torrents.php?id=' . $GroupID . '" title="View Torrent">' . $GroupName . '</a>';
 
                 if (!empty($Torrent['FreeTorrent'])) {
                     $DisplayName .=' <strong>Freeleech!</strong>';
@@ -145,8 +145,8 @@ $CollageSubs = $DB->to_array();
                     </td>
                     <td>
                         <span>
-                            [<a href="torrents.php?action=download&amp;id=<?= $TorrentID ?>&amp;authkey=<?= $LoggedUser['AuthKey'] ?>&amp;torrent_pass=<?= $LoggedUser['torrent_pass'] ?>" title="Download">DL</a>
-                            | <a href="reportsv2.php?action=report&amp;id=<?= $TorrentID ?>" title="Report">RP</a>]
+                            [<a href="/torrents.php?action=download&amp;id=<?= $TorrentID ?>&amp;authkey=<?= $LoggedUser['AuthKey'] ?>&amp;torrent_pass=<?= $LoggedUser['torrent_pass'] ?>" title="Download">DL</a>
+                            | <a href="/reportsv2.php?action=report&amp;id=<?= $TorrentID ?>" title="Report">RP</a>]
                         </span>
                         <strong><?= $DisplayName ?></strong>
                         <?php  if ($LoggedUser['HideTagsInLists'] !== 1) {
@@ -167,10 +167,10 @@ $CollageSubs = $DB->to_array();
                 <tr class="colhead_dark">
                     <td>
                         <span style="float:left;">
-                            <strong><a href="collages.php?id=<?= $CollageID ?>"><?= $CollageName ?></a></strong> (<?= $NewTorrentCount ?> new Torrent<?= ($NewTorrentCount == 1 ? '' : 's') ?>)
+                            <strong><a href="/collages.php?id=<?= $CollageID ?>"><?= $CollageName ?></a></strong> (<?= $NewTorrentCount ?> new Torrent<?= ($NewTorrentCount == 1 ? '' : 's') ?>)
                         </span>&nbsp;
                         <span style="float:right;">
-                            <a href="#" onclick="$('#discog_table_<?= $CollageID ?>').toggle(); this.innerHTML=(this.innerHTML=='[Hide]'?'[Show]':'[Hide]'); return false;"><?= $ShowAll ? '[Show]' : '[Hide]' ?></a>&nbsp;&nbsp;&nbsp;[<a href="userhistory.php?action=catchup_collages&auth=<?= $LoggedUser['AuthKey'] ?>&collageid=<?= $CollageID ?>">Catch up</a>]&nbsp;&nbsp;&nbsp;<a href="#" onclick="CollageSubscribe(<?= $CollageID ?>); return false;" id="subscribelink<?= $CollageID ?>">[Unsubscribe]</a>
+                            <a href="#" onclick="$('#discog_table_<?= $CollageID ?>').toggle(); this.innerHTML=(this.innerHTML=='[Hide]'?'[Show]':'[Hide]'); return false;"><?= $ShowAll ? '[Show]' : '[Hide]' ?></a>&nbsp;&nbsp;&nbsp;[<a href="/userhistory.php?action=catchup_collages&auth=<?= $LoggedUser['AuthKey'] ?>&collageid=<?= $CollageID ?>">Catch up</a>]&nbsp;&nbsp;&nbsp;<a href="#" onclick="CollageSubscribe(<?= $CollageID ?>); return false;" id="subscribelink<?= $CollageID ?>">[Unsubscribe]</a>
                         </span>
                     </td>
                 </tr>

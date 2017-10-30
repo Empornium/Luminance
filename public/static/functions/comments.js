@@ -44,6 +44,7 @@ function Preview_Edit(postid)
     ajax.post("ajax.php?action=preview", ToPost, function(response) {
         $('#preview' + postid).raw().innerHTML = response;
         $('#editcont' + postid).hide();
+		Prism.highlightAll();
         lazy_load();
     });
 }
@@ -99,6 +100,7 @@ function Save_Edit(postid)
             $('#preview' + postid).raw().innerHTML = x[1];
         }
         $('#editcont' + postid).hide();
+		Prism.highlightAll();
         lazy_load();
     });
 
@@ -203,6 +205,7 @@ function Quick_Preview() {
 		$('#quickreplypreview').show();
 		$('#contentpreview').raw().innerHTML = response;
 		$('#quickreplytext').hide();
+		Prism.highlightAll();
         lazy_load();
 	});
 }

@@ -103,7 +103,7 @@ if (in_array($Short, array('collages_comment', 'Post', 'requests_comment', 'thre
 }
 
 foreach ($Channels as $Channel) {
-    send_irc("PRIVMSG ".$Channel." :".$ReportID." - ".$LoggedUser['Username']." just reported a ".$Short.": http://".SITE_URL."/".$Link." : ".$Reason);
+    send_irc("PRIVMSG ".$Channel." :".$ReportID." - ".$LoggedUser['Username']." just reported a ".$Short.": https://".SITE_URL."/".$Link." : ".$Reason);
 }
 
 $Cache->delete_value('num_forum_reports');

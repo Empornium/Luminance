@@ -5,8 +5,8 @@ show_header('Synonyms');
     <h2>Synonyms</h2>
 
     <div class="linkbox">
-        <a href="tags.php">[Tags & Search]</a>
-        <a style="font-weight: bold" href="tags.php?action=synonyms">[Synonyms]</a>
+        <a href="/tags.php">[Tags & Search]</a>
+        <a style="font-weight: bold" href="/tags.php?action=synonyms">[Synonyms]</a>
     </div>
 
     <div class="tagtable">
@@ -35,7 +35,7 @@ show_header('Synonyms');
             <div style="display:inline-block;vertical-align: top;">
             <table  class="syntable shadow">
                 <tr>
-                    <td class="colhead" style="width:200px"><a href="torrents.php?taglist=<?=$ParentTagName?>" ><?=$ParentTagName?></a>&nbsp;(<?=$Uses?>)</td>
+                    <td class="colhead" style="width:200px"><a href="/torrents.php?taglist=<?=$ParentTagName?>" ><?=$ParentTagName?></a>&nbsp;(<?=$Uses?>)</td>
                 </tr>
 <?php
             $LastParentTagName = $ParentTagName;

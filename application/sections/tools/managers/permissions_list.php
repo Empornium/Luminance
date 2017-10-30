@@ -6,7 +6,7 @@ show_header('Manage Permissions');
 function confirmDelete(id)
 {
     if (confirm("Are you sure you want to remove this permission class?")) {
-        location.href="tools.php?action=permissions&removeid="+id;
+        location.href="/tools.php?action=permissions&removeid="+id;
     }
 
     return false;
@@ -16,8 +16,8 @@ function confirmDelete(id)
 <div class="thin">
       <h2>User Classes</h2>
     <div class="linkbox">
-        [<a href="tools.php?action=permissions&amp;id=new&amp;isclass=1">Create a new User Class<!--permission set--></a>]
-        [<a href="tools.php">Back to Tools</a>]
+        [<a href="/tools.php?action=permissions&amp;id=new&amp;isclass=1">Create a new User Class<!--permission set--></a>]
+        [<a href="/tools.php">Back to Tools</a>]
     </div>
 <?php
 $DB->query("SELECT p.ID, p.Name, p.Level, p.DisplayStaff, p.MaxSigLength, p.MaxAvatarWidth,
@@ -65,7 +65,7 @@ if ($DB->record_count()) {
             <td class="center"><?=$IsAutoPromote=='1'? $reqForumPosts : ''; ?></td>
             <td class="center" <?=$IsAutoPromote=='1'?'title="Ratio for promotion, demotion ratio is this minus 0.1"' : ''; ?> ><?=$IsAutoPromote=='1'? number_format($reqRatio, 2, '.', '') : ''; ?></td>
             <td class="center"><a href="/user.php?action=search&amp;class=<?=$ID ?>"><?=number_format($UserCount); ?></a></td>
-            <td class="center">[<a href="tools.php?action=permissions&amp;id=<?=$ID ?>">Edit</a> | <a href="#" onclick="return confirmDelete(<?=$ID?>)">Remove</a>]</td>
+            <td class="center">[<a href="/tools.php?action=permissions&amp;id=<?=$ID ?>">Edit</a> | <a href="#" onclick="return confirmDelete(<?=$ID?>)">Remove</a>]</td>
         </tr>
 <?php 	} ?>
     </table>
@@ -76,8 +76,8 @@ if ($DB->record_count()) {
       <br/>
       <h2>Group Permissions</h2>
     <div class="linkbox">
-        [<a href="tools.php?action=permissions&amp;id=new&amp;isclass=0">Create a new Group Permissions</a>]
-        [<a href="tools.php">Back to Tools</a>]
+        [<a href="/tools.php?action=permissions&amp;id=new&amp;isclass=0">Create a new Group Permissions</a>]
+        [<a href="/tools.php">Back to Tools</a>]
     </div>
 
 <?php
@@ -102,7 +102,7 @@ if ($DB->record_count()) {
             <td><?=display_str($Description); ?></td>
             <td><?=number_format($UserCount); ?></td>
             <td class="center"><span style="font-weight:bold;display:block;width:100%;height:100%;color:white;background-color: #<?=display_str($Color)?>">#<?=$Color?></span></td>
-            <td class="center">[<a href="tools.php?action=permissions&amp;id=<?=$ID ?>">Edit</a> | <a href="#" onclick="return confirmDelete(<?=$ID?>)">Remove</a>]</td>
+            <td class="center">[<a href="/tools.php?action=permissions&amp;id=<?=$ID ?>">Edit</a> | <a href="#" onclick="return confirmDelete(<?=$ID?>)">Remove</a>]</td>
         </tr>
 <?php 	} ?>
     </table>

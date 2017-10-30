@@ -56,7 +56,7 @@ if ($uploaderID != $LoggedUser['ID']) {
     send_pm($uploaderID,
             0,
             db_string("A request you created has been deleted"),
-            db_string("The request '".$title."' was deleted by [url=http://".SITE_URL."/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url]\n\nReason: ".$_POST['reason']));
+            db_string("The request '".$title."' was deleted by [url=/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url]\n\nReason: ".$_POST['reason']));
 }
 
 write_log("Request ($requestID) '$title' ($totalBounty) was deleted by ".$LoggedUser['Username'].".$returntext For the reason: ".$_POST['reason']);

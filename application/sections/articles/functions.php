@@ -35,7 +35,7 @@ function print_articles($Articles, $StaffClass=0, $SkipSubArticle = -1)
             <tr class="row<?=$Row?>">
 
                     <td class="topic_link">
-                            <a href="articles.php?topic=<?=$TopicID?>"><?=display_str($ATitle)?></a>
+                            <a href="/articles.php?topic=<?=$TopicID?>"><?=display_str($ATitle)?></a>
                     </td>
                     <td>
                             <?=display_str($Description)?>

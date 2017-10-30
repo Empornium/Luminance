@@ -13,8 +13,8 @@ if(empty($_GET['id']) || !is_number($_GET['id'])) error(0, true);
 
 $RequestID = (int) $_GET['id'];
 
-if (empty($_GET['amount']) || !is_number($_GET['amount']) || $_GET['amount'] < $MinimumVote) {
-    $Amount = $MinimumVote;
+if (empty($_GET['amount']) || !is_number($_GET['amount']) || $_GET['amount'] < $master->options->MinVoteBounty) {
+    $Amount = $master->options->MinVoteBounty;
 } else {
     $Amount = $_GET['amount'];
 }

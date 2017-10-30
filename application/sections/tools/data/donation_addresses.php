@@ -10,11 +10,11 @@ show_header('Bitcoin addresses');
     <h2>Bitcoin address pool</h2>
 
     <div class="linkbox">
-        <a href="tools.php?action=btc_address_input">[Unused address pool]</a>
+        <a href="/tools.php?action=btc_address_input">[Unused address pool]</a>
         <?php if (check_perms('admin_donor_log')) { ?>
-        <a href="tools.php?action=donation_log&view=issued">[Issued addresses]</a>
-        <a href="tools.php?action=donation_log&view=submitted">[Submitted donations]</a>
-        <a href="tools.php?action=donation_log&view=cleared">[Cleared donations]</a>
+        <a href="/tools.php?action=donation_log&view=issued">[Issued addresses]</a>
+        <a href="/tools.php?action=donation_log&view=submitted">[Submitted donations]</a>
+        <a href="/tools.php?action=donation_log&view=cleared">[Cleared donations]</a>
         <?php  } ?>
     </div>
 

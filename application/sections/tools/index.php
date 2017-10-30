@@ -778,10 +778,6 @@ switch ($_REQUEST['action']) {
         include(SERVER_ROOT . '/sections/tools/data/economic_stats.php');
         break;
 
-    case 'opcode_stats':
-        include(SERVER_ROOT . '/sections/tools/data/opcode_stats.php');
-        break;
-
     case 'service_stats':
         include(SERVER_ROOT . '/sections/tools/data/service_stats.php');
         break;
@@ -883,6 +879,10 @@ switch ($_REQUEST['action']) {
         } else {
             error(403);
         }
+        break;
+
+    case 'compare_users':
+        include(SERVER_ROOT . '/sections/tools/services/compare_users.php');
         break;
 
     default:

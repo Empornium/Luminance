@@ -9,21 +9,21 @@ show_header('Start Conversation', 'inbox,staffpm,bbcode,jquery');
     <div class="linkbox">
 
 <?php  if ($IsStaff) { ?>
-            [ &nbsp;<a href="staffpm.php?view=my">My unanswered<?= $NumMy > 0 ? " ($NumMy)" : '' ?></a>&nbsp; ] &nbsp;
+            [ &nbsp;<a href="/staffpm.php?view=my">My unanswered<?= $NumMy > 0 ? " ($NumMy)" : '' ?></a>&nbsp; ] &nbsp;
         <?php
         }
         // FLS/Staff
         if ($IsFLS) {
             ?>
-            [ &nbsp;<a href="staffpm.php?view=unanswered">All unanswered<?= $NumUnanswered > 0 ? " ($NumUnanswered)" : '' ?></a>&nbsp; ] &nbsp;
-            [ &nbsp;<a href="staffpm.php?view=open">Open<?= $NumOpen > 0 ? " ($NumOpen)" : '' ?></a>&nbsp; ] &nbsp;
-            [ &nbsp;<a href="staffpm.php?view=resolved">Resolved</a>&nbsp; ]  &nbsp;
-            [ &nbsp;<a href="staffpm.php?action=responses&amp;convid=<?= $ConvID ?>">Common Answers</a>&nbsp; ]
+            [ &nbsp;<a href="/staffpm.php?view=unanswered">All unanswered<?= $NumUnanswered > 0 ? " ($NumUnanswered)" : '' ?></a>&nbsp; ] &nbsp;
+            [ &nbsp;<a href="/staffpm.php?view=open">Open<?= $NumOpen > 0 ? " ($NumOpen)" : '' ?></a>&nbsp; ] &nbsp;
+            [ &nbsp;<a href="/staffpm.php?view=resolved">Resolved</a>&nbsp; ]  &nbsp;
+            [ &nbsp;<a href="/staffpm.php?action=responses&amp;convid=<?= $ConvID ?>">Common Answers</a>&nbsp; ]
             <?php
             // User
         } else {
             ?>
-            [ &nbsp;<a href="staffpm.php">Back to inbox</a>&nbsp; ]
+            [ &nbsp;<a href="/staffpm.php">Back to inbox</a>&nbsp; ]
             <?php
         }
         ?>

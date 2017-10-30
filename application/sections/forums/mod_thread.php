@@ -285,13 +285,33 @@ if (isset($_POST['split'])) {
     }
     $Posts += $NFPosts;
 
+    // Check if the target thread has a poll
+    // if it does we'll have to delete the source thread poll to avoid a duplicate key issue
+    $DB->query("SELECT TopicID FROM forums_polls WHERE TopicID='$MergeTopicID'");
+    if ($DB->record_count() > 0) {
+        $DB->query("DELETE FROM forums_polls WHERE TopicID='$TopicID'");
+        $DB->query("DELETE FROM forums_polls_votes WHERE TopicID='$TopicID'");
+    }
+
     $DB->query("UPDATE forums_polls SET TopicID='$MergeTopicID' WHERE TopicID='$TopicID'");
     $DB->query("UPDATE forums_polls_votes SET TopicID='$MergeTopicID' WHERE TopicID='$TopicID'");
 
     $DB->query("UPDATE forums_posts SET TopicID='$MergeTopicID', Body=CONCAT_WS( '\n\n', Body, '[align=right][size=0][i]merged from thread[/i][br]\'$OldTitle\'[/size][/align]') WHERE TopicID='$TopicID'");
     $DB->query("UPDATE forums_topics SET Title='$Title',LastPostID='$NFLastPostID',LastPostTime='$NFLastPostTime',LastPostAuthorID='$NFLastPostAuthorID',NumPosts='$Posts' WHERE ID='$MergeTopicID'");
 
-    $DB->query("UPDATE users_subscriptions SET TopicID='$MergeTopicID' WHERE TopicID='$TopicID'");
+    // Fugly but functional
+    $DB->query("UPDATE forums_last_read_topics AS flrt JOIN (
+                     SELECT MAX(PostID) AS PostID, UserID, TopicID
+                       FROM forums_last_read_topics
+                      WHERE TopicID IN ('.$MergeTopicID.','.$TopicID.')
+                   GROUP BY UserID) AS updates ON flrt.UserID=updates.UserID AND flrt.TopicID=updates.TopicID
+                   SET flrt.PostID=updates.PostID
+                 WHERE flrt.TopicID='$TopicID'");
+
+    $DB->query("DELETE FROM forums_last_read_topics WHERE TopicID='$TopicID'");
+
+    $DB->query("UPDATE IGNORE users_subscriptions SET TopicID='$MergeTopicID' WHERE TopicID='$TopicID'");
+    $DB->query("DELETE FROM users_subscriptions WHERE TopicID='$TopicID'");
 
     $DB->query("DELETE FROM forums_topics WHERE ID='$TopicID'");
 
@@ -323,8 +343,8 @@ if (isset($_POST['split'])) {
     if (check_perms('site_admin_forums')) {
         $DB->query("DELETE FROM forums_posts WHERE TopicID='$TopicID'");
         $DB->query("DELETE FROM forums_topics WHERE ID='$TopicID'");
-            $DB->query("DELETE FROM forums_polls WHERE TopicID='$TopicID'");
-            $DB->query("DELETE FROM forums_polls_votes WHERE TopicID='$TopicID'");
+        $DB->query("DELETE FROM forums_polls WHERE TopicID='$TopicID'");
+        $DB->query("DELETE FROM forums_polls_votes WHERE TopicID='$TopicID'");
 
         update_forum_info($ForumID, '-1');
 

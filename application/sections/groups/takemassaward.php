@@ -58,7 +58,7 @@ if ($CountUsers > 0) {
 
     foreach ($UserIDs as $UserID) {
         send_pm($UserID, 0, "Congratulations you have been awarded the $Name",
-                            "[center][br][br][img]http://".SITE_URL.'/'.STATIC_SERVER."common/badges/{$Image}[/img][br][br][size=5][color=white][bg=#0261a3][br]{$Description}[br][br][/bg][/color][/size][/center]");
+                            "[center][br][br][img]/static/common/badges/{$Image}[/img][br][br][size=5][color=white][bg=#0261a3][br]{$Description}[br][br][/bg][/color][/size][/center]");
 
         $Cache->delete_value('user_badges_'.$UserID);
         $Cache->delete_value('user_badges_'.$UserID.'_limit');

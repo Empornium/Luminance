@@ -386,8 +386,5 @@ util.fn.init.prototype = util.fn;
 var $ = util;
 
 document.addEventListener('DOMContentLoaded', function() {
-  // For icons
-  console.log("injecting icons");
   new SVGInjector().inject(document.querySelectorAll('svg[data-src]'));
-  console.log("icons injected");
 }, false);

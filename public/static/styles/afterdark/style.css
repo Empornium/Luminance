@@ -230,6 +230,18 @@ ul.thin li { margin:0px 0px; padding:0px; }
     border: 0px solid #0054b0;
     border-radius: 10px;
 }
+
+#modal_content {
+    width: 90%;
+    min-width: 350px;
+    max-width: 1300px;
+    background: rgba(6, 6, 6, 0.8);
+    margin: 10px auto 0px auto;
+    padding: 0.6em 0.6em 30px;
+    border: 0px solid #0054b0;
+    border-radius: 10px;
+}
+
 #schedule #content {
     color:#eee;
 }
@@ -377,6 +389,10 @@ span.inside_stat {
     fill: #d2d2d2;
 }
 
+.misc_icons {
+    fill: #d2d2d2;
+}
+
 #major_stats_left {
     position: absolute;
     padding-top:3px;
@@ -455,7 +471,7 @@ li#nav_userinfo, #userinfo_tools{
     -webkit-transition: opacity ease-in 200ms, visibility 200ms, -webkit-transform ease-in 200ms;
 }
 #userinfo_username li ul {
-    left: 73px;
+    left: -54px;
     min-width:50%;
     border-radius: 4px;
 }
@@ -499,6 +515,9 @@ li#nav_userinfo:hover ul, #userinfo_tools:hover li ul {
     -webkit-transition: background-color 0s;
     animation: ani_userinfo 0ms infinite linear; /* 1100ms to enable */
     -webkit-animation: ani_userinfo 0ms infinite linear;
+}
+#userinfo_username li ul li a:hover > .nav_icons, #userinfo_tools li ul li a:hover > .nav_icons {
+    fill: #F3F3F3;
 }
 @keyframes ani_userinfo {
     0% {background-size: 16px;}
@@ -790,8 +809,7 @@ input.hidden {
 /* Layout (Any page) */
 
 .thin {
-    width: 95%;
-    min-width: 920px;
+    width: 96%;
     margin-left:auto;
     margin-right:auto;
 }

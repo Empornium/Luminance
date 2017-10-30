@@ -23,11 +23,11 @@ show_header('Watchlist','watchlist');
 <div class="thin">
     <h2>Speed Watchlist</h2>
     <div class="linkbox">
-        <a href="tools.php?action=speed_watchlist">[Watch-list]</a>
-        <a href="tools.php?action=speed_excludelist">[Exclude-list]</a>
-        <a href="tools.php?action=speed_records">[Speed Records]</a>
-        <a href="tools.php?action=speed_cheats">[Speed Cheats]</a>
-        <a href="tools.php?action=speed_zerocheats">[Zero Cheats]</a>
+        <a href="/tools.php?action=speed_watchlist">[Watch-list]</a>
+        <a href="/tools.php?action=speed_excludelist">[Exclude-list]</a>
+        <a href="/tools.php?action=speed_records">[Speed Records]</a>
+        <a href="/tools.php?action=speed_cheats">[Speed Cheats]</a>
+        <a href="/tools.php?action=speed_zerocheats">[Zero Cheats]</a>
     </div>
 <?php
     list($Page,$Limit) = page_limit(50);

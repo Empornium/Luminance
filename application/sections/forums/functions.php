@@ -182,7 +182,7 @@ function print_thread_links($ThreadID, $UserSubscriptions, $IncSearch = false)
 {
 ?>
     <div class="linkbox">
-        [<a href="reports.php?action=report&amp;type=thread&amp;id=<?=$ThreadID?>">Report Thread</a>]&nbsp;
+        [<a href="/reports.php?action=report&amp;type=thread&amp;id=<?=$ThreadID?>">Report Thread</a>]&nbsp;
         [<a href="#" onclick="Subscribe(<?=$ThreadID?>);return false;" class="subscribelink<?=$ThreadID?>"><?=(in_array($ThreadID, $UserSubscriptions) ? 'Unsubscribe' : 'Subscribe')?></a>]&nbsp;
 <?php
     if ($IncSearch) { ?>
@@ -190,7 +190,7 @@ function print_thread_links($ThreadID, $UserSubscriptions, $IncSearch = false)
 <?php
     }
 ?>
-        [<a href="forums.php?action=unread">Unread Posts</a>]
+        [<a href="/forums.php?action=unread">Unread Posts</a>]
     </div>
 <?php
 }
@@ -199,18 +199,18 @@ function print_thread_links($ThreadID, $UserSubscriptions, $IncSearch = false)
 function print_forum_links($ForumID, $LoggedUser, $IncSearch = false)
 {
     if (check_forumperm($ForumID, 'Write') && check_forumperm($ForumID, 'Create') && !$LoggedUser['DisablePosting'] ) { ?>
-        [<a href="forums.php?action=new&amp;forumid=<?=$ForumID?>">New Thread</a>]&nbsp;
+        [<a href="/forums.php?action=new&amp;forumid=<?=$ForumID?>">New Thread</a>]&nbsp;
 <?php
     }
 ?>
-    [<a href="forums.php?action=catchup&amp;forumid=<?=$ForumID?>&amp;auth=<?=$LoggedUser['AuthKey']?>">Catch up</a>]&nbsp;
+    [<a href="/forums.php?action=catchup&amp;forumid=<?=$ForumID?>&amp;auth=<?=$LoggedUser['AuthKey']?>">Catch up</a>]&nbsp;
 <?php
     if ($IncSearch) { ?>
         [<a href="#" onclick="$('#searchforum').toggle(); this.innerHTML = (this.innerHTML == 'Search this Forum'?'Hide Search':'Search this Forum'); return false;">Search this Forum</a>]&nbsp;
 <?php
     }
 ?>
-    [<a href="forums.php?action=unread">Unread Posts</a>]
+    [<a href="/forums.php?action=unread">Unread Posts</a>]
 <?php
 }
 
@@ -218,14 +218,14 @@ function print_forum_links($ForumID, $LoggedUser, $IncSearch = false)
 function print_main_forum_links($LoggedUser, $IncSearch = false)
 {
 ?>
-    [<a href="forums.php?action=catchup&amp;forumid=all&amp;auth=<?=$LoggedUser['AuthKey']?>">Catch up all</a>]&nbsp;
+    [<a href="/forums.php?action=catchup&amp;forumid=all&amp;auth=<?=$LoggedUser['AuthKey']?>">Catch up all</a>]&nbsp;
     <?php
     if ($IncSearch) { ?>
         [<a href="#" onclick="$('#searchforum').toggle(); this.innerHTML = (this.innerHTML == 'Search all forums'?'Hide Search':'Search all forums'); return false;">Search all forums</a>]&nbsp;
 <?php
     }
 ?>
-    [<a href="forums.php?action=unread">Unread Posts</a>]
+    [<a href="/forums.php?action=unread">Unread Posts</a>]
 <?php
 }
 

@@ -184,6 +184,20 @@ ul.thin li { margin:0px 0px; padding:0px; }
     -webkit-border-top-right-radius: 0px;
     border-radius: 0px 0px 0 0;
 }
+#modal_content {
+    width: 90%;
+    min-width: 350px;
+    max-width: 1300px;
+    background: rgba(8,8,8, 0.81);
+    box-shadow: 0px 0px 60px -10px #999;
+    margin: 40px auto 0px auto;
+    border: 0px solid #0054b0;
+    padding: 0px 0px 35px;
+    -moz-border-radius: 0px 0px 0 0;
+    -webkit-border-top-left-radius: 0px;
+    -webkit-border-top-right-radius: 0px;
+    border-radius: 0px 0px 0 0;
+}
 #schedule #content {
     color:#eee;
 }
@@ -374,6 +388,14 @@ span.inside_stat {
     }
 }
 
+.misc_icons {
+    fill: #d2d2d2;
+}
+
+.misc_icons:hover {
+    fill: #00f800;
+}
+
 #minor_stats {
     float:left;
     margin: 0px;
@@ -433,7 +455,7 @@ span.inside_stat {
     -webkit-transition: opacity ease-out 250ms 100ms, -webkit-transform ease-out 250ms 100ms;
 }
 #userinfo_username li ul {
-    left: 88px;
+    left: -54px;
     min-width:50%;
 }
 #userinfo_username li ul li a {
@@ -449,6 +471,9 @@ span.inside_stat {
     border-radius: 0px;       /* FF9+ IE9+ */
     -moz-border-radius: 0px; /* for FF5 */
     -webkit-border-radius: 0px; /* for opera */
+}
+#userinfo_username li ul li a:hover > .nav_icons, #userinfo_tools li ul li a:hover > .nav_icons {
+    fill: #F3F3F3;
 }
 #userinfo_username, #userinfo_tools {
     display:inline;
@@ -476,7 +501,7 @@ span.inside_stat {
     font-weight: bold;
     vertical-align:-2px;
 }
-#nav_upload,#nav_donate,#nav_useredit,#nav_logout {
+#nav_upload, #nav_donate {
     margin: 0px 7px !important;
 }
 #userinfo_major {
@@ -736,7 +761,6 @@ input.hidden {
 /* Layout (Any page) */
 .thin {
     width: 96%;
-    min-width: 920px;
     margin-left:auto;
     margin-right:auto;
 }

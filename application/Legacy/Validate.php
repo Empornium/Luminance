@@ -231,7 +231,7 @@ class Validate
 
                             // check remote filesize if max specififed
                             if ($MaxFileSize>=0) {
-                                $filesize = get_remote_file_size($ValidateVar);
+                                $filesize = $this->get_remote_file_size($ValidateVar);
                                 //if ($filesize<0) return "error getting filesize";
                                 if ($filesize>$MaxFileSize)
                                     return "$Field[ErrorMessage]<br/>Filesize is too big: " . get_size($filesize). "<br/>MaxFilesize: ".get_size($MaxFileSize). "<br/>File: ".display_str($ValidateVar);
@@ -278,7 +278,7 @@ class Validate
                             //  the whitelist is set inside the $Field['Regex'] var (in options arrary in ->SetFields)
 
                             // get all the image urls in the field ; inside [img]url[/img] && [img=url] tags
-                            $num = preg_match_all('#(?|\[thumb\](.*?)\[/thumb\]|\[img\](.*?)\[/img\]|\[imgnm\](.*?)\[/imgnm\]|\[imgalt\](.*?)\[/imgalt\]|\[img\=(.*?)\])#ism', $ValidateVar, $imageurls);
+                            $num = preg_match_all('#(?|\[thumb\](.*?)\[/thumb\]|\[img(?:=[0-9,]*)?\](.*?)\[/img\]|\[imgnm\](.*?)\[/imgnm\]|\[imgalt\](.*?)\[/imgalt\]|\[img\=[0-9,]*(.*?)\])#ism', $ValidateVar, $imageurls);
 
                             if ($num && $num >= $MinImages) { // if there are no img tags then it validates
                                 if ($num > $MaxImages)
@@ -302,7 +302,7 @@ class Validate
                                  }
 
                                  // Count total size of all images, don't count twice
-                                 $this->Weight = get_presentation_size(array_unique($imageurls[1]));
+                                 $this->Weight = $this->get_presentation_size(array_unique($imageurls[1]));
                                  if($this->Weight >= $MaxImageWeight)
                                      return "Presentation is too big! ".get_size($this->Weight)." (Max ".get_size($MaxImageWeight).")";
                             } elseif ($MinImages> 0 && $num < $MinImages) {  // if there are no img tags then it validates unless required flag is set
@@ -319,6 +319,53 @@ class Validate
                                 //}
                             }
                         break;
+
+                        // Forum posts and comments
+                        case 'post':
+                            global $master;
+
+                            // As of right now, we only check images,
+                            // we can skip everything, if it's disabled
+                            if (!$master->options->ImagesCheck) {
+                                break;
+                            }
+
+                            // Max. number of images in posts
+                            $MaxImages = (int) $master->options->MaxImagesCount; // Global option
+                            $MaxImages = isset($Field['MaxImages']) ? (int) $Field['MaxImages'] : $MaxImages; // Local option
+
+                            // Max. size for images in posts (MB)
+                            $MaxWeight = (int) $master->options->MaxImagesWeight;
+                            $MaxWeight = isset($Field['MaxImagesWeight']) ? (int) $Field['MaxImageWeight'] : $MaxWeight;
+                            $MaxWeight = $MaxWeight * 1024 * 1024;
+
+                            // Parse all images inside the post
+                            // TODO: have a global RegEx for this?
+                            $Matched = preg_match_all('#(?|\[thumb\](.*?)\[/thumb\]|\[img\](.*?)\[/img\]|\[imgnm\](.*?)\[/imgnm\]|\[imgalt\](.*?)\[/imgalt\]|\[img\=(.*?)\])#ism', $ValidateVar, $ImagesMatches);
+
+                            if ($Matched) {
+                                $ImagesURLs = array_unique($ImagesMatches[1]);
+                                if (count($ImagesURLs) > $MaxImages) {
+                                    $Error  = "Your post contains too many images. (Max: $MaxImages)<br>";
+                                    $Error .= "Try posting the direct links instead.";
+                                    return $Error;
+                                }
+                                $TotalSize = 0;
+                                foreach ($ImagesURLs as $ImagesURL) {
+                                    $FileSize = $this->get_remote_file_size($ImagesURL);
+                                    // Check if get_remote_file_size() did not return false or -1
+                                    if ($FileSize > 0) { $TotalSize += $FileSize; }
+                                }
+                                if ($TotalSize > $MaxWeight) {
+                                    $TotalSize = round($TotalSize / 1024 / 1024, 2);
+                                    $MaxWeight = round($MaxWeight / 1024 / 1024, 2);
+                                    $Error  = "Your post contains too many images. (Weight: $TotalSize MB - Max: $MaxWeight MB)<br>";
+                                    $Error .= "Try posting thumbnails instead or simply post the direct links.";
+                                    return $Error;
+                                }
+                            }
+
+                            break;
                     }
                 }  // if (dovalidation)
 
@@ -411,108 +458,109 @@ class Validate
 
         return $ReturnJS;
     }
-}
 
-function get_presentation_size($urls) {
+    public function get_presentation_size($urls) {
 
-    // make sure the rolling window isn't greater than the # of urls
-    $rolling_window = 25;
-    $rolling_window = (sizeof($urls) < $rolling_window) ? sizeof($urls) : $rolling_window;
+        // make sure the rolling window isn't greater than the # of urls
+        $rolling_window = 25;
+        $rolling_window = (sizeof($urls) < $rolling_window) ? sizeof($urls) : $rolling_window;
 
-    $curl_arr = array();
-    $total=0;
+        $curl_arr = array();
+        $total=0;
 
-    // add additional curl options here
-    $std_options = array(CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_FOLLOWLOCATION => true,
-    CURLOPT_HEADER => true,
-    CURLOPT_NOBODY => true,
-    CURLOPT_MAXREDIRS => 5,
-    CURLOPT_CONNECTTIMEOUT => 2);
-    $options = ($custom_options) ? ($std_options + $custom_options) : $std_options;
+        // add additional curl options here
+        $std_options = array(CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HEADER => true,
+        CURLOPT_NOBODY => true,
+        CURLOPT_MAXREDIRS => 5,
+        CURLOPT_CONNECTTIMEOUT => 2);
+        $options = ($custom_options) ? ($std_options + $custom_options) : $std_options;
 
-    // initialise all curl handles first
-    foreach($urls as $i => $url) {
-        $ch[] = curl_init();
+        // initialise all curl handles first
+        foreach($urls as $i => $url) {
+            $ch[] = curl_init();
+        }
+
+        $master = curl_multi_init();
+
+        // preload the window
+        for ($i = 0; $i < $rolling_window; $i++) {
+            $options[CURLOPT_URL] = $urls[$i];
+            curl_setopt_array($ch[$i],$options);
+            curl_multi_add_handle($master, $ch[$i]);
+        }
+
+        do {
+            while(($execrun = curl_multi_exec($master, $running)) == CURLM_CALL_MULTI_PERFORM);
+            usleep(50000);
+            if($execrun != CURLM_OK)
+                break;
+            // a request was just completed -- find out which one
+            while($done = curl_multi_info_read($master)) {
+                $info = curl_getinfo($done['handle']);
+                if ($info['http_code'] == 200)  {
+                    $total += curl_getinfo($done['handle'],  CURLINFO_CONTENT_LENGTH_DOWNLOAD);
+
+                    // start a new request (it's important to do this before removing the old one)
+                    $options[CURLOPT_URL] = $urls[$i];
+                    curl_setopt_array($ch[$i],$options);
+                    curl_multi_add_handle($master, $ch[$i]);
+
+                    // increment the handle pointer
+                    $i++;
+
+                    // remove the curl handle that just completed
+                    curl_multi_remove_handle($master, $done['handle']);
+                } else {
+                    // request failed.  add error handling.
+                }
+            }
+        } while ($running);
+
+        curl_multi_close($master);
+        return $total;
     }
 
-    $master = curl_multi_init();
+    public function get_remote_file_size($url, $user = "", $pw = "")
+    {
+        ob_start();
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HEADER, 1);
+        curl_setopt($ch, CURLOPT_NOBODY, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
 
-    // preload the window
-    for ($i = 0; $i < $rolling_window; $i++) {
-        $options[CURLOPT_URL] = $urls[$i];
-        curl_setopt_array($ch[$i],$options);
-        curl_multi_add_handle($master, $ch[$i]);
-    }
+        if (!empty($user) && !empty($pw)) {
+            $headers = array('Authorization: Basic ' . base64_encode("$user:$pw"));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        }
+        // slightly convoluted way to get remote filesize but is more bulletproof than @fsockopen methods
+        $ok = curl_exec($ch);
+        curl_close($ch);
+        $retheaders = ob_get_contents();
+        ob_end_clean();
 
-    do {
-        while(($execrun = curl_multi_exec($master, $running)) == CURLM_CALL_MULTI_PERFORM);
-        usleep(50000);
-        if($execrun != CURLM_OK)
-            break;
-        // a request was just completed -- find out which one
-        while($done = curl_multi_info_read($master)) {
-            $info = curl_getinfo($done['handle']);
-            if ($info['http_code'] == 200)  {
-                $total += curl_getinfo($done['handle'],  CURLINFO_CONTENT_LENGTH_DOWNLOAD);
+        $return = false;
+        $retheaders = explode("\n", $retheaders);
+        foreach ($retheaders as $header) {
+            // follow redirect
+            $s = 'Location: ';
+            if (substr(strtolower ($header), 0, strlen($s)) == strtolower($s)) {
+                $url = trim(substr($header, strlen($s)));
 
-                // start a new request (it's important to do this before removing the old one)
-                $options[CURLOPT_URL] = $urls[$i];
-                curl_setopt_array($ch[$i],$options);
-                curl_multi_add_handle($master, $ch[$i]);
+                return $this->get_remote_file_size($url, $user, $pw );
+            }
 
-                // increment the handle pointer
-                $i++;
+            // parse for content length
+            $s = "Content-Length: ";
+            if (substr(strtolower ($header), 0, strlen($s)) == strtolower($s)) {
+                $return = trim(substr($header, strlen($s)));
 
-                // remove the curl handle that just completed
-                curl_multi_remove_handle($master, $done['handle']);
-            } else {
-                // request failed.  add error handling.
+                return $return ? $return : -2;
             }
         }
-    } while ($running);
 
-    curl_multi_close($master);
-    return $total;
-}
-
-function get_remote_file_size($url, $user = "", $pw = "")
-{
-    ob_start();
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_HEADER, 1);
-    curl_setopt($ch, CURLOPT_NOBODY, 1);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-
-    if (!empty($user) && !empty($pw)) {
-        $headers = array('Authorization: Basic ' . base64_encode("$user:$pw"));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    }
-    // slightly convoluted way to get remote filesize but is more bulletproof than @fsockopen methods
-    $ok = curl_exec($ch);
-    curl_close($ch);
-    $retheaders = ob_get_contents();
-    ob_end_clean();
-
-    $return = false;
-    $retheaders = explode("\n", $retheaders);
-    foreach ($retheaders as $header) {
-        // follow redirect
-        $s = 'Location: ';
-        if (substr(strtolower ($header), 0, strlen($s)) == strtolower($s)) {
-            $url = trim(substr($header, strlen($s)));
-
-            return get_remote_file_size($url, $user, $pw );
-        }
-
-        // parse for content length
-        $s = "Content-Length: ";
-        if (substr(strtolower ($header), 0, strlen($s)) == strtolower($s)) {
-            $return = trim(substr($header, strlen($s)));
-
-            return $return ? $return : -2;
-        }
+        return -1;
     }
 
-    return -1;
 }

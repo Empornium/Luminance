@@ -2,6 +2,8 @@
 enforce_login();
 authorize();
 
+include(SERVER_ROOT.'/sections/inbox/functions.php');
+
 $P=array();
 $P=db_array($_POST);
 
@@ -28,6 +30,11 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
             $DB->query("SELECT ID From users_main WHERE Username='$Othername'");
             if (($DB->record_count()) > 0) {
                 list($OtherID) = $DB->next_record();
+                if(blockedPM($OtherID, $LoggedUser['ID'])) {
+                    $ResultMessage = "You cannot donate to this user";
+                    header("Location: bonus.php?action=msg&result=" .urlencode($ResultMessage));
+                    die();
+                }
                 //$OtherUserStats = get_user_stats($OtherID);
             } else {
                 $OtherID=false;
@@ -53,6 +60,25 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                 $UserBadgeIDs = get_user_shop_badges_ids($UserID);
                 if ( in_array($Value, $UserBadgeIDs)) {
                     $ResultMessage='Something bad happened (duplicate badge insertion)';
+                    break;
+                }
+
+                $DB->query("SELECT Badge FROM badges WHERE ID = ".intval($Value));
+                list($BadgeSet) = $DB->next_record();
+
+                $DB->query("SELECT MAX(b.Rank) FROM badges AS b LEFT JOIN users_badges AS ub ON ub.BadgeID = b.ID WHERE ub.UserID = $UserID AND Badge = '".db_string($BadgeSet)."'");
+                list($UserRank) = $DB->next_record();
+
+                $DB->query("SELECT ID, Rank FROM badges WHERE Badge = '".db_string($BadgeSet)."' ORDER BY ID");
+                $Badges = $DB->to_array(false, MYSQLI_ASSOC);
+
+                $CurBadgeKey   = array_search($Value, array_column($Badges, 'ID'));
+                $PreviousBadge = $Badges[$CurBadgeKey > 0 ? $CurBadgeKey - 1 : 0];
+
+                // If it's not the first badge
+                // and if the user doesn't own the previous one, it's bad
+                if ($Value != $Badges[0]['ID'] && $UserRank != $PreviousBadge['Rank']) {
+                    $ResultMessage = 'You must own the previous badges before getting this one.';
                     break;
                 }
 

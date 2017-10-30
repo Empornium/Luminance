@@ -1,0 +1,5 @@
+{% if usespan == false %}
+    {{ class.Name }}
+{% else %}
+    (<span alt="{{ class.ID }}" class="rank" style="color:#{{ class.Color }}">{{ class.Name }}</span>)
+{% endif %}

@@ -38,7 +38,7 @@ $Results = $DB->to_array();
     list($UserID, $Username, $Reports) = $Result;
 ?>
             <tr>
-                <td><a href="reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
                 <td><?=$Reports?></td>
             </tr>
 <?php  } ?>
@@ -109,60 +109,42 @@ $Results = $DB->to_array();
         <strong>By ID of torrent reported.</strong>
         <ul>
             <li>
-                Reports of torrents with ID = 1
-            </li>
-            <li>
-                <a href="reportsv2.php?view=torrent&amp;id=1">http://<?=SITE_URL?>/reportsv2.php?view=torrent&amp;id=1</a>
+                <a href="/reportsv2.php?view=torrent&amp;id=1">Reports of torrents with ID = 1</a>
             </li>
         </ul>
         <br />
         <strong>By GroupID of torrent reported.</strong>
         <ul>
             <li>
-                Reports of torrents within the group with ID = 1
-            </li>
-            <li>
-                <a href="reportsv2.php?view=group&amp;id=1">http://<?=SITE_URL?>/reportsv2.php?view=group&amp;id=1</a>
+                <a href="/reportsv2.php?view=group&amp;id=1">Reports of torrents within the group with ID = 1</a>
             </li>
         </ul>
         <br />
         <strong>By Report ID.</strong>
         <ul>
             <li>
-                The report with ID = 1
-            </li>
-            <li>
-                <a href="reportsv2.php?view=report&amp;id=1">http://<?=SITE_URL?>/reportsv2.php?view=report&amp;id=1</a>
+                <a href="/reportsv2.php?view=report&amp;id=1">The report with ID = 1</a>
             </li>
         </ul>
         <br />
         <strong>By Reporter ID.</strong>
         <ul>
             <li>
-                Reports created by <?=$Owner?>
-            </li>
-            <li>
-                <a href="reportsv2.php?view=reporter&amp;id=<?=$OwnerID?>">http://<?=SITE_URL?>/reportsv2.php?view=reporter&amp;id=<?=$OwnerID?></a>
+                <a href="/reportsv2.php?view=reporter&amp;id=<?=$OwnerID?>">Reports created by <?=$Owner?></a>
             </li>
         </ul>
         <br />
         <strong>By uploader ID.</strong>
         <ul>
             <li>
-                Reports for torrents uploaded by <?=$Owner?>
-            </li>
-            <li>
-                <a href="reportsv2.php?view=uploader&amp;id=<?=$OwnerID?>">http://<?=SITE_URL?>/reportsv2.php?view=uploader&amp;id=<?=$OwnerID?></a>
+                <a href="/reportsv2.php?view=uploader&amp;id=<?=$OwnerID?>">Reports for torrents uploaded by <?=$Owner?></a>
             </li>
         </ul>
         <br />
         <strong>By resolver ID.</strong>
         <ul>
             <li>
-                Reports for torrents resolved by <?=$Owner?>
-            </li>
-            <li>
-                <a href="reportsv2.php?view=resolver&amp;id=<?=$OwnerID?>">http://<?=SITE_URL?>/reportsv2.php?view=resolver&amp;id=<?=$OwnerID?></a>
+                <a href="/reportsv2.php?view=resolver&amp;id=<?=$OwnerID?>">Reports for torrents resolved by <?=$Owner?></a>
             </li>
         </ul>
         <br /><!--<br />
@@ -190,7 +172,7 @@ $Results = $DB->to_array();
         foreach ($Staff as $Array) {	?>
             <tr>
                 <td>
-                    <a href="reportsv2.php?view=staff&amp;id=<?=$Array['ResolverID']?>"><?=display_str($Array['Username'])?>'s reports</a>
+                    <a href="/reportsv2.php?view=staff&amp;id=<?=$Array['ResolverID']?>"><?=display_str($Array['Username'])?>'s reports</a>
                 </td>
                 <td><?=$Array['Count']?></td>
             </tr>
@@ -223,7 +205,7 @@ $Results = $DB->to_array();
 ?>
             <tr>
                 <td>
-                    <a href="reportsv2.php?view=type&amp;id=<?=display_str($Array['Type'])?>"><?=display_str($Title)?></a>
+                    <a href="/reportsv2.php?view=type&amp;id=<?=display_str($Array['Type'])?>"><?=display_str($Title)?></a>
                 </td>
                 <td>
                     <?=$Array['Count']?>

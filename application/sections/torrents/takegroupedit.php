@@ -37,7 +37,7 @@ if (!$CanEdit) { error(403); }
 $OldCategoryID = (int) $_POST['oldcategoryid'];
 $CategoryID = (int) $_POST['categoryid'];
 
-$Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
+$Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']), true, false);
 
 $whitelist_regex = get_whitelist_regex();
 

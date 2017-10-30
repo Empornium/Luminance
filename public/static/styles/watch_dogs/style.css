@@ -175,6 +175,13 @@ ul.thin li { margin:0px 0px; padding:0px; }
     margin: 10px auto 0px auto;
     /* overflow: hidden; */
 }
+#modal_content {
+    width: 90%;
+    min-width: 350px;
+    max-width: 1100px;
+    margin: 10px auto 0px auto;
+    /* overflow: hidden; */
+}
 
 #footer {
     font-size: 0.75em;
@@ -319,6 +326,14 @@ table.userinfo_stats td {
     fill: #d2d2d2;
 }
 
+.misc_icons {
+    fill: #000000;
+}
+
+.misc_icons:hover {
+    fill: #33c8f3;
+}
+
 #major_stats_left {
     position: absolute;
     margin: 0px 0 0 10px;
@@ -345,13 +360,24 @@ table.userinfo_stats td {
     padding: 2px 2px 2px 2px;
 }
 
-#userinfo_username li a:hover, #userinfo_tools li a:hover, #userinfo_major li a:hover, #modbar a:hover {
+#userinfo_username li a:hover,
+#userinfo_tools li a:hover,
+#userinfo_invites li a:hover,
+#userinfo_major li a:hover,
+#modbar a:hover {
     background-color: #33C8F3;
     color: #000;
     border-radius: 2px;       /* FF9+ IE9+ */
     -moz-border-radius: 2px; /* for FF5 */
     -webkit-border-radius: 2px; /* for opera */
 
+}
+#userinfo_username li a:hover > .nav_icons,
+#userinfo_tools li a:hover > .nav_icons,
+#userinfo_invites li a:hover > .nav_icons,
+#userinfo_major li a:hover > .nav_icons,
+#modbar a:hover > .nav_icons {
+    fill: #000;
 }
 #userinfo_username li ul, #userinfo_tools li ul {
     list-style: none;
@@ -362,8 +388,8 @@ table.userinfo_stats td {
     z-index: 10;
 }
 #userinfo_username li ul {
-    left: 69px;
-   top: 16px;
+    left: -54px;
+    top: 16px;
 }
 
 #userinfo_username li ul li a, #userinfo_tools li ul li a {
@@ -373,6 +399,9 @@ table.userinfo_stats td {
 #userinfo_username li ul li a:hover, #userinfo_tools li ul li a:hover {
     background-color: white;
     color: #00436b;
+}
+#userinfo_username li ul li a:hover > .nav_icons, #userinfo_tools li ul li a:hover > .nav_icons {
+    fill: #00436b;
 }
 
 #userinfo_username {
@@ -385,14 +414,16 @@ table.userinfo_stats td {
 }
 
 
-#nav_userinfo, #nav_tools {
-    padding-right: 8px !important;
-    margin: 0px 7px !important;
-    background-image: url('images/dropdown_arrow.png');
-    background-repeat:no-repeat;
-    background-position: right center;
+#nav_tools > a:after, #nav_userinfo > a:after {
+    content:"\25BC";
+    font-weight: bold;
 }
-#nav_upload,#nav_donate,#nav_useredit,#nav_logout {
+#major_stats > ul {
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+#nav_upload, #nav_donate {
     margin: 0px 7px !important;
 }
 
@@ -697,7 +728,6 @@ input.hidden {
 
 .thin {
     width: 96%;
-    min-width: 960px;
     margin-left:auto;
     margin-right:auto;
 }
@@ -1056,16 +1086,16 @@ table.boxstat td:first-child {
 }
 
 .head {
-        height: 30px;
-        padding: 16px 0 0 10px !important;
-        background: url('images/preorder_vigilante_edition_title.png') no-repeat scroll 0 0 rgba(0, 0, 0, 0);
-        color:#FFF;
-	font-size:1.1em !important;
-	font-weight: normal;
-	padding: 3px 10px !important;
-	margin: 0px !important;
-	overflow: hidden;
-        line-height: 30px;
+    height: 30px;
+    padding: 16px 0 0 10px !important;
+    background: url('images/preorder_vigilante_edition_title.png') no-repeat scroll 0 0 rgba(0, 0, 0, 0);
+    color:#FFF;
+    font-size:1.1em !important;
+    font-weight: normal;
+    padding: 3px 10px !important;
+    margin: 0px !important;
+    /*overflow: hidden;*/
+    line-height: 30px;
 }
 
 .body {

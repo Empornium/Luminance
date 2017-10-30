@@ -75,12 +75,12 @@ $Pages=get_pages($Page,$TorrentCount,NOTIFICATIONS_PER_PAGE,9);
 <div class="thin">
     <h2>Notifications</h2>
     <div  class="linkbox">
-            [<a href="user.php?action=notify" title="Add or edit notification filters">Add/Edit my notification filters</a>]
+            [<a href="/user.php?action=notify" title="Add or edit notification filters">Add/Edit my notification filters</a>]
     </div>
     <div class="linkbox">
           <?=$Pages?>
     </div>
-    <div class="head">Latest notifications <a href="torrents.php?action=notify_clear&amp;auth=<?=$LoggedUser['AuthKey']?>">(clear all)</a> <a href="javascript:SuperGroupClear()">(clear all selected)</a> </div>
+    <div class="head">Latest notifications <a href="/torrents.php?action=notify_clear&amp;auth=<?=$LoggedUser['AuthKey']?>">(clear all)</a> <a href="javascript:SuperGroupClear()">(clear all selected)</a> </div>
 <?php
     $NumNotices = $DB->record_count();
     if ($NumNotices==0) { ?>
@@ -109,20 +109,20 @@ $Pages=get_pages($Page,$TorrentCount,NOTIFICATIONS_PER_PAGE,9);
 ?>
     <br/>
     <div class="head">
-        Matches for filter <?=$FilterResults['FilterLabel']?> (<a href="torrents.php?action=notify_cleargroup&amp;filterid=<?=$ID?>&amp;auth=<?=$LoggedUser['AuthKey']?>">Clear</a>) <a href="javascript:GroupClear($('#notificationform_<?=$ID?>').raw())">(clear selected)</a></h3>
+        Matches for filter <?=$FilterResults['FilterLabel']?> (<a href="/torrents.php?action=notify_cleargroup&amp;filterid=<?=$ID?>&amp;auth=<?=$LoggedUser['AuthKey']?>">Clear</a>) <a href="javascript:GroupClear($('#notificationform_<?=$ID?>').raw())">(clear selected)</a></h3>
     </div>
     <table class="torrent_table">
     <form id="notificationform_<?=$ID?>">
           <tr class="colhead">
                 <td style="text-align: center"><input type="checkbox" name="toggle" onClick="ToggleBoxes(this.form, this.checked)" /></td>
                 <td class="small cats_col"></td>
-                <td style="width:100%;"><a href="<?=header_link('Title', 'asc') ?>">Torrent</a></td>
-                <td><a href="<?=header_link('Files') ?>">Files</a></td>
-                <td><a href="<?=header_link('Time') ?>">Time</a></td>
-                <td><a href="<?=header_link('Size') ?>">Size</a></td>
-                <td class="sign"><a href="<?=header_link('Snatches') ?>"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/snatched.png" alt="Snatches" title="Snatches" /></a></td>
-                <td class="sign"><a href="<?=header_link('Seeders') ?>"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/seeders.png" alt="Seeders" title="Seeders" /></a></td>
-                <td class="sign"><a href="<?=header_link('Leechers') ?>"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/leechers.png" alt="Leechers" title="Leechers" /></a></td>
+                <td style="width:100%;"><a href="/<?=header_link('Title', 'asc') ?>">Torrent</a></td>
+                <td><a href="/<?=header_link('Files') ?>">Files</a></td>
+                <td><a href="/<?=header_link('Time') ?>">Time</a></td>
+                <td><a href="/<?=header_link('Size') ?>">Size</a></td>
+                <td class="sign"><a href="/<?=header_link('Snatches') ?>"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/snatched.png" alt="Snatches" title="Snatches" /></a></td>
+                <td class="sign"><a href="/<?=header_link('Seeders') ?>"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/seeders.png" alt="Seeders" title="Seeders" /></a></td>
+                <td class="sign"><a href="/<?=header_link('Leechers') ?>"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/leechers.png" alt="Leechers" title="Leechers" /></a></td>
           </tr>
 <?php
         unset($FilterResults['FilterLabel']);
@@ -133,14 +133,14 @@ $Pages=get_pages($Page,$TorrentCount,NOTIFICATIONS_PER_PAGE,9);
 
             $Review = get_last_review($GroupID);
 
-            $DisplayName = '<a href="torrents.php?id='.$GroupID.'" onmouseover="return overlib(overlay'.$GroupID.', FULLHTML);" onmouseout="return nd();">'.$GroupName.'</a>'; // &amp;torrentid='.$TorrentID.'
+            $DisplayName = '<a href="/torrents.php?id='.$GroupID.'" onmouseover="return overlib(overlay'.$GroupID.', FULLHTML);" onmouseout="return nd();">'.$GroupName.'</a>'; // &amp;torrentid='.$TorrentID.'
 
             $TagLinks=array();
             if ($TorrentTags!='') {
                 $TorrentTags=explode(' ',$TorrentTags);
                 foreach ($TorrentTags as $TagKey => $TagName) {
                     $TagName = str_replace('_','.',$TagName);
-                    $TagLinks[]='<a href="torrents.php?taglist='.$TagName.'">'.$TagName.'</a>';
+                    $TagLinks[]='<a href="/torrents.php?taglist='.$TagName.'">'.$TagName.'</a>';
                 }
                 $TagLinks = implode(', ', $TagLinks);
                 $TorrentTags='<br /><div class="tags">'.$TagLinks.'</div>';

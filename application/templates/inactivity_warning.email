@@ -1,0 +1,8 @@
+Hello {{username}},
+
+It has been {{time}} since you used your account at {{scheme}}://{{settings.main.site_url}}.
+
+This is an automated email to inform you that your account will be disabled in 10 days if you do not sign in.
+
+Thank you,
+{{settings.main.site_name}} Staff

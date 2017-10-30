@@ -5,7 +5,7 @@ if (isset($_REQUEST['ip']) && isset($_REQUEST['userid']) ) {
         echo json_encode(array(false, 'UserID is not a number'));
         die();
     }
-    if (!check_perms('users_mod') && $_REQUEST['userid']!==$LoggedUser['ID'] ) {
+    if (!check_perms('users_mod') && $_REQUEST['userid']!=$LoggedUser['ID'] ) {
         echo json_encode(array(false, 'You do not have permission to access this page!'));
         die();
     }

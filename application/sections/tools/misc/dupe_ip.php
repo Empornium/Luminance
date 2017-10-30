@@ -47,8 +47,8 @@ show_header('Dupe IPs','dupeip');
 <div class="thin">
     <h2>Dupe IPs</h2>
     <div class="linkbox">
-        <strong><a href="tools.php?action=dupe_ips">[Dupe IP's]</a></strong>
-        <a href="tools.php?action=banned_ip_users">[Returning Dupe IP's]</a>
+        <strong><a href="/tools.php?action=dupe_ips">[Dupe IP's]</a></strong>
+        <a href="/tools.php?action=banned_ip_users">[Returning Dupe IP's]</a>
     </div>
 
     <div class="linkbox"> <?=$Pages; ?> </div>
@@ -56,11 +56,11 @@ show_header('Dupe IPs','dupeip');
     <div class="head">Duped IP's</div>
     <table width="100%">
         <tr class="colhead">
-            <td><a href="<?=header_link('IP') ?>">IP</a></td>
+            <td><a href="/<?=header_link('IP') ?>">IP</a></td>
             <td class="center">Host</td>
-            <td class="center"><a href="<?=header_link('NumUsers') ?>">Num Users</a></td>
-            <td class="center"><a href="<?=header_link('StartTime') ?>">Last Start Time</a></td>
-            <td class="center"><a href="<?=header_link('EndTime') ?>">Last End Time</a></td>
+            <td class="center"><a href="/<?=header_link('NumUsers') ?>">Num Users</a></td>
+            <td class="center"><a href="/<?=header_link('StartTime') ?>">Last Start Time</a></td>
+            <td class="center"><a href="/<?=header_link('EndTime') ?>">Last End Time</a></td>
         </tr>
 <?php
         if ($NumResults==0) {
@@ -76,7 +76,7 @@ show_header('Dupe IPs','dupeip');
                 $i++;
 ?>
                 <tr class="row<?=$Row?>">
-                    <td><?=display_str($IP)?><span style="float:right;">[<a href="user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="User Search on this IP" target="_blank">S</a>]</span></td>
+                    <td><?=display_str($IP)?><span style="float:right;">[<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="User Search on this IP" target="_blank">S</a>]</span></td>
                     <td class="center"><?=get_host($IP)?></td>
                     <td class="center"><?=display_str($NumUsers)?> &nbsp;
                      <span style="float:right;">

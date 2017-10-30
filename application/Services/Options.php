@@ -37,6 +37,14 @@ class Options extends Service {
         'IntroPMArticle'        => ['value' => '',   'section' => 'legacy',  'displayRow' => 5, 'displayCol' => 1, 'type' => 'string', 'validation' => ['minlength' => 0], 'description' => 'Tag link for article with intro PM'],
         'EnableUploads'         => ['value' => true, 'section' => 'legacy',  'displayRow' => 5, 'displayCol' => 2, 'type' => 'bool',                                       'description' => 'Global enable for uploads'],
         'EnableDownloads'       => ['value' => true, 'section' => 'legacy',  'displayRow' => 5, 'displayCol' => 3, 'type' => 'bool',                                       'description' => 'Global enable for downloads'],
+        'LeakingClients'        => ['value' => 3,    'section' => 'legacy',  'displayRow' => 6, 'displayCol' => 1, 'type' => 'int',                                        'description' => 'Passkey leak detection client threshold'],
+        'LeakingIPs'            => ['value' => 10,   'section' => 'legacy',  'displayRow' => 6, 'displayCol' => 2, 'type' => 'int',                                        'description' => 'Passkey leak detection IP threshold'],
+        'MinCreateBounty'       => ['value' => 1024*1024*1024,    'section' => 'legacy',  'displayRow' => 7, 'displayCol' => 1, 'type' => 'int',                           'description' => 'Minimum request starting bounty'],
+        'MinVoteBounty'         => ['value' => 100*1024*1024,   'section' => 'legacy',  'displayRow' => 7, 'displayCol' => 2, 'type' => 'int',                             'description' => 'Minimum request voting bounty'],
+        'ImagesCheck'           => ['value' => true, 'section' => 'legacy',  'displayRow' => 8, 'displayCol' => 1, 'type' => 'bool',                                       'description' => 'Enable images checking in posts'],
+        'MaxImagesCount'        => ['value' => 10,   'section' => 'legacy',  'displayRow' => 8, 'displayCol' => 2, 'type' => 'int',                                        'description' => 'Max. number of images in posts'],
+        'MaxImagesWeight'       => ['value' => 10,   'section' => 'legacy',  'displayRow' => 8, 'displayCol' => 3, 'type' => 'int',                                        'description' => 'Max. size for images in posts (MB)'],
+        'ImagesCheckMinClass'   => ['value' => 0,    'section' => 'legacy',  'displayRow' => 8, 'displayCol' => 4, 'type' => 'int',                                        'description' => 'Disable for users above this rank'],
     ];
 
 

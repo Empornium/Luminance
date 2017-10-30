@@ -37,9 +37,9 @@ if (!isset($_POST['from_delete'])) {
 if ($Recipient == 'Uploader') {
     $ToID = $_POST['uploaderid'];
     if ($Report) {
-        $Message = "You uploaded [url=http://".SITE_URL."/details.php?id=".$TorrentID."]the above torrent[/url], it has been reported for the reason: ".$ReportType['title']."\n\n".$Message;
+        $Message = "You uploaded [url=/details.php?id={$TorrentID}]the above torrent[/url], it has been reported for the reason: ".$ReportType['title']."\n\n".$Message;
     } else {
-        $Message = "I am PMing you as you are the uploader of [url=http://".SITE_URL."/details.php?id=".$TorrentID."]the above torrent[/url].\n\n".$Message;
+        $Message = "I am PMing you as you are the uploader of [url=/details.php?id={$TorrentID}]the above torrent[/url].\n\n".$Message;
     }
 } elseif ($Recipient == 'Reporter') {
     $ToID = $_POST['reporterid'];

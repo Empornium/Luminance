@@ -2,7 +2,7 @@
 
 {% block content %}
     <div class="thin">
-        <div class="head"><h2>{{ http_status }} {{ message }}</h2></div>
+        <div class="head"><h2>{{ http_status }} {{ message|raw }}</h2></div>
         {% if description %}
         <div class="box pad" style="margin-top: 20px;">
             {{ description|raw }}

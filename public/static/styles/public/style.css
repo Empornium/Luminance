@@ -183,8 +183,8 @@ input[type="text"]:invalid, input[type="password"]:invalid {
 #logo .svg {
     margin: auto;
     padding: 0px 0px 10px 0px;
-    /* 
-     * Drop shadow extends past the bounding box 
+    /*
+     * Drop shadow extends past the bounding box
      * of the image, so best to make it part of
      * the CSS instead. SVG FTW
      */
@@ -203,7 +203,7 @@ input[type="text"]:invalid, input[type="password"]:invalid {
 }
 
 .poetry {
-    width: 320px; 
+    width: 320px;
     text-align: justify;
 }
 
@@ -216,3 +216,6 @@ input[type="text"]:invalid, input[type="password"]:invalid {
     font-weight: bold;
 }
 
+.password {
+    -webkit-text-security: disc;
+}

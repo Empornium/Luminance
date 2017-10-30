@@ -89,9 +89,9 @@ show_header('Torrent statistics','charts,jquery');
 <div class="thin">
     <h2>Torrent stats</h2>
     <div class="linkbox">
-        <a href="stats.php?action=users">[User graphs]</a>
-        <a href="stats.php?action=site">[Site stats]</a>
-        <strong><a href="stats.php?action=torrents">[Torrent stats]</a></strong>
+        <a href="/stats.php?action=users">[User graphs]</a>
+        <a href="/stats.php?action=site">[Site stats]</a>
+        <strong><a href="/stats.php?action=torrents">[Torrent stats]</a></strong>
     </div>
     <br/>
 

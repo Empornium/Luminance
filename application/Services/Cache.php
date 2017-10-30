@@ -25,7 +25,14 @@ memcached -d -m 8192 -l 10.10.0.1 -t8 -C
 
 |*************************************************************************/
 
-class Cache extends \Memcache
+// Compatibility, prefer Memcached
+if (class_exists('\Memcached')) {
+    class Memcache extends \Memcached {}
+} else {
+    class Memcache extends \Memcache {}
+}
+
+class Cache extends Memcache
 {
     public $CacheHits  = array();
     public $CacheTimes = array();
@@ -47,7 +54,21 @@ class Cache extends \Memcache
     {
         $host = $master->settings->memcached->host;
         $port = $master->settings->memcached->port;
-        @$this->pconnect($host, $port);
+        if(is_subclass_of($this, '\Memcache')) {
+            @$this->pconnect($host, $port);
+        } else {
+            if(substr($host, 0, 7 ) === "unix://") {
+                $host = str_replace('unix://', '', $host);
+                $port = 0;
+            } else {
+                $port = (int)$port;
+            }
+            parent::__construct("{$host}:{$port}_Luminance");
+            $servers = $this->getServerList();
+            if(empty($servers)) {
+                $this->addServer($host, $port);
+            }
+        }
     }
 
     public function disable()
@@ -66,6 +87,15 @@ class Cache extends \Memcache
 
     public function disable_debug() {
         $this->enable_debug = false;
+    }
+
+    public function getStats($args){
+        $stats = parent::getStats($args);
+        if(is_subclass_of($this, '\Memcached')) {
+            $servers = array_keys($stats);
+            $stats = $stats[$servers[0]];
+        }
+        return $stats;
     }
 
     //---------- Caching functions ----------//
@@ -87,7 +117,16 @@ class Cache extends \Memcache
         if (empty($Key)) {
             //trigger_error("Cache insert failed for empty key");
         }
-        if (!$this->set($Key, $Value, 0, $Duration)) {
+
+        // Default parameters for Memcache set function
+        $SetParams = [$Key, $Value, 0, $Duration];
+
+        // Memcached uses only 3 parameters (no flag)
+        if (is_subclass_of($this, '\Memcached')) {
+            unset($SetParams[2]);
+        }
+
+        if (!$this->set(...$SetParams)) {
             //trigger_error("Cache insert failed for key $Key");
         }
         $this->Time+=(microtime(true)-$StartTime)*1000;
@@ -97,7 +136,16 @@ class Cache extends \Memcache
     {
         if (!$this->enable) return;
         $StartTime=microtime(true);
-        $this->replace($Key, $Value, false, $Duration);
+
+        // Default parameters for Memcache set function
+        $ReplaceParams = [$Key, $Value, false, $Duration];
+
+        // Memcached uses only 3 parameters (no flag)
+        if (is_subclass_of($this, '\Memcached')) {
+            unset($ReplaceParams[2]);
+        }
+
+        $this->replace(...$ReplaceParams);
         $this->Time+=(microtime(true)-$StartTime)*1000;
     }
 

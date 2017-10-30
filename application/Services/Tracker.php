@@ -574,11 +574,15 @@ class Tracker extends Service {
             $Get .= "&$Key=$Value";
         }
 
-        $MaxAttempts = 3;
+        if ($this->settings->site->debug_mode) {
+            $MaxAttempts = 1;
+        } else {
+            $MaxAttempts = 3;
+        }
         $Err = false;
         if ($this->send($Get, $MaxAttempts, $Err) === false) {
             if ($this->cache->get_value('tracker_error_reported') === false) {
-		// nope, get can include passkeys
+		        // nope, get can include passkeys
                 //write_log("Tracker error: Failed to update radiance: $Err : $Get");
                 $this->cache->cache_value('tracker_error_reported', true, $this->options->ErrorLoggingFreqS);
             }
@@ -626,6 +630,8 @@ class Tracker extends Service {
             // Only support http tracker comms for now
             $Response = '';
             $Response = @file_get_contents('http://' . $this->settings->tracker->host . ':' . $this->settings->tracker->port . '/' . $Get);
+
+            // $http_response_header is auto-populated by file_get_contents
             $ResponseCode = substr($http_response_header[0], 9, 3);
 
             // Check to see if we got a response and whether or not the response was

@@ -29,16 +29,22 @@ function SetTorrent(itemID){
 
 function SetMessage(itemID){
     var message= prompt("Enter a message to add to the PM the recipient is sent.\n(leave empty to send no message)");
-    if (message!=null) {
+
+    // User canceled
+    if (message === null) {
+        return false;
+    }
+
+    if (typeof message === 'string' && message.length > 0) {
         $('#' + itemID).raw().value = message;
     }
+
     return true;
 }
 
 function SetNameAndMessage(elnameID, elmessageID){
     if (SetUsername(elnameID)) {
-        SetMessage(elmessageID);
-        return true;
+        return SetMessage(elmessageID);
     }
     return false;
 }

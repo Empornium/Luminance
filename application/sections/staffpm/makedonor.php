@@ -20,7 +20,7 @@ if ($DB->record_count() == 0) {
 $Message = "Thank you for helping to support the site.  It's users like you who make all of this possible.";
 
 if ((int) $Donor === 0) {
-    $Msg = db_string(sqltime() . ' - Donated: http://'.SITE_URL."/staffpm.php?action=viewconv&id=$ConvID\n");
+    $Msg = db_string(sqltime() . " - Donated: /staffpm.php?action=viewconv&id={$ConvID}\n");
     $DB->query("UPDATE users_info
                 SET Donor='1',
                     AdminComment = CONCAT('$Msg',AdminComment)

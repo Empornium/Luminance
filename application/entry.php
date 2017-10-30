@@ -1,9 +1,11 @@
 <?php
 namespace Luminance;
-$load = sys_getloadavg();
-if ($load[0] > 30) {
-    header('HTTP/1.1 503 Too busy, try again later');
-    die('Server too busy. Please try again later.');
+if(function_exists('sys_getloadavg')) {
+	$load = sys_getloadavg();
+	if ($load[0] > 30) {
+	    header('HTTP/1.1 503 Too busy, try again later');
+	    die('Server too busy. Please try again later.');
+	}
 }
 
 

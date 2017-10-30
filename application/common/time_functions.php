@@ -3,8 +3,16 @@ if (!extension_loaded('date')) {
     error('Date Extension not loaded.');
 }
 
+function get_timestamp($TimeStamp) {
+    if ($TimeStamp instanceof \DateTime) {
+        $TimeStamp = $TimeStamp->format('Y-m-d H:i:s');
+    }
+    return $TimeStamp;
+}
+
 function time_ago($TimeStamp)
 {
+    $TimeStamp = get_timestamp($TimeStamp);
     if (!is_number($TimeStamp)) { // Assume that $TimeStamp is SQL timestamp
         if ($TimeStamp == '0000-00-00 00:00:00') {
             return false;
@@ -21,6 +29,7 @@ function time_ago($TimeStamp)
 function time_diff($TimeStamp, $Levels=2, $Span=true, $Lowercase=false, $ForceFormat=-1)
 {
     global $LoggedUser;
+    $TimeStamp = get_timestamp($TimeStamp);
 
     if (!is_number($TimeStamp)) { // Assume that $TimeStamp is SQL timestamp
         if ($TimeStamp == '0000-00-00 00:00:00') {

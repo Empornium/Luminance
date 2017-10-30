@@ -39,7 +39,7 @@ show_header('News','bbcode');
 ?>
 <div class="thin">
     <h2>
-        <a style="float:left;margin-top:4px" href="feeds.php?feed=feed_news&amp;user=<?=$LoggedUser['ID']?>&amp;auth=<?=$LoggedUser['RSS_Auth']?>&amp;passkey=<?=$LoggedUser['torrent_pass']?>&amp;authkey=<?=$LoggedUser['AuthKey']?>" title="<?=SITE_NAME?> : News" ><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
+        <a style="float:left;margin-top:4px" href="/feeds.php?feed=feed_news&amp;user=<?=$LoggedUser['ID']?>&amp;auth=<?=$LoggedUser['RSS_Auth']?>&amp;passkey=<?=$LoggedUser['torrent_pass']?>&amp;authkey=<?=$LoggedUser['AuthKey']?>" title="<?=SITE_NAME?> : News" ><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
     <?=SITE_NAME?> <?=((strtolower(substr( SITE_NAME,0,1))===substr( SITE_NAME,0,1))?'news':'News'); ?></h2>
 
 <?php  print_latest_forum_topics(); ?>
@@ -57,16 +57,16 @@ show_header('News','bbcode');
 ?>
                 <div class="head colhead_dark"><strong>Featured Torrent</strong></div>
         <div class="box">
-            <div class="center pad"><a href="torrents.php?id=<?=$FeaturedAlbum['GroupID']?>"><?=$FeaturedAlbum['Name']?></a></div>
-            <div class="center"><a href="torrents.php?id=<?=$FeaturedAlbum['GroupID']?>" title="<?=$FeaturedAlbum['Name']?>"><img src="<?=$FeaturedAlbum['Image']?>" alt="<?=$FeaturedAlbum['Name']?>" width="100%" /></a></div>
-            <div class="center pad"><a href="forums.php?action=viewthread&amp;threadid=<?=$FeaturedAlbum['ThreadID']?>"><em>Read the interview with the band, discuss here</em></a></div>
+            <div class="center pad"><a href="/torrents.php?id=<?=$FeaturedAlbum['GroupID']?>"><?=$FeaturedAlbum['Name']?></a></div>
+            <div class="center"><a href="/torrents.php?id=<?=$FeaturedAlbum['GroupID']?>" title="<?=$FeaturedAlbum['Name']?>"><img src="<?=$FeaturedAlbum['Image']?>" alt="<?=$FeaturedAlbum['Name']?>" width="100%" /></a></div>
+            <div class="center pad"><a href="/forums.php?action=viewthread&amp;threadid=<?=$FeaturedAlbum['ThreadID']?>"><em>Read the interview with the band, discuss here</em></a></div>
         </div>
 <?php
     }
     if (check_perms('users_mod')) {
 ?>
 
-        <div class="head colhead_dark"><a href="staffblog.php">Latest staff blog posts</a></div>
+        <div class="head colhead_dark"><a href="/staffblog.php">Latest staff blog posts</a></div>
         <div class="box">
 
 <?php
@@ -105,7 +105,7 @@ show_header('News','bbcode');
             list($BlogID, $Author, $Title, $Body, $BlogTime, $ThreadID) = $Blog[$i];
 ?>
                 <li>
-                    <?=($ReadTime < strtotime($BlogTime))?'<strong>':''?><?=($i + 1)?>. <a href="staffblog.php#blog<?=$BlogID?>"><?=$Title?></a><?=($ReadTime < strtotime($BlogTime))?'</strong>':''?>
+                    <?=($ReadTime < strtotime($BlogTime))?'<strong>':''?><?=($i + 1)?>. <a href="/staffblog.php#blog<?=$BlogID?>"><?=$Title?></a><?=($ReadTime < strtotime($BlogTime))?'</strong>':''?>
                 </li>
 <?php
 }
@@ -126,11 +126,11 @@ show_header('News','bbcode');
 <?php       if (check_perms('site_view_stats')) { ?>
                 <li class="center">
 <?php           if (check_perms('site_stats_advanced')) { ?>
-                    [<a href="stats.php?action=users">Users</a>] &nbsp;
+                    [<a href="/stats.php?action=users">Users</a>] &nbsp;
 <?php           }   ?>
-                    [<a href="stats.php?action=site">Site History</a>]
+                    [<a href="/stats.php?action=site">Site History</a>]
 <?php           if (check_perms('site_stats_advanced')) { ?>
-                    &nbsp;[<a href="stats.php?action=torrents">Torrents</a>]
+                    &nbsp;[<a href="/stats.php?action=torrents">Torrents</a>]
 <?php           }   ?>
                 </li>
 <?php       }
@@ -332,7 +332,7 @@ if ($TopicID) {
                 </form>
                 </div>
 <?php  	} ?>
-                <br /><strong>Topic:</strong> <a href="forums.php?action=viewthread&amp;threadid=<?=$TopicID?>">Visit</a>
+                <br /><strong>Topic:</strong> <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>">Visit</a>
             </div>
         </div>
 <?php
@@ -352,7 +352,7 @@ foreach ($News as $NewsItem) {
         <div class="head">
             <?=$Text->full_format($Title)?> <span class="small"><?=time_diff($NewsTime);?></span>
 <?php  if (check_perms('admin_manage_news')) {?>
-            - <a href="tools.php?action=editnews&amp;id=<?=$NewsID?>">[Edit]</a>
+            - <a href="/tools.php?action=editnews&amp;id=<?=$NewsID?>">[Edit]</a>
 <?php  } ?>
             </div>
                  <div id="news<?=$NewsID?>" class="box">
@@ -410,7 +410,7 @@ function contest()
 ?>
                 </ol>
                 Total uploads: <?=$TotalPoints?><br />
-                <a href="index.php?action=scoreboard">Full scoreboard</a>
+                <a href="/index.php?action=scoreboard">Full scoreboard</a>
             </div>
         </div>
     <!-- END contest Section -->

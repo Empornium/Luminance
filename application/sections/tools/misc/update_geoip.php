@@ -28,7 +28,7 @@ function get_first_day($month,$year,$dayofweek = 1,$timeformat="Ymd") { // sunda
 
 }
 
-// currently updated on the first tuesday of each month. See http://www.maxmind.com/app/geolite for details
+// currently updated on the first tuesday of each month. See https://www.maxmind.com/app/geolite for details
 $filedate = get_first_day_current_month(2);
 
 if (($Locations = file("GeoLiteCity_".$filedate."/GeoLiteCity-Location.csv", FILE_IGNORE_NEW_LINES)) === false) {
@@ -115,11 +115,11 @@ header('Content-type: text/plain');
 ob_end_clean();
 restore_error_handler();
 
-$Registries[] = 'http://ftp.apnic.net/stats/afrinic/delegated-afrinic-latest'; //Africa
-$Registries[] = 'http://ftp.apnic.net/stats/apnic/delegated-apnic-latest'; //Asia & Pacific
-$Registries[] = 'http://ftp.apnic.net/stats/arin/delegated-arin-latest'; //North America
-$Registries[] = 'http://ftp.apnic.net/stats/lacnic/delegated-lacnic-latest'; //South America
-$Registries[] = 'http://ftp.apnic.net/stats/ripe-ncc/delegated-ripencc-latest'; //Europe
+$Registries[] = 'https://ftp.apnic.net/stats/afrinic/delegated-afrinic-latest'; //Africa
+$Registries[] = 'https://ftp.apnic.net/stats/apnic/delegated-apnic-latest'; //Asia & Pacific
+$Registries[] = 'https://ftp.apnic.net/stats/arin/delegated-arin-latest'; //North America
+$Registries[] = 'https://ftp.apnic.net/stats/lacnic/delegated-lacnic-latest'; //South America
+$Registries[] = 'https://ftp.apnic.net/stats/ripe-ncc/delegated-ripencc-latest'; //Europe
 
 $Registries[] = 'ftp://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-latest'; //Africa
 $Registries[] = 'ftp://ftp.apnic.net/pub/stats/apnic/delegated-apnic-latest'; //Asia & Pacific

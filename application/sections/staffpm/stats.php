@@ -92,7 +92,7 @@ $Results = $DB->to_array();
     list($UserID, $Username, $Num, $Extra) = $Result;
 ?>
                 <tr>
-                    <td><a href="reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
                     <td><?=$Num?></td>
                     <td><?=$Extra?></td>
                 </tr>
@@ -116,7 +116,7 @@ $Results = $DB->to_array();
     list($UserID, $Username, $Num, $Extra) = $Result;
 ?>
                 <tr>
-                    <td><a href="reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
                     <td><?=$Num?></td>
                     <td><?=$Extra?></td>
                 </tr>
@@ -141,7 +141,7 @@ $Results = $DB->to_array();
     list($UserID, $Username, $Num, $Extra) = $Result;
 ?>
             <tr>
-                <td><a href="reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
                 <td><?=$Num?></td>
                 <td><?=$Extra?></td>
             </tr>
@@ -165,7 +165,7 @@ $Results = $DB->to_array();
     list($UserID, $Username, $Num, $Extra) = $Result;
 ?>
                 <tr>
-                    <td><a href="reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
                     <td><?=$Num?></td>
                     <td><?=$Extra?></td>
                 </tr>

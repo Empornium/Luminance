@@ -75,7 +75,7 @@ $master->cache->delete_value("forums_edits_$postID");
 </div>
 <div class="post_footer">
     <a href="#content<?=$postID?>" onclick="LoadEdit('forums', <?=$postID?>, 1); return false;">&laquo;</a>
-    <span class="editedby">Last edited by <a href="user.php?id=<?=$forumpost['AuthorID']?>"><?=$forumpost['UserName']?></a> just now</span>
+    <span class="editedby">Last edited by <a href="/user.php?id=<?=$forumpost['AuthorID']?>"><?=$forumpost['UserName']?></a> just now</span>
 <?php       if (check_perms('site_admin_forums')) { ?>
     &nbsp;&nbsp;<a href="#content<?=$postID?>" onclick="RevertEdit(<?=$postID?>); return false;" title="remove last edit">&reg;</a>
 <?php       } ?>

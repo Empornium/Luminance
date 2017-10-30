@@ -17,7 +17,7 @@ $DB->query("SELECT ID,Deleted FROM collages WHERE Name='".db_string($_POST['name
 if ($DB->record_count()) {
     list($ID, $Deleted) = $DB->next_record();
     if ($Deleted) {
-        $Err = 'A collage with that name already exists but needs to be recovered, please <a href="staffpm.php">contact</a> the staff team!';
+        $Err = 'A collage with that name already exists but needs to be recovered, please <a href="/staffpm.php">contact</a> the staff team!';
     } else {
         $Err = "A collage with that name already exists: <a href=\"/collages.php?id=$ID\">$ID</a>.";
     }

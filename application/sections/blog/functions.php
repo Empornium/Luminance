@@ -32,11 +32,11 @@ function printBlogSidebar($section, $numposts = 5)
     if (!is_number($numposts)) return false;
 ?>
     <div class="head colhead_dark">
-        <a href="<?=lcfirst($section)?>.php">Latest <?=lcfirst($section)?> posts</a>
-        <a style="float:right;margin-top:4px" href="feeds.php?feed=feed_blog&amp;user=<?=$LoggedUser['ID']?>&amp;auth=<?=$LoggedUser['RSS_Auth']?>&amp;passkey=<?=$LoggedUser['torrent_pass']?>&amp;authkey=<?=$LoggedUser['AuthKey']?>" title="<?=SITE_NAME?> : Blog" ><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
+        <a href="/<?=lcfirst($section)?>.php">Latest <?=lcfirst($section)?> posts</a>
+        <a style="float:right;margin-top:4px" href="/feeds.php?feed=feed_blog&amp;user=<?=$LoggedUser['ID']?>&amp;auth=<?=$LoggedUser['RSS_Auth']?>&amp;passkey=<?=$LoggedUser['torrent_pass']?>&amp;authkey=<?=$LoggedUser['AuthKey']?>" title="<?=SITE_NAME?> : Blog" ><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
 <?php
         if (check_perms('admin_manage_blog')) {     ?>
-            <a href="<?=lcfirst($section)?>.php?action=newpost" style="float:right;margin-right:11px" title="Add new <?=lcfirst($section)?> post">Add new</a>
+            <a href="/<?=lcfirst($section)?>.php?action=newpost" style="float:right;margin-right:11px" title="Add new <?=lcfirst($section)?> post">Add new</a>
 <?php   }    ?>
     </div>
     <div class="box pad">
@@ -48,7 +48,7 @@ function printBlogSidebar($section, $numposts = 5)
             $item = $blog[$i];
 ?>
             <div class="center blog">
-                <a href="<?=lcfirst($section)?>.php#blog<?=$item['ID']?>">
+                <a href="/<?=lcfirst($section)?>.php#blog<?=$item['ID']?>">
 <?php
             if ($item['Image']) {    ?>
                     <div class="pad center">

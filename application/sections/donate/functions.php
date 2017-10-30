@@ -79,7 +79,7 @@ function get_btc_addresses($UserID)
         // no addresses, generate on if we can.
         if (BTC_LOCAL) {
             try {
-                $bitcoin  = new Luminance\Legacy\Bitcoin(BTC_USER, BTC_PASS);
+                $bitcoin  = new Luminance\Legacy\Bitcoin(BTC_USER, BTC_PASS, BTC_HOST, BTC_PORT);
                 $public   = $bitcoin->getnewaddress();
                 if (!$public) {
                     $Err = "Failed to get an address, if this error persists we probably need to add some addresses, please contact an admin";
@@ -125,7 +125,7 @@ function check_bitcoin_balance($address, $numtransactions=6)
         $bitcoin  = new Luminance\Legacy\Bitcoin(BTC_USER, BTC_PASS);
         $btc = $bitcoin->getreceivedbyaddress($address, $numtransactions);
     } else {
-        $satoshis = intval(file_get_contents("http://blockchain.info/q/addressbalance/{$address}?confirmations={$numtransactions}"));
+        $satoshis = intval(file_get_contents("https://blockchain.info/q/addressbalance/{$address}?confirmations={$numtransactions}"));
         $btc = $satoshis / 100000000.0;
     }
     if ($btc > 0) {
@@ -137,7 +137,7 @@ function check_bitcoin_balance($address, $numtransactions=6)
 
 function check_bitcoin_activation($address)
 {
-    $timestamp = intval(file_get_contents("http://blockchain.info/q/addressfirstseen/$address"));
+    $timestamp = intval(file_get_contents("https://blockchain.info/q/addressfirstseen/$address"));
     if ($timestamp > 0) {
         return date('Y-m-d H:i:s', $timestamp);
     } else {
@@ -145,9 +145,8 @@ function check_bitcoin_activation($address)
     }
 }
 
-// http://api.bitcoincharts.com/v1/weighted_prices.json
+// https://api.bitcoincharts.com/v1/weighted_prices.json
 // https://www.bitstamp.net/api/ticker/
-// https://data.mtgox.com/api/1/BTCEUR/ticker
 
 function get_current_btc_rate()
 {
@@ -167,22 +166,27 @@ function get_current_btc_rate()
     return $rate;
 }
 
-function query_btc_rate_bitstamp($testing=false)
+function query_eur_rate($testing=false)
 {
-        $mtgoxjson = file_get_contents("https://www.bitstamp.net/api/ticker/");
+    return get_eur_bitcoinaverage($testing);
+}
 
-        if($testing) return $mtgoxjson;
+function get_eur_bitstamp($testing=false)
+{
+        $bitstampjson = file_get_contents("https://www.bitstamp.net/api/ticker/");
+
+        if($testing) return $bitstampjson;
 
         // Decode from an object to array
-        if ($mtgoxjson) {
+        if ($bitstampjson) {
 
-            $output_mtgox = json_decode($mtgoxjson, true);
+            $output_bitstamp = json_decode($bitstampjson, true);
             // something's wrong
-            if (!$output_mtgox) {
+            if (!$output_bitstamp) {
                 return false;
             }
 
-            $currencyRate = $output_mtgox['low'];
+            $currencyRate = $output_bitstamp['low'];
 
             return (double)str_replace(',', '', $currencyRate);
         }
@@ -191,14 +195,9 @@ function query_btc_rate_bitstamp($testing=false)
 
 }
 
-function query_eur_rate($testing=false)
-{
-    return get_eur_bitcoinaverage($testing);
-}
-
 function get_eur_coindesk($testing=flase)
 {
-        $coindeskjson = file_get_contents("http://api.coindesk.com/v1/bpi/currentprice/EUR.json");
+        $coindeskjson = file_get_contents("https://api.coindesk.com/v1/bpi/currentprice/EUR.json");
 
         if($testing) return $coindeskjson;
 
@@ -226,35 +225,6 @@ function get_eur_bitcoinaverage($testing=false)
         $currencyRate = json_decode(file_get_contents("https://apiv2.bitcoinaverage.com/indices/global/ticker/BTCEUR"))->averages->day;
 
         if($testing || $currencyRate) return (double)str_replace(',', '', $currencyRate);
-
-        return false;
-}
-
-// old version api 0
-function get_ticker_eur_v0()
-{
-        $currency = "EUR";
-
-        // Fetch the current rate from MtGox
-        //echo " $type $geo $currency";
-        $ch = curl_init('https://data.mtgox.com/api/0/data/ticker.php?Currency='.$currency);
-        curl_setopt($ch, CURLOPT_REFERER, 'Mozilla/5.0 (compatible; MtGox PHP client; '.php_uname('s').'; PHP/'.phpversion().')');
-        curl_setopt($ch, CURLOPT_USERAGENT, "CakeScript/0.1");
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        $mtgoxjson = curl_exec($ch);
-        curl_close($ch);
-
-        // Decode from an object to array
-        if ($mtgoxjson) {
-            $output_mtgox = json_decode($mtgoxjson);
-            $output_mtgox_1 = get_object_vars($output_mtgox);
-            $mtgox_array = get_object_vars($output_mtgox_1['ticker']);
-
-            return $mtgox_array;
-        }
 
         return false;
 }

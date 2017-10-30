@@ -45,11 +45,11 @@ show_header('Speed Cheats','watchlist');
     <h2>(possible) cheaters</h2>
 
     <div class="linkbox">
-        <a href="tools.php?action=speed_watchlist">[Watch-list]</a>
-        <a href="tools.php?action=speed_excludelist">[Exclude-list]</a>
-        <a href="tools.php?action=speed_records">[Speed Records]</a>
-        <a href="tools.php?action=speed_cheats">[Speed Cheats]</a>
-        <a href="tools.php?action=speed_zerocheats">[Zero Cheats]</a>
+        <a href="/tools.php?action=speed_watchlist">[Watch-list]</a>
+        <a href="/tools.php?action=speed_excludelist">[Exclude-list]</a>
+        <a href="/tools.php?action=speed_records">[Speed Records]</a>
+        <a href="/tools.php?action=speed_cheats">[Speed Cheats]</a>
+        <a href="/tools.php?action=speed_zerocheats">[Zero Cheats]</a>
     </div>
 <?php
 
@@ -198,13 +198,13 @@ $Pages=get_pages($Page,$NumResults,25,9);
         <table>
             <tr class="colhead">
                 <td style="width:70px"></td>
-                <td class="center"><a href="<?=header_link('Username') ?>">User</a></td>
-                <td class="center"><a href="<?=header_link('upspeed') ?>">Max UpSpeed</a></td>
-                <td class="center"><a href="<?=header_link('uploaded') ?>">Max Uploaded</a></td>
-                <td class="center" title="number of records that are over the speed limit"><a href="<?=header_link('count') ?>">count</a></td>
+                <td class="center"><a href="/<?=header_link('Username') ?>">User</a></td>
+                <td class="center"><a href="/<?=header_link('upspeed') ?>">Max UpSpeed</a></td>
+                <td class="center"><a href="/<?=header_link('uploaded') ?>">Max Uploaded</a></td>
+                <td class="center" title="number of records that are over the speed limit"><a href="/<?=header_link('count') ?>">count</a></td>
                 <td class="center"><span style="color:#777">-clientID-</span></td>
                 <td class="center">Client IP addresses</td>
-                <td class="center" style="min-width:120px"><a href="<?=header_link('time') ?>">last seen</a></td>
+                <td class="center" style="min-width:120px"><a href="/<?=header_link('time') ?>">last seen</a></td>
             </tr>
 <?php
             $row = 'a';
@@ -265,9 +265,9 @@ $Pages=get_pages($Page,$NumResults,25,9);
 <?php
                             if ($Enabled=='1') {
                                 if ($bantype==1) { ?>
-                                <a href="tools.php?action=ban_speed_cheat<?=$pattern?>&banuser=1&returnto=cheats&userid=<?=$UserID?>" title="ban this user for being a big fat cheat (speeding)"><img src="static/common/symbols/ban.png" alt="ban" /></a>
+                                <a href="/tools.php?action=ban_speed_cheat<?=$pattern?>&banuser=1&returnto=cheats&userid=<?=$UserID?>" title="ban this user for being a big fat cheat (speeding)"><img src="static/common/symbols/ban.png" alt="ban" /></a>
 <?php                               } else {?>
-                                <a href="tools.php?action=ban_pattern_cheat<?=$pattern?>&banuser=1&returnto=cheats&userid=<?=$UserID?>" title="ban this user for being a big fat cheat (pattern matching)"><img src="static/common/symbols/ban2.png" alt="ban" /></a>
+                                <a href="/tools.php?action=ban_pattern_cheat<?=$pattern?>&banuser=1&returnto=cheats&userid=<?=$UserID?>" title="ban this user for being a big fat cheat (pattern matching)"><img src="static/common/symbols/ban2.png" alt="ban" /></a>
 <?php                               }
                             }
                            ?>
@@ -329,7 +329,7 @@ $Pages=get_pages($Page,$NumResults,25,9);
 <?php
                     if ( !array_key_exists($EUserID, $Dupes) ) {
 ?>
-                        [<a href="user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>" title="link this user to <?=$Username?>">link</a>]
+                        [<a href="/user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>" title="link this user to <?=$Username?>">link</a>]
 <?php
                     }
 ?>

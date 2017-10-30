@@ -72,10 +72,10 @@ $DB->set_query_id($Reports);
 <div class="thin">
     <h2>Active Reports</h2>
     <div class="linkbox">
-        <a href="reports.php">New</a> |
-        <a href="reports.php?view=old">Old</a>
+        <a href="/reports.php">New</a> |
+        <a href="/reports.php?view=old">Old</a>
 <?php   if (check_perms('admin_reports')) {   ?>
-         | <a href="reports.php?action=stats">Stats</a>
+         | <a href="/reports.php?action=stats">Stats</a>
 <?php   }   ?>
     </div>
     <div class="linkbox">
@@ -263,7 +263,7 @@ $DB->set_query_id($Reports);
                         <td colspan="3">
                             <?= time_diff($ReportedTime) ?>
 
-                            <span style="float:right;">reported by <strong><a href="user.php?id=<?= $SnitchID ?>"><?= $SnitchName ?></a></strong></span>
+                            <span style="float:right;">reported by <strong><a href="/user.php?id=<?= $SnitchID ?>"><?= $SnitchName ?></a></strong></span>
 
                         </td>
                     </tr>
@@ -311,8 +311,8 @@ $DB->set_query_id($Reports);
                                 list($cID, $cUserID, $cUsername, $cType, $cDate)=$Conv;
                                 ?>
                                 <div style="text-align: right;">
-                                    <em>(<?=  time_diff($cDate)?>)</em> &nbsp;view existing conversation with <a href="user.php?id=<?= $cUserID ?>"><?= $cUsername ?></a> (<?=$cType?>) about this report: &nbsp;&nbsp
-                                    <a href="staffpm.php?action=viewconv&amp;id=<?= $cID ?>" target="_blank">[View Message]</a> &nbsp;
+                                    <em>(<?=  time_diff($cDate)?>)</em> &nbsp;view existing conversation with <a href="/user.php?id=<?= $cUserID ?>"><?= $cUsername ?></a> (<?=$cType?>) about this report: &nbsp;&nbsp
+                                    <a href="/staffpm.php?action=viewconv&amp;id=<?= $cID ?>" target="_blank">[View Message]</a> &nbsp;
                                 </div>
                                 <?php
                             }

@@ -15,10 +15,10 @@ show_header('Top 10 Taggers');
 <div class="thin">
     <h2> Top 10 Taggers </h2>
     <div class="linkbox">
-        <a href="top10.php?type=torrents">[Torrents]</a>
-        <a href="top10.php?type=users">[Users]</a>
-        <a href="top10.php?type=tags">[Tags]</a>
-        <a href="top10.php?type=taggers"><strong>[Taggers]</strong></a>
+        <a href="/top10.php?type=torrents">[Torrents]</a>
+        <a href="/top10.php?type=users">[Users]</a>
+        <a href="/top10.php?type=tags">[Tags]</a>
+        <a href="/top10.php?type=taggers"><strong>[Taggers]</strong></a>
     </div>
 
 <?php
@@ -129,9 +129,9 @@ function generate_tagger_table($Caption, $Tag, $Details, $Limit, $IsVotes=false)
 ?>
     <div class="head top10_tags">Top <?=$Limit.' '.$Caption?>
         <small>
-            - [<a href="top10.php?type=taggers&amp;limit=100&amp;details=<?=$Tag?>">Top 100</a>]
-            - [<a href="top10.php?type=taggers&amp;limit=250&amp;details=<?=$Tag?>">Top 250</a>]
-            - [<a href="top10.php?type=taggers&amp;limit=500&amp;details=<?=$Tag?>">Top 500</a>]
+            - [<a href="/top10.php?type=taggers&amp;limit=100&amp;details=<?=$Tag?>">Top 100</a>]
+            - [<a href="/top10.php?type=taggers&amp;limit=250&amp;details=<?=$Tag?>">Top 250</a>]
+            - [<a href="/top10.php?type=taggers&amp;limit=500&amp;details=<?=$Tag?>">Top 500</a>]
         </small>
     </div>
     <table class="top10_tags">

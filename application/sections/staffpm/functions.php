@@ -1,34 +1,56 @@
 <?php
+
+function check_access($ConvID) {
+    global $DB, $LoggedUser;
+
+    // get vars from LoggedUser
+    $SupportFor = $LoggedUser['SupportFor'];
+    $DisplayStaff = $LoggedUser['DisplayStaff'];
+    // Logged in user is staff
+    $IsStaff = ($DisplayStaff == 1);
+    // Logged in user is Staff or FLS
+    $IsFLS = ($SupportFor != '' || $IsStaff);
+
+    // Check if conversation belongs to user
+    $DB->query("SELECT UserID, Level, AssignedToUser FROM staff_pm_conversations WHERE ID=$ConvID");
+    list($TargetUserID, $Level, $AssignedToUser) = $DB->next_record();
+
+    if (!(($TargetUserID == $LoggedUser['ID']) || ($AssignedToUser == $LoggedUser['ID']) || (($Level > 0 && $Level <= $LoggedUser['Class']) || ($Level == 0 && $IsFLS)))) {
+        // User is trying to view someone else's conversation
+        error(403);
+    }
+}
+
 function make_staffpm_note($Message, $ConvID)
 {
-        global $DB;
-        $DB->query("SELECT ID, Message FROM staff_pm_messages WHERE ConvID=$ConvID AND IsNotes");
-        if (list($ID, $Notes) = $DB->next_record()) {
-            $Notes = $Message."[br]".$Notes;
-            $DB->query("UPDATE staff_pm_messages SET Message='$Notes' WHERE ID=$ID AND IsNotes");
-        } else {
-            $DB->query("
-                INSERT INTO staff_pm_messages
-                    (UserID, SentDate, Message, ConvID, IsNotes)
-                VALUES
-                    (0, '".sqltime()."', '$Message', $ConvID, TRUE)"
-            );
-        }
+    global $DB;
+    $DB->query("SELECT ID, Message FROM staff_pm_messages WHERE ConvID=$ConvID AND IsNotes");
+    if (list($ID, $Notes) = $DB->next_record()) {
+        $Notes = $Message."[br]".$Notes;
+        $DB->query("UPDATE staff_pm_messages SET Message='$Notes' WHERE ID=$ID AND IsNotes");
+    } else {
+        $DB->query("
+            INSERT INTO staff_pm_messages
+                (UserID, SentDate, Message, ConvID, IsNotes)
+            VALUES
+                (0, '".sqltime()."', '$Message', $ConvID, TRUE)"
+        );
+    }
 }
 function get_num_staff_pms($UserID, $UserLevel)
 {
-        global $DB, $Cache;
-        $DB->query("SELECT COUNT(ID) FROM staff_pm_conversations
-                             WHERE (AssignedToUser=$UserID OR Level <=$UserLevel) AND Status IN ('Unanswered', 'User Resolved') AND NOT StealthResolved");
-        list($NumUnanswered) = $DB->next_record();
-        $DB->query("SELECT COUNT(ID) FROM staff_pm_conversations
-                             WHERE (AssignedToUser=$UserID OR Level <=$UserLevel) AND Status IN ('Open', 'Unanswered', 'User Resolved') AND NOT StealthResolved");
-        list($NumOpen) = $DB->next_record();
-        $DB->query("SELECT COUNT(ID) FROM staff_pm_conversations
-                             WHERE (AssignedToUser=$UserID OR Level =$UserLevel) AND Status='Unanswered' AND NOT StealthResolved");
-        list($NumMy) = $DB->next_record();
+    global $DB, $Cache;
+    $DB->query("SELECT COUNT(ID) FROM staff_pm_conversations
+                         WHERE (AssignedToUser=$UserID OR Level <=$UserLevel) AND Status IN ('Unanswered', 'User Resolved') AND NOT StealthResolved");
+    list($NumUnanswered) = $DB->next_record();
+    $DB->query("SELECT COUNT(ID) FROM staff_pm_conversations
+                         WHERE (AssignedToUser=$UserID OR Level <=$UserLevel) AND Status IN ('Open', 'Unanswered', 'User Resolved') AND NOT StealthResolved");
+    list($NumOpen) = $DB->next_record();
+    $DB->query("SELECT COUNT(ID) FROM staff_pm_conversations
+                         WHERE (AssignedToUser=$UserID OR Level =$UserLevel) AND Status='Unanswered' AND NOT StealthResolved");
+    list($NumMy) = $DB->next_record();
 
-        return array($NumMy, $NumUnanswered, $NumOpen);
+    return array($NumMy, $NumUnanswered, $NumOpen);
 }
 
 function print_staff_assign_select($AssignedToUser, $Level)

@@ -9,6 +9,10 @@ class TPL extends Service {
     protected $loader;
     protected $twig;
 
+    protected static $useServices = [
+        'settings'      => 'Settings',
+    ];
+
     public function __construct(Master $master) {
         parent::__construct($master);
         $this->loader = new \Twig_Loader_Filesystem($master->application_path . '/templates');
@@ -17,8 +21,16 @@ class TPL extends Service {
             $options['cache'] = $this->master->settings->paths->template_cache;
             $options['auto_reload'] = true;
         }
+        if ($this->master->settings->site->debug_mode) {
+            $options['debug'] = true;
+        }
         $this->twig = new \Twig_Environment($this->loader, $options);
+        $this->twig->addGlobal('settings', $this->settings);
         $this->add_extensions();
+    }
+
+    public function get_icon($set, $symbol) {
+        return '<svg class="'.$set.'" data-src="/static/common/'.$set.'.svg?v='.$this->master->peon->public_file_mtime('/static/common/'.$set.'.svg').'#'.$symbol.'"></svg>';
     }
 
     public function add_template_path($templateDir, $namespace) {
@@ -36,6 +48,9 @@ class TPL extends Service {
         $this->twig->addFunction($func);
 
         $func = new \Twig_SimpleFunction('check_perms', 'check_perms');
+        $this->twig->addFunction($func);
+
+        $func = new \Twig_SimpleFunction('get_icon', [$this, 'get_icon']);
         $this->twig->addFunction($func);
     }
 

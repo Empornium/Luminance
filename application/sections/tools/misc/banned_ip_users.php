@@ -68,8 +68,8 @@ show_header('Dupe IPs','dupeip');
 <div class="thin">
     <h2>Returning Dupe IP's</h2>
     <div class="linkbox">
-        <a href="tools.php?action=dupe_ips">[Dupe IP's]</a>
-        <strong><a href="tools.php?action=banned_ip_users">[Returning Dupe IP's]</a></strong>
+        <a href="/tools.php?action=dupe_ips">[Dupe IP's]</a>
+        <strong><a href="/tools.php?action=banned_ip_users">[Returning Dupe IP's]</a></strong>
     </div>
 
     <div class="head">view settings</div>
@@ -102,11 +102,11 @@ show_header('Dupe IPs','dupeip');
     <div class="head">Current Users with a Dupe IP from a previously banned account</div>
     <table width="100%">
         <tr class="colhead">
-            <td class="center"><a href="<?=header_link('new_name') ?>">User</a></td>
-            <td class="center"><a href="<?=header_link('joindate') ?>">Join Date</a></td>
-            <td class="center"><a href="<?=header_link('IP') ?>">Shared IP</a></td>
-            <td class="center"><a href="<?=header_link('b_name') ?>">Banned User</a></td>
-            <td class="center"><a href="<?=header_link('bandate') ?>">Banned Date</a></td>
+            <td class="center"><a href="/<?=header_link('new_name') ?>">User</a></td>
+            <td class="center"><a href="/<?=header_link('joindate') ?>">Join Date</a></td>
+            <td class="center"><a href="/<?=header_link('IP') ?>">Shared IP</a></td>
+            <td class="center"><a href="/<?=header_link('b_name') ?>">Banned User</a></td>
+            <td class="center"><a href="/<?=header_link('bandate') ?>">Banned Date</a></td>
         </tr>
 <?php
         if ($NumResults==0) {
@@ -126,7 +126,7 @@ show_header('Dupe IPs','dupeip');
                 <tr class="row<?=$Row?>">
                     <td><?=format_username($nID, $nInfo['Username'], $nInfo['Donor'], $nInfo['Warned'], $nInfo['Enabled'], $nInfo['PermissionID'], false, false, $nInfo['GroupPermissionID'])?></td>
                     <td class="center"><?=time_diff($JoinDate)?></td>
-                    <td><?=display_str($IP)?><span style="float:right;">[<a href="user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="User Search on this IP" target="_blank">S</a>]</span></td>
+                    <td><?=display_str($IP)?><span style="float:right;">[<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="User Search on this IP" target="_blank">S</a>]</span></td>
                     <td><?=format_username($bID, $bInfo['Username'], $bInfo['Donor'], $bInfo['Warned'], $bInfo['Enabled'], $bInfo['PermissionID'], false, false, $bInfo['GroupPermissionID'])?></td>
 
                     <td class="center"><?=time_diff($BanDate)?></td>

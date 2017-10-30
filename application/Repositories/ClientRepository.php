@@ -2,7 +2,7 @@
 namespace Luminance\Repositories;
 
 use Luminance\Core\Repository;
-use Luminance\Entities\Session;
+use Luminance\Entities\Client;
 
 class ClientRepository extends Repository {
 

@@ -132,7 +132,7 @@ if (!isset($_POST['vote']) || !is_number($_POST['vote'])) {
             foreach ($StaffVotes as $StaffVote) {
                 list($StaffString, $StaffVoted) = $StaffVote;
 ?>
-                <li><a href="forums.php?action=change_vote&amp;threadid=<?=$TopicID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;vote=<?=(int) $StaffVoted?>"><?=display_str(empty($Answers[$StaffVoted]) ? "Blank" : $Answers[$StaffVoted])?></a> - <?=$StaffString?></li>
+                <li><a href="/forums.php?action=change_vote&amp;threadid=<?=$TopicID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;vote=<?=(int) $StaffVoted?>"><?=display_str(empty($Answers[$StaffVoted]) ? "Blank" : $Answers[$StaffVoted])?></a> - <?=$StaffString?></li>
 <?php
             }
         }

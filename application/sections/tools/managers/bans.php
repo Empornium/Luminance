@@ -213,11 +213,11 @@ $endtime = display_str($_GET['uend']);
     <div class="head"><?=  str_plural('IP ban', $Results) ?> </div>
     <table width="100%">
         <tr class="colhead">
-            <td><a href="<?=header_link('FromIP') ?>">Range</a></td>
-            <td class="center" style="width:100px"><a href="<?=header_link('Username') ?>">User</a></td>
-            <td class="center"><a href="<?=header_link('Staffname') ?>">Staff</a></td>
-            <td class="center"><a href="<?=header_link('EndTime') ?>">Endtime</a></td>
-            <td style="width:40%"><a href="<?=header_link('Notes') ?>">Notes</a></td>
+            <td><a href="/<?=header_link('FromIP') ?>">Range</a></td>
+            <td class="center" style="width:100px"><a href="/<?=header_link('Username') ?>">User</a></td>
+            <td class="center"><a href="/<?=header_link('Staffname') ?>">Staff</a></td>
+            <td class="center"><a href="/<?=header_link('EndTime') ?>">Endtime</a></td>
+            <td style="width:40%"><a href="/<?=header_link('Notes') ?>">Notes</a></td>
             <td>Submit</td>
         </tr>
 <?php

@@ -54,24 +54,28 @@ show_header('View request: '.$FullName, 'comments,requests,bbcode,jquery,jquery.
 
 ?>
 <div class="thin">
-    <h2><a href="requests.php">Requests</a> &gt; <?=$CategoryName?> &gt; <?=$DisplayLink?></h2>
+    <h2>
+        <span class="arrow" style="float:left"><a href="/requests.php?id=<?=$RequestID?>&action=prev" title="goto previous request"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/arrow_left.png" alt="prev" title="goto previous request" /></a></span>
+        <a href="/requests.php">Requests</a> &gt; <?=$CategoryName?> &gt; <?=$DisplayLink?>
+        <span class="arrow" style="float:right"><a href="/requests.php?id=<?=$RequestID?>&action=next" title="goto next request"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/arrow_right.png" alt="next" title="goto next request" /></a></span>
+    </h2>
     <a id="messages" ></a>
     <div class="linkbox">
 <?php
     if ($CanEdit) { ?>
-        <a href="requests.php?action=edit&amp;id=<?=$RequestID?>">[Edit]</a>
+        <a href="/requests.php?action=edit&amp;id=<?=$RequestID?>">[Edit]</a>
 <?php   }
     if (check_perms('site_moderate_requests') ) { ?>
-        <a href="requests.php?action=delete&amp;id=<?=$RequestID?>">[Delete]</a>
+        <a href="/requests.php?action=delete&amp;id=<?=$RequestID?>">[Delete]</a>
 <?php   }
     if (has_bookmarked('request', $RequestID)) { ?>
         <a href="#" id="bookmarklink_request_<?=$RequestID?>" onclick="Unbookmark('request', <?=$RequestID?>,'[Bookmark]');return false;">[Remove bookmark]</a>
 <?php 	} else { ?>
         <a href="#" id="bookmarklink_request_<?=$RequestID?>" onclick="Bookmark('request', <?=$RequestID?>,'[Remove bookmark]');return false;">[Bookmark]</a>
 <?php 	} ?>
-        <a href="reports.php?action=report&amp;type=request&amp;id=<?=$RequestID?>">[Report Request]</a>
-        <a href="upload.php?requestid=<?=$RequestID?><?=($GroupID?"&groupid=$GroupID":'')?>">[Upload Request]</a>
-        <a href="log.php?search=request+<?=$RequestID?>">[View logs]</a>
+        <a href="/reports.php?action=report&amp;type=request&amp;id=<?=$RequestID?>">[Report Request]</a>
+        <a href="/upload.php?requestid=<?=$RequestID?><?=($GroupID?"&groupid=$GroupID":'')?>">[Upload Request]</a>
+        <a href="/log.php?search=request+<?=$RequestID?>">[View logs]</a>
     </div>
 
     <div class="sidebar">
@@ -158,7 +162,7 @@ show_header('View request: '.$FullName, 'comments,requests,bbcode,jquery,jquery.
 <?php 	if ($GroupID) { ?>
             <tr>
                 <td class="label">Torrent Group</td>
-                <td><a href="torrents.php?id=<?=$GroupID?>">torrents.php?id=<?=$GroupID?></td>
+                <td><a href="/torrents.php?id=<?=$GroupID?>">torrents.php?id=<?=$GroupID?></td>
             </tr>
 <?php 	} ?>
             <tr>
@@ -207,9 +211,9 @@ show_header('View request: '.$FullName, 'comments,requests,bbcode,jquery,jquery.
             <tr>
                 <td class="label">Filled</td>
                 <td>
-                    <strong><a href="torrents.php?id=<?=$TorrentID?>"><?php echo ($TorrentTitle == '') ? "(torrent deleted)" : $TorrentTitle; ?></a></strong>
+                    <strong><a href="/torrents.php?id=<?=$TorrentID?>"><?php echo ($TorrentTitle == '') ? "(torrent deleted)" : $TorrentTitle; ?></a></strong>
 <?php       if( ( $TimeExpires>$NowTime &&  ($LoggedUser['ID'] == $RequestorID || $LoggedUser['ID'] == $FillerID) ) || check_perms('site_moderate_requests')) { ?>
-                        - <span title="Unfilling a request without a valid, nontrivial reason will result in a warning."><a href="requests.php?action=unfill&amp;id=<?=$RequestID?>">[Unfill]</a></span>
+                        - <span title="Unfilling a request without a valid, nontrivial reason will result in a warning."><a href="/requests.php?action=unfill&amp;id=<?=$RequestID?>">[Unfill]</a></span>
 <?php       } ?>
                    <br/>Filled by <?=torrent_username($FillerID, $FillerName, $FillerID==$UploaderID?$IsAnon:false)?>
 <?php       if ( $UploaderID != 0 && $TorrentTitle != '' ) {
@@ -331,7 +335,7 @@ foreach ($Thread as $Key => $Post) {
 <?php } ?>
             </span>
             <span id="bar<?=$PostID?>" style="float:right;">
-                <a href="reports.php?action=report&amp;type=requests_comment&amp;id=<?=$PostID?>">[Report]</a>
+                <a href="/reports.php?action=report&amp;type=requests_comment&amp;id=<?=$PostID?>">[Report]</a>
                 &nbsp;
                 <a href="#">&uarr;</a>
             </span>

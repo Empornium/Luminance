@@ -150,7 +150,7 @@ function user_info($UserID)
     $User = $master->repos->users->load($UserID);
     if (!$User) {
         # No clue what this is is actually needed for...
-		// - answer: in the case of a deleted user (and we have some from early on) this stops the interface from breaking!
+    // - answer: in the case of a deleted user (and we have some from early on) this stops the interface from breaking!
         $UserInfo = array('ID'=>'','Username'=>'','PermissionID'=>0,'Paranoia'=>array(),'Donor'=>false,'Warned'=>'0000-00-00 00:00:00',
                 'Avatar'=>'','Enabled'=>0,'Title'=>'', 'CatchupTime'=>0, 'Visible'=>'1','Signature'=>'','TorrentSignature'=>'',
                 'GroupPermissionID'=>0,'ipcc'=>'??');
@@ -303,11 +303,15 @@ function get_permissions($permissionID)
     return $permission;
 }
 
-function get_permissions_for_user($userID, $dummy1 = false, $dummy2 = false)
+function get_permissions_for_user($userID, $includeCustom = true, $dummy2 = false)
 {
     global $master;
     $user = $master->auth->users->load($userID);
-    $permissions = $master->auth->getUserPermissions($user);
+    if (!is_null($user)) {
+        $permissions = $master->auth->getUserPermissions($user, $includeCustom);
+    } else {
+        $permissions = [];
+    }
     return $permissions;
 }
 
@@ -392,15 +396,12 @@ function get_user_shop_badges_ids($UserID)
 
 function print_badges_array($UserBadges, $UserLinkID = false)
 {
-    $LastRow='';
-    $html='';
+    $LastRow=0;
+    $html=null;
     foreach ($UserBadges as $Badge) {
-        list($ID,$BadgeID, $Tooltip, $Name, $Image, $Auto, $Type, $Row ) = $Badge;
-        if($LastRow=='') $LastRow = $Row;
-        if ($LastRow!=$Row && $html != '') {
-            $html .= "<br/>";
-            $LastRow=$Row;
-        }
+        list($ID, $BadgeID, $Tooltip, $Name, $Image, $Auto, $Type, $Row ) = $Badge;
+        if ($LastRow!==$Row && $html !== null) $html .= "<br/>";
+        $LastRow=$Row;
         if($UserLinkID && is_number($UserLinkID))
             $html .= '<div class="badge"><a href="user.php?id='.$UserLinkID.'#userbadges"><img src="'.STATIC_SERVER.'common/badges/'.$Image.'" title="The '.$Name.'. '.$Tooltip.'" alt="'.$Name.'" /></a></div>';
         else
@@ -443,6 +444,9 @@ function get_latest_forum_topics($PermissionID)
     // Might not be loaded already depending on where we want to show the latest topics box
     require_once(SERVER_ROOT.'/sections/forums/functions.php');
     $Forums = get_forums_info();
+
+    if (!is_array($LoggedUser['CustomForums']))
+        $LoggedUser['CustomForums'] = [];
 
     $disabledLatestTopics = isset($LoggedUser['DisabledLatestTopics']) ? $LoggedUser['DisabledLatestTopics'] : array();
     $RestrictedForums = array_keys($LoggedUser['CustomForums'], 0);
@@ -637,7 +641,16 @@ function can_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime, $Ti
         return false;
     }
 
-    return ( !$TimeLock || ( time_ago($AddedTime) && time_ago($AddedTime)<USER_EDIT_POST_TIME ) || ( time_ago($EditedTime) && time_ago($EditedTime)<USER_EDIT_POST_TIME )) || check_perms ('site_edit_own_posts');
+    // How many seconds ago?
+    $AddedTime  = time_ago($AddedTime);
+    $EditedTime = time_ago($EditedTime);
+
+    // Make sure time_ago() is not false, while allowing 0 as a valid value.
+    $IsAddedBeforeLimit  = is_int($AddedTime) && $AddedTime < USER_EDIT_POST_TIME;
+    $IsEditedBeforeLimit = is_int($EditedTime) && $EditedTime < USER_EDIT_POST_TIME;
+    $CanEditOwnPost      = check_perms('site_edit_own_posts');
+
+    return !$TimeLock || $CanEditOwnPost || $IsAddedBeforeLimit || $IsEditedBeforeLimit;
 }
 
 // This function is used to check if the user can submit changes to a comment.
@@ -849,7 +862,7 @@ function display_ip($IP, $cc = '?', $gethost = false, $baniplink=false)
     if($gethost) $Line = get_host($IP);
     else $Line = display_str($IP);
     if ($cc=='?' || $cc=='') {
-        $cc=='?';
+        $cc='?';
         $country = 'unknown';
     } else {
         $country = $Cache->get_value('country_'.$cc);
@@ -923,7 +936,7 @@ function show_header($PageTitle='', $JSIncludes='')
 
 function show_footer($Options=array())
 {
-    global $master, $ScriptStartTime, $LoggedUser, $Cache, $DB, $SessionID, $UserSessions, $Debug, $Time;
+    global $master;
     $master->peon->display_footer();
 }
 
@@ -1225,18 +1238,6 @@ function get_pages($StartPage, $TotalRecords, $ItemsPerPage, $ShowPages=11, $Anc
     }
 }
 
-function send_email($To, $Subject, $Body, $From='noreply', $ContentType='text/plain')
-{
-    $Headers = 'MIME-Version: 1.0' . "\r\n";
-    $Headers.='Content-type: ' . $ContentType . '; charset=iso-8859-1' . "\r\n";
-    $Headers.='From: ' . SITE_NAME . ' <' . $From . '@' . NONSSL_SITE_URL . '>' . "\r\n";
-    $Headers.='Reply-To: ' . $From . '@' . NONSSL_SITE_URL . "\r\n";
-    $Headers.='X-Mailer: Project Luminance' . "\r\n";
-    $Headers.='Message-Id: <' . make_secret() . '@' . NONSSL_SITE_URL . ">\r\n";
-    $Headers.='X-Priority: 3' . "\r\n";
-    mail($To, $Subject, $Body, $Headers, "-f " . $From . "@" . NONSSL_SITE_URL);
-}
-
 function get_size($Size, $Levels = 2)
 {
     $Units = array(' B', ' KiB', ' MiB', ' GiB', ' TiB', ' PiB', ' EiB', ' ZiB', ' YiB');
@@ -1528,7 +1529,7 @@ function make_secret($Length = 32)
 
 function is_anon($IsAnon)
 {
-    if(check_perms('site_force_anon_uploaders')) return true;
+    if(!check_perms('site_view_uploaders')) return true;
     else if(check_perms('users_view_anon_uploaders')) return false;
     else return $IsAnon;
 }
@@ -1834,23 +1835,23 @@ function delete_group($GroupID)
         $Cache->delete_value('request_'.$RequestID);
     }
 
-        // Decrease the tag count, if it's not in use any longer and not an official tag, delete it from the list.
-        $DB->query("SELECT tt.TagID, t.Uses, t.TagType, t.Name
-                    FROM torrents_tags AS tt
-                        JOIN tags AS t ON t.ID = tt.TagID
-                    WHERE GroupID ='$GroupID'");
-        $Tags = $DB->to_array();
-        foreach ($Tags as $Tag) {
-            $Uses = $Tag['Uses'] > 0 ?  $Tag['Uses'] - 1 : 0;
-            if ($Tag['TagType'] == 'genre' || $Uses > 0) {
-                $DB->query("UPDATE tags SET Uses=$Uses WHERE ID=".$Tag['TagID']);   //$TagID);
-            } else {
-                $DB->query("DELETE FROM tags WHERE ID=".$Tag['TagID']." AND TagType='other'");
+    // Decrease the tag count, if it's not in use any longer and not an official tag, delete it from the list.
+    $DB->query("SELECT tt.TagID, t.Uses, t.TagType, t.Name
+                FROM torrents_tags AS tt
+                    JOIN tags AS t ON t.ID = tt.TagID
+                WHERE GroupID ='$GroupID'");
+    $Tags = $DB->to_array();
+    foreach ($Tags as $Tag) {
+        $Uses = $Tag['Uses'] > 0 ?  $Tag['Uses'] - 1 : 0;
+        if ($Tag['TagType'] == 'genre' || $Uses > 0) {
+            $DB->query("UPDATE tags SET Uses=$Uses WHERE ID=".$Tag['TagID']);   //$TagID);
+        } else {
+            $DB->query("DELETE FROM tags WHERE ID=".$Tag['TagID']." AND TagType='other'");
 
-                // Delete tag cache entry
-                $Cache->delete_value('tag_id_'.$Tag['Name']);
-            }
+            // Delete tag cache entry
+            $Cache->delete_value('tag_id_'.$Tag['Name']);
         }
+    }
 
     $DB->query("DELETE FROM group_log WHERE GroupID='$GroupID'");
     $DB->query("DELETE FROM torrents_group WHERE ID='$GroupID'");
@@ -2158,11 +2159,21 @@ function check_perms($PermissionName, $MinClass = 0)
     return ($master->auth->isAllowed($PermissionName) && $LoggedUser['Class'] >= $MinClass);
 }
 
+// Check to see if a user has the permission to perform an action
+function check_perms_here($Preview, $PermissionName, $MinClass = 0)
+{
+    global $master;
+    if ($Preview)
+        return ($master->auth->isAllowedByMinUser($PermissionName) && $master->auth->permissions->getMinUserLevel() >= $MinClass);
+    else
+        return check_perms($PermissionName, $MinClass);
+}
+
 function check_force_anon($UserID)
 {
     global $LoggedUser;
 
-    return $UserID == $LoggedUser['ID'] || !check_perms('site_force_anon_uploaders')  ;
+    return $UserID == $LoggedUser['ID'] || check_perms('site_view_uploaders');
 }
 
 // Function to get data and torrents for an array of GroupIDs.
@@ -2529,24 +2540,26 @@ function torrent_icons($Data, $TorrentID, $Review, $IsBookmarked) {  //  $UserID
         if ($FreeTooltip)
             $Icons .= '&nbsp;<img src="static/common/symbols/freedownload.gif" alt="Freeleech" title="'.$FreeTooltip.'" />';
 
-        $SnatchedTorrents = $Cache->get_value('users_torrents_snatched_' .$UserID );
+        $SnatchedTorrents = $Cache->get_value("users_torrents_snatched_{$UserID}_{$TorrentID}");
         if ($SnatchedTorrents===false) {
-            $DB->query("SELECT DISTINCT x.fid as TorrentID
+            $DB->query("SELECT x.fid as TorrentID
                           FROM xbt_snatched AS x JOIN torrents AS t ON t.ID=x.fid
-                         WHERE x.uid='$UserID' ");
+                         WHERE x.uid='{$UserID}'
+                           AND x.fid='{$TorrentID}'");
 
             $SnatchedTorrents = $DB->to_array('TorrentID');
-            $Cache->cache_value('users_torrents_snatched_' . $UserID, $SnatchedTorrents, 21600);
+            $Cache->cache_value("users_torrents_snatched_{$UserID}_{$TorrentID}", $SnatchedTorrents, 600);
         }
 
-        $GrabbedTorrents = $Cache->get_value('users_torrents_grabbed_' .$UserID );
+        $GrabbedTorrents = $Cache->get_value("users_torrents_grabbed_{$UserID}_{$TorrentID}");
         if ($GrabbedTorrents===false) {
-            $DB->query("SELECT DISTINCT ud.TorrentID
-                                  FROM users_downloads AS ud JOIN torrents AS t ON t.ID=ud.TorrentID
-                                 WHERE ud.UserID='$UserID' ");
+            $DB->query("SELECT ud.TorrentID
+                          FROM users_downloads AS ud JOIN torrents AS t ON t.ID=ud.TorrentID
+                         WHERE ud.UserID='{$UserID}'
+                           AND ud.TorrentID='{$TorrentID}'");
 
             $GrabbedTorrents = $DB->to_array('TorrentID');
-            $Cache->cache_value('users_torrents_grabbed_' . $UserID, $GrabbedTorrents);
+            $Cache->cache_value("users_torrents_grabbed_{$UserID}_{$TorrentID}", $GrabbedTorrents, 600);
         }
 
         //icon_disk_grabbed icon_disk_snatched

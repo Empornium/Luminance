@@ -93,7 +93,7 @@ print
 function generate_user_json($Caption, $Tag, $Details, $Limit)
 {
     $results = array();
-    foreach ($Details as $Details) {
+    foreach ($Details as $Detail) {
         $results[] = array(
             'id' => (int) $Detail['ID'],
             'username' => $Detail['Username'],

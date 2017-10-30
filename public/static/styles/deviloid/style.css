@@ -167,9 +167,21 @@ ul.thin li { margin:0px 0px; padding:0px; }
     margin: 20px auto 0px auto;
     padding: 0.6em 0.6em 30px;
     border: 2px solid #FFFFFF;
-	box-shadow: 0 0 14px rgba(0,0,0,.3);
-	border-radius: 16px;
+	  box-shadow: 0 0 14px rgba(0,0,0,.3);
+	  border-radius: 16px;
     /* overflow: hidden; */
+}
+
+#modal_content {
+    width: 90%;
+    min-width: 350px;
+    max-width: 1200px;
+    background-color: #F3F1E5;
+    margin: 20px auto 0px auto;
+    padding: 0.6em 0.6em 30px;
+    border: 2px solid #FFFFFF;
+	  box-shadow: 0 0 14px rgba(0,0,0,.3);
+	  border-radius: 16px;
 }
 
 #footer {
@@ -296,7 +308,10 @@ table.userinfo_stats td {
 }
 #header_bottom a:hover {
     text-decoration: underline;
-    color: #FF0000;
+    color: #ff0000;
+}
+#header_bottom a:hover > .nav_icons {
+    fill: #ff0000;
 }
 #header_bottom {
     background: #F3F1E5 url('images/menu_mid.gif') repeat-x;
@@ -316,8 +331,17 @@ table.userinfo_stats td {
 }
 
 .nav_icons {
-    fill: rgb(120, 109, 58);
+    fill: #786d3a;
 }
+
+.misc_icons {
+    fill: #786d3a;
+}
+
+.misc_icons:hover {
+    fill: #ff0000;
+}
+
 
 #minor_stats {
     float:left;
@@ -355,8 +379,7 @@ table.userinfo_stats td {
     z-index: 10;
 }
 #userinfo_username li ul {
-    left: 66px;
-    top: 17px;
+    left: -54px;
 }
 
 #userinfo_username li ul li a, #userinfo_tools li ul li a {
@@ -365,7 +388,10 @@ table.userinfo_stats td {
 
 #userinfo_username li ul li a:hover, #userinfo_tools li ul li a:hover {
     background-color: #ece9d8;
-    color: #000;
+    color: #f00;
+}
+#userinfo_username li ul li a:hover > .nav_icons, #userinfo_tools li ul li a:hover > .nav_icons {
+    fill: #f00;
 }
 
 #userinfo_username {
@@ -376,14 +402,16 @@ table.userinfo_stats td {
     position: relative;
 }
 
-#nav_userinfo, #nav_tools {
-    padding-right: 8px !important;
-    margin: 0px 7px !important;
-    background-image: url(images/dropdown_arrow.png);
-    background-repeat:no-repeat;
-    background-position: right center;
+#nav_tools > a:after, #nav_userinfo > a:after {
+    content:"\25BC";
+    font-weight: bold;
 }
-#nav_upload,#nav_donate,#nav_useredit,#nav_logout {
+#major_stats > ul {
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+#nav_upload, #nav_donate {
     margin: 0px 7px !important;
 }
 
@@ -688,8 +716,7 @@ input.hidden {
 /* Layout (Any page) */
 
 .thin {
-    width: 90%;
-    min-width: 960px;
+    width: 96%;
     margin-left:auto;
     margin-right:auto;
 }

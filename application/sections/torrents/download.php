@@ -167,9 +167,8 @@ if ($_REQUEST['usetoken'] == 1 && $FreeTorrent == 0) {
 
 $DB->query("INSERT IGNORE INTO users_downloads (UserID, TorrentID, Time) VALUES ('$UserID', '$TorrentID', '".sqltime()."')");
 
-$GrabbedTorrents = $Cache->get_value('users_torrents_grabbed_' .$UserID );
-$GrabbedTorrents[$TorrentID] =  array('TorrentID'=>$TorrentID) ;
-$Cache->cache_value('users_torrents_grabbed_' . $UserID, $GrabbedTorrents);
+$GrabbedTorrents[$TorrentID] =  ['TorrentID'=>$TorrentID];
+$Cache->cache_value("users_torrents_grabbed_{$UserID}_{$TorrentID}", $GrabbedTorrents, 600);
 
 $DB->query("SELECT File FROM torrents_files WHERE TorrentID='$TorrentID'");
 

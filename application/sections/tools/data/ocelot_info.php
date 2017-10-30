@@ -3,8 +3,11 @@ if (!check_perms('users_mod')) {
 	error(403);
 }
 
+if (isset($_GET['userid']) && !is_number($_GET['userid'])) {
+    error(0);
+}
 
-if (isset($_GET['userid']) && is_number($_GET['userid'])) {
+if (isset($_GET['userid'])) {
 	$UserHeavyInfo = user_heavy_info($_GET['userid']);
 	if (isset($UserHeavyInfo['torrent_pass'])) {
 		$TorrentPass = $UserHeavyInfo['torrent_pass'];

@@ -16,6 +16,10 @@ switch ($_REQUEST['action']) {
         require(SERVER_ROOT.'/sections/bookmarks/remove.php');
         break;
 
+    case 'download':
+        require(SERVER_ROOT.'/sections/bookmarks/download.php');
+        break;
+
     case 'remove_snatched':
         authorize();
         $DB->query("DELETE b FROM bookmarks_torrents AS b WHERE b.UserID='".$LoggedUser['ID']."' AND b.GroupID IN(SELECT DISTINCT t.GroupID FROM torrents AS t INNER JOIN xbt_snatched AS s ON s.fid=t.ID AND s.uid='".$LoggedUser['ID']."')");

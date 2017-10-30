@@ -34,11 +34,11 @@ show_header('Speed Reports','watchlist');
 <div class="thin">
     <h2>Speed Reports</h2>
     <div class="linkbox">
-        <a href="tools.php?action=speed_watchlist">[Watch-list]</a>
-        <a href="tools.php?action=speed_excludelist">[Exclude-list]</a>
-        <a href="tools.php?action=speed_records">[Speed Records]</a>
-        <a href="tools.php?action=speed_cheats">[Speed Cheats]</a>
-        <a href="tools.php?action=speed_zerocheats">[Zero Cheats]</a>
+        <a href="/tools.php?action=speed_watchlist">[Watch-list]</a>
+        <a href="/tools.php?action=speed_excludelist">[Exclude-list]</a>
+        <a href="/tools.php?action=speed_records">[Speed Records]</a>
+        <a href="/tools.php?action=speed_cheats">[Speed Cheats]</a>
+        <a href="/tools.php?action=speed_zerocheats">[Zero Cheats]</a>
     </div>
     <?php
 
@@ -270,24 +270,24 @@ $Pages=get_pages($Page,$NumResults,25,9);
         <table>
             <tr class="colhead">
                 <td style="min-width:70px"></td>
-                <td class="center"><a href="<?=header_link('Username') ?>">User</a></td>
-                <td class="center"><a href="<?=header_link('remaining') ?>">Remaining</a></td>
-                <td class="center"><a href="<?=header_link('uploaded') ?>">Uploaded</a></td>
-                <td class="center"><a href="<?=header_link('upspeed') ?>">UpSpeed</a></td>
-                <td class="center"><span style="color:#777">-clientID-</span> &nbsp;<a href="<?=header_link('ip') ?>">Client IP address</a></td>
-                <td class="center"><a href="<?=header_link('mtime') ?>">date time</a></td>
+                <td class="center"><a href="/<?=header_link('Username') ?>">User</a></td>
+                <td class="center"><a href="/<?=header_link('remaining') ?>">Remaining</a></td>
+                <td class="center"><a href="/<?=header_link('uploaded') ?>">Uploaded</a></td>
+                <td class="center"><a href="/<?=header_link('upspeed') ?>">UpSpeed</a></td>
+                <td class="center"><span style="color:#777">-clientID-</span> &nbsp;<a href="/<?=header_link('ip') ?>">Client IP address</a></td>
+                <td class="center"><a href="/<?=header_link('mtime') ?>">date time</a></td>
                 <td width="10px" rowspan="2" title="toggle selection for all records on this page">
                     <input type="checkbox" onclick="toggleChecks('speedrecords',this)" title="toggle selection for all records on this page" />
                 </td>
             </tr>
             <tr class="colhead">
                 <td ></td>
-                <td class="center"><a href="<?=header_link('Name') ?>"><span style="color:#777">TorrentID</span></a></td>
-                <td class="center"><a href="<?=header_link('Size') ?>"><span style="color:#777">Total</span></a></td>
-                <td class="center"><a href="<?=header_link('downloaded') ?>"><span style="color:#777">Downloaded</span></a></td>
-                <td class="center"><a href="<?=header_link('downspeed') ?>"><span style="color:#777">DownSpeed</span></a></td>
+                <td class="center"><a href="/<?=header_link('Name') ?>"><span style="color:#777">TorrentID</span></a></td>
+                <td class="center"><a href="/<?=header_link('Size') ?>"><span style="color:#777">Total</span></a></td>
+                <td class="center"><a href="/<?=header_link('downloaded') ?>"><span style="color:#777">Downloaded</span></a></td>
+                <td class="center"><a href="/<?=header_link('downspeed') ?>"><span style="color:#777">DownSpeed</span></a></td>
                 <td class="center"><span style="color:#777">host</span></td>
-                <td class="center" style="min-width:80px"><a href="<?=header_link('timespent') ?>"><span style="color:#777">total time</span></a></td>
+                <td class="center" style="min-width:80px"><a href="/<?=header_link('timespent') ?>"><span style="color:#777">total time</span></a></td>
             </tr>
     <form id="speedrecords" action="tools.php" method="post">
         <input type="hidden" name="action" value="delete_speed_records" />
@@ -325,7 +325,7 @@ $Pages=get_pages($Page,$NumResults,25,9);
                               <a onclick="remove_records('<?=$UserID?>');return false;" href="#" title="Remove all speed records belonging to <?=$Username?> from watchlist"><img src="static/common/symbols/trash.png" alt="del records" /></a>
 <?php
                             if ($Enabled=='1') { ?>
-                                <a href="tools.php?action=ban_speed_cheat&banuser=1&userid=<?=$UserID?>" title="ban this user for being a big fat cheat"><img src="static/common/symbols/ban.png" alt="ban" /></a>
+                                <a href="/tools.php?action=ban_speed_cheat&banuser=1&userid=<?=$UserID?>" title="ban this user for being a big fat cheat"><img src="static/common/symbols/ban.png" alt="ban" /></a>
 <?php                           }  ?>
                         </td>
                         <td class="center">

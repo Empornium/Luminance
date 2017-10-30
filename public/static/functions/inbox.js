@@ -15,7 +15,6 @@ function Quick_Edit() {
 	$('#quickpost').show();
 }
 
-
 function Inbox_Preview(appendid) {
       if (appendid == undefined ) appendid = '';
 	if ($('#preview'+appendid).has_class('hidden')) {
@@ -24,6 +23,7 @@ function Inbox_Preview(appendid) {
                   $('#preview'+appendid).show();
 			$('#quickpost'+appendid).hide();
 			$('#previewbtn'+appendid).raw().value = "Edit Message";
+			Prism.highlightAll();
 		});
 	} else {
 		$('#preview'+appendid).hide();

@@ -309,7 +309,7 @@ function get_taglist_html($GroupID, $tagsort, $order = 'desc')
             foreach ($Tags as $TagKey=>$Tag) {
 ?>
                                 <li id="tlist<?=$Tag['id']?>">
-                                      <a href="torrents.php?taglist=<?=$Tag['name']?>" style="float:left; display:block;" title="<?=$Tag['votes']?>"><?=display_str($Tag['name'])?></a>
+                                      <a href="/torrents.php?taglist=<?=$Tag['name']?>" style="float:left; display:block;" title="<?=$Tag['votes']?>"><?=display_str($Tag['name'])?></a>
                                       <div style="float:right; display:block; letter-spacing: -1px;">
         <?php 		if (check_perms('site_vote_tag') || ($IsUploader && $LoggedUser['ID']==$Tag['userid'])) {  ?>
                                       <a title="Vote down tag '<?=$Tag['name']?>'" href="#tags" onclick="return Vote_Tag(<?="'{$Tag['name']}',{$Tag['id']},$GroupID,'down'"?>)" style="font-family: monospace;" >[-]</a>
@@ -323,7 +323,7 @@ function get_taglist_html($GroupID, $tagsort, $order = 'desc')
 
         <?php 		} ?>
         <?php 		if (check_perms('users_warn')) { ?>
-                                      <a title="Tag '<?=$Tag['name']?>' added by <?=$Tag['username']?>" href="user.php?id=<?=$Tag['userid']?>" >[U]</a>
+                                      <a title="Tag '<?=$Tag['name']?>' added by <?=$Tag['username']?>" href="/user.php?id=<?=$Tag['userid']?>" >[U]</a>
         <?php 		} ?>
         <?php 		if (check_perms('site_delete_tag') ) { ?>
                                    <a title="Delete tag '<?=$Tag['name']?>'" href="#tags" onclick="return Del_Tag(<?="'{$Tag['id']}',$GroupID,'$tagsort'"?>)"   style="font-family: monospace;">[X]</a>

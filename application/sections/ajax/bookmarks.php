@@ -78,13 +78,13 @@ foreach ($TorrentList as $GroupID=>$Group) {
         } else {
             $Tags[$Tag]['count']++;
         }
-        $TorrentTags[]='<a href="torrents.php?taglist='.$Tag.'">'.$Tag.'</a>';
+        $TorrentTags[]='<a href="/torrents.php?taglist='.$Tag.'">'.$Tag.'</a>';
     }
     $PrimaryTag = $TagList[0];
     $TorrentTags = implode(' ', $TorrentTags);
     $TorrentTags='<br /><div class="tags">'.$TorrentTags.'</div>';
 
-    $DisplayName = '<a href="torrents.php?id='.$GroupID.'" title="View Torrent">'.$GroupName.'</a>';
+    $DisplayName = '<a href="/torrents.php?id='.$GroupID.'" title="View Torrent">'.$GroupName.'</a>';
 
     // Start an output buffer, so we can store this output in $TorrentTable
     ob_start();
@@ -92,7 +92,7 @@ foreach ($TorrentList as $GroupID=>$Group) {
 
     list($TorrentID, $Torrent) = each($Torrents);
 
-    $DisplayName = '<a href="torrents.php?id='.$GroupID.'" title="View Torrent">'.$GroupName.'</a>';
+    $DisplayName = '<a href="/torrents.php?id='.$GroupID.'" title="View Torrent">'.$GroupName.'</a>';
 
     if ($Torrent['ReportCount'] > 0) {
             $Title = "This torrent has ".$Torrent['ReportCount']." active ".($Torrent['ReportCount'] > 1 ?'reports' : 'report');

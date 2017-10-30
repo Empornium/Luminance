@@ -2,34 +2,14 @@
 $Text = new Luminance\Legacy\Text;
 
 include(SERVER_ROOT.'/sections/requests/functions.php');
+include(SERVER_ROOT.'/sections/inbox/functions.php');
+include(SERVER_ROOT.'/sections/staff/functions.php');
 
 if (empty($_REQUEST['id']) || !is_numeric($_REQUEST['id'])) { error(0); }
 $UserID = $_REQUEST['id'];
 
 $OwnProfile = $UserID == $LoggedUser['ID'];
 $Preview = ($OwnProfile || check_perms('users_mod')) ? $_GET['preview']=='1' :'0';
-
-// Check to see if a user has the permission to perform an action
-function check_perms_here($Preview, $PermissionName, $MinClass = 0)
-{
-    global $master;
-    if ($Preview)
-        return ($master->auth->isAllowedByMinUser($PermissionName) && $master->auth->permissions->getMinUserLevel() >= $MinClass);
-    else
-        return check_perms($PermissionName, $MinClass);
-}
-
-
-function check_paranoia_here($Preview, $Setting)
-{
-    global $Paranoia, $Class, $UserID;
-    if ($Preview)
-        return check_paranoia($Setting, $Paranoia, 99999999, false);
-    else
-        return check_paranoia($Setting, $Paranoia, $Class, $UserID);
-}
-
-
 
 if (check_perms_here($Preview, 'users_mod')) { // Person viewing is a staff member
     $DB->query("SELECT
@@ -78,7 +58,6 @@ if (check_perms_here($Preview, 'users_mod')) { // Person viewing is a staff memb
         i.DisableRequests,
         i.DisableSignature,
         i.DisableTorrentSig,
-        i.HideCountryChanges,
         m.FLTokens,
         m.personal_freeleech,
         m.personal_doubleseed,
@@ -111,7 +90,7 @@ if (check_perms_here($Preview, 'users_mod')) { // Person viewing is a staff memb
               $GroupPermID, $Enabled, $Paranoia, $Invites, $DisableLeech, $Visible, $JoinDate, $Info, $Avatar, $Country,
               $AdminComment, $Donor, $Warned, $SupportFor, $RestrictedForums, $PermittedForums, $InviterID, $InviterName, $ForumPosts,
               $RatioWatchEnds, $RatioWatchDownload, $SuppressConnPrompt, $DisableAvatar, $DisableInvites, $DisablePosting, $DisableForums, $DisableTagging,
-              $DisableUpload, $DisablePM, $DisableIRC, $DisableRequests, $DisableSig, $DisableTorrentSig, $DisableCountry, $FLTokens, $PersonalFreeLeech, $PersonalDoubleseed, $CommentHash,
+              $DisableUpload, $DisablePM, $DisableIRC, $DisableRequests, $DisableSig, $DisableTorrentSig, $FLTokens, $PersonalFreeLeech, $PersonalDoubleseed, $CommentHash,
               $BonusCredits,$BonusLog,$MaxAvatarWidth, $MaxAvatarHeight, $SeedHistory, $SeedHoursTotal, $SeedHoursDaily, $CreditsDaily, $flag, $BanReason, $Ducky, $DuckyTID) = $DB->next_record(MYSQLI_NUM, array(14));
 
 } else { // Person viewing is a normal user
@@ -138,12 +117,14 @@ if (check_perms_here($Preview, 'users_mod')) { // Person viewing is a staff memb
         i.Avatar,
         m.FLTokens,
         i.Country,
+        i.AdminComment,
         i.Donor,
         i.Warned,
         COUNT(posts.id) AS ForumPosts,
         i.Inviter,
         i.DisableInvites,
         inviter.username,
+        SHA1(i.AdminComment),
         m.Credits,
         i.BonusLog,
         p.MaxAvatarWidth,
@@ -168,18 +149,11 @@ if (check_perms_here($Preview, 'users_mod')) { // Person viewing is a staff memb
 
     list($Username, $Email, $LastAccess, $IP, $ipcc, $Class, $Uploaded, $Downloaded, $RequiredRatio, $ClassID, $GroupPermID,
               $Enabled, $Paranoia, $Invites, $CustomTitle, $torrent_pass, $DisableLeech, $JoinDate, $Info, $Avatar, $FLTokens,
-              $Country, $Donor, $Warned, $ForumPosts, $InviterID, $DisableInvites, $InviterName,$BonusCredits,$BonusLog,
+              $Country, $AdminComment, $Donor, $Warned, $ForumPosts, $InviterID, $DisableInvites, $InviterName, $CommentHash, $BonusCredits, $BonusLog,
               $MaxAvatarWidth,$MaxAvatarHeight, $RatioWatchEnds, $RatioWatchDownload, $flag, $BanReason, $Ducky, $DuckyTID) = $DB->next_record(MYSQLI_NUM, array(12));
 }
 
-// Image proxy CTs
 $DisplayCustomTitle = $CustomTitle;
-if (check_perms_here($Preview, 'site_proxy_images') && !empty($CustomTitle)) {
-    $DisplayCustomTitle = preg_replace_callback('~src=("?)(http.+?)(["\s>])~', function ($Matches) {
-                                                                        return 'src='.$Matches[1].'//'.SITE_URL.'/image.php?c=1&amp;i='.urlencode($Matches[2]).$Matches[3];
-                                                                    }, $CustomTitle);
-}
-
 $Paranoia = unserialize($Paranoia);
 if (!is_array($Paranoia)) {
     $Paranoia = array();
@@ -195,8 +169,16 @@ foreach ($Paranoia as $P) {
 $JoinedDate = time_diff($JoinDate);
 $LastAccess = time_diff($LastAccess);
 
+function check_paranoia_here($Preview, $Setting)
+{
+    global $Paranoia, $Class, $UserID;
+    if ($Preview)
+        return check_paranoia($Setting, $Paranoia, 99999999, false);
+    else
+        return check_paranoia($Setting, $Paranoia, $Class, $UserID);
+}
 
-$Badges=($Donor) ? '<a href="donate.php"><img src="'.STATIC_SERVER.'common/symbols/donor.png" alt="Donor" /></a>' : '';
+$Badges=($Donor) ? '<a href="/donate.php"><img src="'.STATIC_SERVER.'common/symbols/donor.png" alt="Donor" /></a>' : '';
 if ($Warned!='0000-00-00 00:00:00') {
     if (check_perms('users_mod')) $Badges.= ' Warned for '.time_diff($Warned).' ';
     $Badges.= '<img src="'.STATIC_SERVER.'common/symbols/warned.png" alt="Warned" />';
@@ -209,53 +191,56 @@ show_header($Username,'overlib,jquery,jquery.cookie,user,bbcode,requests,watchli
 <div class="thin">
     <h2><?=format_username($UserID, $Username, false, $Warned, $Enabled, $ClassID, $CustomTitle, true, $GroupPermID)?></h2>
     <div class="linkbox">
-<?php   if (!$OwnProfile) { ?>
-        [<a href="inbox.php?action=compose&amp;to=<?=$UserID?>" title="Send a Private Message to <?=$Username?>">Send PM</a>]
+<?php   if (!$OwnProfile && !blockedPM($UserID, $LoggedUser['ID'])) { ?>
+        [<a href="/inbox.php?action=compose&amp;to=<?=$UserID?>" title="Send a Private Message to <?=$Username?>">Send PM</a>]
 <?php
         if ((!$Preview && $LoggedUser['DisplayStaff']==1) || check_perms_here($Preview, 'users_mod')) {  ?>
-        [<a href="staffpm.php?action=compose&amp;toid=<?=$UserID?>" title="Start a Staff Conversation with <?=$Username?>">Staff Message</a>]
+        [<a href="/staffpm.php?action=compose&amp;toid=<?=$UserID?>" title="Start a Staff Conversation with <?=$Username?>">Staff Message</a>]
 <?php       }
         $DB->query("SELECT Type FROM friends WHERE UserID='$LoggedUser[ID]' AND FriendID='$UserID'");
         if($DB->record_count() > 0) list($FType)=$DB->next_record();
 
         if (!$FType || $FType != 'friends') { ?>
-            [<a href="friends.php?action=add&amp;friendid=<?=$UserID?>&amp;auth=<?=$LoggedUser['AuthKey']?>">Add to friends</a>]
+            [<a href="/friends.php?action=add&amp;friendid=<?=$UserID?>&amp;auth=<?=$LoggedUser['AuthKey']?>">Add to friends</a>]
 <?php       } elseif ($FType == 'friends') { ?>
-            [<a href="friends.php?action=Defriend&amp;friendid=<?=$UserID?>&amp;auth=<?=$LoggedUser['AuthKey']?>">Remove friend</a>]
+            [<a href="/friends.php?action=Defriend&amp;friendid=<?=$UserID?>&amp;auth=<?=$LoggedUser['AuthKey']?>">Remove friend</a>]
 <?php       }
         if (!$FType || $FType != 'blocked') { ?>
-            [<a href="friends.php?action=add&amp;friendid=<?=$UserID?>&amp;type=blocked&amp;auth=<?=$LoggedUser['AuthKey']?>">Block User</a>]
+            [<a href="/friends.php?action=add&amp;friendid=<?=$UserID?>&amp;type=blocked&amp;auth=<?=$LoggedUser['AuthKey']?>">Block User</a>]
 <?php       } elseif ($FType == 'blocked') { ?>
-            [<a href="friends.php?action=Unblock&amp;friendid=<?=$UserID?>&amp;type=blocked&amp;auth=<?=$LoggedUser['AuthKey']?>">Remove block</a>]
+            [<a href="/friends.php?action=Unblock&amp;friendid=<?=$UserID?>&amp;type=blocked&amp;auth=<?=$LoggedUser['AuthKey']?>">Remove block</a>]
 <?php       } ?>
-        [<a href="reports.php?action=report&amp;type=user&amp;id=<?=$UserID?>">Report User</a>]
+        [<a href="/reports.php?action=report&amp;type=user&amp;id=<?=$UserID?>">Report User</a>]
 <?php
         $links2 = '<br/>';
     }
 
     if (check_perms_here($Preview, 'users_edit_profiles', $Class)) {
-        $links2 .= '[<a href="user.php?action=edit&amp;userid='.$UserID.'">Settings</a>] ';
+        $links2 .= '[<a href="/user.php?action=edit&amp;userid='.$UserID.'">Settings</a>] ';
+    }
+    if (check_perms_here($Preview, 'users_view_email', $Class)) {
+        $links2 .= '[<a href="/users/'.$UserID.'/security">Security</a>] ';
     }
     if (check_perms_here($Preview, 'users_view_invites', $Class)) {
-        $links2 .= '[<a href="user.php?action=invite&amp;userid='.$UserID.'">Invites</a>] ';
+        $links2 .= '[<a href="/user.php?action=invite&amp;userid='.$UserID.'">Invites</a>] ';
     }
     if (check_perms_here($Preview, 'admin_manage_permissions', $Class)) {
-        $links2 .= '[<a href="user.php?action=permissions&amp;userid='.$UserID.'">Permissions</a>] ';
+        $links2 .= '[<a href="/user.php?action=permissions&amp;userid='.$UserID.'">Permissions</a>] ';
     }
     if (check_perms_here($Preview, 'users_logout', $Class) && check_perms_here($Preview, 'users_view_ips', $Class)) {
-        $links2 .= '[<a href="user.php?action=sessions&amp;userid='.$UserID.'">Sessions</a>] ';
+        $links2 .= '[<a href="/user.php?action=sessions&amp;userid='.$UserID.'">Sessions</a>] ';
     }
     if (check_perms_here($Preview, 'admin_reports')) {
-        $links2 .= '[<a href="reportsv2.php?view=reporter&amp;id='.$UserID.'">Reports</a>] ';
+        $links2 .= '[<a href="/reportsv2.php?view=reporter&amp;id='.$UserID.'">Reports</a>] ';
     }
     if (check_perms_here($Preview, 'users_mod')) {
-        $links2 .= '[<a href="userhistory.php?action=token_history&amp;userid='.$UserID.'">Slots</a>] ';
+        $links2 .= '[<a href="/userhistory.php?action=token_history&amp;userid='.$UserID.'">Slots</a>] ';
     }
     if (check_perms_here($Preview, 'admin_manage_ipbans')) {
-        $links2 .= '[<a href="tools.php?action=ip_ban&userid='.$UserID.'&uip='.display_str($IP).'" title="Ban this users current IP ('.display_str($IP).')">IP Ban</a>] ';
+        $links2 .= '[<a href="/tools.php?action=ip_ban&userid='.$UserID.'&uip='.display_str($IP).'" title="Ban this users current IP ('.display_str($IP).')">IP Ban</a>] ';
     }
     if (($OwnProfile || check_perms('users_mod')) && !$Preview) {
-        $links2 .= '[<a href="user.php?id='.$UserID.'&amp;preview=1" title="View '.($OwnProfile?'your':'this').' userpage as '.($OwnProfile?'another':'a').' user would see it">Preview</a>] ';
+        $links2 .= '[<a href="/user.php?id='.$UserID.'&amp;preview=1" title="View '.($OwnProfile?'your':'this').' userpage as '.($OwnProfile?'another':'a').' user would see it">Preview</a>] ';
     }
     if ($links2) echo $links2;
 
@@ -278,11 +263,7 @@ if (check_perms_here($Preview, 'users_manage_cheats', $Class)) {
     </div>
 
     <div class="sidebar">
-<?php 	if (empty($HeavyInfo['DisableAvatars'])) {
-        if (check_perms_here($Preview, 'site_proxy_images') && !empty($Avatar)) {
-            $Avatar = '//'.SITE_URL.'/image.php?c=1&avatar='.$UserID.'&i='.urlencode($Avatar);
-        }
-?>
+<?php 	if (empty($HeavyInfo['DisableAvatars'])) { ?>
         <div class="head colhead_dark">Avatar</div>
                 <div class="box">
             <div align="center">
@@ -312,10 +293,10 @@ if (check_perms_here($Preview, 'users_manage_cheats', $Class)) {
                 <li>Last Seen: <?=$LastAccess?></li>
 <?php  } ?>
 <?php  if (check_force_anon($UserID) && check_paranoia_here($Preview, 'uploaded')) { ?>
-                <li>Uploaded: <?=get_size($Uploaded)?></li>
+                <li title="<?=$Uploaded?> bytes">Uploaded: <?=get_size($Uploaded)?></li>
 <?php  } ?>
 <?php  if (check_force_anon($UserID) && check_paranoia_here($Preview, 'downloaded')) { ?>
-                <li>Downloaded: <?=get_size($Downloaded)?></li>
+                <li title="<?=$Downloaded?> bytes">Downloaded: <?=get_size($Downloaded)?></li>
 <?php  } ?>
 <?php  if (check_paranoia_here($Preview, 'ratio')) { ?>
                 <li>Ratio: <?=ratio($Uploaded, $Downloaded)?></li>
@@ -324,7 +305,7 @@ if (check_perms_here($Preview, 'users_manage_cheats', $Class)) {
                 <li>Required ratio: <?=number_format((double) $RequiredRatio, 2)?></li>
 <?php  } ?>
 <?php  if (check_force_anon($UserID) && ((!$Preview && $OwnProfile) || check_paranoia_here($Preview, false))) {   ?>
-                <li><a href="userhistory.php?action=token_history&amp;userid=<?=$UserID?>">Slots</a>: <?=number_format($FLTokens)?></li>
+                <li><a href="/userhistory.php?action=token_history&amp;userid=<?=$UserID?>">Slots</a>: <?=number_format($FLTokens)?></li>
 <?php  } ?>
             </ul>
         </div>
@@ -417,27 +398,27 @@ $OverallRank = $Rank->overall_score($UploadedRank, $DownloadedRank, $UploadsRank
     <div class="box">
         <ul class="stats nobullet">
 <?php 	if (check_perms_here($Preview, 'users_view_email',$Class)) { ?>
-<li>Emails: <?=number_format($EmailChanges)?> [<a href="userhistory.php?action=email2&amp;userid=<?=$UserID?>">View</a>]&nbsp;[<a href="userhistory.php?action=email&amp;userid=<?=$UserID?>">Legacy view</a>]</li>
+<li>Emails: <?=number_format($EmailChanges)?> [<a href="/userhistory.php?action=email2&amp;userid=<?=$UserID?>">View</a>]&nbsp;[<a href="/userhistory.php?action=email&amp;userid=<?=$UserID?>">Legacy view</a>]</li>
 <?php
     }
     if (check_perms_here($Preview, 'users_view_ips',$Class)) {
 ?>
-    <li>IPs: <?=number_format($IPChanges)?> [<a href="userhistory.php?action=ips&amp;userid=<?=$UserID?>">View</a>]&nbsp;[<a href="userhistory.php?action=ips&amp;userid=<?=$UserID?>&amp;usersonly=1">View Users</a>]</li>
+    <li>IPs: <?=number_format($IPChanges)?> [<a href="/userhistory.php?action=ips&amp;userid=<?=$UserID?>">View</a>]&nbsp;[<a href="/userhistory.php?action=ips&amp;userid=<?=$UserID?>&amp;usersonly=1">View Users</a>]</li>
 <?php 		if (check_perms_here($Preview, 'users_view_ips',$Class) && check_perms_here($Preview, 'users_mod',$Class)) {
 ?>
-    <li>Tracker IPs: <?=number_format($TrackerIPs)?> [<a href="userhistory.php?action=tracker_ips&amp;userid=<?=$UserID?>">View</a>]</li>
+    <li>Tracker IPs: <?=number_format($TrackerIPs)?> [<a href="/userhistory.php?action=tracker_ips&amp;userid=<?=$UserID?>">View</a>]</li>
 <?php 		} ?>
 <?php
     }
     if (check_perms_here($Preview, 'users_view_keys',$Class)) {
 ?>
-            <li>Passkeys: <?=number_format($PasskeyChanges)?> [<a href="userhistory.php?action=passkeys&amp;userid=<?=$UserID?>">View</a>]</li>
+            <li>Passkeys: <?=number_format($PasskeyChanges)?> [<a href="/userhistory.php?action=passkeys&amp;userid=<?=$UserID?>">View</a>]</li>
 <?php
     }
     if (check_perms_here($Preview, 'users_mod', $Class)) {
 ?>
-            <li>Passwords: <?=number_format($PasswordChanges)?> [<a href="userhistory.php?action=passwords&amp;userid=<?=$UserID?>">View</a>]</li>
-            <li>Stats: N/A [<a href="userhistory.php?action=stats&amp;userid=<?=$UserID?>">View</a>]</li>
+            <li>Passwords: <?=number_format($PasswordChanges)?> [<a href="/userhistory.php?action=passwords&amp;userid=<?=$UserID?>">View</a>]</li>
+            <li>Stats: N/A [<a href="/userhistory.php?action=stats&amp;userid=<?=$UserID?>">View</a>]</li>
 <?php
 
     }
@@ -458,7 +439,7 @@ $OverallRank = $Rank->overall_score($UploadedRank, $DownloadedRank, $UploadsRank
                               FROM users_languages AS ul
                               JOIN languages AS l ON l.ID=ul.LangID
                              WHERE UserID=$UserID");
-                    $Userlangs = $DB->to_array('LangID', MYSQL_ASSOC);
+                    $Userlangs = $DB->to_array('LangID', MYSQLI_ASSOC);
                     $Cache->cache_value('user_langs_'.$UserID, $Userlangs);
                 }
                 //$DB->query("SELECT ul.cc, country  FROM users_languages AS ul LEFT JOIN countries AS c ON c.cc=ul.cc WHERE UserID=$UserID");
@@ -499,9 +480,9 @@ if ($ParanoiaLevel == 0) {
 <?php   }
 
     if (check_perms_here($Preview, 'users_view_email',$Class) || (!$Preview && $OwnProfile)) { ?>
-                <li>Email: <a href="mailto:<?=display_str($Email)?>"><?=display_str($Email)?></a>
+                <li>Email: <a href="/mailto:<?=display_str($Email)?>"><?=display_str($Email)?></a>
 <?php 		if (check_perms_here($Preview, 'users_view_email',$Class)) { ?>
-                    [<a href="user.php?action=search&amp;email_history=on&amp;email=<?=display_str($Email)?>" title="Search">S</a>]
+                    [<a href="/user.php?action=search&amp;email_history=on&amp;email=<?=display_str($Email)?>" title="Search">S</a>]
 <?php 		} ?>
                 </li>
 <?php 	}
@@ -521,7 +502,7 @@ if (check_perms_here($Preview, 'users_view_invites')) {
     if (!$InviterID) {
         $Invited="<i>Nobody</i>";
     } else {
-        $Invited='<a href="user.php?id='.$InviterID.'">'.$InviterName.'</a>';
+        $Invited='<a href="/user.php?id='.$InviterID.'">'.$InviterName.'</a>';
     }
 
 ?>
@@ -581,7 +562,7 @@ if (check_perms_here($Preview, 'users_mod') || (!$Preview && $OwnProfile)) {
                 <?php    }   ?>
                  <a style="cursor: pointer;" onclick="delete_conn_record('statuscont<?=$elemid?>','<?=$UserID?>','<?=$IP?>')" title="Remove this connectable record">[X]</a>
                     <?php  if ($Port) { ?>
-                 [<a href="user.php?action=connchecker&checkuser=<?=$UserID?>&checkip=<?=$IP?>&checkport=<?=$Port?>" title="check now">check</a>]
+                 [<a href="/user.php?action=connchecker&checkuser=<?=$UserID?>&checkip=<?=$IP?>&checkport=<?=$Port?>" title="check now">check</a>]
                     <?php  } ?>
                 </span><br/>
             <?php
@@ -636,22 +617,22 @@ list($UniqueGroups) = $DB->next_record();
                           JOIN torrents AS t ON t.GroupID=tt.GroupID
                          WHERE tt.UserID = '$UserID'
                            AND t.UserID = '$UserID'");
-            list($NumOwnTags) = $DB->next_record(MYSQL_NUM);
+            list($NumOwnTags) = $DB->next_record(MYSQLI_NUM);
 
             $DB->query("SELECT COUNT(tt.TagID) FROM torrents_tags AS tt
                          WHERE tt.UserID = '$UserID'");
-            list($NumTotalTags) = $DB->next_record(MYSQL_NUM);
+            list($NumTotalTags) = $DB->next_record(MYSQLI_NUM);
             $NumOthersTags = $NumTotalTags - $NumOwnTags;
 
             $DB->query("SELECT COUNT(ttv.TagID) FROM torrents_tags_votes AS ttv
                           JOIN torrents AS t ON t.GroupID=ttv.GroupID
                          WHERE ttv.UserID = '$UserID'
                            AND t.UserID = '$UserID'");
-            list($NumVotesOwn) = $DB->next_record(MYSQL_NUM);
+            list($NumVotesOwn) = $DB->next_record(MYSQLI_NUM);
 
             $DB->query("SELECT COUNT(ttv.TagID) FROM torrents_tags_votes AS ttv
                          WHERE ttv.UserID = '$UserID'");
-            list($NumVotesTotal) = $DB->next_record(MYSQL_NUM);
+            list($NumVotesTotal) = $DB->next_record(MYSQLI_NUM);
             # != is expensive on large DB tables
             $NumVotesOthers = $NumVotesTotal - $NumVotesOwn;
 
@@ -664,11 +645,11 @@ list($UniqueGroups) = $DB->next_record();
    if (check_force_anon($UserID) && check_paranoia_here($Preview, 'tags')) { ?>
                 <li>Tags added: <span title="Tags on other uploaders torrents added"><?=$NumOthersTags?></span>
                                 <span title="Tags on own torrents added (<?=($NumOthersTags+$NumOwnTags)?> total)">(+<?=$NumOwnTags?>) </span>
-                                [<a href="userhistory.php?action=tag_history&amp;type=added&amp;userid=<?=$UserID?>" title="View all tags added by <?=$Username?>">View</a>]
+                                [<a href="/userhistory.php?action=tag_history&amp;type=added&amp;userid=<?=$UserID?>" title="View all tags added by <?=$Username?>">View</a>]
                 </li>
                 <li>Tags voted on: <span title="Tags on other uploaders torrents voted for"><?=$NumVotesOthers?></span>
                                 <span title="Tags on own torrents voted for (<?=($NumVotesOwn+$NumVotesOthers)?> total)">(+<?=$NumVotesOwn?>)</span>
-                                [<a href="userhistory.php?action=tag_history&amp;type=votes&amp;userid=<?=$UserID?>" title="View all tags voted on by <?=$Username?>">View</a>]
+                                [<a href="/userhistory.php?action=tag_history&amp;type=votes&amp;userid=<?=$UserID?>" title="View all tags voted on by <?=$Username?>">View</a>]
                 </li>
 <?php   } elseif (check_paranoia_here($Preview, 'tags+')) { ?>
                 <li>Tags added: <span title="Tags on other uploaders torrents added"><?=$NumOthersTags?></span>
@@ -681,24 +662,24 @@ list($UniqueGroups) = $DB->next_record();
 
 ?>
 <?php  if (check_force_anon($UserID) && check_paranoia_here($Preview, 'torrentcomments')) { ?>
-                <li>Forum Posts: <?=number_format($ForumPosts)?> [<a href="userhistory.php?action=posts&amp;userid=<?=$UserID?>" title="View all forum posts by <?=$Username?>">View</a>]</li>
-                <li>Torrent Comments: <?=number_format($NumComments)?> [<a href="userhistory.php?action=comments&amp;userid=<?=$UserID?>" title="View all torrent comments by <?=$Username?>">View</a>]</li>
+                <li>Forum Posts: <?=number_format($ForumPosts)?> [<a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>" title="View all forum posts by <?=$Username?>">View</a>]</li>
+                <li>Torrent Comments: <?=number_format($NumComments)?> [<a href="/userhistory.php?action=comments&amp;userid=<?=$UserID?>" title="View all torrent comments by <?=$Username?>">View</a>]</li>
 <?php  } elseif (check_paranoia_here($Preview, 'torrentcomments+')) { ?>
                 <li>Forum Posts: <?=number_format($ForumPosts)?></li>
                 <li>Torrent Comments: <?=number_format($NumComments)?></li>
 <?php  } ?>
 <?php  if (check_force_anon($UserID) && check_paranoia_here($Preview, 'collages')) { ?>
-                <li>Collages started: <?=number_format($NumCollages)?> [<a href="collages.php?userid=<?=$UserID?>" title="View all collages started by <?=$Username?>">View</a>]</li>
+                <li>Collages started: <?=number_format($NumCollages)?> [<a href="/collages.php?userid=<?=$UserID?>" title="View all collages started by <?=$Username?>">View</a>]</li>
 <?php  } elseif (check_paranoia_here($Preview, 'collages+')) { ?>
                 <li>Collages started: <?=number_format($NumCollages)?></li>
 <?php  } ?>
 <?php  if (check_force_anon($UserID) && check_paranoia_here($Preview, 'collagecontribs')) { ?>
-                <li>Collages contributed to: <?=number_format($NumCollageContribs)?> [<a href="collages.php?userid=<?=$UserID?>&amp;contrib=1" title="View all collages added to by <?=$Username?>">View</a>]</li>
+                <li>Collages contributed to: <?=number_format($NumCollageContribs)?> [<a href="/collages.php?userid=<?=$UserID?>&amp;contrib=1" title="View all collages added to by <?=$Username?>">View</a>]</li>
 <?php  } elseif (check_paranoia_here($Preview, 'collagecontribs+')) { ?>
                 <li>Collages contributed to: <?=number_format($NumCollageContribs)?></li>
 <?php  } ?>
 <?php  if (check_force_anon($UserID) && check_paranoia_here($Preview, 'requestsfilled_list')) { ?>
-                <li>Requests filled: <?=number_format($RequestsFilled)?> for <?=get_size($TotalBounty)?> [<a href="requests.php?type=filled&amp;userid=<?=$UserID?>" title="View all requests filled by <?=$Username?>">View</a>]</li>
+                <li>Requests filled: <?=number_format($RequestsFilled)?> for <?=get_size($TotalBounty)?> [<a href="/requests.php?type=filled&amp;userid=<?=$UserID?>" title="View all requests filled by <?=$Username?>">View</a>]</li>
 <?php  } elseif (check_paranoia_here($Preview, array('requestsfilled_count', 'requestsfilled_bounty'))) { ?>
                 <li>Requests filled: <?=number_format($RequestsFilled)?> for <?=get_size($TotalBounty)?></li>
 <?php  } elseif (check_paranoia_here($Preview, 'requestsfilled_count')) { ?>
@@ -707,7 +688,7 @@ list($UniqueGroups) = $DB->next_record();
                 <li>Requests filled: <?=get_size($TotalBounty)?> collected</li>
 <?php  } ?>
 <?php  if (check_force_anon($UserID) && check_paranoia_here($Preview, 'requestsvoted_list')) { ?>
-                <li>Requests voted: <?=number_format($RequestsVoted)?> for <?=get_size($TotalSpent)?> [<a href="requests.php?type=voted&amp;userid=<?=$UserID?>" title="View all requests added to by <?=$Username?>">View</a>]</li>
+                <li>Requests voted: <?=number_format($RequestsVoted)?> for <?=get_size($TotalSpent)?> [<a href="/requests.php?type=voted&amp;userid=<?=$UserID?>" title="View all requests added to by <?=$Username?>">View</a>]</li>
 <?php  } elseif (check_paranoia_here($Preview, array('requestsvoted_count', 'requestsvoted_bounty'))) { ?>
                 <li>Requests voted: <?=number_format($RequestsVoted)?> for <?=get_size($TotalSpent)?></li>
 <?php  } elseif (check_paranoia_here($Preview, 'requestsvoted_count')) { ?>
@@ -716,12 +697,12 @@ list($UniqueGroups) = $DB->next_record();
                 <li>Requests voted: <?=get_size($TotalSpent)?> spent</li>
 <?php  } ?>
 <?php  if (check_force_anon($UserID) && check_paranoia_here($Preview, 'uploads')) { ?>
-                <li>Uploaded: <?=number_format($Uploads)?> [<a href="torrents.php?type=uploaded&amp;userid=<?=$UserID?>" title="View all uploads by <?=$Username?>">View</a>]
+                <li>Uploaded: <?=number_format($Uploads)?> [<a href="/torrents.php?type=uploaded&amp;userid=<?=$UserID?>" title="View all uploads by <?=$Username?>">View</a>]
             <?php   if ((check_perms('torrents_download_override') || $master->options->EnableDownloads) && ((!$Preview && $OwnProfile) || check_perms_here($Preview, 'site_zip_downloader'))) { ?>
-                    [<a href="torrents.php?action=redownload&amp;type=uploads&amp;userid=<?=$UserID?>" title="Download all uploaded torrents in a zip" onclick="return confirm('If you no longer have the content, your ratio WILL be affected, be sure to check the size of all torrents before redownloading.');">Download</a>]
+                    [<a href="/torrents.php?action=redownload&amp;type=uploads&amp;userid=<?=$UserID?>" title="Download all uploaded torrents in a zip" onclick="return confirm('If you no longer have the content, your ratio WILL be affected, be sure to check the size of all torrents before redownloading.');">Download</a>]
             <?php   }
                     if ($Ducky) { ?>
-                        <a href="torrents.php?id=<?=$DuckyTID?>" title="This user has a Golden Ducky award!"><span class="icon icon_ducky"></span></a>
+                        <a href="/torrents.php?id=<?=$DuckyTID?>" title="This user has a Golden Ducky award!"><span class="icon icon_ducky"></span></a>
 <?php               }  ?>
                 </li>
 <?php  } elseif (check_paranoia_here($Preview, 'uploads+')) { ?>
@@ -736,16 +717,16 @@ if (check_paranoia_here($Preview, 'seeding+') || check_paranoia_here($Preview, '
 }
 ?>
 <?php  if (check_force_anon($UserID) && check_paranoia_here($Preview, 'seeding')) { ?>
-                <li>Seeding: <?=number_format($Seeding)?> <?=($Snatched && ((!$Preview && $OwnProfile) || check_paranoia_here($Preview, false)))?'(' . 100*min(1,round($Seeding/$UniqueSnatched,2)).'%) ':''?>[<a href="torrents.php?type=seeding&amp;userid=<?=$UserID?>" title="View seeding torrents">View</a>]
+                <li>Seeding: <?=number_format($Seeding)?> <?=($Snatched && ((!$Preview && $OwnProfile) || check_paranoia_here($Preview, false)))?'(' . 100*min(1,round($Seeding/$UniqueSnatched,2)).'%) ':''?>[<a href="/torrents.php?type=seeding&amp;userid=<?=$UserID?>" title="View seeding torrents">View</a>]
                 <?php  if ((check_perms('torrents_download_override') || $master->options->EnableDownloads) && ($OwnProfile || check_perms_here($Preview, 'site_zip_downloader'))) { ?>
-                    [<a href="torrents.php?action=redownload&amp;type=seeding&amp;userid=<?=$UserID?>"  title="Download all seeding torrents in a zip"onclick="return confirm('If you no longer have the content, your ratio WILL be affected, be sure to check the size of all torrents before redownloading.');">Download</a>]
+                    [<a href="/torrents.php?action=redownload&amp;type=seeding&amp;userid=<?=$UserID?>"  title="Download all seeding torrents in a zip"onclick="return confirm('If you no longer have the content, your ratio WILL be affected, be sure to check the size of all torrents before redownloading.');">Download</a>]
                 <?php  } ?>
                 </li>
 <?php  } elseif (check_paranoia_here($Preview, 'seeding+')) { ?>
                 <li>Seeding: <?=number_format($Seeding)?></li>
 <?php  } ?>
 <?php  if (check_force_anon($UserID) && check_paranoia_here($Preview, 'leeching')) { ?>
-                <li>Leeching: <?=number_format($Leeching)?> [<a href="torrents.php?type=leeching&amp;userid=<?=$UserID?>" title="View leeching torrents">View</a>]<?=($DisableLeech == 0 && check_perms_here($Preview, 'users_view_ips')) ? "<strong> (Disabled)</strong>" : ""?></li>
+                <li>Leeching: <?=number_format($Leeching)?> [<a href="/torrents.php?type=leeching&amp;userid=<?=$UserID?>" title="View leeching torrents">View</a>]<?=($DisableLeech == 0 && check_perms_here($Preview, 'users_view_ips')) ? "<strong> (Disabled)</strong>" : ""?></li>
 <?php  } elseif (check_paranoia_here($Preview, 'leeching+')) { ?>
                 <li>Leeching: <?=number_format($Leeching)?></li>
 <?php  }
@@ -753,9 +734,9 @@ if (check_paranoia_here($Preview, 'seeding+') || check_paranoia_here($Preview, '
 <?php  if (check_force_anon($UserID) && check_paranoia_here($Preview, 'snatched')) { ?>
                 <li>Snatched: <span title="total snatched"><?=number_format($Snatched)?></span>
                               <span title="total unique snatched">(<?=number_format($UniqueSnatched)?>)</span>
-                [<a href="torrents.php?type=snatched&amp;userid=<?=$UserID?>" title="View snatched torrents">View</a>]
+                [<a href="/torrents.php?type=snatched&amp;userid=<?=$UserID?>" title="View snatched torrents">View</a>]
                 <?php  if ((check_perms('torrents_download_override') || $master->options->EnableDownloads) && ((!$Preview && $OwnProfile) || check_perms_here($Preview, 'site_zip_downloader'))) { ?>
-                    [<a href="torrents.php?action=redownload&amp;type=snatches&amp;userid=<?=$UserID?>" title="Download all snatched torrents in a zip" onclick="return confirm('If you no longer have the content, your ratio WILL be affected, be sure to check the size of all torrents before redownloading.');">Download</a>]
+                    [<a href="/torrents.php?action=redownload&amp;type=snatches&amp;userid=<?=$UserID?>" title="Download all snatched torrents in a zip" onclick="return confirm('If you no longer have the content, your ratio WILL be affected, be sure to check the size of all torrents before redownloading.');">Download</a>]
                 <?php  } ?>
                 </li>
 <?php  } elseif (check_paranoia_here($Preview, 'snatched+')) { ?>
@@ -775,9 +756,9 @@ if (check_paranoia_here($Preview, 'grabbed+')) {
                      <span title="total unique grabbed">(<?=number_format($UniqueDownloads)?>) </span>
 
 <?php       if (check_force_anon($UserID) && check_paranoia_here($Preview, 'grabbed')) { ?>
-            [<a href="torrents.php?type=downloaded&amp;userid=<?=$UserID?>" title="View grabbed torrents">View</a>]
+            [<a href="/torrents.php?type=downloaded&amp;userid=<?=$UserID?>" title="View grabbed torrents">View</a>]
                 <?php  if ((check_perms('torrents_download_override') || $master->options->EnableDownloads) && ((!$Preview && $OwnProfile) || check_perms_here($Preview, 'site_zip_downloader'))) { ?>
-                    [<a href="torrents.php?action=redownload&amp;type=grabbed&amp;userid=<?=$UserID?>" title="Download all grabbed torrents in a zip" onclick="return confirm('If you no longer have the content, your ratio WILL be affected, be sure to check the size of all torrents before redownloading.');">Download</a>]
+                    [<a href="/torrents.php?action=redownload&amp;type=grabbed&amp;userid=<?=$UserID?>" title="Download all grabbed torrents in a zip" onclick="return confirm('If you no longer have the content, your ratio WILL be affected, be sure to check the size of all torrents before redownloading.');">Download</a>]
                 <?php  } ?>
 <?php       } ?>
         </li>
@@ -794,7 +775,7 @@ if ((!$Preview && $OwnProfile) || check_perms_here($Preview, 'users_view_donor')
         <li>Donated: <strong>&euro;<?=number_format($SumDonations, 2) ?></strong>
             &nbsp; <span title="number of donations made"><?=number_format($NumDonations)?></span>
             <span title="donation addresses unused">(<?=number_format($NumDonationsIssued)?>)</span>
-             [<a href="donate.php?action=my_donations&amp;userid=<?=$UserID?>" title="View donations">View</a>]</li>
+             [<a href="/donate.php?action=my_donations&amp;userid=<?=$UserID?>" title="View donations">View</a>]</li>
 <?php
 }
 
@@ -857,19 +838,9 @@ if (check_force_anon($UserID) && check_paranoia_here($Preview, 'invitedcount')) 
 
 if (check_perms_here($Preview, 'admin_login_watch',$Class)) {
     // get any failed login attempts
-    $DB->query("SELECT
-                   l.ID,
-                   l.IP,
-                   l.LastAttempt,
-                   l.Attempts,
-                   l.BannedUntil,
-                   l.Bans
-              FROM login_attempts AS l
-             WHERE l.Attempts>0
-               AND l.UserID = '$UserID'
-          ORDER BY LastAttempt DESC ");
+    $floods = $master->repos->floods->find('`UserID` = ?', [$UserID]);
 
-    if ($DB->record_count()>0) {
+    if (!empty($floods)) {
 
         $CookieItems[] = 'loginwatch';
 
@@ -883,6 +854,7 @@ if (check_perms_here($Preview, 'admin_login_watch',$Class)) {
             <table width="100%" id="loginwatchdiv" class="shadow">
                 <tr class="colhead">
                     <td>IP</td>
+                    <td>Type</td>
                     <td>Attempts</td>
                     <td>Last Attempt</td>
                     <td>Bans</td>
@@ -891,30 +863,35 @@ if (check_perms_here($Preview, 'admin_login_watch',$Class)) {
                 </tr>
 <?php
             $Row = 'b';
-            while (list($loginID, $loginIP, $LastAttempt, $Attempts, $BannedUntil, $Bans) = $DB->next_record()) {
-                $Row = ($Row === 'a' ? 'b' : 'a');
+            //while (list($loginID, $loginIP, $LastAttempt, $Attempts, $BannedUntil, $Bans) = $DB->next_record()) {
 
+            foreach($floods as $flood) {
+                $Row = ($Row === 'a' ? 'b' : 'a');
+                $IP = $master->repos->ips->load($flood->IPID);
 ?>
                 <tr class="row<?=$Row?>">
                     <td>
-                        <?=display_ip($loginIP)?>
+                        <?=display_ip($IP->get_ip())?>
                     </td>
                     <td>
-                        <?=$Attempts?>
+                        <?=$flood->Type?>
                     </td>
                     <td>
-                        <?=time_diff($LastAttempt)?>
+                        <?=$flood->Requests?>
                     </td>
                     <td>
-                        <?=$Bans?>
+                        <?=time_diff($flood->LastRequest)?>
                     </td>
                     <td>
-                        <?=time_diff($BannedUntil)?>
+                        <?=$flood->IPBans?>
+                    </td>
+                    <td>
+                        <?=time_diff($IP->BannedUntil)?>
                     </td>
                     <td>
                         <form action="user.php?id=<?=$UserID?>" method="post" style="display:inline-block">
                             <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-                            <input type="hidden" name="loginid" value="<?=$loginID?>" />
+                            <input type="hidden" name="loginid" value="<?=$flood->ID?>" />
                             <input type="hidden" name="action" value="reset_login_watch" />
                             <input type="hidden" name="id" value="<?=$UserID?>" />
                             <input type="submit" name="submit" title="remove any bans (and reset attempts) from login watch" value="Unban" />
@@ -922,11 +899,11 @@ if (check_perms_here($Preview, 'admin_login_watch',$Class)) {
 <?php       if (check_perms_here($Preview, 'admin_manage_ipbans')) { ?>
                         <form action="tools.php" method="post" style="display:inline-block">
                             <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-                            <input type="hidden" name="id" value="<?=$loginID?>" />
+                            <input type="hidden" name="id" value="<?=$flood->ID?>" />
                             <input type="hidden" name="action" value="ip_ban" />
-                            <input type="hidden" name="start" value="<?=$loginIP?>" />
-                            <input type="hidden" name="end" value="<?=$loginIP?>" />
-                            <input type="hidden" name="notes" value="Banned per <?=$Bans?> bans on login watch." />
+                            <input type="hidden" name="start" value="<?=$IP->get_ip()?>" />
+                            <input type="hidden" name="end" value="<?=$IP->get_ip()?>" />
+                            <input type="hidden" name="notes" value="Banned per <?=$flood->IPBans?> bans on login watch." />
                             <input type="submit" name="submit" title="IP Ban this ip address (use carefully!)" value="IP Ban" />
                         </form>
 <?php       } ?>
@@ -1026,8 +1003,8 @@ if (check_perms_here($Preview, 'admin_login_watch',$Class)) {
 <?php
 }
 
-if ($Enabled == '1' && !$OwnProfile) {
-        $CookieItems[] = 'donate';
+if ($Enabled == '1' && !$OwnProfile && !blockedPM($UserID, $LoggedUser['ID'])) {
+    $CookieItems[] = 'donate';
     include(SERVER_ROOT.'/sections/bonus/functions.php');
     $ShopItems = get_shop_items_other();
 
@@ -1101,7 +1078,7 @@ if ($Snatched > 0 && check_paranoia_here($Preview, 'snatched') && check_force_an
 <?php
         foreach ($RecentSnatches as $RS) { ?>
             <td>
-                <a href="torrents.php?id=<?=$RS['ID']?>" title="<?=display_str($RS['Name'])?>"><img src="<?=display_str($RS['Image'])?>" alt="<?=display_str($RS['Name'])?>" width="107" /></a>
+                <a href="/torrents.php?id=<?=$RS['ID']?>" title="<?=display_str($RS['Name'])?>"><img src="<?=display_str($RS['Image'])?>" alt="<?=display_str($RS['Name'])?>" width="107" /></a>
             </td>
 <?php 		} ?>
         </tr>
@@ -1139,7 +1116,7 @@ if ($Uploads > 0 && check_paranoia_here($Preview, 'uploads') && check_force_anon
 <?php               foreach ($RecentUploads as $RU) { ?>
                     <td width="20%">
                         <div>
-                <a href="torrents.php?id=<?=$RU['ID']?>" title="<?=display_str($RU['Name'])?>">
+                <a href="/torrents.php?id=<?=$RU['ID']?>" title="<?=display_str($RU['Name'])?>">
 <?php                   if ($RU['Image']) {
 ?>                          <img src="<?=display_str($RU['Image'])?>" alt="<?=display_str($RU['Name'])?>)" style="max-width: 120px"/>
 <?php                   } else { ?>
@@ -1171,7 +1148,7 @@ foreach ($Collages as $CollageInfo) {
     $Collage = $DB->to_array();
 ?>
     <div class="head">
-        <span style="float:left;"><?=display_str($CName)?> - <a href="collages.php?id=<?=$CollageID?>">see full</a></span>
+        <span style="float:left;"><?=display_str($CName)?> - <a href="/collages.php?id=<?=$CollageID?>">see full</a></span>
         <span style="float:right;"><a href="#" onclick="$('#collage<?=$CollageID?>').toggle(); this.innerHTML=(this.innerHTML=='(Hide)'?'(View)':'(Hide)'); return false;"><?=$FirstCol?'(Hide)':'(View)'?></a></span>&nbsp;
     </div>
     <table class="recent" cellpadding="0" cellspacing="0" border="0">
@@ -1184,7 +1161,7 @@ foreach ($Collages as $CollageInfo) {
             $Name = $GroupName;
 ?>
             <td>
-                <a href="torrents.php?id=<?=$GroupID?>" title="<?=display_str($Name)?>"><img src="<?=display_str($C['Image'])?>" alt="<?=display_str($Name)?>" width="107" /></a>
+                <a href="/torrents.php?id=<?=$GroupID?>" title="<?=display_str($Name)?>"><img src="<?=display_str($C['Image'])?>" alt="<?=display_str($Name)?>" width="107" /></a>
             </td>
 <?php 	} ?>
         </tr>
@@ -1366,7 +1343,7 @@ if (check_perms_here($Preview, 'users_mod') || check_perms_here($Preview, 'users
             $Row = ($Row == 'a') ? 'b' : 'a';
 ?>
                 <tr class="row<?=$Row?>">
-                    <td><a href="staffpm.php?action=viewconv&amp;id=<?=$ID?>"><?=display_str($Subject)?></a></td>
+                    <td><a href="/staffpm.php?action=viewconv&amp;id=<?=$ID?>"><?=display_str($Subject)?></a></td>
                     <td><?=time_diff($Date, 2, true)?></td>
                     <td><?=$Assigned?></td>
                     <td><?=$Resolver?></td>
@@ -1427,15 +1404,15 @@ if (check_perms_here($Preview, 'admin_reports') || check_perms_here($Preview, 'u
             }
 
             if ($Name) {
-                $Torrent = '<a href="torrents.php?id='.$TorrentID.'">'.cut_string( display_str($Name), 30, 1).'</a>';
+                $Torrent = '<a href="/torrents.php?id='.$TorrentID.'">'.cut_string( display_str($Name), 30, 1).'</a>';
             } else {
-                $Torrent = '<a href="log.php?search=Torrent+'.$TorrentID.'">'.display_str($TorrentID).' (deleted)</a>';
+                $Torrent = '<a href="/log.php?search=Torrent+'.$TorrentID.'">'.display_str($TorrentID).' (deleted)</a>';
             }
 
             $Row = ($Row == 'a') ? 'b' : 'a';
 ?>
                 <tr class="row<?=$Row?>">
-                    <td><a href="reportsv2.php?view=report&id=<?=$ID?>">#<?=display_str($ID)?></a></td>
+                    <td><a href="/reportsv2.php?view=report&id=<?=$ID?>">#<?=display_str($ID)?></a></td>
                     <td><?=$Torrent?></td>
                     <td><?=$Type?></td>
                     <td><?=$Text->full_format(cut_string($UserComment,120))?></td>
@@ -1449,38 +1426,65 @@ if (check_perms_here($Preview, 'admin_reports') || check_perms_here($Preview, 'u
 <?php 	}
 }
 
-if (check_perms_here($Preview, 'users_mod', $Class)) {
+if (check_perms_here($Preview, 'users_mod', $Class) || check_perms_here($Preview, 'users_view_notes', $Class)) {
+        $FormattedAdminComments = $Text->full_format($AdminComment);
+        list($ParsedAdminComments, $NotesFilters) = parse_staff_notes($FormattedAdminComments);
         $CookieItems[] = 'notes';
         $CookieItems[] = 'history';
         $CookieItems[] = 'info';
         $CookieItems[] = 'privilege';
-        $CookieItems[] = 'submit'; ?>
+        $CookieItems[] = 'submit';
+        if (check_perms_here($Preview, 'users_mod', $Class) || check_perms_here($Preview, 'users_add_notes', $Class)) { ?>
         <form id="form" action="user.php" method="post">
-        <input type="hidden" name="action" value="moderate" />
-        <input type="hidden" name="userid" value="<?=$UserID?>" />
-        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+            <input type="hidden" name="action" value="moderate" />
+            <input type="hidden" name="userid" value="<?=$UserID?>" />
+            <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+<?php   } ?>
+            <script>
+                function Filter_Staffnotes(e, filterid)
+                {
+                    var lines = document.getElementsByClassName('staffnote-'+filterid);
+                    for (i = 0; i < lines.length; i++) {
+                        lines[i].style.display = e.checked ? 'inline' : 'none';
+                    }
+                }
+            </script>
 
             <div class="head">
                 <span style="float:left;">Staff Notes</span>
                 <span style="float:right;"><a id="notesbutton" href="#" onclick="return Toggle_view('notes');">(Hide)</a></span>&nbsp;
             </div>
-        <div class="box" >
-                  <div class="pad" id="notesdiv" style="padding-bottom: 20px;">
-                <input type="hidden" name="comment_hash" value="<?=$CommentHash?>">
-                <div id="admincommentlinks" class="AdminComment box pad scrollbox"><?=$Text->full_format($AdminComment)?></div>
-                <textarea id="admincomment" onkeyup="resize('admincomment');" class="AdminComment hidden" name="AdminComment" cols="65" rows="26" style="width:98%;"><?=display_str($AdminComment)?></textarea>
-<?php
-        if (check_perms_here($Preview, 'users_admin_notes', $Class)) { ?>
+
+            <div class="box" >
+                <div class="pad" id="notesdiv" style="padding-bottom: 20px;">
+                    <input type="hidden" name="comment_hash" value="<?=$CommentHash?>">
+                    <table>
+                        <tbody>
+                        <tr>
+                            <?php foreach ($NotesFilters as $NotesFilter): ?>
+                                <td><label><input type="checkbox" checked onclick="Filter_Staffnotes(this, '<?= trim_filter($NotesFilter['name']) ?>')"> <?= $NotesFilter['name'] ?> (<?= $NotesFilter['count'] ?>)</label></td>
+                            <?php endforeach; ?>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div id="admincommentlinks" class="AdminComment box pad scrollbox">
+                        <?= $ParsedAdminComments; ?>
+                    </div>
+                    <textarea id="admincomment" onkeyup="resize('admincomment');" class="AdminComment hidden" name="AdminComment" cols="65" rows="26" style="width:98%;"><?=display_str($AdminComment)?></textarea>
+                    <?php if (check_perms_here($Preview, 'users_edit_notes', $Class)): ?>
                         <span style="float:right;">
                             <a href="#" name="admincommentbutton" onclick="ChangeTo('text'); return false;">(Edit Notes)</a>
                         </span>
-<?php       } ?>
+                    <?php endif; ?>
+                </div>
             </div>
-        </div>
 
                 <script type="text/javascript">
                     resize('admincomment');
                 </script>
+<?php }
+        if (check_perms_here($Preview, 'users_mod', $Class)) {
+?>
             <div class="head">
                 <span style="float:left;">Tracker History</span>
                 <span style="float:right;"><a id="historybutton" href="#" onclick="return Toggle_view('history');">(Hide)</a></span>&nbsp;
@@ -1509,7 +1513,10 @@ if (check_perms_here($Preview, 'users_mod', $Class)) {
 <?php 	if (check_perms_here($Preview, 'users_edit_usernames', $Class)) {  ?>
             <tr>
                 <td class="label">Username:</td>
-                <td><input type="text" size="40" name="Username" maxlength="20"  pattern="[A-Za-z0-9_.!-]{1,20}" value="<?=display_str($Username)?>" /></td>
+                <td>
+                    <input type="text" size="40" name="Username" maxlength="20" value="<?=display_str($Username)?>" />
+                    <span id="UsernameAlert" style="color: red; display: none;">Invalid username [A-Za-z0-9_.!-] (1-20 chars.)</span>
+                </td>
             </tr>
 <?php
     }
@@ -2096,7 +2103,9 @@ if (check_perms_here($Preview, 'users_mod', $Class)) {
 
                 </table>
             </div>
-<?php 	} ?>
+<?php 	}
+    }
+    if (check_perms_here($Preview, 'users_mod', $Class) || check_perms_here($Preview, 'users_add_notes', $Class)) {?>
             <div class="head">
                         <span style="float:left;">Submit</span>
                         <span style="float:right;"><a id="submitbutton" href="#" onclick="return Toggle_view('submit');">(Hide)</a></span>&nbsp;
@@ -2104,7 +2113,7 @@ if (check_perms_here($Preview, 'users_mod', $Class)) {
             <div class="box">
                 <table id="submitdiv" class="shadow">
             <tr>
-                <td class="label">Reason:</td>
+                <td class="label">Additional Staff Notes:</td>
                 <td>
                    <textarea rows="8" class="long" name="Reason" id="Reason" onkeyup="resize('Reason');"></textarea>
                 </td>
@@ -2121,9 +2130,27 @@ if (check_perms_here($Preview, 'users_mod', $Class)) {
 <?php  } // end moderation panel
 
 ?>
-                <script type="text/javascript">
-                    var cookieitems= new Array( '<?= implode("','", $CookieItems) ?>' );
-                </script>
+        <?php if (check_perms_here($Preview, 'users_edit_usernames', $Class)): ?>
+            <script type="text/javascript">
+                /* We have old usernames with now-forbidden chars,
+                 * setting a pattern attribute prevents staff to moderate them
+                 * This function aims to replace the pattern attribute purpose,
+                 * which is warning staff when they input invalid characters.
+                 * The check is done in back-end anyway.
+                 * */
+                jQuery('input[name$="Username"]').on('textInput input', function() {
+                    if (this.value.match(/[^A-Za-z0-9_.!-]/i) !== null) {
+                        jQuery('#UsernameAlert').fadeIn();
+                    } else {
+                        jQuery('#UsernameAlert').hide();
+                    }
+                });
+            </script>
+        <?php endif; ?>
+
+            <script type="text/javascript">
+                var cookieitems= new Array( '<?= implode("','", $CookieItems) ?>' );
+            </script>
 
       <a id="torrents"></a>
 <?php

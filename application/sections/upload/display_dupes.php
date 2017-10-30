@@ -63,9 +63,9 @@ if (!$DupeResults || $NumDupes<1) {
                     <td colspan="2">
                         This could match many files because it is <?=$GData['excluded']?>
                         <br />Please make sure you have searched carefully to ensure this is not a dupe.
-                        <br/>Try <a href="torrents.php?action=advanced&taglist=<?=$SearchTags?>" title="Torrent Search: Tags" target="_blank">searching tags</a>
-                         and <a href="torrents.php?action=advanced&searchtext=<?=$DupeTitle?>" title="Torrent Search: Title" target="_blank">searching title</a>
-                         and <a href="torrents.php?action=advanced&filelist=<?=$GData['dupedfile']?>" title="Torrent Search: Filelist" target="_blank">searching filelist</a>
+                        <br/>Try <a href="/torrents.php?action=advanced&taglist=<?=$SearchTags?>" title="Torrent Search: Tags" target="_blank">searching tags</a>
+                         and <a href="/torrents.php?action=advanced&searchtext=<?=$DupeTitle?>" title="Torrent Search: Title" target="_blank">searching title</a>
+                         and <a href="/torrents.php?action=advanced&filelist=<?=$GData['dupedfile']?>" title="Torrent Search: Filelist" target="_blank">searching filelist</a>
                     </td>
                     <td class="torrent" colspan="3" title="File with exact match (bytesize)"><?=$GData['dupedfile']?></td>
 					<td colspan="7" ><?=get_size($GData['dupedfilesize'])?></td>
@@ -86,7 +86,7 @@ if (!$DupeResults || $NumDupes<1) {
                 $numtags=0;
                 foreach ($TagList as $Tag) {
                     if ($numtags++>=$LoggedUser['MaxTags'])  break;
-                    $TorrentTags[] = '<a href="torrents.php?' . $Action . '&amp;taglist=' . $Tag . '">' . $Tag . '</a>';
+                    $TorrentTags[] = '<a href="/torrents.php?' . $Action . '&amp;taglist=' . $Tag . '">' . $Tag . '</a>';
                 }
                 $TorrentTags = implode(' ', $TorrentTags);
 
@@ -103,7 +103,7 @@ if (!$DupeResults || $NumDupes<1) {
 
                     <td class="center cats_col">
                         <?php  $CatImg = 'static/common/caticons/' . $NewCategories[$NewCategoryID]['image']; ?>
-                        <div title="<?= $NewCategories[$NewCategoryID]['tag'] ?>"><a href="torrents.php?filter_cat[<?=$NewCategoryID?>]=1"><img src="<?= $CatImg ?>" /></a></div>
+                        <div title="<?= $NewCategories[$NewCategoryID]['tag'] ?>"><a href="/torrents.php?filter_cat[<?=$NewCategoryID?>]=1"><img src="<?= $CatImg ?>" /></a></div>
                     </td>
                     <td>
 
@@ -115,7 +115,7 @@ if (!$DupeResults || $NumDupes<1) {
 
                         ?>
                         <?=$AddExtra?>
-                        <a href="torrents.php?id=<?=$GroupID?>"><?=$GroupName?></a>
+                        <a href="/torrents.php?id=<?=$GroupID?>"><?=$GroupName?></a>
 
                         <br />
                         <?php  if ($LoggedUser['HideTagsInLists'] !== 1) { ?>

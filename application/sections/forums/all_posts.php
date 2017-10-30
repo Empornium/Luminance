@@ -22,8 +22,8 @@ show_header('All forum posts' , 'comments,bbcode,jquery');
     <h2>Latest Forum Posts</h2>
 <?php
 
-if (is_array($ExcludeForums))
-        $ANDWHERE = "AND ft.ForumID NOT IN (" . implode(",", $ExcludeForums) .") ";
+$ExcludeForums = array_filter($ExcludeForums, 'is_number');
+$ANDWHERE = !empty($ExcludeForums) ? "AND ft.ForumID NOT IN (" . implode(",", $ExcludeForums) .") " : '';
 
 $Level = $Classes[$LoggedUser['PermissionID']]['Level'];
 
@@ -33,7 +33,7 @@ $DB->query("SELECT STRAIGHT_JOIN
                       FROM forums_posts as fp
                       JOIN forums_topics AS ft ON fp.TopicID=ft.ID
                       JOIN forums AS f ON ft.ForumID=f.ID
-                      JOIN users_main AS um ON um.ID=fp.AuthorID
+                 LEFT JOIN users_main AS um ON um.ID=fp.EditedUserID
                      WHERE f.MinClassRead<='$Level' $ANDWHERE
                   ORDER BY fp.ID DESC
                      LIMIT $Limit");
@@ -50,9 +50,9 @@ list($NumResults) = $DB->next_record();
 
 ?>
     <div class="linkbox">
-        [<a href="torrents.php?action=allcomments">Latest Torrent Comments</a>]&nbsp;
-        [<a href="requests.php?action=allcomments">Latest Request Comments</a>]&nbsp;
-        [<a href="collages.php?action=allcomments">Latest Collage Comments</a>]
+        [<a href="/torrents.php?action=allcomments">Latest Torrent Comments</a>]&nbsp;
+        [<a href="/requests.php?action=allcomments">Latest Request Comments</a>]&nbsp;
+        [<a href="/collages.php?action=allcomments">Latest Collage Comments</a>]
     </div>
     <div class="linkbox"><a name="posts"></a>
 <?php
@@ -75,14 +75,14 @@ foreach ($Posts as $Key => $Post) {
 ?>
     <div id="post<?=$PostID?>">
     <div class="head">
-        <a href="forums.php?action=viewforum&amp;forumid=<?=$ForumID?>"><?=$Forums[$ForumID]['Name']?></a> &gt;
-        <a class="post_id" href="forums.php?action=viewthread&threadid=<?=$ThreadID?>&postid=<?=$PostID?>#post<?=$PostID?>"><?=$Title?></a>
+        <a href="/forums.php?action=viewforum&amp;forumid=<?=$ForumID?>"><?=display_str($Forums[$ForumID]['Name'])?></a> &gt;
+        <a class="post_id" href="/forums.php?action=viewthread&threadid=<?=$ThreadID?>&postid=<?=$PostID?>#post<?=$PostID?>"><?=$Title?></a>
     </div>
 <table class="forum_post box vertical_margin<?=$HeavyInfo['DisableAvatars'] ? ' noavatar' : ''?>" >
     <tr class="smallhead">
         <td colspan="2">
-            <span style="float:left;"><a class="post_id" href="forums.php?action=viewthread&threadid=<?=$ThreadID?>&postid=<?=$PostID?>#post<?=$PostID?>">#<?=$PostID?></a>
-                <?=format_username($AuthorID, $Username, $Donor, $Warned, $Enabled, $PermissionID, $UserTitle, true)?> <?=time_diff($AddedTime)?> <a href="reports.php?action=report&amp;type=post&amp;id=<?=$PostID?>">[Report]</a>
+            <span style="float:left;"><a class="post_id" href="/forums.php?action=viewthread&threadid=<?=$ThreadID?>&postid=<?=$PostID?>#post<?=$PostID?>">#<?=$PostID?></a>
+                <?=format_username($AuthorID, $Username, $Donor, $Warned, $Enabled, $PermissionID, $UserTitle, true)?> <?=time_diff($AddedTime)?> <a href="/reports.php?action=report&amp;type=post&amp;id=<?=$PostID?>">[Report]</a>
 
 <?php if (can_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime)) { ?>
                         - <a href="#post<?=$PostID?>" onclick="Edit_Form('forums','<?=$PostID?>','<?=$Key?>');">[Edit]</a><?php }

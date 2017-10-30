@@ -33,7 +33,7 @@ show_header('Report Torrent', 'reportsv2');
         <table>
             <tr>
                 <td class="label">Torrent :</td>
-                <td><a href="torrents.php?id=<?=$GroupID?>"> <?=$TorrentName?> </a></td>
+                <td><a href="/torrents.php?id=<?=$GroupID?>"> <?=$TorrentName?> </a></td>
             </tr>
             <tr>
                 <td class="label">Reason :</td>

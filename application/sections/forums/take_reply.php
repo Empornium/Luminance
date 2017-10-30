@@ -62,8 +62,8 @@ if (isset($_POST['subscribe'])) {
 }
 
 //Get the id for this post in the database to append
-$DB->query("SELECT ID, Body FROM forums_posts WHERE TopicID='$TopicID' AND AuthorID='".$LoggedUser['ID']."' ORDER BY AddedTime DESC LIMIT 1");
-list($PostID, $OldBody) = $DB->next_record();
+$DB->query("SELECT ID, Body, AuthorID, AddedTime, EditedTime, TimeLock FROM forums_posts WHERE TopicID='$TopicID' AND AuthorID='".$LoggedUser['ID']."' ORDER BY AddedTime DESC LIMIT 1");
+list($PostID, $OldBody, $AuthorID, $AddedTime, $EditedTime, $TimeLock) = $DB->next_record();
 
 $DB->query("SELECT EditedUserID from forums_posts WHERE ID='$PostID'");
 list($EditedUserID) = $DB->next_record();
@@ -71,7 +71,7 @@ list($EditedUserID) = $DB->next_record();
 //Now lets handle the special case of merging posts, we can skip bumping the thread and all that fun
 if ($ThreadInfo['LastPostAuthorID'] == $LoggedUser['ID'] // User has written the last post in the thread
     && ((!check_perms('site_forums_double_post') && !in_array($ForumID, $ForumsDoublePost)) || isset($_POST['merge'])) // user chose to merge or is forced to merge
-    && ($EditedUserID==$LoggedUser['ID'] || $EditedUserID==NULL)) { // post wasn't edited by someone else
+    && can_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime, $TimeLock)) { // post wasn't edited by someone else and is within the edit time
 
     //Edit the post
     $DB->query("UPDATE forums_posts SET Body = CONCAT(Body,'"."\n\n".db_string($Body)."'),

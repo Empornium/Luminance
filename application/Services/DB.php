@@ -93,6 +93,7 @@ class DB extends Service {
 
     public $pdo;
     public $Queries = array();
+    public $Time = 0.0;
     protected $enable_debug = true;
 
     public function connect() {
@@ -121,14 +122,43 @@ class DB extends Service {
         $this->enable_debug = false;
     }
 
+    /**
+     * Replaces any parameter placeholders in a query with the value of that
+     * parameter. Useful for debugging. Assumes anonymous parameters from
+     * $params are are in the same order as specified in $query
+     *
+     * @param string $query The sql query with parameter placeholders
+     * @param array $params The array of substitution parameters
+     * @return string The interpolated query
+     */
+    public static function interpolateQuery($query, $params) {
+        $keys = array();
+
+        # Ensure $params is an array using a blind cast
+        $params = (array) $params;
+
+        # build a regular expression for each parameter
+        foreach ($params as $key => $value) {
+            if (is_string($key)) {
+                $keys[] = '/'.$key.'/';
+            } else {
+                $keys[] = '/[?]/';
+            }
+        }
+        $query = preg_replace($keys, $params, $query, 1, $count);
+        return $query;
+    }
+
     public function raw_query($sql, $parameters = array()) {
         $QueryStartTime=microtime(true);
         $this->connect();
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($parameters);
         $QueryEndTime=microtime(true);
-        if ($this->enable_debug)
-            $this->Queries[]=array(db_display_str($sql."\n".json_encode($parameters)),($QueryEndTime-$QueryStartTime)*1000);
+        if ($this->enable_debug) {
+            $this->Queries[]=[db_display_str(self::interpolateQuery($sql, $parameters)),($QueryEndTime-$QueryStartTime)*1000];
+            $this->Time+=($QueryEndTime-$QueryStartTime)*1000;
+        }
         return $stmt;
     }
 
@@ -139,8 +169,10 @@ class DB extends Service {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute();
             $QueryEndTime=microtime(true);
-            if ($this->enable_debug)
+            if ($this->enable_debug) {
                 $this->Queries[]=array(db_display_str($sql),($QueryEndTime-$QueryStartTime)*1000);
+                $this->Time+=($QueryEndTime-$QueryStartTime)*1000;
+            }
             $wrapper = new LegacyWrapper($stmt);
         } catch(PDOException $pdo_except) {
             error_log("Failed query! \n".$sql);

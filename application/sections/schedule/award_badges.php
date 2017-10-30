@@ -40,7 +40,7 @@ foreach ($AutoActions as $AutoAction) {
             break;
 
         case 'RequestsFilled':
-            $SQL = "SELECT u.ID FROM users_main AS u LEFT JOIN requests AS r ON r.FillerID=u.ID
+            $SQL = "SELECT u.ID FROM users_main AS u LEFT JOIN requests AS r ON r.FillerID=u.ID AND r.UserID!=u.ID
                      WHERE u.Enabled='1'
                        AND $NOTIN
                      GROUP BY u.ID
@@ -162,7 +162,7 @@ foreach ($AutoActions as $AutoAction) {
 
             if ($SendPM) {
                 send_pm($UserIDs, 0, "Congratulations you have been awarded the $Name",
-                            "[center][br][br][img]http://".SITE_URL.'/'.STATIC_SERVER."common/badges/{$Image}[/img][br][br][size=5][color=white][bg=#0261a3][br]{$Description}[br][br][/bg][/color][/size][/center]");
+                            "[center][br][br][img]/static/common/badges/{$Image}[/img][br][br][size=5][color=white][bg=#0261a3][br]{$Description}[br][br][/bg][/color][/size][/center]");
             }
 
             foreach ($UserIDs as $UserID) {

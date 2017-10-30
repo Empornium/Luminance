@@ -205,7 +205,7 @@ $Pages=get_pages($Page,$TorrentCount,$TorrentsPerPage,8,'#torrents');
 ?>
 <?php  if (!$INLINE) {  ?>
 <div class="thin">
-    <h2><a href="user.php?id=<?=$UserID?>"><?=$User['Username']?></a><?='\'s '.$Action.' torrents'?></h2>
+    <h2><a href="/user.php?id=<?=$UserID?>"><?=$User['Username']?></a><?='\'s '.$Action.' torrents'?></h2>
 
     <div class="head">Search</div>
         <form action="" method="get">
@@ -261,7 +261,7 @@ foreach ($NewCategories as $Cat) {
 ?>
                     <td>
                                             <input type="checkbox" name="categories[<?=($Cat['id'])?>]" id="cat_<?=($Cat['id'])?>" value="1" <?php  if (isset($_GET['filter_cat'][$Cat['id']])) { ?>checked="checked"<?php  } ?>/>
-                                            <label for="cat_<?=($Cat['id'])?>"><a href="torrents.php?filter_cat[<?=$Cat['id']?>]=1"><?= $Cat['name'] ?></a></label>
+                                            <label for="cat_<?=($Cat['id'])?>"><a href="/torrents.php?filter_cat[<?=$Cat['id']?>]=1"><?= $Cat['name'] ?></a></label>
                     </td>
 <?php
 }
@@ -291,19 +291,19 @@ foreach ($NewCategories as $Cat) {
     <table class="torrent_table">
         <tr class="colhead">
             <td></td>
-            <td><a href="<?=header_link('Name', 'asc', '#torrents')?>">Torrent</a></td>
+            <td><a href="/<?=header_link('Name', 'asc', '#torrents')?>">Torrent</a></td>
                   <td class="center"><span title="Number of Files">F</span></td>
                   <td class="center"><span title="Number of Comments">c</span></td>
-            <td><a href="<?=header_link('Time', 'desc', '#torrents')?>">Time</a></td>
-            <td><a href="<?=header_link('Size', 'desc', '#torrents')?>">Size</a></td>
+            <td><a href="/<?=header_link('Time', 'desc', '#torrents')?>">Time</a></td>
+            <td><a href="/<?=header_link('Size', 'desc', '#torrents')?>">Size</a></td>
             <td class="sign">
-                <a href="<?=header_link('Snatched', 'desc', '#torrents')?>"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/snatched.png" alt="Snatches" title="Snatches" /></a>
+                <a href="/<?=header_link('Snatched', 'desc', '#torrents')?>"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/snatched.png" alt="Snatches" title="Snatches" /></a>
             </td>
             <td class="sign">
-                <a href="<?=header_link('Seeders', 'desc', '#torrents')?>"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/seeders.png" alt="Seeders" title="Seeders" /></a>
+                <a href="/<?=header_link('Seeders', 'desc', '#torrents')?>"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/seeders.png" alt="Seeders" title="Seeders" /></a>
             </td>
             <td class="sign">
-                <a href="<?=header_link('Leechers', 'desc', '#torrents')?>"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/leechers.png" alt="Leechers" title="Leechers" /></a>
+                <a href="/<?=header_link('Leechers', 'desc', '#torrents')?>"><img src="static/styles/<?=$LoggedUser['StyleName']?>/images/leechers.png" alt="Leechers" title="Leechers" /></a>
             </td>
         </tr>
 <?php
@@ -324,7 +324,7 @@ foreach ($NewCategories as $Cat) {
         $numtags=0;
         foreach ($TagList as $Tag) {
             if ($numtags++>=$LoggedUser['MaxTags'])  break;
-            $TorrentTags[]='<a href="torrents.php?type='.$Action.'&amp;userid='.$UserID.'&amp;tags='.$Tag.'">'.$Tag.'</a>';
+            $TorrentTags[]='<a href="/torrents.php?type='.$Action.'&amp;userid='.$UserID.'&amp;tags='.$Tag.'">'.$Tag.'</a>';
         }
         $TorrentTags = implode(' ', $TorrentTags);
 
@@ -348,7 +348,7 @@ foreach ($NewCategories as $Cat) {
             <td>
                 <?php
                 if ($LoggedUser['HideFloat']) {?>
-                    <?=$Icons?> <a href="torrents.php?id=<?=$GroupID?>"><?=display_str($GroupName).$ReportInfo?></a>
+                    <?=$Icons?> <a href="/torrents.php?id=<?=$GroupID?>"><?=display_str($GroupName).$ReportInfo?></a>
 <?php               } else {
                     $Overlay = get_overlay_html($GroupName, anon_username($Torrent['Username'], $Torrent['Anonymous']), $Image, $Torrent['Seeders'], $Torrent['Leechers'], $Torrent['Size'], $Torrent['Snatched']);
                     ?>
@@ -356,7 +356,7 @@ foreach ($NewCategories as $Cat) {
                         var overlay<?=$GroupID?> = <?=json_encode($Overlay)?>
                     </script>
                     <?=$Icons?>
-                    <a href="torrents.php?id=<?=$GroupID?>" onmouseover="return overlib(overlay<?=$GroupID?>, FULLHTML);" onmouseout="return nd();"><?=display_str($GroupName).$ReportInfo?></a>
+                    <a href="/torrents.php?id=<?=$GroupID?>" onmouseover="return overlib(overlay<?=$GroupID?>, FULLHTML);" onmouseout="return nd();"><?=display_str($GroupName).$ReportInfo?></a>
 <?php               }  ?>
                 <br />
           <?php  if ($LoggedUser['HideTagsInLists'] !== 1) { ?>

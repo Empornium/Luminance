@@ -236,6 +236,20 @@ ul.thin li { margin:0px 0px; padding:0px; }
     -webkit-border-top-right-radius: 14px;
     border-radius: 14px 14px 0 0;
 }
+#modal_content {
+    width: 90%;
+    min-width: 350px;
+    max-width: 1300px;
+    background: rgba(100, 0, 45, 0.5);
+    box-shadow: 0px 0px 50px 10px black;
+    margin: 40px auto 0px auto;
+    border: 1px solid rgb(90, 10, 35);
+    padding: 0px 0px 35px;
+    -moz-border-radius: 14px 14px 0 0;
+    -webkit-border-top-left-radius: 14px;
+    -webkit-border-top-right-radius: 14px;
+    border-radius: 14px 14px 0 0;
+}
 #schedule #content {
     color:#eee;
 }
@@ -385,6 +399,14 @@ span.inside_stat {
     fill: #d2d2d2;
 }
 
+.misc_icons {
+    fill: #ac1515;
+}
+
+.misc_icons:hover {
+    fill: #ff0000;
+}
+
 #major_stats_left {
     position: absolute;
 }
@@ -461,7 +483,7 @@ li#nav_userinfo, #userinfo_tools{
     -webkit-transition: opacity ease-in 200ms, visibility 200ms, -webkit-transform ease-in 200ms;
 }
 #userinfo_username li ul {
-    left: 80px;
+    left: -54px;
     min-width:50%;
     border-radius: 4px;
 }
@@ -505,6 +527,9 @@ li#nav_userinfo:hover ul, #userinfo_tools:hover li ul {
     -webkit-transition: background-color 0s;
     animation: ani_userinfo 0ms infinite linear; /* 1100ms to enable */
     -webkit-animation: ani_userinfo 0ms infinite linear;
+}
+#userinfo_username li ul li a:hover > .nav_icons, #userinfo_tools li ul li a:hover > .nav_icons {
+    fill: #F3F3F3;
 }
 @keyframes ani_userinfo {
     0% {background-size: 16px;}
@@ -814,7 +839,6 @@ input.hidden {
 
 .thin {
     width: 96%;
-    min-width: 920px;
     margin-left:auto;
     margin-right:auto;
 }

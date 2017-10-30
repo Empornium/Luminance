@@ -57,7 +57,7 @@ if (!empty($_POST['sitelink'])) {
 
 if (!empty($_POST['link'])) {
     //resource_type://domain:port/filepathname?query_string#anchor
-    //					http://		www			.foo.com								/bar
+    //                    https://          www          .foo.com                       /bar
     if (preg_match_all('/(https?:\/\/)?[a-zA-Z0-9\-]+(\.[a-zA-Z0-9\-]+)*(:[0-9]{2,5})?(\/(\S)+)?/is', $_POST['link'], $Matches)) {
         $Links = implode(' ', $Matches[0]);
     } else {

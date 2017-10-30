@@ -169,8 +169,8 @@ echo $Pages;
 ?>
 </div>
 <div class="head">
-    <a href="forums.php">Forums</a> &gt;
-    <a href="forums.php?action=viewforum&amp;forumid=<?=$ThreadInfo['ForumID']?>"><?=display_str($Forums[$ForumID]['Name'])?></a> &gt;
+    <a href="/forums.php">Forums</a> &gt;
+    <a href="/forums.php?action=viewforum&amp;forumid=<?=$ThreadInfo['ForumID']?>"><?=display_str($Forums[$ForumID]['Name'])?></a> &gt;
     <?=display_str($ThreadInfo['Title'])?>
 </div>
 
@@ -306,12 +306,12 @@ if ($ThreadInfo['NoPoll'] == 0) {
             foreach ($Answers as $i => $Answer) {
 ?>
                 <li>
-                    <a href="forums.php?action=change_vote&amp;threadid=<?=$ThreadID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;vote=<?=(int) $i?>"><?=display_str($Answer == '' ? "Blank" : $Answer)?></a>
+                    <a href="/forums.php?action=change_vote&amp;threadid=<?=$ThreadID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;vote=<?=(int) $i?>"><?=display_str($Answer == '' ? "Blank" : $Answer)?></a>
                      - <?=$StaffVotes[$i]?>&nbsp;(<?=number_format(((float) $Votes[$i]/$TotalVotes)*100, 2)?>%)
-                     <a href="forums.php?action=delete_poll_option&amp;threadid=<?=$ThreadID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;vote=<?=(int) $i?>">[X]</a>
+                     <a href="/forums.php?action=delete_poll_option&amp;threadid=<?=$ThreadID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;vote=<?=(int) $i?>">[X]</a>
                         </li>
 <?php			} ?>
-                <li><a href="forums.php?action=change_vote&amp;threadid=<?=$ThreadID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;vote=0">Blank</a> - <?=$StaffVotes[0]?>&nbsp;(<?=number_format(((float) $Votes[0]/$TotalVotes)*100, 2)?>%)</li>
+                <li><a href="/forums.php?action=change_vote&amp;threadid=<?=$ThreadID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;vote=0">Blank</a> - <?=$StaffVotes[0]?>&nbsp;(<?=number_format(((float) $Votes[0]/$TotalVotes)*100, 2)?>%)</li>
             </ul>
 <?php
             if ($ForumID == STAFF_FORUM_ID) {
@@ -334,7 +334,7 @@ if ($ThreadInfo['NoPoll'] == 0) {
             <br />
 <?php
         }
-        if ($UserResponse == null && !$Closed && !$ThreadInfo['IsLocked']) {
+        if ($UserResponse === null && !$Closed && !$ThreadInfo['IsLocked']) {
         //User has not voted
 ?>
             <div id="poll_results">
@@ -403,15 +403,9 @@ foreach ($Thread as $Key => $Post) {
     list($PostID, $AuthorID, $AddedTime, $Body, $EditedUserID, $EditedTime, $EditedUsername, $TimeLock) = array_values($Post);
     list($AuthorID, $Username, $PermissionID, $Paranoia, $Donor, $Warned, $Avatar, $Enabled, $UserTitle,,,$Signature,,$GroupPermissionID) = array_values(user_info($AuthorID));
     $AuthorPermissions = get_permissions($PermissionID);
-      list($ClassLevel,$PermissionValues,$MaxSigLength,$MaxAvatarWidth,$MaxAvatarHeight)=array_values($AuthorPermissions);
-      // we need to get custom permissions for this author
-      $PermissionValues = get_permissions_for_user($AuthorID, false, $AuthorPermissions);
-    // Image proxy CTs
-    if (check_perms('site_proxy_images') && !empty($UserTitle)) {
-        $UserTitle = preg_replace_callback('~src=("?)(http.+?)(["\s>])~', function ($Matches) {
-                         return 'src='.$Matches[1].'//'.SITE_URL.'/image.php?c=1&amp;i='.urlencode($Matches[2]).$Matches[3];
-                     }, $UserTitle);
-    }
+    list($ClassLevel,$PermissionValues,$MaxSigLength,$MaxAvatarWidth,$MaxAvatarHeight)=array_values($AuthorPermissions);
+    // we need to get custom permissions for this author
+    $PermissionValues = get_permissions_for_user($AuthorID, false, $AuthorPermissions);
 ?>
 <table class="forum_post box vertical_margin<?php if (((!$ThreadInfo['IsLocked'] || $ThreadInfo['IsSticky']) && $PostID>$LastRead && strtotime($AddedTime)>$LoggedUser['CatchupTime']) || (isset($RequestKey) && $Key==$RequestKey)) { echo ' forum_unread'; } if ($HeavyInfo['DisableAvatars']) { echo ' noavatar'; } ?>" id="post<?=$PostID?>">
     <tr class="smallhead">
@@ -445,11 +439,11 @@ foreach ($Thread as $Key => $Post) {
 if ($PostID == $ThreadInfo['StickyPostID']) { ?>
                 <strong><span class="sticky_post">[Sticky]</span></strong>
 <?php	if (check_perms('site_moderate_forums')) { ?>
-                <a href="forums.php?action=sticky_post&amp;threadid=<?=$ThreadID?>&amp;postid=<?=$PostID?>&amp;remove=true&amp;auth=<?=$LoggedUser['AuthKey']?>" title="unsticky this post">[X]</a>
+                <a href="/forums.php?action=sticky_post&amp;threadid=<?=$ThreadID?>&amp;postid=<?=$PostID?>&amp;remove=true&amp;auth=<?=$LoggedUser['AuthKey']?>" title="unsticky this post">[X]</a>
 <?php	}
 } else {
     if (check_perms('site_moderate_forums')) { ?>
-                <a href="forums.php?action=sticky_post&amp;threadid=<?=$ThreadID?>&amp;postid=<?=$PostID?>&amp;auth=<?=$LoggedUser['AuthKey']?>" title="make this post sticky (appears at the top of every page)">[&#x21d5;]</a>
+                <a href="/forums.php?action=sticky_post&amp;threadid=<?=$ThreadID?>&amp;postid=<?=$PostID?>&amp;auth=<?=$LoggedUser['AuthKey']?>" title="make this post sticky (appears at the top of every page)">[&#x21d5;]</a>
 <?php 	}
 }
 ?>
@@ -460,7 +454,7 @@ if ($PostID == $ThreadInfo['StickyPostID']) { ?>
                         <input class="split hidden" type="checkbox" id="split_<?=$PostID?>" name="splitids[]" value="<?=$PostID?>" />
                 &nbsp;&nbsp;
 <?php       }     ?>
-                <a href="reports.php?action=report&amp;type=post&amp;id=<?=$PostID?>">[Report]</a>
+                <a href="/reports.php?action=report&amp;type=post&amp;id=<?=$PostID?>">[Report]</a>
                 &nbsp;
                 <a href="#">&uarr;</a>
             </span>
@@ -506,21 +500,25 @@ $AllowTags= isset($PermissionValues['site_advanced_tags']) &&  $PermissionValues
         </td>
     </tr>
 <?php
-      if ( empty($HeavyInfo['DisableSignatures']) && ($MaxSigLength > 0) && !empty($Signature) ) { //post_footer
-
-            echo '
-      <tr>
-            <td class="sig"><div id="sig" style="max-height: '.SIG_MAX_HEIGHT. 'px"><div>' . $Text->full_format($Signature, $AllowTags) . '</div></div></td>
-      </tr>';
-           }
+    if ( empty($HeavyInfo['DisableSignatures']) && ($MaxSigLength > 0) && !empty($Signature) ) { //post_footer
+        // Pseudo-cache of signatures
+        // Avoids parsing them again if user has multiple posts
+        if (isset($CachedSignatures[$AuthorID])) {
+            $Signature = $CachedSignatures[$AuthorID];
+        } else {
+            $Signature = $Text->full_format($Signature, $AllowTags);
+            $CachedSignatures[$AuthorID] = $Signature;
+        }
+        echo '<tr><td class="sig"><div id="sig" style="max-height: '.SIG_MAX_HEIGHT. 'px"><div>'.$Signature.'</div></div></td></tr>';
+    }
 ?>
 </table>
 
 <?php	} ?>
 
 <div class="breadcrumbs">
-    <a href="forums.php">Forums</a> &gt;
-    <a href="forums.php?action=viewforum&amp;forumid=<?=$ThreadInfo['ForumID']?>"><?=display_str($Forums[$ForumID]['Name'])?></a> &gt;
+    <a href="/forums.php">Forums</a> &gt;
+    <a href="/forums.php?action=viewforum&amp;forumid=<?=$ThreadInfo['ForumID']?>"><?=display_str($Forums[$ForumID]['Name'])?></a> &gt;
     <?=display_str($ThreadInfo['Title'])?>
 </div>
 <div class="linkbox">

@@ -37,7 +37,7 @@ if (isset($_GET['checkuser']) && is_number($_GET['checkuser']) && $_GET['checkus
 show_header('Connectability Checker','bbcode');
 ?>
 <div class="thin">
-    <h2><a href="user.php?id=<?=$LoggedUser['ID']?>"><?=$LoggedUser['Username']?></a> &gt; Connectability Checker</h2>
+    <h2><a href="/user.php?id=<?=$LoggedUser['ID']?>"><?=$LoggedUser['Username']?></a> &gt; Connectability Checker</h2>
 <?php   if ($Body) { ?>
     <div class="head"></div>
       <div class="box pad" style="padding:10px 10px 10px 20px;">

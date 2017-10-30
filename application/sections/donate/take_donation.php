@@ -95,7 +95,7 @@ if ($_REQUEST['donategb']) {
         }
         $Summary .= " Badge added: $title, by donation system";
 
-        send_pm($UserID, 0, db_string("Congratulations you have been awarded the $title"), db_string("[center][br][br][img]http://" . SITE_URL . '/' . STATIC_SERVER . "common/badges/{$image}[/img][br][br][size=5][color=white][bg=#0261a3][br]{$description}[br][br][/bg][/color][/size][/center]"));
+        send_pm($UserID, 0, db_string("Congratulations you have been awarded the $title"), db_string("[center][br][br][img]/static/common/badges/{$image}[/img][br][br][size=5][color=white][bg=#0261a3][br]{$description}[br][br][/bg][/color][/size][/center]"));
     }
     $Summary = db_string(sqltime() . " - $Summary");
 

@@ -47,12 +47,12 @@ if ($MyTorrents) {
     $Conditions = "WHERE t.UserID = $UserID AND tc.AuthorID != t.UserID AND tc.AddedTime > t.Time";
     $Title = 'Comments left on your torrents';
     $Header = 'Comments left on your uploads';
-    if($ViewingOwn) $OtherLink = '<a href="userhistory.php?action=comments">Display comments you\'ve made</a>';
+    if($ViewingOwn) $OtherLink = '<a href="/userhistory.php?action=comments">Display comments you\'ve made</a>';
 } else {
     $Conditions = "WHERE tc.AuthorID = $UserID";
     $Title = 'Comments made by '.($ViewingOwn?'you':$Username);
     $Header = 'Torrent comments left by '.($ViewingOwn?'you':format_username($UserID, $Username)).'';
-    if($ViewingOwn) $OtherLink = '<a href="userhistory.php?action=comments&amp;my_torrents=1">Display comments left on your uploads</a>';
+    if($ViewingOwn) $OtherLink = '<a href="/userhistory.php?action=comments&amp;my_torrents=1">Display comments left on your uploads</a>';
 }
 
 $Comments = $DB->query("SELECT
@@ -113,11 +113,11 @@ $DB->set_query_id($Comments);
     <div class="linkbox">
     <?=$OtherLink?>&nbsp;&nbsp;&nbsp;
 <?php       if (!$ViewingOwn) { ?>
-                <a href="userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;group=0">Go to post history</a>
+                <a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;group=0">Go to post history</a>
 <?php       } else { ?>
-                <a href="userhistory.php?action=subscriptions">Go to forum subscriptions</a>&nbsp;&nbsp;&nbsp;
-                <a href="userhistory.php?action=subscribed_collages">Go to collage subscriptions</a>&nbsp;&nbsp;&nbsp;
-                <a href="userhistory.php?action=posts&amp;group=0&amp;showunread=0">Go to post history</a>
+                <a href="/userhistory.php?action=subscriptions">Go to forum subscriptions</a>&nbsp;&nbsp;&nbsp;
+                <a href="/userhistory.php?action=subscribed_collages">Go to collage subscriptions</a>&nbsp;&nbsp;&nbsp;
+                <a href="/userhistory.php?action=posts&amp;group=0&amp;showunread=0">Go to post history</a>
 <?php       } ?>
     <br /><br />
     <?=$Pages?>
@@ -140,10 +140,10 @@ foreach ($Posts as $Key => $Post) {
                         by <?=format_username($UserID, $Username, $Donor, $Warned, $Enabled, $Class, false, true, $GroupPermID)?>
 <?php               } ?>
                     <?=time_diff($AddedTime) ?>
-                    on <a href="torrents.php?id=<?=$GroupID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>"><?=cut_string($Title, 75)?></a>
+                    on <a href="/torrents.php?id=<?=$GroupID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>"><?=cut_string($Title, 75)?></a>
                 </span>
                 <span style="float:left;" class="last_read" title="Jump to last read">
-                    <a href="torrents.php?id=<?=$GroupID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>"></a>
+                    <a href="/torrents.php?id=<?=$GroupID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>"></a>
                 </span>
                 <span style="float:left;padding-left:5px;">
 <?php   if (can_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime)) { ?>
@@ -155,7 +155,7 @@ foreach ($Posts as $Key => $Post) {
                 </span>
 
                 <span id="bar<?=$PostID?>" style="float:right;">
-                    <a href="reports.php?action=report&amp;type=torrents_commenthistory&amp;id=<?=$PostID?>">[Report]</a>
+                    <a href="/reports.php?action=report&amp;type=torrents_commenthistory&amp;id=<?=$PostID?>">[Report]</a>
                 </span>
             </td>
         </tr>

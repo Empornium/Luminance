@@ -96,7 +96,7 @@ show_header('Invites');
 <div class="thin">
     <h2><?=format_username($UserID,$Username)?> &gt; Invites</h2>
     <div class="linkbox">
-        [<a href="user.php?action=invitetree<?php  if ($Sneaky) { echo '&amp;userid='.$UserID; }?>">Invite tree</a>]
+        [<a href="/user.php?action=invitetree<?php  if ($Sneaky) { echo '&amp;userid='.$UserID; }?>">Invite tree</a>]
     </div>
 <?php  if ($UserCount >= USER_LIMIT && !check_perms('site_can_invite_always')) { ?>
     <div class="box pad notice">
@@ -157,6 +157,8 @@ if(!$Sneaky
                 <td class="label">Email:</td>
                 <td>
                     <input type="text" name="email" size="60" />
+                    <strong>Anon:</strong>
+                    <input type="checkbox" name="anon" />
                     <input type="submit" value="Invite" />
                 </td>
             </tr>
@@ -166,12 +168,12 @@ if(!$Sneaky
 <?php
 } elseif (!empty($LoggedUser['DisableInvites'])) {?>
     <div class="box pad" style="text-align: center">
-        <strong class="important_text">Your invites have been disabled.  Please read <a href="articles.php?topic=invites">this article</a> for more information.</strong>
+        <strong class="important_text">Your invites have been disabled.  Please read <a href="/articles.php?topic=invites">this article</a> for more information.</strong>
     </div>
 <?php
 } elseif ($LoggedUser['RatioWatch'] || !$CanLeech) { ?>
     <div class="box pad" style="text-align:center">
-        <strong class="important_text">You may not send invites while on Ratio Watch or while your leeching privileges are disabled.  Please read <a href="articles.php?topic=invites">this article</a> for more information.</strong>
+        <strong class="important_text">You may not send invites while on Ratio Watch or while your leeching privileges are disabled.  Please read <a href="/articles.php?topic=invites">this article</a> for more information.</strong>
     </div>
 <?php
 }
@@ -195,7 +197,7 @@ if (!empty($Pending)) {
             <tr class="row<?=$Row?>">
                 <td><?=display_str($Email)?></td>
                 <td><?=time_diff($Expires)?></td>
-                <td><a href="user.php?action=deleteinvite&amp;invite=<?=$InviteKey?>&amp;auth=<?=$LoggedUser['AuthKey']?>" onclick="return confirm('Are you sure you want to delete this invite?');">Delete invite</a></td>
+                <td><a href="/user.php?action=deleteinvite&amp;invite=<?=$InviteKey?>&amp;auth=<?=$LoggedUser['AuthKey']?>" onclick="return confirm('Are you sure you want to delete this invite?');">Delete invite</a></td>
             </tr>
 <?php   } ?>
         </table>
@@ -207,13 +209,13 @@ if (!empty($Pending)) {
     <div class="head">Invitee list</div>
         <table width="100%">
             <tr class="colhead">
-                <td><a href="user.php?action=invite&amp;order=username&amp;sort=<?=(($CurrentOrder == 'username') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Username</a></td>
-                <td><a href="user.php?action=invite&amp;order=email&amp;sort=<?=(($CurrentOrder == 'email') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Email</a></td>
-                <td><a href="user.php?action=invite&amp;order=joined&amp;sort=<?=(($CurrentOrder == 'joined') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Joined</a></td>
-                <td><a href="user.php?action=invite&amp;order=lastseen&amp;sort=<?=(($CurrentOrder == 'lastseen') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Last Seen</a></td>
-                <td><a href="user.php?action=invite&amp;order=uploaded&amp;sort=<?=(($CurrentOrder == 'uploaded') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Uploaded</a></td>
-                <td><a href="user.php?action=invite&amp;order=downloaded&amp;sort=<?=(($CurrentOrder == 'downloaded') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Downloaded</td>
-                <td><a href="user.php?action=invite&amp;order=ratio&amp;sort=<?=(($CurrentOrder == 'ratio') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Ratio</a></td>
+                <td><a href="/user.php?action=invite&amp;order=username&amp;sort=<?=(($CurrentOrder == 'username') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Username</a></td>
+                <td><a href="/user.php?action=invite&amp;order=email&amp;sort=<?=(($CurrentOrder == 'email') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Email</a></td>
+                <td><a href="/user.php?action=invite&amp;order=joined&amp;sort=<?=(($CurrentOrder == 'joined') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Joined</a></td>
+                <td><a href="/user.php?action=invite&amp;order=lastseen&amp;sort=<?=(($CurrentOrder == 'lastseen') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Last Seen</a></td>
+                <td><a href="/user.php?action=invite&amp;order=uploaded&amp;sort=<?=(($CurrentOrder == 'uploaded') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Uploaded</a></td>
+                <td><a href="/user.php?action=invite&amp;order=downloaded&amp;sort=<?=(($CurrentOrder == 'downloaded') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Downloaded</td>
+                <td><a href="/user.php?action=invite&amp;order=ratio&amp;sort=<?=(($CurrentOrder == 'ratio') ? $NewSort : 'desc')?>&amp;<?=$CurrentURL ?>">Ratio</a></td>
             </tr>
 <?php
     $Row = 'a';

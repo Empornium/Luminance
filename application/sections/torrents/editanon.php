@@ -41,7 +41,7 @@ show_header('Edit Anonymous status' );
 // =====================================================
 
 ?>
-    <h2>Edit Anonymous status for <a href="torrents.php?id=<?=$GroupID?>"><?=$Name?></a></h2>
+    <h2>Edit Anonymous status for <a href="/torrents.php?id=<?=$GroupID?>"><?=$Name?></a></h2>
 
     <div class="box pad">
         <form action="torrents.php" method="post">

@@ -58,7 +58,7 @@ if (isset($_POST['createcats'])) {
 
     if (count($Results)>1) {
         $Results[0] = "Wrote $numinsert schedule items.";
-        $Results[] = '<br/><br/><a href="tools.php?action=awards_auto'.$UrlExtra.'">back to awards schedule mamager</a>';
+        $Results[] = '<br/><br/><a href="/tools.php?action=awards_auto'.$UrlExtra.'">back to awards schedule mamager</a>';
         error(implode("<br/>", $Results));
     }
 

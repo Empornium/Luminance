@@ -14,7 +14,7 @@ if ($GroupID == 0) { error('bad id parameter', true); }
 
 $TorrentCache = get_group_info($GroupID, true, 0);
 
-// http://stackoverflow.com/questions/4260086/php-how-to-use-array-filter-to-filter-array-keys
+// https://stackoverflow.com/questions/4260086/php-how-to-use-array-filter-to-filter-array-keys
 function filter_by_key($input, $keys) { return array_intersect_key($input, array_flip($keys)); }
 
 $TorrentDetails = filter_by_key($TorrentCache[0][0], $GroupAllowed);

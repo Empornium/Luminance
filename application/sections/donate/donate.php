@@ -19,10 +19,10 @@ show_header('Donate','bitcoin');
         }
         ?>
         <br/>
-        <p style="font-size: 1.1em" title="rate is Mt.Gox weighted average: <?=$eur_rate?>">The current bitcoin exchange rate is 1 bitcoin = &euro;<?=number_format($eur_rate,2);?></p>
+        <p style="font-size: 1.1em" title="rate is the https://bitcoinaverage.com daily average: <?=$eur_rate?>">The current bitcoin exchange rate is 1 bitcoin = &euro;<?=number_format($eur_rate,2);?></p>
 
         <div style="text-align: center">
-            <a style="font-weight: bold;font-size: 1.6em;" href="donate.php?action=my_donations&new=1"><span style="color:red;"> >> </span>click here to get a personal donation address<span style="color:red;"> << </span></a>
+            <a style="font-weight: bold;font-size: 1.6em;" href="/donate.php?action=my_donations&new=1"><span style="color:red;"> >> </span>click here to get a personal donation address<span style="color:red;"> << </span></a>
         </div>
     </div>
 
@@ -55,7 +55,7 @@ show_header('Donate','bitcoin');
             }
             ?>
             <li><span  style="font-size: 1.2em;">If you want to donate for <img src="<?= STATIC_SERVER ?>common/symbols/donor.png" alt="love" title="love" />
-                    <a style="font-weight: bold;" href="donate.php?action=my_donations&new=1"><span style="color:red;"> >> </span>click here to get a personal donation address<span style="color:red;"> << </span></a></span></li>
+                    <a style="font-weight: bold;" href="/donate.php?action=my_donations&new=1"><span style="color:red;"> >> </span>click here to get a personal donation address<span style="color:red;"> << </span></a></span></li>
         </ul>
     </div>
 
@@ -74,7 +74,7 @@ show_header('Donate','bitcoin');
 
             ?><br/>
             <li><span style="font-size: 1.2em;">If you want to donate for GB
-                    <a style="font-weight: bold;" href="donate.php?action=my_donations&new=1"><span style="color:red;"> >> </span>click here to get a personal donation address<span style="color:red;"> << </span></a></span></li>
+                    <a style="font-weight: bold;" href="/donate.php?action=my_donations&new=1"><span style="color:red;"> >> </span>click here to get a personal donation address<span style="color:red;"> << </span></a></span></li>
         </ul>
 
     </div>
@@ -85,7 +85,7 @@ show_header('Donate','bitcoin');
             <li>Immunity from the rules.</li>
             <li>Additional <u>upload</u> credit.</li>
         </ul>
-        <p>Please be aware that by making a donation you are not purchasing donor status or invites. You are helping us pay the bills and cover the costs of running the site. We are doing our best to give our love back to donors but sometimes it might take more than 48 hours. Feel free to contact us by sending us a <a href="staffpm.php?action=user_inbox">Staff Message</a> regarding any matter. We will answer as quickly as possible.</p>
+        <p>Please be aware that by making a donation you are not purchasing donor status or invites. You are helping us pay the bills and cover the costs of running the site. We are doing our best to give our love back to donors but sometimes it might take more than 48 hours. Feel free to contact us by sending us a <a href="/staffpm.php?action=user_inbox">Staff Message</a> regarding any matter. We will answer as quickly as possible.</p>
     </div>
 </div>
 <!-- END Donate -->

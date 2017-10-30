@@ -10,16 +10,15 @@ class Invite extends Entity {
     public $legacy;
 
     static $properties = [
+        'ID'        => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'primary' => true, 'auto_increment' => true ],
         'InviterID' => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'nullable' => false ],
-        'InviteKey' => [ 'type' => 'str', 'sqltype' => 'VARCHAR(255)', 'primary'  => true  ],
+        'InviteKey' => [ 'type' => 'str', 'sqltype' => 'VARCHAR(255)', 'nullable' => true  ],
         'Email'     => [ 'type' => 'str', 'sqltype' => 'VARCHAR(255)', 'nullable' => false ],
-        'Token'     => [ 'type' => 'str', 'sqltype' => 'VARCHAR(255)', 'nullable' => true  ],
         'Expires'   => [ 'type' => 'str', 'sqltype' => 'DATETIME',     'nullable' => false ],
     ];
 
     static $indexes = [
         'InviterID' => [ 'columns' => [ 'InviterID' ] ],
-        'Token'     => [ 'columns' => [ 'Token'     ] ],
         'Expires'   => [ 'columns' => [ 'Expires'   ] ],
     ];
 

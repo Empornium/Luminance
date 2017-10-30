@@ -51,7 +51,7 @@ show_header('My Donations','bitcoin,bbcode');
         //usually any user will only have one 'open' address - but list them all just in case
         $DB->query("SELECT ID, public, time FROM bitcoin_donations WHERE state='unused' AND userID='$UserID'");
         // existing 'open' (unused) addresses assigned to this user
-        $user_addresses = $DB->to_array(false, MYSQL_NUM);
+        $user_addresses = $DB->to_array(false, MYSQLI_NUM);
 
         if ($_REQUEST['new']=='1' && count($user_addresses)==0) {
             // only assign a new address if they dont already have one
@@ -84,7 +84,7 @@ show_header('My Donations','bitcoin,bbcode');
         } elseif (count($user_addresses)==0) {
 
     ?>
-            <p><a style="font-weight: bold;" href="donate.php?action=my_donations&new=1">click here to get a personal donation address</a></p>
+            <p><a style="font-weight: bold;" href="/donate.php?action=my_donations&new=1">click here to get a personal donation address</a></p>
     <?php
         } else {
     ?>
@@ -97,7 +97,7 @@ show_header('My Donations','bitcoin,bbcode');
             Hopefully this is a temporary issue with the coindesk webservice, if it persists please
             <a href="/staffpm.php?action=user_inbox&show=1&msg=nobtcrate">message an admin.</a><br/><br/>
     <?php  } else { ?>
-            <span style="font-size: 1.1em" title="rate is Mt.Gox weighted average: <?=$eur_rate?>">
+            <span style="font-size: 1.1em" title="rate is the https://bitcoinaverage.com daily average: <?=$eur_rate?>">
                                 The current bitcoin exchange rate is 1 bitcoin = &euro;<?=number_format($eur_rate,2);?></span><br/><br/>
     <?php  }
             foreach ($user_addresses as $address) {
@@ -184,7 +184,7 @@ show_header('My Donations','bitcoin,bbcode');
                         WHERE state !='unused' AND userID='$UserID'
                     ORDER BY received DESC");
 
-        $donation_records = $DB->to_array(false, MYSQL_NUM);
+        $donation_records = $DB->to_array(false, MYSQLI_NUM);
 
         if (count($donation_records)==0) {
     ?>

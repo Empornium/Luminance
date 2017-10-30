@@ -28,7 +28,7 @@ if (isset($_GET['username'])) {
             Warned
             FROM users_main AS um
             JOIN users_info AS ui ON ui.UserID=um.ID
-            WHERE Username LIKE '%".db_string($_GET['username'])."%'
+            WHERE Username LIKE '%".db_string($_GET['username'], true)."%'
             ORDER BY Username
             LIMIT $Limit");
         $Results = $DB->to_array();

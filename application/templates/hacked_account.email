@@ -1,0 +1,17 @@
+Your {{settings.main.site_name}} account appears to have been compromised.
+
+As a security measure we have disabled your account. To resolve this please visit us on IRC.
+
+Please use your {{settings.main.site_name}} user name.
+
+Webchat available at {{settings.site.help_url}}/{{settings.irc.disabled_chan}}
+
+For users of an IRC client:
+irc: {{settings.irc.server}}
+port: 6667 / 6697 (SSL)
+help channel: {{settings.irc.disabled_chan}}
+
+Please visit us soon so we can help you resolve this matter.
+
+Thank you,
+{{settings.main.site_name}} Staff

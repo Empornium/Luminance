@@ -21,8 +21,8 @@ if(isset($_REQUEST['isclass']) &&  $_REQUEST['isclass']=='1') $IsUserClass = tru
     <input type="hidden" name="id" value="<?=display_str($_REQUEST['id'])?>" />
     <input type="hidden" name="isclass" value="<?=($IsUserClass?'1':'0')?>" />
     <div class="linkbox">
-        [<a href="tools.php?action=permissions">Back to permission list</a>]
-        [<a href="tools.php">Back to Tools</a>]
+        [<a href="/tools.php?action=permissions">Back to permission list</a>]
+        [<a href="/tools.php">Back to Tools</a>]
     </div>
     <table class="permission_head">
 <?php if ($IsUserClass) {     ?>

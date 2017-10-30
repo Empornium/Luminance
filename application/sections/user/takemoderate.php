@@ -7,7 +7,7 @@
 // Are they being tricky blighters?
 if (!$_POST['userid'] || !is_number($_POST['userid'])) {
     error(404);
-} elseif (!check_perms('users_mod')) {
+} elseif (!check_perms('users_mod') && !check_perms('users_add_notes')) {
     error(403);
 }
 authorize();
@@ -174,7 +174,7 @@ if ($_POST['comment_hash'] != $Cur['CommentHash']) {
 $User = $master->repos->users->load($UserID);
 
 //NOW that we know the class of the current user, we can see if one staff member is trying to hax0r us.
-if (!check_perms('users_mod', $Cur['Class'])) {
+if (!check_perms('users_mod', $Cur['Class']) && !check_perms('users_add_notes', $Cur['Class'])) {
     //Son of a fucking bitch
     error(403);
     die();
@@ -182,7 +182,8 @@ if (!check_perms('users_mod', $Cur['Class'])) {
 
 // lets put an error trap here for the mysterious 'random' error that wipes a users account...
 // important: do not remove this without trapping for blank username somewhere else!
-if ($Class==0 || $Username=='') {
+// Moved Username and Class checks later on
+/*if ($Class==0 || $Username=='') {
     ksort($_POST, SORT_FLAG_CASE | SORT_STRING);ksort($Cur, SORT_FLAG_CASE | SORT_STRING);
     $_POST['AdminComment'] = "[spoiler=staff notes]$_POST[AdminComment][/spoiler]";
     $Cur['AdminComment'] = "[spoiler=staff notes]$Cur[AdminComment][/spoiler]";
@@ -198,7 +199,7 @@ if ($Class==0 || $Username=='') {
     }
     send_pm($ToID, 0, db_string("Account Wipe Error: id=$UserID"), db_string($ErrBody));
     error(0);
-}
+}*/
 
 // If we're deleting the user, we can ignore all the other crap
 
@@ -303,15 +304,23 @@ if ($_POST['ResetEmailHistory'] && check_perms('users_edit_reset_keys')) {
 }
 
 if ($_POST['ResetSnatchList'] && check_perms('users_edit_reset_keys')) {
+    $DB->query("SELECT fid FROM xbt_snatched WHERE uid='$UserID'");
+    $TorrentIDs = $DB->collect('TorrentID');
     $DB->query("DELETE FROM xbt_snatched WHERE uid='$UserID'");
     $EditSummary[]='Snatch List cleared';
-    $Cache->delete_value('users_torrents_snatched_' . $UserID);
+    foreach($TorrentIDs as $TorrentID) {
+        $Cache->delete_value("users_torrents_snatched_{$UserID}_{$TorrentID}");
+    }
 }
 
 if ($_POST['ResetDownloadList'] && check_perms('users_edit_reset_keys')) {
+    $DB->query("SELECT TorrentID FROM users_downloads WHERE UserID='$UserID'");
+    $TorrentIDs = $DB->collect('TorrentID');
     $DB->query("DELETE FROM users_downloads WHERE UserID='$UserID'");
     $EditSummary[]='Download List cleared';
-    $Cache->delete_value('users_torrents_grabbed_' . $UserID);
+    foreach($TorrentIDs as $TorrentID) {
+        $Cache->delete_value("users_torrents_grabbed_{$UserID}_{$TorrentID}");
+    }
 }
 
 if ((($_POST['ResetSession'] || $_POST['LogOut']) && check_perms('users_logout')) || ($SendHackedMail && check_perms('users_disable_any'))) {
@@ -334,16 +343,18 @@ if ((($_POST['ResetSession'] || $_POST['LogOut']) && check_perms('users_logout')
 if ($Classes[$Class]['Level']!=$Cur['Class'] && (
     ($Classes[$Class]['Level'] < $LoggedUser['Class'] && check_perms('users_promote_below', $Cur['Class']))
     || ($Classes[$Class]['Level'] <= $LoggedUser['Class'] && check_perms('users_promote_to', $Cur['Class']-1)))) {
-    $UpdateSet[]="PermissionID='$Class'";
-    $EditSummary[]="Class changed to [b][color=".str_replace(" ", "", $Classes[$Class]['Name'])."]" .make_class_string($Class).'[/color][/b]';
-    $LightUpdates['PermissionID']=$Class;
+    if ($Class != 0) {
+        $UpdateSet[]="PermissionID='$Class'";
+        $EditSummary[]="Class changed to [b][color=".str_replace(" ", "", $Classes[$Class]['Name'])."]" .make_class_string($Class).'[/color][/b]';
+        $LightUpdates['PermissionID']=$Class;
 
-    $DB->query("SELECT DISTINCT DisplayStaff FROM permissions WHERE ID = $Class OR ID = ".$ClassLevels[$Cur['Class']]['ID']);
-    if ($DB->record_count() == 2) {
-        if ($Classes[$Class]['Level'] < $Cur['Class']) {
-            $SupportFor = '';
+        $DB->query("SELECT DISTINCT DisplayStaff FROM permissions WHERE ID = $Class OR ID = ".$ClassLevels[$Cur['Class']]['ID']);
+        if ($DB->record_count() == 2) {
+            if ($Classes[$Class]['Level'] < $Cur['Class']) {
+                $SupportFor = '';
+            }
+            $ClearStaffIDCache = true;
         }
-        $ClearStaffIDCache = true;
     }
 }
 
@@ -364,7 +375,9 @@ if($GroupPerm!=$Cur['GroupPermissionID'] &&
       $LightUpdates['GroupPermissionID']=$GroupPerm;
 }
 
-if ($Username!=$Cur['Username'] && check_perms('users_edit_usernames', $Cur['Class']-1)) {
+// We must use $_POST['Username'] because $Username is escaped,
+// which causes issues with old, invalid usernames (i.e. with quotes and whatnot)
+if ($_POST['Username'] !== $Cur['Username'] && check_perms('users_edit_usernames', $Cur['Class']-1)) {
     if (!preg_match('/^[A-Za-z0-9_\-\.\!]{1,20}$/i', $Username)) error("You entered an invalid username");
     $DB->query("SELECT ID FROM users_main WHERE Username = '".$Username."' AND ID != $UserID");
     if ($DB->record_count() > 0) {
@@ -372,7 +385,7 @@ if ($Username!=$Cur['Username'] && check_perms('users_edit_usernames', $Cur['Cla
         error("Username already in use by <a href='user.php?id=".$UsedUsernameID."'>".$Username."</a>");
         //header("Location: user.php?id=".$UserID);
         //die();
-    } else {
+    } elseif($Username != '') {
         $UpdateSet[]="Username='".$Username."'";
         $User->Username = $Username;
         $EditSummary[]="username changed from ".$Cur['Username']." to [b]{$Username}[/b]";
@@ -445,10 +458,8 @@ if (is_array($AddBadges) && check_perms('users_edit_badges')) {
               $SQL .= "$Div ('$UserID', '$BadgeID', '$Tooltip')";
               $BadgesAdded .= "$Div $Name";
               $Div = ',';
-
               send_pm($UserID, 0, "Congratulations you have been awarded the $Name",
-                                "[center][br][br][img]http://".SITE_URL.'/'.STATIC_SERVER."common/badges/{$Image}[/img][br][br][size=5][color=white][bg=#0261a3][br]{$Tooltip}[br][br][/bg][/color][/size][/center]");
-
+                          "[center][br][br][img]/static/common/badges/{$Image}[/img][br][br][size=5][color=white][bg=#0261a3][br]{$Description}[br][br][/bg][/color][/size][/center]");
           }
       }
       $DB->query("INSERT INTO users_badges (UserID, BadgeID, Description) VALUES $SQL");
@@ -573,9 +584,17 @@ if ($AdjustCreditsValue != 0 && ((check_perms('users_edit_credits') && $UserID !
     $UpdateSet[]="Credits='".$BonusCredits."'";
     $Creditschange = number_format ($AdjustCreditsValue);
     if ($AdjustCreditsValue>=0) $Creditschange = "+".$Creditschange;
-    $BonusSummary = sqltime()." | $Creditschange | Credits set to $BonusCredits from {$Cur['Credits']} by {$LoggedUser['Username']}";
+    if ($AdjustCreditsValue[0]=='-') {
+        $AdjustCreditsSign = '';
+    } else {
+        $AdjustCreditsSign = '+';
+    }
+    if ($Reason) {
+        $BonusSummary = sqltime()." | $AdjustCreditsSign$AdjustCreditsValue | {$Reason} by {$LoggedUser['Username']}";
+    } else {
+        $BonusSummary = sqltime()." | $AdjustCreditsSign$AdjustCreditsValue | Manual change by {$LoggedUser['Username']}";
+    }
     $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$BonusSummary', i.BonusLog)";
-    //$EditSummary[]="Bonus Credits changed from ".$Cur['Credits']." to ".$BonusCredits;
     $Cache->delete_value('user_stats_'.$UserID);
     $HeavyUpdates['Credits'] = $BonusCredits;
 }
@@ -831,32 +850,45 @@ if ($ResetAuthkey == 1 && check_perms('users_edit_reset_keys')) {
 
 if ($SendHackedMail && check_perms('users_disable_any')) {
     $EditSummary[]="hacked email sent to ".db_string($HackedEmail);
-    send_email($HackedEmail, "Your ".SITE_NAME." account.","Your ".SITE_NAME." account appears to have been compromised. As a security measure we have disabled your account. To resolve this please visit us on IRC.
 
-This is the information to connect to our server:
-IRC Server: ".BOT_SERVER."
-Port: ".BOT_PORT." (6697 SSL)
+    $email = $HackedEmail;
 
-Once you are connected to our server you'll need to join our disabled channel.
-Type: /join ".BOT_DISABLED_CHAN."
+    $subject = 'Unauthorized account access';
+    $email_body = [];
+    $email_body['settings'] = $master->settings;
 
-Please visit us soon so we can help you resolve this matter.");
+    if ($this->settings->site->debug_mode) {
+        $body = $master->tpl->render('hacked_account.flash', $email_body);
+        $master->flasher->notice($body);
+    } else {
+        $body = $master->tpl->render('hacked_account.email', $email_body);
+        $master->secretary->send_email($email, $subject, $body);
+        $master->flasher->notice("An e-mail with further instructions has been sent to the provided address.");
+    }
 }
 
 if ($SendConfirmMail) {
     $EditSummary[]="confirmation email resent to ".db_string($ConfirmEmail);
 
+    $email = $ConfirmEmail;
 
-    // TODO: Use Twig template
-    $TPL= new Template;
-    $TPL->open(SERVER_ROOT.'/templates/new_registration.tpl');
+    $token = $master->secretary->getExternalToken($email, 'users.register');
+    $token = $master->crypto->encrypt(['email' => $email, 'token' => $token], 'default', true);
 
-    $TPL->set('Username',$_POST['Username']);
-    $TPL->set('TorrentKey',$Cur['torrent_pass']);
-    $TPL->set('SITE_NAME',SITE_NAME);
-    $TPL->set('SITE_URL',SITE_URL);
+    $subject = 'New account confirmation';
+    $email_body = [];
+    $email_body['token']    = $token;
+    $email_body['settings'] = $master->settings;
+    $email_body['scheme']   = $master->request->ssl ? 'https' : 'http';
 
-    send_email($ConfirmEmail,'New account confirmation at '.SITE_NAME,$TPL->get(),'noreply');
+    if ($this->settings->site->debug_mode) {
+        $body = $master->tpl->render('new_registration.flash', $email_body);
+        $master->flasher->notice($body);
+    } else {
+        $body = $master->tpl->render('new_registration.email', $email_body);
+        $master->secretary->send_email($email, $subject, $body);
+        $master->flasher->notice("An e-mail with further instructions has been sent to the provided address.");
+    }
 }
 
 if ($MergeStatsFrom && check_perms('users_edit_ratio')) {
@@ -907,13 +939,11 @@ if ($Email) {
 if (empty($UpdateSet) && empty($EditSummary)) {
     if (!$Reason) {
         if (str_replace("\r", '', $Cur['AdminComment']) != str_replace("\r", '', $AdminComment)) {
-            if (check_perms('users_admin_notes')) $UpdateSet[]="AdminComment='$AdminComment'";
+            if (check_perms('users_edit_notes')) $UpdateSet[]="AdminComment='$AdminComment'";
         } else {
             header("Location: user.php?id=$UserID");
             die();
         }
-    } else {
-        $EditSummary[]='notes added';
     }
 }
 
@@ -921,7 +951,7 @@ $master->repos->users->uncache($UserID);
 
 $Summary = '';
 // Create edit summary
-if ($EditSummary) {
+if (!empty($EditSummary)) {
     $Summary = implode(', ', $EditSummary)." by ".$LoggedUser['Username'];
     $Summary = sqltime().' - '.ucfirst($Summary);
 
@@ -930,8 +960,9 @@ if ($EditSummary) {
     }
 
     $Summary .= "\n".$AdminComment;
-} elseif (empty($UpdateSet) && empty($EditSummary) && $Cur['AdminComment']==$_POST['AdminComment']) {
-    $Summary = sqltime().' - '.'Comment added by '.$LoggedUser['Username'].': '.$Reason."\n";
+} elseif (empty($UpdateSet) && empty($EditSummary) && (check_perms('users_add_notes') || check_perms('users_mod'))) {
+    $Summary = sqltime().' - '.'Note added by '.$LoggedUser['Username'].': '.$Reason."\n";
+    $Summary .= $AdminComment;
 }
 
 if (!empty($Summary)) {

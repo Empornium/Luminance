@@ -30,12 +30,7 @@ list( ,$Username, $PermissionID, $Paranoia, $Donor, $Warned, $Avatar, $Enabled, 
 $UserPermissions = get_permissions($PermissionID);
 $UserClass = $UserPermissions['Class'];
 
-if ( !check_force_anon($UserID) ||
-            !check_paranoia('torrentcomments', $Paranoia, $UserClass, $UserID)) { error(PARANOIA_MSG); }
-
-if (check_perms('site_proxy_images') && !empty($Avatar)) {
-    $Avatar = '//'.SITE_URL.'/image.php?c=1&i='.urlencode($Avatar);
-}
+if ( !check_force_anon($UserID) || !check_paranoia('torrentcomments', $Paranoia, $UserClass, $UserID)) { error(PARANOIA_MSG); }
 
 show_header('Post history for '.$Username,'subscriptions,comments,bbcode');
 
@@ -198,29 +193,29 @@ if ($ViewingOwn) {
     if (!$ShowUnread) { ?>
         <br /><br />
         <?php  if ($ShowGrouped) { ?>
-            <a href="userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=0&amp;group=0">Show all posts</a>&nbsp;&nbsp;&nbsp;
+            <a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=0&amp;group=0">Show all posts</a>&nbsp;&nbsp;&nbsp;
         <?php  } else { ?>
-            <a href="userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=0&amp;group=1">Show all posts (grouped)</a>&nbsp;&nbsp;&nbsp;
+            <a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=0&amp;group=1">Show all posts (grouped)</a>&nbsp;&nbsp;&nbsp;
         <?php  } ?>
-        <a href="userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=1&amp;group=1">Only display posts with unread replies (grouped)</a>&nbsp;&nbsp;&nbsp;
+        <a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=1&amp;group=1">Only display posts with unread replies (grouped)</a>&nbsp;&nbsp;&nbsp;
 <?php 	} else { ?>
         <br /><br />
-        <a href="userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=0&amp;group=0">Show all posts</a>&nbsp;&nbsp;&nbsp;
+        <a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=0&amp;group=0">Show all posts</a>&nbsp;&nbsp;&nbsp;
 <?php
         if (!$ShowGrouped) {
-            ?><a href="userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=1&amp;group=1">Only display posts with unread replies (grouped)</a>&nbsp;&nbsp;&nbsp;<?php
+            ?><a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=1&amp;group=1">Only display posts with unread replies (grouped)</a>&nbsp;&nbsp;&nbsp;<?php
         } else {
-            ?><a href="userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=1&amp;group=0">Only display posts with unread replies</a>&nbsp;&nbsp;&nbsp;<?php
+            ?><a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=1&amp;group=0">Only display posts with unread replies</a>&nbsp;&nbsp;&nbsp;<?php
         }
     }
 ?>
-            <a href="userhistory.php?action=subscriptions">Go to forum subscriptions</a>&nbsp;&nbsp;&nbsp;
-            <a href="userhistory.php?action=subscribed_collages">Go to collage subscriptions</a>&nbsp;&nbsp;&nbsp;
-            <a href="userhistory.php?action=comments">Go to comment history</a>
+            <a href="/userhistory.php?action=subscriptions">Go to forum subscriptions</a>&nbsp;&nbsp;&nbsp;
+            <a href="/userhistory.php?action=subscribed_collages">Go to collage subscriptions</a>&nbsp;&nbsp;&nbsp;
+            <a href="/userhistory.php?action=comments">Go to comment history</a>
 <?php
 } else {
 ?>
-            <a href="userhistory.php?action=comments&amp;userid=<?=$UserID?>">Go to comment history</a>
+            <a href="/userhistory.php?action=comments&amp;userid=<?=$UserID?>">Go to comment history</a>
 <?php
 }
 ?>
@@ -251,7 +246,7 @@ if (empty($Results)) {
             <td  colspan="2">
                 <span style="float:left;">
                     <?=time_diff($AddedTime) ?>
-                    in <a href="forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>" title="<?=display_str($ThreadTitle)?>"><?=cut_string($ThreadTitle, 75)?></a>
+                    in <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>" title="<?=display_str($ThreadTitle)?>"><?=cut_string($ThreadTitle, 75)?></a>
                 </span>
 <?php
         if ($ViewingOwn) {
@@ -261,16 +256,16 @@ if (empty($Results)) {
             }
             if (!empty($LastRead)) { ?>
                 <span style="float:left;" class="last_read" title="Jump to last read">
-                    <a href="forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$LastRead?>#post<?=$LastRead?>"></a>
+                    <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$LastRead?>#post<?=$LastRead?>"></a>
                 </span>
 <?php       } else { ?>
                 <span style="float:left;" class="last_read" title="Jump to last read">
-                    <a href="forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>"></a>
+                    <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>"></a>
                 </span>
 <?php       }
         } else { ?>
             <span style="float:left;" class="last_read" title="Jump to last read">
-                <a href="forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>"></a>
+                <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>"></a>
             </span>
 <?php   } ?>
                 <span style="float:left;padding-left:5px;">
@@ -292,7 +287,7 @@ if (empty($Results)) {
 <?php
         if (!$ShowGrouped) {
 ?>
-                    <a href="reports.php?action=report&amp;type=posthistory&amp;id=<?=$PostID?>">[Report]</a> -
+                    <a href="/reports.php?action=report&amp;type=posthistory&amp;id=<?=$PostID?>">[Report]</a> -
 <?php   } ?>
                     <a href="#" onclick="Subscribe(<?=$TopicID?>);return false;" class="subscribelink<?=$TopicID?>">[<?=(in_array($TopicID, $UserSubscriptions) ? 'Unsubscribe' : 'Subscribe')?>]</a>
                     &nbsp;

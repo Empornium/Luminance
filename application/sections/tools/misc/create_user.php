@@ -17,10 +17,11 @@ if (!empty($_POST['submit'])) {
     $email = trim($_POST['email']);
     $password = trim($_POST['password']);
 
-    $master->auth->createUser($username, $password, $email);
+    $user = $master->auth->createUser($username, $password, $email);
+
 
     //Redirect to users profile
-    header("Location: user.php?id=" . $UserID);
+    header("Location: user.php?id=" . $user->ID);
 
 //Form wasn't sent -- Show form
 } else {

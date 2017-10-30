@@ -11,7 +11,7 @@ $MemStats = $Cache->getStats();
 show_header("Service Stats");
 ?>
 <div class="linkbox">
-    [<a href="tools.php?action=database_specifics">Database Specifics</a>]
+    [<a href="/tools.php?action=database_specifics">Database Specifics</a>]
 </div>
 <div class="permissions">
     <div class="permission_container">

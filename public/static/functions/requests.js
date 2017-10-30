@@ -4,8 +4,7 @@ var minNewBounty = 1024 * 1024 * 1024;
 // 100 mb
 var minVote = 100 * 1024 * 1024;
 
-
-function SynchInterface(){
+function SynchInterface() {
     change_tagtext();
     resize('tags');
 }
@@ -86,7 +85,13 @@ function Load_Details_Cookie()  {
 
 }
 
-
+function Load_Options() {
+    ajax.get('ajax.php?action=get_options', function (response) {
+        var options = json.decode(response);
+        minNewBounty = options['MinCreateBounty'];
+        minVote = options['MinVoteBounty'];
+    });
+}
 
 function Preview_Request() {
 	if ($('#preview').has_class('hidden')) {
@@ -306,3 +311,4 @@ function ToggleLogScore() {
 
 
 addDOMLoadEvent(Load_Details_Cookie);
+addDOMLoadEvent(Load_Options);

@@ -122,7 +122,7 @@ ob_start();
 <?php
         }
 ?>
-    <span class="editedby">Last edited by <a href="user.php?id=<?=$LoggedUser['ID']?>"><?=$LoggedUser['Username']?></a> just now</span>
+    <span class="editedby">Last edited by <a href="/user.php?id=<?=$LoggedUser['ID']?>"><?=$LoggedUser['Username']?></a> just now</span>
 <?php
         if (check_perms('site_admin_forums')) { ?>
     &nbsp;&nbsp;<a href="#content<?=$PostID?>" onclick="RevertEdit(<?=$PostID?>); return false;" title="remove last edit">&reg;</a>

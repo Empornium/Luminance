@@ -64,28 +64,28 @@ show_header('Manage torrents marked for deletion');
         <div class="linkbox" >
 
 <?php       if ($ViewStatus!='warned') {   ?>
-          [<a href="tools.php?action=marked_for_deletion&amp;viewstatus=warned&amp;overdue=<?=$OverdueOnly?>"> View warned only </a>] &nbsp;&nbsp;&nbsp;
+          [<a href="/tools.php?action=marked_for_deletion&amp;viewstatus=warned&amp;overdue=<?=$OverdueOnly?>"> View warned only </a>] &nbsp;&nbsp;&nbsp;
 <?php       }
         if ($ViewStatus!='pending') {   ?>
-          [<a href="tools.php?action=marked_for_deletion&amp;viewstatus=pending&amp;overdue=<?=$OverdueOnly?>"> View pending only </a>] &nbsp;&nbsp;&nbsp;
+          [<a href="/tools.php?action=marked_for_deletion&amp;viewstatus=pending&amp;overdue=<?=$OverdueOnly?>"> View pending only </a>] &nbsp;&nbsp;&nbsp;
 <?php       }
         if ($ViewStatus!='both') {   ?>
-          [<a href="tools.php?action=marked_for_deletion&amp;viewstatus=both&amp;overdue=<?=$OverdueOnly?>"> View pending and warned </a>] &nbsp;&nbsp;&nbsp;
+          [<a href="/tools.php?action=marked_for_deletion&amp;viewstatus=both&amp;overdue=<?=$OverdueOnly?>"> View pending and warned </a>] &nbsp;&nbsp;&nbsp;
 <?php       }
         if ($ViewStatus!='unmarked') {   ?>
-          [<a href="tools.php?action=marked_for_deletion&amp;viewstatus=unmarked&amp;overdue=<?=$OvrdueOnly?>"> View unmarked only </a>] &nbsp;&nbsp;&nbsp;
+          [<a href="/tools.php?action=marked_for_deletion&amp;viewstatus=unmarked&amp;overdue=<?=$OvrdueOnly?>"> View unmarked only </a>] &nbsp;&nbsp;&nbsp;
 <?php       }       ?>
 
 <?php       if ($NumOverdue && $ViewStatus!='unmarked') {
             if ($OverdueOnly) {  ?>
-          [<a href="tools.php?action=marked_for_deletion&amp;viewstatus=<?=$ViewStatus?>&amp;overdue=0"> View due and overdue </a>] &nbsp;&nbsp;&nbsp;
+          [<a href="/tools.php?action=marked_for_deletion&amp;viewstatus=<?=$ViewStatus?>&amp;overdue=0"> View due and overdue </a>] &nbsp;&nbsp;&nbsp;
 <?php           } else {     ?>
-          [<a href="tools.php?action=marked_for_deletion&amp;viewstatus=<?=$ViewStatus?>&amp;overdue=1"> View overdue only </a>] &nbsp;&nbsp;&nbsp;
+          [<a href="/tools.php?action=marked_for_deletion&amp;viewstatus=<?=$ViewStatus?>&amp;overdue=1"> View overdue only </a>] &nbsp;&nbsp;&nbsp;
 <?php           }
         }
         if (check_perms('torrents_review_manage')){
 ?>
-          [<a href="tools.php?action=marked_for_deletion_reasons"> Edit reasons </a>]
+          [<a href="/tools.php?action=marked_for_deletion_reasons"> Edit reasons </a>]
 <?php   } ?>
         </div>
         <br/>
@@ -157,13 +157,13 @@ show_header('Manage torrents marked for deletion');
                 <tr class="<?=($IsOverdue?($Status=='Pending'?'orangebar':'redbar'):"row$Row")?>">
 <?php  }
        if ($NumOverdue && $CanManage && $ViewStatus != 'unmarked') { ?><td class="center"><?=$IsOverdue?'<input type="checkbox" name="id[]" value="'.$GroupID.'" />':''?></td><?php  } ?>
-                    <td><a href="torrents.php?id=<?=$GroupID?>"><?=$TorrentName?></a></td>
+                    <td><a href="/torrents.php?id=<?=$GroupID?>"><?=$TorrentName?></a></td>
                     <td><?=$Status?></td>
                     <td><?=time_diff($KillTime)?></td>
                     <td><?=$Reason?>
 <?php
         if ($ConvID>0) {
-                echo '<span style="float:right;">'.($Status=='Pending'?'(user sent fixed message) &nbsp;&nbsp;':'').'<a href="staffpm.php?action=viewconv&id='.$ConvID.'">'.($Status=='Pending'?'Message sent to staff':"reply sent to $Username").'</a></span>';
+                echo '<span style="float:right;">'.($Status=='Pending'?'(user sent fixed message) &nbsp;&nbsp;':'').'<a href="/staffpm.php?action=viewconv&id='.$ConvID.'">'.($Status=='Pending'?'Message sent to staff':"reply sent to $Username").'</a></span>';
         } elseif ($Status == 'Warned') {
                 echo '<span style="float:right;">(pm sent to '.$Username.')</span>';
         }
@@ -223,7 +223,7 @@ $Results = $DB->to_array();
     list($UserID, $Username, $Num, $NumOkay, $NumWarned) = $Result;
 ?>
                 <tr>
-                    <td><a href="reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
                     <td><?=$Num?></td>
                     <td><?=$NumOkay?></td>
                     <td><?=$NumWarned?></td>
@@ -249,7 +249,7 @@ $Results = $DB->to_array();
     list($UserID, $Username, $Num, $NumOkay, $NumWarned) = $Result;
 ?>
                 <tr>
-                    <td><a href="reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
                     <td><?=$Num?></td>
                     <td><?=$NumOkay?></td>
                     <td><?=$NumWarned?></td>
@@ -276,7 +276,7 @@ $Results = $DB->to_array();
     list($UserID, $Username, $Num, $NumOkay, $NumWarned) = $Result;
 ?>
             <tr>
-                <td><a href="reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
                 <td><?=$Num?></td>
                 <td><?=$NumOkay?></td>
                 <td><?=$NumWarned?></td>
@@ -302,7 +302,7 @@ $Results = $DB->to_array();
     list($UserID, $Username, $Num, $NumOkay, $NumWarned) = $Result;
 ?>
                 <tr>
-                    <td><a href="reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
                     <td><?=$Num?></td>
                     <td><?=$NumOkay?></td>
                     <td><?=$NumWarned?></td>

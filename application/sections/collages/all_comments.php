@@ -37,9 +37,9 @@ list($NumResults) = $DB->next_record();
 
 ?>
     <div class="linkbox">
-        [<a href="torrents.php?action=allcomments">Latest Torrent Comments</a>]&nbsp;
-        [<a href="requests.php?action=allcomments">Latest Request Comments</a>]&nbsp;
-        [<a href="forums.php?action=allposts">Latest Forum Posts</a>]
+        [<a href="/torrents.php?action=allcomments">Latest Torrent Comments</a>]&nbsp;
+        [<a href="/requests.php?action=allcomments">Latest Request Comments</a>]&nbsp;
+        [<a href="/forums.php?action=allposts">Latest Forum Posts</a>]
     </div>
     <div class="linkbox"><a name="comments"></a>
 <?php
@@ -58,12 +58,12 @@ foreach ($Comments as $Key => $Post) {
       // we need to get custom permissions for this author
 ?>
     <div id="post<?=$PostID?>">
-    <div class="head"><a class="post_id" href="collages.php?id=<?=$CollageID?>"><?=$Name?></a></div>
+    <div class="head"><a class="post_id" href="/collages.php?id=<?=$CollageID?>"><?=$Name?></a></div>
 <table class="forum_post box vertical_margin<?=$HeavyInfo['DisableAvatars'] ? ' noavatar' : ''?>" >
     <tr class="smallhead">
         <td colspan="2">
-            <span style="float:left;"><a class="post_id" href="collages.php?id=<?=$CollageID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>">#<?=$PostID?></a>
-                <?=format_username($AuthorID, $Username, $Donor, $Warned, $Enabled, $PermissionID, $UserTitle, true)?> <?=time_diff($AddedTime)?> <a href="reports.php?action=report&amp;type=collages_comment&amp;id=<?=$PostID?>">[Report]</a>
+            <span style="float:left;"><a class="post_id" href="/collages.php?id=<?=$CollageID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>">#<?=$PostID?></a>
+                <?=format_username($AuthorID, $Username, $Donor, $Warned, $Enabled, $PermissionID, $UserTitle, true)?> <?=time_diff($AddedTime)?> <a href="/reports.php?action=report&amp;type=collages_comment&amp;id=<?=$PostID?>">[Report]</a>
 
 <?php if (can_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime)) { ?>
                         - <a href="#post<?=$PostID?>" onclick="Edit_Form('collages','<?=$PostID?>','<?=$Key?>');">[Edit]</a><?php }

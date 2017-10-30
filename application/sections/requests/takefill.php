@@ -11,7 +11,7 @@ authorize();
 
 //VALIDATION
 if (!empty($_GET['torrentid']) && is_number($_GET['torrentid'])) {
-    $TorID = $_GET['torrentid'];
+    $TorrentID = $_GET['torrentid'];
 } else {
     if (empty($_POST['link'])) {
         $Err = "You forgot to supply a link to the filling torrent";
@@ -33,17 +33,16 @@ if (!empty($_GET['torrentid']) && is_number($_GET['torrentid'])) {
     }
 }
 
-$Where = $TorID ? "t.ID = $TorrentID" : "tg.ID = $GroupID";
+$Where = $TorrentID ? "t.ID = $TorrentID" : "tg.ID = $GroupID";
 
 //Torrent exists, check it's applicable
-$DB->query("SELECT
-                    t.ID,
-                    t.UserID,
-                    t.Time,
-                    tg.NewCategoryID,
-                    tg.Name
+$DB->query("SELECT t.ID,
+                   t.UserID,
+                   t.Time,
+                   tg.NewCategoryID,
+                   tg.Name
             FROM torrents AS t
-                    LEFT JOIN torrents_group AS tg ON t.GroupID=tg.ID
+       LEFT JOIN torrents_group AS tg ON t.GroupID=tg.ID
             WHERE $Where
             LIMIT 1");
 

@@ -7,7 +7,7 @@ function format_torrentid($torrentID, $name, $maxlen = 20)
     if ($torrentID == 0) return 'None';
     if ($name == '') $tname = $torrentID;
     else $tname = $name;
-    $str = '<a href="details.php?id='.$torrentID.'" title="'.$tname.'">'. cut_string($tname, $maxlen).'</a>';
+    $str = '<a href="/details.php?id='.$torrentID.'" title="'.$tname.'">'. cut_string($tname, $maxlen).'</a>';
     if ($name == '') $str = "torrent not found [$str]";
     return $str;
 }
@@ -41,11 +41,11 @@ function print_user_list($Userlist,$ListType,$Title,$TitleIcon,$Help)
             </tr>
             <tr class="colhead">
                 <td class="center"></td>
-                <td class="center"><a href="<?=header_link('Username') ?>">User</a></td>
-                <td class="center"><a href="<?=header_link('Time') ?>">Time added</a></td>
-                <td class="center"><a href="<?=header_link('Staffname') ?>">Added by</a></td>
-                <td class="center"><a href="<?=header_link('Count') ?>">Count</a></td>
-                <td class="center"><a href="<?=header_link('Comment') ?>">Comment</a></td>
+                <td class="center"><a href="/<?=header_link('Username') ?>">User</a></td>
+                <td class="center"><a href="/<?=header_link('Time') ?>">Time added</a></td>
+                <td class="center"><a href="/<?=header_link('Staffname') ?>">Added by</a></td>
+                <td class="center"><a href="/<?=header_link('Count') ?>">Count</a></td>
+                <td class="center"><a href="/<?=header_link('Comment') ?>">Comment</a></td>
                 <!--<td class="center" width="100px" title="keep torrent records related to this user">keep torrents</td>-->
                 <td class="center" width="120px"></td>
             </tr>
@@ -66,7 +66,7 @@ function print_user_list($Userlist,$ListType,$Title,$TitleIcon,$Help)
                             <td class="center">
                                 <a href="?action=speed_records&viewspeed=<?=$ViewSpeed?>&userid=<?=$UserID?>" title="View records for just <?=$Username?>"><img src="static/common/symbols/view.png" alt="view" /></a>
 <?php                          if ($ListType=='watchlist' && $Enabled=='1') { ?>
-                                &nbsp;<a href="tools.php?action=ban_speed_cheat&banuser=1&userid=<?=$UserID?>" title="ban this user for being a big fat cheat (speeding)"><img src="static/common/symbols/ban.png" alt="ban" /></a>
+                                &nbsp;<a href="/tools.php?action=ban_speed_cheat&banuser=1&userid=<?=$UserID?>" title="ban this user for being a big fat cheat (speeding)"><img src="static/common/symbols/ban.png" alt="ban" /></a>
 <?php                          }  ?>
                             </td>
                             <td class="center"><?=format_username($UserID, $Username, $IsDonor, $Warned, $Enabled, $ClassID, false, false)?></td>

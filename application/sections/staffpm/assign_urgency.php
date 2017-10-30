@@ -9,16 +9,16 @@ if (!in_array($_POST['urgency'], ['No','Read','Respond'])) {
 }
 $urgency = $_POST['urgency'];
 if (!is_number($_POST['convid'])) error(0, true);
-$convID = (int) $_POST['convid'];
+$ConvID = (int) $_POST['convid'];
 
 include(SERVER_ROOT.'/sections/staffpm/functions.php');
 
 
-if ($convID) {
+if ($ConvID) {
 
     // Staff (via ajax), get current assign of conversation
     $conv = $master->db->raw_query("SELECT Level, AssignedToUser, UserID, Urgent, Status, Unread FROM staff_pm_conversations WHERE ID=:convid",
-                                [':convid' => $convID])->fetch(\PDO::FETCH_ASSOC);
+                                [':convid' => $ConvID])->fetch(\PDO::FETCH_ASSOC);
 
     if ($LoggedUser['Class'] >= $conv['Level'] || $conv['AssignedToUser'] == $LoggedUser['ID']) {
 
@@ -27,7 +27,7 @@ if ($convID) {
                                       ($urgency!='No'?", Status='Open', Unread='1'":'') ."
                                  WHERE ID=:id",
                                        [':urgent' => $urgency,
-                                        ':id'     => $convID]);
+                                        ':id'     => $ConvID]);
 
         $master->cache->delete_value('staff_pm_new_'.$conv['UserID']);
         $master->cache->delete_value('staff_pm_urgent_'.$conv['UserID']);
@@ -40,7 +40,7 @@ if ($convID) {
             if ($conv['Status'] != 'Open') $message .= '[br]'.$sqltime." - (Status automatically set to Open)";
             if ($conv['Unread'] != '1') $message .= '[br]'.$sqltime." - (Message automatically set to Unread)";
         }
-        make_staffpm_note(db_string($message), $convID);
+        make_staffpm_note(db_string($message), $ConvID);
 
         echo '1';
     } else {

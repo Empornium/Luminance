@@ -53,7 +53,7 @@ show_header( "Articles>Search Results", 'browse,overlib,bbcode');
                         <?="$ArticleCats[$Category] > $ArticleSubCats[$SubCat]"?>
                     </td>
                     <td class="topic_link">
-                            <a href="articles.php?topic=<?=$TopicID?>"><?=display_str($Title)?></a>
+                            <a href="/articles.php?topic=<?=$TopicID?>"><?=display_str($Title)?></a>
                     </td>
                     <td>
                             <?=display_str($Description)?>

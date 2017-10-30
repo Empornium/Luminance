@@ -4,123 +4,125 @@ namespace Luminance\Legacy;
 class Text
 {
     // tag=>max number of attributes 'link'=>1,
-    private $ValidTags = array(
-        'ratiolist'=>0,
-        'codeblock' => 1,
-        'you' => 0,
-        'h5v' => 1,
-        'yt' => 1,
-        'vimeo' => 1,
-        'video' => 1,
-        'flash' => 1,
-        'banner' => 0,
-        'thumb' => 0,
-        '#' => 1,
-        'anchor' => 1,
-        'mcom' => 0,
-        'table' => 1,
-        'th' => 1,
-        'tr' => 1,
-        'td' => 1,
-        'bg' => 1,
-        'cast' => 0,
-        'details' => 0,
-        'info' => 0,
-        'plot' => 0,
-        'screens' => 0,
-        'br' => 0,
-        'hr' => 0,
-        'font' => 1,
-        'center' => 0,
-        'spoiler' => 1,
-        'b' => 0,
-        'u' => 0,
-        'i' => 0,
-        's' => 0,
-        'sup' => 0,
-        'sub' => 0,
-        '*' => 0,
-        'user' => 0,
-        'n' => 0,
-        'inlineurl' => 0,
+    private $ValidTags = [
+        'ratiolist'  => 0,
+        'code'       => 1,
+        'codeblock'  => 1,
+        'you'        => 0,
+        'h5v'        => 1,
+        'yt'         => 1,
+        'vimeo'      => 1,
+        'video'      => 1,
+        'flash'      => 1,
+        'banner'     => 0,
+        'thumb'      => 0,
+        '#'          => 1,
+        'anchor'     => 1,
+        'mcom'       => 0,
+        'table'      => 1,
+        'th'         => 1,
+        'tr'         => 1,
+        'td'         => 1,
+        'bg'         => 1,
+        'cast'       => 0,
+        'details'    => 0,
+        'info'       => 0,
+        'plot'       => 0,
+        'screens'    => 0,
+        'br'         => 0,
+        'hr'         => 0,
+        'font'       => 1,
+        'center'     => 0,
+        'spoiler'    => 1,
+        'b'          => 0,
+        'u'          => 0,
+        'i'          => 0,
+        's'          => 0,
+        'sup'        => 0,
+        'sub'        => 0,
+        '*'          => 0,
+        'user'       => 0,
+        'n'          => 0,
+        'inlineurl'  => 0,
         'inlinesize' => 1,
-        'align' => 1,
-        'color' => 1,
-        'colour' => 1,
-        'size' => 1,
-        'url' => 1,
-        'img' => 1,
-        'quote' => 1,
-        'pre' => 1,
-        'code' => 1,
-        'tex' => 0,
-        'hide' => 1,
-        'plain' => 0,
-        'important' => 0,
-        'torrent' => 0,
-        'request' => 0,
-        'collage' => 0,
-        'thread' => 0,
-        'forum' => 0,
-        'rank' => 1,
-        'tip' => 1,
-        'imgnm' => 1,
-        'imgalt' => 1,
-        'article' =>1,
-        'id' => 1,
-        'mediainfo' =>0
-    );
+        'align'      => 1,
+        'color'      => 1,
+        'colour'     => 1,
+        'size'       => 1,
+        'url'        => 1,
+        'img'        => 1,
+        'quote'      => 1,
+        'pre'        => 1,
+        'tex'        => 0,
+        'hide'       => 1,
+        'plain'      => 0,
+        'important'  => 0,
+        'torrent'    => 0,
+        'request'    => 0,
+        'collage'    => 0,
+        'thread'     => 0,
+        'forum'      => 0,
+        'rank'       => 1,
+        'tip'        => 1,
+        'imgnm'      => 1,
+        'imgalt'     => 1,
+        'article'    => 1,
+        'id'         => 1,
+        'mediainfo'  => 0,
+    ];
 
-    private $AdvancedTagOnly = array(
-        'mcom' => 1
-    );
+    private $AdvancedTagOnly = [
+        'mcom'       => 1,
+    ];
 
     //  font name (display) => fallback fonts (css)
-    private $Fonts = array(
-        'Arial' => "Arial, 'Helvetica Neue', Helvetica, sans-serif;",
-        'Arial Black' => "'Arial Black', 'Arial Bold', Gadget, sans-serif;",
-        'Comic Sans MS' => "'Comic Sans MS', cursive, sans-serif;",
-        'Courier New' => "'Courier New', Courier, 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace;",
+    private $Fonts = [
+        'Arial'                  => "Arial, 'Helvetica Neue', Helvetica, sans-serif;",
+        'Arial Black'            => "'Arial Black', 'Arial Bold', Gadget, sans-serif;",
+        'Comic Sans MS'          => "'Comic Sans MS', cursive, sans-serif;",
+        'Courier New'            => "'Courier New', Courier, 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace;",
         'Franklin Gothic Medium' => "'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', Arial, sans-serif;",
-        'Georgia' => "Georgia, Times, 'Times New Roman', serif;",
-        'Helvetica' => "'Helvetica Neue', Helvetica, Arial, sans-serif;",
-        'Impact' => "Impact, Haettenschweiler, 'Franklin Gothic Bold', Charcoal, 'Helvetica Inserat', 'Bitstream Vera Sans Bold', 'Arial Black', sans-serif;",
-        'Lucida Console' => "'Lucida Console', Monaco, monospace;",
-        'Lucida Sans Unicode' => "'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Geneva, Verdana, sans-serif;",
-        'Microsoft Sans Serif' => "'Microsoft Sans Serif', Helvetica, sans-serif;",
-        'Palatino Linotype' => "Palatino, 'Palatino Linotype', 'Palatino LT STD', 'Book Antiqua', Georgia, serif;",
-        'Tahoma' => "Tahoma, Verdana, Segoe, sans-serif;",
-        'Times New Roman' => "TimesNewRoman, 'Times New Roman', Times, Baskerville, Georgia, serif;",
-        'Trebuchet MS' => "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif;",
-        'Verdana' => "Verdana, Geneva, sans-serif;"
-    );
+        'Georgia'                => "Georgia, Times, 'Times New Roman', serif;",
+        'Helvetica'              => "'Helvetica Neue', Helvetica, Arial, sans-serif;",
+        'Impact'                 => "Impact, Haettenschweiler, 'Franklin Gothic Bold', Charcoal, 'Helvetica Inserat', 'Bitstream Vera Sans Bold', 'Arial Black', sans-serif;",
+        'Lucida Console'         => "'Lucida Console', Monaco, monospace;",
+        'Lucida Sans Unicode'    => "'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Geneva, Verdana, sans-serif;",
+        'Microsoft Sans Serif'   => "'Microsoft Sans Serif', Helvetica, sans-serif;",
+        'Palatino Linotype'      => "Palatino, 'Palatino Linotype', 'Palatino LT STD', 'Book Antiqua', Georgia, serif;",
+        'Tahoma'                 => "Tahoma, Verdana, Segoe, sans-serif;",
+        'Times New Roman'        => "TimesNewRoman, 'Times New Roman', Times, Baskerville, Georgia, serif;",
+        'Trebuchet MS'           => "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif;",
+        'Verdana'                => "Verdana, Geneva, sans-serif;",
+    ];
     //  icon tag => img  //[cast][details][info][plot][screens]
-    private $Icons = array(
-        'cast' => "cast11.png",
+    private $Icons = [
+        'cast'    => "cast11.png",
         'details' => "details11.png",
-        'info' => "info11.png",
-        'plot' => "plot11.png",
-        'screens' => "screens11.png"
-    );
+        'info'    => "info11.png",
+        'plot'    => "plot11.png",
+        'screens' => "screens11.png",
+    ];
     private $NoMedia = 0; // If media elements should be turned into URLs
     private $Levels = 0; // nesting level
     private $Advanced = false; // allow advanced tags to be printed
     private $ShowErrors = false;
-    private $Errors = array();
+    private $Errors = [];
+
+    private $displayed_images = [];
 
     //public $Smilies = array(); // for testing only
     public function __construct()
     {
-        include_once(SERVER_ROOT.'/Legacy/Smileys.php');
+        include(SERVER_ROOT.'/Legacy/Smileys.php');
         $this->Smileys = $Smileys;
         foreach ($this->Smileys as $Key => $Val) {
-            $this->Smileys[$Key] = '<img src="' . STATIC_SERVER . 'common/smileys/' . $Val . '" alt="' . $Key . '" />';
+            $this->Smileys[$Key] = '<img src="/static/common/smileys/' . $Val . '" alt="' . $Key . '" />';
             //$this->Smilies[] = $Val;
         }
         reset($this->Smileys);
 
         foreach ($this->Icons as $Key => $Val) {
-            $this->Icons[$Key] = '<img src="' . STATIC_SERVER . 'common/icons/' . $Val . '" alt="' . $Key . '" />';
+            $this->Icons[$Key] = '<img src="/static/common/icons/' . $Val . '" alt="' . $Key . '" />';
         }
         reset($this->Icons);
     }
@@ -177,6 +179,7 @@ class Text
         $Str = preg_replace('/\[thh\=/i', '[th=', $Str);
 
         $Str = $this->parse($Str);
+        $Str = $this->validate_stack($Str);
         $HTML = $this->to_html($Str);
 
         // Formatting cleanup
@@ -184,6 +187,34 @@ class Text
         $HTML = nl2br($HTML);
 
         return $HTML;
+    }
+
+    private $CheckTags = [
+      'tr' => ['table'],
+      'th' => ['tr'],
+      'td' => ['tr'],
+    ];
+
+    protected function validate_stack($Stack, $Parent=null) {
+        $ordered_tags = array_keys($this->CheckTags);
+        foreach ($Stack as $Index => $Block) {
+            if (!isset($Block['Type'], $Block['Val']))
+                continue;
+            if (in_array($Block['Type'], $ordered_tags)) {
+                if (!in_array($Parent, $this->CheckTags[$Block['Type']])) {
+                    // log an error (when submitting)
+                    $this->Errors[] = "<span class=\"error_label\">illegal placement of [{$Block[Type]}] tag</span>";
+                    // Delete orphaned tag (when viewing)
+                    unset($Stack[$Index]);
+                    continue;
+                }
+            }
+            if (is_array($Block['Val'])) {
+                // Recurse the stack
+                $Stack[$Index]['Val'] = $this->validate_stack($Block['Val'], $Block['Type']);
+            }
+        }
+        return $Stack;
     }
 
     /**
@@ -194,8 +225,9 @@ class Text
      * @param  boolean $ErrorOut     If $ErrorOut=true then on errors the error page will be displayed with a preview of the errors (If false the function just returns the validate result)
      * @return boolean True if there are no bad tags and false otherwise
      */
-    public function validate_bbcode($Str, $AdvancedTags = false, $ErrorOut = true)
+    public function validate_bbcode($Str, $AdvancedTags = false, $ErrorOut = true, $FurtherCheck = true)
     {
+        global $master, $LoggedUser;
         $preview = $this->full_format($Str, $AdvancedTags, true, true);
         if ($this->has_errors()) {
             if ($ErrorOut) {
@@ -208,6 +240,39 @@ class Text
             }
 
             return false;
+        }
+
+        if ($FurtherCheck) {
+
+            // As of right now, we only check images,
+            // we can skip everything, if it's disabled
+            if (!$master->options->ImagesCheck || $LoggedUser['Class'] >= $master->options->ImagesCheckMinClass) {
+                return true;
+            }
+
+            // Max. number of images in posts
+            $MaxImages = (int) $master->options->MaxImagesCount;
+
+            // Check ount first
+            if (count($this->displayed_images) > $MaxImages) {
+                $Error  = "Your post contains too many images. (Max: $MaxImages)<br>";
+                $Error .= "Try posting the direct links instead.";
+                error($Error);
+            }
+
+            // Max. size for images in posts (MB)
+            $MaxWeight = (int) $master->options->MaxImagesWeight;
+            $MaxWeight = $MaxWeight * 1024 * 1024;
+
+            $Validate = new Validate();
+            $post_size = $Validate->get_presentation_size(array_keys($this->displayed_images));
+            if($post_size > $MaxWeight) {
+                $post_size = round($post_size / 1024 / 1024, 2);
+                $MaxWeight = round($MaxWeight / 1024 / 1024, 2);
+                $Error  = "Your post contains too many images. (Weight: $post_size MB - Max: $MaxWeight MB)<br>";
+                $Error .= "Try posting thumbnails instead or simply post the direct links.";
+                error($Error);
+            }
         }
 
         return true;
@@ -225,7 +290,7 @@ class Text
         $whitelist_regex = get_whitelist_regex();
         $result = validate_imageurl($imageurl, 10, 255, $whitelist_regex, '');
         if ($result !== TRUE) $result=FALSE;
-	return $result;
+        return $result;
     }
 
     public function proxify_url($url) {
@@ -566,13 +631,10 @@ class Text
 
             // 5) Find out where the tag closes (beginning of [/tag])
             // Unfortunately, BBCode doesn't have nice standards like xhtml
-            // [*], [img=...], and http:// follow different formats
+            // [*] and http:// follow different formats
             // Thus, we have to handle these before we handle the majority of tags
             //5a) Different for different types of tag. Some tags don't close, others are weird like [*]
-            if ($TagName == 'img' && !empty($Tag[3][0])) { //[img=...]
-                $Block = ''; // Nothing inside this tag
-                // Don't need to touch $i
-            } elseif ($TagName == 'video' || $TagName == 'yt' || $TagName == 'vimeo') {
+            if ($TagName == 'video' || $TagName == 'yt' || $TagName == 'vimeo') {
                 $Block = '';
             } elseif ($TagName == 'inlineurl') { // We did a big replace early on to turn http:// into [inlineurl]http://
                 // Let's say the block can stop at a newline or a space
@@ -631,6 +693,10 @@ class Text
                             // automatically close open anchor tags (otherwise it wraps the entire text
                             // in an <a> tag which then get stripped from the end as they are way out of place and you have
                             // open <a> tags in the code - but links without any href so its a subtle break
+                            $CloseTag = $i;
+                            $closetaglength = 0;
+                        } elseif ($TagName == 'img') { // This handles the single [img=] tags
+                            $Block = true; // Bypass check below
                             $CloseTag = $i;
                             $closetaglength = 0;
                         } else {
@@ -737,9 +803,11 @@ class Text
 
                 case 'img':
                 case 'image':
+                    if (is_bool($Block)) $Block = '';
                     if (empty($Block)) {
-                        $Block = $Attrib;
-                        $Attrib = '';
+                        $Elements = explode(',', $Attrib);
+                        $Block = end($Elements);
+                        $Attrib = preg_replace('/,?'.preg_quote($Block, '/').'/i', '', $Attrib);
                     }
                     $Array[$ArrayPos] = array('Type' => 'img', 'Attr' => $Attrib, 'Val' => $Block);
                     break;
@@ -774,8 +842,6 @@ class Text
                     $Array[$ArrayPos] = array('Type' => 'tex', 'Val' => $Block);
                     break;
                 case 'pre':
-                case 'code':
-                case 'codeblock':
                 case 'plain':
                     $Block = strtr($Block, array('[inlineurl]' => ''));
                     $Block = preg_replace('/\[inlinesize\=3\](.*?)\[\/inlinesize\]/i', '====$1====', $Block);
@@ -784,6 +850,17 @@ class Text
 
                     $Array[$ArrayPos] = array('Type' => $TagName, 'Val' => $Block);
                     break;
+
+                case 'code':
+                case 'codeblock':
+                    $Block = strtr($Block, array('[inlineurl]' => ''));
+                    $Block = preg_replace('/\[inlinesize\=3\](.*?)\[\/inlinesize\]/i', '====$1====', $Block);
+                    $Block = preg_replace('/\[inlinesize\=5\](.*?)\[\/inlinesize\]/i', '===$1===', $Block);
+                    $Block = preg_replace('/\[inlinesize\=7\](.*?)\[\/inlinesize\]/i', '==$1==', $Block);
+
+                    $Array[$ArrayPos] = array('Type' => $TagName, 'Attr' => $Attrib, 'Val' => $Block);
+                break;
+
                 case 'mediainfo':
                     $Array[$ArrayPos] = array('Type' => $TagName, 'Val' => $Block);
                     break;
@@ -970,6 +1047,7 @@ class Text
                             $this->Errors[] = "<span class=\"error_label\">Not an approved Imagehost:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$att.'</code></blockquote>';
                             break;
                         }
+                        $this->displayed_images[$att] = true;
                         $escapees = array( "'",   '"',  "(",  ")",  " ");
                         $escaped  = array("\'", '\"', "\(", "\)", "\ ");
                         $sanitisedurl = str_replace($escapees, $escaped, $att);
@@ -1416,11 +1494,16 @@ class Text
                     $Str.='<pre>' . $Block['Val'] . '</pre>';
                     break;
                 case 'code':
-                    $Str.='<code class="bbcode">' . $Block['Val'] . '</code>';
+                    $CSS = 'bbcode';
+                    $Lang = $this->prism_supported($Block['Attr']);
+                    if(!empty($Lang)) $CSS .= ' '.$Lang;
+                    $Str.='<code class="'.$CSS.'">' . $Block['Val'] . '</code>';
                     break;
                 case 'codeblock':
-
-                    $Str.='<code class="bbcodeblock">' . $Block['Val'] . '</code>';
+                    $CSS = 'bbcodeblock';
+                    $Lang = $this->prism_supported($Block['Attr']);
+                    if(!empty($Lang)) $CSS .= ' '.$Lang;
+                    $Str.='<preclass="bbcodeblock"><code class="'.$CSS.'">' . $Block['Val'] . '</code></pre>';
                     break;
                 case 'list':
                     $Str .= '<' . $Block['ListType'] . '>';
@@ -1479,6 +1562,18 @@ class Text
                     $Block['Val'] = str_replace('[inlineurl]', '', $Block['Val']);
                     $cssclass = "";
 
+                    // Images with resize attributes
+                    $resize = '';
+                    if ($Block['Type'] == 'img' && !empty($Block['Attr'])) {
+                        $Elements = explode(',', $Block['Attr']);
+                        // Width
+                        if (!empty($Elements[0]))
+                            $resize .= 'width="'.intval($Elements[0]).'" ';
+                        // Height
+                        if (!empty($Elements[1]))
+                            $resize .= 'height="'.intval($Elements[1]).'" ';
+                    }
+
                     if ($Block['Type'] == 'imgnm' ) $cssclass .= ' nopad';
                     if ($Block['Attr'] != '' && ($Block['Type'] == 'imgnm' || $Block['Type'] == 'imgalt') ) $alttext = $Block['Attr'];
                     else $alttext = $Block['Val'];
@@ -1497,13 +1592,14 @@ class Text
                         $this->Errors[] = "<span class=\"error_label\">Not an approved Imagehost:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$Block['Val'].'</code></blockquote>';
                         break;
                     }
+                    $this->displayed_images[$Block['Val']] = true;
 
                     if (!$LocalURL && $this->NoMedia > 0) {
                         $Str.='<a rel="noreferrer" target="_blank" href="' . $Block['Val'] . '">' . $Block['Val'] . '</a> (image)';
                         break;
                     }
                     $Block['Val'] = $this->proxify_url($Block['Val']);
-                    $Str.='<img class="scale_image'.$cssclass.'" onclick="lightbox.init(this,500);" alt="'.$alttext.'" src="'.$Block['Val'].'" />';
+                    $Str.='<img class="scale_image'.$cssclass.'" onclick="lightbox.init(this,500);" alt="'.$alttext.'" src="'.$Block['Val'].'" '.$resize.'/>';
                     break;
 
                 case 'thumb':
@@ -1520,6 +1616,7 @@ class Text
                     } else {
                         $Str.='<img class="thumb_image" onclick="lightbox.init(this,300);" alt="' . $Block['Val'] . '" src="' . $Block['Val'] . '" />';
                     }
+                    $this->displayed_images[$Block['Val']] = true;
                     break;
 
                 case 'audio':
@@ -1653,6 +1750,141 @@ class Text
         return $Str;
     }
 
+    function prism_supported($Lang) {
+        if (!empty($Lang)) {
+            $Lang = strtolower($Lang);
+            $Supported = [
+                'abap',
+                'actionscript',
+                'ada',
+                'apacheconf',
+                'apl',
+                'applescript',
+                'asciidoc',
+                'aspnet',
+                'autohotkey',
+                'autoit',
+                'bash',
+                'basic',
+                'batch',
+                'bison',
+                'brainfuck',
+                'bro',
+                'c',
+                'clike',
+                'coffeescript',
+                'cpp',
+                'crystal',
+                'csharp',
+                'css',
+                'css-extras',
+                'd',
+                'dart',
+                'diff',
+                'django',
+                'docker',
+                'eiffel',
+                'elixir',
+                'erlang',
+                'fortran',
+                'fsharp',
+                'gherkin',
+                'git',
+                'glsl',
+                'go',
+                'graphql',
+                'groovy',
+                'haml',
+                'handlebars',
+                'haskell',
+                'haxe',
+                'http',
+                'icon',
+                'inform7',
+                'ini',
+                'j',
+                'jade',
+                'java',
+                'javascript',
+                'jolie',
+                'json',
+                'jsx',
+                'julia',
+                'keyman',
+                'kotlin',
+                'latex',
+                'less',
+                'livescript',
+                'lolcode',
+                'lua',
+                'makefile',
+                'markdown',
+                'markup',
+                'matlab',
+                'mel',
+                'mizar',
+                'monkey',
+                'nasm',
+                'nginx',
+                'nim',
+                'nix',
+                'nsis',
+                'objectivec',
+                'ocaml',
+                'oz',
+                'parigp',
+                'parser',
+                'pascal',
+                'perl',
+                'php',
+                'php-extras',
+                'powershell',
+                'processing',
+                'prolog',
+                'properties',
+                'protobuf',
+                'puppet',
+                'pure',
+                'python',
+                'q',
+                'qore',
+                'r',
+                'reason',
+                'rest',
+                'rip',
+                'roboconf',
+                'ruby',
+                'rust',
+                'sas',
+                'sass',
+                'scala',
+                'scheme',
+                'scss',
+                'smalltalk',
+                'smarty',
+                'sql',
+                'stylus',
+                'swift',
+                'tcl',
+                'textile',
+                'twig',
+                'typescript',
+                'vbnet',
+                'verilog',
+                'vhdl',
+                'vim',
+                'wiki',
+                'xojo',
+                'yaml',
+            ];
+            if (in_array($Lang, $Supported)) {
+                return 'language-'.$Lang;
+            } else {
+                return null;
+            }
+        }
+    }
+
     /**
      * Returns a single ID or the parameter(s) of a local URL
      * @param string $value The given input
@@ -1732,7 +1964,8 @@ class Text
                 $Request = $Request['matches'][$Matches['id']];
                 $Str = '<a href="requests.php?action=view&id='.$Matches['id'].'"><span class="taglabel">Request: </span>'.display_str($Request['Title']).'</a>';
                 if (!empty($Matches['postid'])) {
-                    $Str .= '&nbsp;&nbsp;<a href="requests.php?action=view&id='.$Matches['id'].'&page='.$Matches['page'].'#post'.$Matches['postid'].'"><span class="taglabel">comment: </span>'.$Matches['postid'].'</a>';
+                    $Page = !empty($Matches['page']) ? '&page='.$Matches['page'] : '';
+                    $Str .= '&nbsp;&nbsp;<a href="requests.php?action=view&id='.$Matches['id'].$Page.'#post'.$Matches['postid'].'"><span class="taglabel">comment: </span>'.$Matches['postid'].'</a>';
                 }
             } else {
                 $Str = '<a title="Request not found, maybe deleted, or never existed" href="requests.php?action=view&id='.$Matches['id'].'"><span class="taglabel">Request: </span> #'.$Matches['id'].'</a>';
@@ -1926,7 +2159,7 @@ class Text
       // they will not get that benefit
      */
 
-    public function display_bbcode_assistant($textarea, $AllowAdvancedTags, $start_num_smilies = 0, $load_increment = 240, $load_increment_first = 30)
+    public function display_bbcode_assistant($textarea, $AllowAdvancedTags = false, $start_num_smilies = 0, $load_increment = 240, $load_increment_first = 30)
     {
         global $LoggedUser;
         if ($load_increment_first == -1) {
