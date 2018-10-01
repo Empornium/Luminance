@@ -1,0 +1,5 @@
+{% if options.useSpan == false %}
+    {{ group.Name }}
+{% else %}
+    <span alt="{{ group.ID }}" class="groupperm" title="{{ group.Description }}" style="color:#{{ group.Color }}" title="{{ group.Description }}">{{ group.Name }}</span>
+{% endif %}

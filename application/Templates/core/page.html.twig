@@ -1,0 +1,20 @@
+{% extends "core/base.html.twig" %}
+
+{% block stylesheets %}
+{{ parent() }}
+    <link href="{{ static_uri }}styles/main.css?v={{ render.public_file_mtime('/static/styles/main.css') }}" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block flashes_workaround %}
+{% endblock %}
+
+{% block content %}
+<div class="thin">
+    <h2>{{ block('title') }}</h2>
+    {% block flashes %}
+        {% include 'core/flashes.html.twig' %}
+    {% endblock %}
+    {% block main_content %}
+    {% endblock %}
+</div>
+{% endblock %}

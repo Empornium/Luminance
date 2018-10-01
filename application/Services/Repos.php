@@ -1,11 +1,32 @@
 <?php
 namespace Luminance\Services;
 
+use Luminance\Core\Service;
 use Luminance\Errors\InternalError;
 
 class Repos extends Service {
 
     protected $repositories = [];
+
+    protected static $repos = [
+        'clientuseragents' => 'ClientUserAgentRepository',
+        'clientaccepts'    => 'ClientAcceptRepository',
+        'clientscreens'    => 'ClientScreenRepository',
+        'ips'              => 'IPRepository',
+        'sessions'         => 'SessionRepository',
+        'stylesheets'      => 'StylesheetRepository',
+        'users'            => 'UserRepository',
+        'emails'           => 'EmailRepository',
+        'invites'          => 'InviteRepository',
+        'options'          => 'OptionRepository',
+        'permissions'      => 'PermissionRepository',
+        'floods'           => 'RequestFloodRepository',
+        'restrictions'     => 'RestrictionRepository',
+    ];
+
+    public function __isset($name) {
+        return array_key_exists($name, self::$repos);
+    }
 
     public function __get($name) {
         $repository = $this->get_repository($name);
@@ -13,47 +34,10 @@ class Repos extends Service {
     }
 
     public function get_repository($name) {
-        switch ($name) {
-            case 'clientuseragents':
-                $cls = 'ClientUserAgentRepository';
-                break;
-            case 'clientaccepts':
-                $cls = 'ClientAcceptRepository';
-                break;
-            case 'clientscreens':
-                $cls = 'ClientScreenRepository';
-                break;
-            case 'ips':
-                $cls = 'IPRepository';
-                break;
-            case 'sessions':
-                $cls = 'SessionRepository';
-                break;
-            case 'stylesheets':
-                $cls = 'StylesheetRepository';
-                break;
-            case 'users':
-                $cls = 'UserRepository';
-                break;
-            case 'emails':
-                $cls = 'EmailRepository';
-                break;
-            case 'invites':
-                $cls = 'InviteRepository';
-                break;
-            case 'options':
-                $cls = 'OptionRepository';
-                break;
-            case 'permissions':
-                $cls = 'PermissionRepository';
-                break;
-            case 'floods':
-                $cls = 'RequestFloodRepository';
-                break;
-            default:
-                throw new InternalError("No such repository: {$name}");
+        if ($this->__isset($name)) {
+            return $this->master->getRepository(self::$repos[$name]);
+        } else {
+            throw new InternalError("No such repository: {$name}");
         }
-        return $this->master->getRepository($cls);
     }
-
 }

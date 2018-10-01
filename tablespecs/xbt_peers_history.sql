@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `xbt_peers_history` (
   KEY `fid` (`fid`),
   KEY `upspeed` (`upspeed`),
   KEY `mtime` (`mtime`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

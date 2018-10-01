@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `torrents_awards` (
   PRIMARY KEY (`UserID`),
   UNIQUE KEY `TorrentID` (`TorrentID`),
   KEY `Ducky` (`Ducky`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

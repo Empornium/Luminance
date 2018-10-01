@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS `xbt_files_users` (
   KEY `fid_idx` (`fid`),
   KEY `mtime_idx` (`mtime`),
   KEY `uid_active` (`uid`,`active`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

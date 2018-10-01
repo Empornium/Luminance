@@ -1,13 +1,13 @@
 var BBCode = {
-	spoiler: function(link) {
-		if($(link.nextSibling).has_class('hidden')) {
-			$(link.nextSibling).show();
-			$(link).html('Hide');
-		} else {
-			$(link.nextSibling).hide();
-			$(link).html('Show');
-		}
-	}
+  spoiler: function(link) {
+    if($(link.nextSibling).has_class('hidden')) {
+      $(link.nextSibling).show();
+      $(link).html('Hide');
+    } else {
+      $(link.nextSibling).hide();
+      $(link).html('Show');
+    }
+  }
 };
 
 function Validate_Form(message_div, fields) {
@@ -44,20 +44,20 @@ function Validate_Form(message_div, fields) {
 }
 
 function Preview_Collage() {
-	if ($('#preview').has_class('hidden')) {
-		var ToPost = [];
-		ToPost['body'] = $('#description').raw().value;
-		ajax.post('ajax.php?action=preview', ToPost, function (data) {
-			$('#preview').raw().innerHTML = data;
-			$('#preview').toggle();
-			$('#editor').toggle();
-			$('#previewbtn').raw().value = "Edit";
-		});
-	} else {
-		$('#preview').toggle();
-		$('#editor').toggle();
-		$('#previewbtn').raw().value = "Preview";
-	}
+  if ($('#preview').has_class('hidden')) {
+    var ToPost = [];
+    ToPost['body'] = $('#description').raw().value;
+    ajax.post('ajax.php?action=preview', ToPost, function (data) {
+      $('#preview').raw().innerHTML = data;
+      $('#preview').toggle();
+      $('#editor').toggle();
+      $('#previewbtn').raw().value = "Edit";
+    });
+  } else {
+    $('#preview').toggle();
+    $('#editor').toggle();
+    $('#previewbtn').raw().value = "Preview";
+  }
 }
 
 function Sandbox_Preview() {
@@ -66,49 +66,50 @@ function Sandbox_Preview() {
         $('#preview_content').raw().innerHTML = response;
         $('#preview').show();
         $('#preview_button').raw().value = "Update Preview";
-		Prism.highlightAll();
+        Prism.highlightAll();
+        MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
         lazy_load();
     });
 }
 
 
 function Quick_Preview_Blog() {
-	$('#post_preview').raw().value = "Edit";
-	$('#post_preview').raw().preview = true;
-	ajax.post("ajax.php?action=preview_blog","quickpostform", function(response){
-		$('#quickreplypreview').show();
-		$('#contentpreview').raw().innerHTML = response;
-		$('#quickreplytext').hide();
-		Prism.highlightAll();
+  $('#post_preview').raw().value = "Edit";
+  $('#post_preview').raw().preview = true;
+  ajax.post("ajax.php?action=preview_blog","quickpostform", function(response){
+    $('#quickreplypreview').show();
+    $('#contentpreview').raw().innerHTML = response;
+    $('#quickreplytext').hide();
+    Prism.highlightAll();
         lazy_load();
-	});
+  });
 }
 
 function Quick_Edit_Blog() {
-	$('#post_preview').raw().value = "Preview";
-	$('#post_preview').raw().preview = false;
-	$('#quickreplypreview').hide();
-	$('#quickreplytext').show();
+  $('#post_preview').raw().value = "Preview";
+  $('#post_preview').raw().preview = false;
+  $('#quickreplypreview').hide();
+  $('#quickreplytext').show();
 }
 
 
 function Preview_Article() {
-	$('#post_preview').raw().value = "Edit";
-	$('#post_preview').raw().preview = true;
-	ajax.post("ajax.php?action=preview_article","quickpostform", function(response){
-		$('#quickreplypreview').show();
-		$('#contentpreview').raw().innerHTML = response;
-		$('#quickreplytext').hide();
-		Prism.highlightAll();
+  $('#post_preview').raw().value = "Edit";
+  $('#post_preview').raw().preview = true;
+  ajax.post("ajax.php?action=preview_article","quickpostform", function(response){
+    $('#quickreplypreview').show();
+    $('#contentpreview').raw().innerHTML = response;
+    $('#quickreplytext').hide();
+    Prism.highlightAll();
         lazy_load();
-	});
+  });
 }
 
 function Edit_Article() {
-	$('#post_preview').raw().value = "Preview";
-	$('#post_preview').raw().preview = false;
-	$('#quickreplypreview').hide();
-	$('#quickreplytext').show();
+  $('#post_preview').raw().value = "Preview";
+  $('#post_preview').raw().preview = false;
+  $('#quickreplypreview').hide();
+  $('#quickreplytext').show();
 }
 
 
@@ -132,7 +133,7 @@ function Open_Smilies(alreadyloaded, loadincrement, textID) {
           opento = numLoaded + loadincrement;
       }
       if (opento > maxSmilies) {opento = maxSmilies;}
-	$(open_overflow_button).raw().isopen = true; // track first button status
+  $(open_overflow_button).raw().isopen = true; // track first button status
       if (numLoaded < opento && numLoaded < maxSmilies) {
           // depending on which buttons are visible display loading status in one of them
           if ($(open_overflow_more_button).raw().isopen) {$(open_overflow_more_button).raw().innerHTML = "Loading smilies";}
@@ -184,9 +185,9 @@ function Toggle_Load_Button(show, textID){
     }
 }
 function Close_Smilies(textID) {
-	$('#smiley_overflow'+ textID).hide();
-	$('#open_overflow'+ textID).raw().isopen = false;
-	$('#open_overflow'+ textID).raw().innerHTML = "Show smilies";
+  $('#smiley_overflow'+ textID).hide();
+  $('#open_overflow'+ textID).raw().isopen = false;
+  $('#open_overflow'+ textID).raw().innerHTML = "Show smilies";
       $('#open_overflow_more'+ textID).raw().isopen = false;
       $('#open_overflow_more'+ textID).raw().innerHTML = "";
       $('#open_overflow_more'+ textID).hide();
@@ -557,7 +558,7 @@ function lazy_load() {
     var youtube = document.querySelectorAll( ".youtube" );
     for (var i = 0; i < youtube.length; i++) {
         var source = "https://img.youtube.com/vi/"+ youtube[i].dataset.embed +"/sddefault.jpg";
-		console.log("lazy loading "+youtube[i].dataset.embed);
+    console.log("lazy loading "+youtube[i].dataset.embed);
         var image = new Image();
         image.src = source;
         image.addEventListener( "load", function() {
@@ -565,7 +566,7 @@ function lazy_load() {
         }( i ) );
 
         youtube[i].addEventListener( "click", function() {
-        	var iframe = document.createElement( "iframe" );
+          var iframe = document.createElement( "iframe" );
             iframe.setAttribute( "frameborder", "0" );
             iframe.setAttribute( "allowfullscreen", "" );
             iframe.setAttribute( "src", "https://www.youtube-nocookie.com/embed/"+ this.dataset.embed +"?rel=0&showinfo=0&autoplay=1" );

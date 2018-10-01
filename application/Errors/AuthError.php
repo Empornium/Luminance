@@ -17,5 +17,4 @@ class AuthError extends UnauthorizedError {
             $this->redirect = $redirect;
         }
     }
-
-};
+}

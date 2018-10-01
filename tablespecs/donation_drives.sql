@@ -22,15 +22,15 @@
 CREATE TABLE IF NOT EXISTS `donation_drives` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
-  `start_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `start_time` datetime DEFAULT NULL,
   `target_euros` int(11) NOT NULL DEFAULT '0',
   `description` text NOT NULL,
   `threadid` int(11) NOT NULL DEFAULT '0',
-  `end_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `end_time` datetime DEFAULT NULL,
   `raised_euros` int(11) NOT NULL DEFAULT '0',
   `state` enum('active','notstarted','finished') NOT NULL DEFAULT 'notstarted',
   PRIMARY KEY (`ID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

@@ -22,14 +22,14 @@
 CREATE TABLE IF NOT EXISTS `users_history_ips` (
   `UserID` int(10) NOT NULL,
   `IP` varchar(15) NOT NULL DEFAULT '0.0.0.0',
-  `StartTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `StartTime` datetime NOT NULL,
   `EndTime` datetime DEFAULT NULL,
   PRIMARY KEY (`UserID`,`IP`,`StartTime`),
   KEY `UserID` (`UserID`),
   KEY `IP` (`IP`),
   KEY `StartTime` (`StartTime`),
   KEY `EndTime` (`EndTime`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

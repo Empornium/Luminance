@@ -2,11 +2,12 @@
 namespace Luminance\Services;
 
 use Luminance\Core\Master;
+use Luminance\Core\Service;
 use Luminance\Core\Entity;
 use Luminance\Errors\SystemError;
 use Luminance\Services\DB\LegacyWrapper;
-function db_is_number($Str)
-{
+
+function db_is_number($Str) {
     $Return = true;
     if ($Str < 0) {
         $Return = false;
@@ -17,8 +18,7 @@ function db_is_number($Str)
     return $Return;
 }
 
-function db_is_utf8($Str)
-{
+function db_is_utf8($Str) {
     return preg_match('%^(?:
         [\x09\x0A\x0D\x20-\x7E]			 // ASCII
         | [\xC2-\xDF][\x80-\xBF]			// non-overlong 2-byte
@@ -28,12 +28,10 @@ function db_is_utf8($Str)
         | \xF0[\x90-\xBF][\x80-\xBF]{2}	 // planes 1-3
         | [\xF1-\xF3][\x80-\xBF]{3}		 // planes 4-15
         | \xF4[\x80-\x8F][\x80-\xBF]{2}	 // plane 16
-        )*$%xs', $Str
-    );
+        )*$%xs', $Str);
 }
 
-function db_make_utf8($Str)
-{
+function db_make_utf8($Str) {
     if ($Str != "") {
         if (db_is_utf8($Str)) {
             $Encoding = "UTF-8";
@@ -52,9 +50,8 @@ function db_make_utf8($Str)
     }
 }
 
-function db_display_str($Str)
-{
-    if ($Str === NULL || $Str === FALSE || is_array($Str)) {
+function db_display_str($Str) {
+    if ($Str === null || $Str === false || is_array($Str)) {
         return '';
     }
     if ($Str != '' && !db_is_number($Str)) {
@@ -78,8 +75,7 @@ function db_display_str($Str)
     return $Str;
 }
 
-function db_display_array($Array, $Escape = array())
-{
+function db_display_array($Array, $Escape = array()) {
     foreach ($Array as $Key => $Val) {
         if ((!is_array($Escape) && $Escape == true) || !in_array($Key, $Escape)) {
             $Array[$Key] = db_display_str($Val);
@@ -98,14 +94,27 @@ class DB extends Service {
 
     public function connect() {
         if (is_null($this->pdo)) {
+            # Test for presence of PDO driver
+            if (!(extension_loaded('mysqlnd') || extension_loaded('mysql'))) {
+                throw new SystemError(null, 'MySQL/MariaDB driver not found, please install php-mysqlnd');
+                die();
+            }
+
             $dbc = $this->master->settings->database;
             $options = [
+                \PDO::ATTR_PERSISTENT => $dbc->persistent_connections,
                 \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
-                \PDO::ATTR_EMULATE_PREPARES => false
+                \PDO::ATTR_EMULATE_PREPARES => false,
             ];
 
+            if ($dbc->strict_mode) {
+                $options[\PDO::MYSQL_ATTR_INIT_COMMAND] = "SET sql_mode = 'NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES'";
+            } else {
+                $options[\PDO::MYSQL_ATTR_INIT_COMMAND] = "SET sql_mode = ''";
+            }
+
             if (defined('\PDO::MYSQL_ATTR_MAX_BUFFER_SIZE')) {
-                $options[\PDO::MYSQL_ATTR_MAX_BUFFER_SIZE] = 16777216;
+                $options[\PDO::MYSQL_ATTR_MAX_BUFFER_SIZE] = $dbc->buffer_size;
             }
 
 
@@ -156,7 +165,9 @@ class DB extends Service {
         $stmt->execute($parameters);
         $QueryEndTime=microtime(true);
         if ($this->enable_debug) {
-            $this->Queries[]=[db_display_str(self::interpolateQuery($sql, $parameters)),($QueryEndTime-$QueryStartTime)*1000];
+            if (count($this->Queries) < 200) {
+                $this->Queries[]=[db_display_str(self::interpolateQuery($sql, $parameters)),($QueryEndTime-$QueryStartTime)*1000];
+            }
             $this->Time+=($QueryEndTime-$QueryStartTime)*1000;
         }
         return $stmt;
@@ -170,11 +181,13 @@ class DB extends Service {
             $stmt->execute();
             $QueryEndTime=microtime(true);
             if ($this->enable_debug) {
-                $this->Queries[]=array(db_display_str($sql),($QueryEndTime-$QueryStartTime)*1000);
+                if (count($this->Queries) < 200) {
+                    $this->Queries[]=array(db_display_str($sql),($QueryEndTime-$QueryStartTime)*1000);
+                }
                 $this->Time+=($QueryEndTime-$QueryStartTime)*1000;
             }
             $wrapper = new LegacyWrapper($stmt);
-        } catch(PDOException $pdo_except) {
+        } catch (PDOException $pdo_except) {
             error_log("Failed query! \n".$sql);
             throw $pdo_except;
         }
@@ -190,16 +203,31 @@ class DB extends Service {
         return $count;
     }
 
+    public function in_transaction() {
+        return $this->pdo->inTransaction();
+    }
+
+    public function begin_transaction() {
+        return $this->pdo->beginTransaction();
+    }
+
+    public function commit_transaction() {
+        return $this->pdo->commit();
+    }
+
+    public function rollback_transaction() {
+        return $this->pdo->rollBack();
+    }
+
     // a helper function to build a param array and param String for use in an IN ( ) clause
-    public function bindParamArray($prefix, $values, &$params)
-    {
+    public function bindParamArray($prefix, $values, &$params) {
         $str = "";
-        foreach($values as $index => $value){
+        foreach ($values as $index => $value) {
             // build named param string in form ':id0,:id1',
             $str .= ":".$prefix.$index.",";
             // $params are returned in form [':id0'=>$val[0], ':id1'=>$val[1] ]
             $params[$prefix.$index] = $value;
         }
-        return rtrim($str,",");
+        return rtrim($str, ",");
     }
 }

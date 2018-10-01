@@ -1,0 +1,122 @@
+{% block content %}
+    <div class="thin">
+        <h2>{{ request.getGetString('action') == 'articles' ? 'Create a new article' : 'Edit an article' }}</h2>
+        <div id="quickreplypreview">
+            <div id="contentpreview" style="text-align:left;"></div>
+        </div>
+        <form  id="quickpostform" action="tools.php" method="post">
+            <div class="head">{{ request.getGetString('action') == 'articles' ? "New Article" : "Edit Article : #{edit.Title}" }}</div>
+            <div class="box pad">
+                <div id="quickreplytext">
+                    <input type="hidden" name="action" value="{{ request.getGetString('action') == 'articles' ? 'takearticle' : 'takeeditarticle' }}" />
+                    <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                    <input type="hidden" name="articleid" value="{{ edit.ID }}" />
+                    {% if request.getGetString('action') == 'editarticle' %}
+                        <input type="hidden" name="newsid" value="{{ edit.ID }}" />
+                    {% endif %}
+                    <div style="display:inline-block;margin-right:20px;vertical-align: top;">
+                        <h3>Topic ID</h3>
+                        <input type="text" name="topicid" value="{{ edit.TopicID }}" />
+                    </div>
+                    <div style="display:inline-block;margin-right:20px;vertical-align: top;">
+                        <h3>Permission Level</h3>
+                        <select name="level">
+                            <option value="0" {{ edit.MinClass<500 ? 'selected="selected"' }}>All Users</option>
+                            {% if staffClass >= 500 %}
+                                <option value="500" {{ edit.MinClass==500 ? 'selected="selected"' }}>Staff &amp; FLS</option>
+                            {% endif %}
+                            {% if staffClass >= 600 %}
+                                <option value="500" {{ edit.MinClass==600 ? 'selected="selected"' }}>Staff &amp; FLS</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div style="display:inline-block;margin-right:20px;vertical-align: top;">
+                        <h3>Category</h3>
+                        <select name="category">
+                            {% for key, category in articleCategories %} as $Key => $Value) { ?>
+                                <option value="{{ key }}" {{ edit.Category == key ? 'selected="selected"' }}>{{ category }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="display:inline-block;margin-right:20px;vertical-align: top;">
+                        <h3>Sub-Category</h3>
+                        <select name="subcat">
+                            {% for key, subCategory in articleSubCategories %} as $Key => $Value) { ?>
+                                <option value="{{ key }}" {{ edit.SubCat == key ? 'selected="selected"' }}>{{ subCategory }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="display:inline-block;">
+                        <ul>
+                            <li><strong>Rules/Tutorials</strong> appears in the rules/help section</li>
+                            <li><strong>Hidden</strong> used for content on other site pages<br/>(don't delete hidden content without being sure the topic is not needed)</li>
+                        </ul>
+                    </div>
+                    <h3>Title</h3>
+                    <input type="text" name="title" class="long" value="{{ edit.Title }}" />
+                    <h3>Description</h3>
+                    <input type="text" name="description" class="long" value="{{ edit.Description }}" />
+                    <br />
+                    <h3>Body</h3>
+                      &nbsp; special article tags allowed: &nbsp; [whitelist] &nbsp; [clientlist] &nbsp; [ratiolist] &nbsp; [dnulist]
+                      {{ bbcode.display_bbcode_assistant('textbody', get_permissions_advtags(ActiveUser.ID, ActiveUser.legacy.CustomPermissions)) }}
+                      <textarea id="textbody" name="body" class="long" rows="15">{{ edit.Body }}</textarea>
+                </div>
+                <br />
+                <div class="center">
+                    <input id="post_preview" type="button" value="Preview" onclick="if (this.preview) {Edit_Article();} else {Preview_Article();}" />
+                    <input type="submit" value="{{ request.getGetString('action') == 'articles' ? 'Create new article' : 'Save changes' }}" />
+                </div>
+            </div>
+        </form>
+        <br /><br />
+        <h2>Other articles</h2>
+        {% set openTable=false %}
+        {% set oldCategory = -1 %}
+        {% set lastSubCat = -1 %}
+        {% for record in records if record.MinClass < staffClass %}
+            {% if lastSubCat != record.SubCat %}
+                {#$Row = 'b';#}
+                {% set lastSubCat = record.SubCat %}
+
+                {% if openTable %}
+                    </table><br/>
+                {% endif %}
+
+                {% if oldCategory != record.Category %}
+                    <br/>
+                    <h3 id="general">{{ articleCategories[record.Category] }}</h3>
+                    {% set oldCategory = record.Category %}
+                {% endif %}
+
+                <div class="head">{{ record.SubCat==1 ? "Other {articleCategories[record.Category]} articles" : articleSubCategories[record.SubCat] }}</div>
+                <table width="100%" class="topic_list">
+                    <tr class="colhead">
+                        <td style="width:300px;">Title</td>
+                        <td>Additional Info</td>
+                    </tr>
+                    {% set openTable=true %}
+                {% endif %}
+
+                <tr class="row{{ loop.index % 2 ? 'a' : 'b' }}">
+                    <td class="nobr topic_link">
+                        <span style="float:left">
+                            <a href="/articles.php?topic={{ record.TopicID }}" target="_blank" title="goto article">{{ record.Title }}</a>
+                        </span>
+                        <span style="float:right" class="small">posted {{ time_diff(record.Time)|raw }}</span>
+                    </td>
+                    <td class="nobr">
+                        <span style="float:left">{{ record.Description }}</span>
+                        <span style="float:right">
+                            {{ record.MinClass > 0 ? "[#{classLevels[record.MinClass].Name}+]" }}
+                            <a href="/tools.php?action=editarticle&amp;id={{ record.ID }}">[Edit]</a>
+                            {% if check_perms('admin_delete_articles') %}
+                                <a href="/tools.php?action=deletearticle&amp;id={{ record.ID }}&amp;auth={{ ActiveUser.legacy.AuthKey }}" onClick="return confirm('Are you sure you want to delete this article?');">[Delete]</a>
+                            {% endif %}
+                        </span>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+{% endblock %}

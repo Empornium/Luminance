@@ -22,7 +22,7 @@ if (empty($_POST['section']) || !in_array($_POST['section'], array('collages', '
 
 if (empty($_POST['body'])) error('You cannot post a comment with no content.', true);
 
-if ($LoggedUser['DisablePosting']) error('Your posting rights have been removed.', true);
+$master->repos->restrictions->check_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::POST);
 
 
 $postID  = $_POST['post'];

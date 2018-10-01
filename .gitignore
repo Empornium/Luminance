@@ -1,0 +1,13 @@
+config.php
+settings.ini
+release/*
+static/similar
+nbproject/
+*.save
+*~
+*.bk
+*.phar
+info.php
+vendor
+.idea/
+composer.lock

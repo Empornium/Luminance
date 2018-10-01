@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS `pm_conversations_users` (
   `ConvID` int(12) NOT NULL DEFAULT '0',
   `InInbox` enum('1','0') NOT NULL,
   `InSentbox` enum('1','0') NOT NULL,
-  `SentDate` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `ReceivedDate` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `SentDate` datetime DEFAULT NULL,
+  `ReceivedDate` datetime DEFAULT NULL,
   `UnRead` enum('1','0') NOT NULL DEFAULT '1',
   `Sticky` enum('1','0') NOT NULL DEFAULT '0',
   `ForwardedTo` int(12) NOT NULL DEFAULT '0',
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `pm_conversations_users` (
   KEY `ConvID` (`ConvID`),
   KEY `SentDate` (`SentDate`),
   KEY `ReceivedDate` (`ReceivedDate`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

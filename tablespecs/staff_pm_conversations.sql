@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS `staff_pm_conversations` (
   KEY `ResolverID` (`ResolverID`),
   KEY `Level` (`Level`),
   KEY `Status` (`Status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

@@ -2,12 +2,14 @@
 namespace Luminance\Services;
 
 use Luminance\Core\Master;
+use Luminance\Core\Service;
 use Luminance\Errors\ConfigurationError;
 use Luminance\Errors\SystemError;
 use Luminance\Errors\AuthError;
 
 use \Defuse\Crypto\Crypto as DCrypto;
 use \Defuse\Crypto\Exception as DCryptoEx;
+use Luminance\Errors\UserError;
 
 class Crypto extends Service {
 
@@ -40,7 +42,12 @@ class Crypto extends Service {
     public function decrypt($Ciphertext, $KeyIdentifier = 'default', $Hex = false) {
         # Always check for return value === false when using this!
         # It implies the ciphertext was invalid.
-        if ($Hex) $Ciphertext = $this->hex2bin($Ciphertext);
+        if ($Hex) {
+            if (!ctype_xdigit($Ciphertext)) {
+                throw new UserError('Invalid token format');
+            }
+            $Ciphertext = $this->hex2bin($Ciphertext);
+        }
         $Key = $this->get_derived_key($KeyIdentifier);
         try {
             $Message = DCrypto::decrypt($Ciphertext, $Key);
@@ -56,7 +63,7 @@ class Crypto extends Service {
         return $Message;
     }
 
-    protected function shortHMAC($keyIdentifier = 'HMAC', $data) {
+    protected function shortHMAC($keyIdentifier, $data) {
         $key = $this->get_derived_key($keyIdentifier);
         return substr(hash_hmac('sha256', $data, $key, true), 0, 12);
     }
@@ -76,6 +83,9 @@ class Crypto extends Service {
         try {
             $fullToken = $this->hex2bin($token);
             $baseToken = substr($fullToken, 0, 12);
+            if (strlen($baseToken) < 12) {
+                throw new AuthError("Malformed Auth Token", "Unauthorized");
+            }
             $unpacked = unpack('a4actionHash/a4cid/Ntimestamp', $baseToken);
             $minTimestamp = intval(date('U')) - $duration;
             $result = (
@@ -85,7 +95,7 @@ class Crypto extends Service {
                 $unpacked['timestamp'] >= $minTimestamp
             );
             return $result;
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             throw new AuthError("Bots are forbidden", "Unauthorized", "/login");
         }
     }
@@ -189,7 +199,7 @@ class Crypto extends Service {
 
         // ORM = first L octets of T
         $orm = self::our_substr($t, 0, $length);
-        if ($orm === FALSE) {
+        if ($orm === false) {
             throw new InternalError('Failed check in derive_key');
         }
         return $orm;
@@ -202,7 +212,7 @@ class Crypto extends Service {
         }
         if ($exists) {
             $length = \mb_strlen($str, '8bit');
-            if ($length === FALSE) {
+            if ($length === false) {
                 throw new SystemError(
                     "mb_strlen() failed."
                 );
@@ -218,8 +228,7 @@ class Crypto extends Service {
         if ($exists === null) {
             $exists = \function_exists('mb_substr');
         }
-        if ($exists)
-        {
+        if ($exists) {
             // mb_substr($str, 0, NULL, '8bit') returns an empty string on PHP
             // 5.3, so we have to find the length ourselves.
             if (!isset($length)) {
@@ -248,5 +257,4 @@ class Crypto extends Service {
     public static function hex2bin($HexString) {
         return DCrypto::hexToBin($HexString);
     }
-
 }

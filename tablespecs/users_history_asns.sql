@@ -24,14 +24,14 @@
 CREATE TABLE IF NOT EXISTS `users_history_asns` (
   `UserID` int(10) NOT NULL,
   `ASN` varchar(255) NOT NULL,
-  `StartTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `StartTime` datetime DEFAULT NULL,
   `EndTime` datetime DEFAULT NULL,
   PRIMARY KEY (`UserID`,`ASN`),
   KEY `UserID` (`UserID`),
   KEY `ASN` (`ASN`),
   KEY `StartTime` (`StartTime`),
   KEY `EndTime` (`EndTime`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

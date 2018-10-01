@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `top10_history_torrents` (
   `TorrentID` int(10) NOT NULL DEFAULT '0',
   `TitleString` varchar(150) NOT NULL DEFAULT '',
   `TagString` varchar(100) NOT NULL DEFAULT ''
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

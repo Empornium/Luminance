@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `requests_tags` (
   PRIMARY KEY (`TagID`,`RequestID`),
   KEY `TagID` (`TagID`),
   KEY `RequestID` (`RequestID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

@@ -1,0 +1,47 @@
+#content {
+    width: 90%;
+    min-width: 940px;
+    max-width: 1300px;
+    margin: 40px auto 0px auto;
+    padding: 0px 0px 35px;
+    overflow-y:auto;
+    overflow-x:hidden;
+}
+
+.permissions {
+    width:930px;
+    margin-left:auto;
+    margin-right:auto;
+    overflow-y:auto;
+    overflow-x:hidden;
+}
+
+/*  Torrent Buttons  */
+.torrent_buttons {
+    margin-bottom: 10px;
+    float: left;
+    text-align: left;
+    vertical-align: center;
+}
+
+
+code.bbcode {
+    display:inline-block;
+    padding:0px 4px;
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+code.bbcodeblock {
+    display:block;
+    font-family: "PT Mono", monospace;
+    text-align: left;
+    margin: 10px;
+    padding: 10px;
+}
+
+.head {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -2,6 +2,7 @@
 namespace Luminance\Services;
 
 use Luminance\Core\Master;
+use Luminance\Core\Service;
 use Luminance\Errors\ConfigurationError;
 use Luminance\Errors\SystemError;
 
@@ -29,7 +30,7 @@ class Tracker extends Service {
                                            'displayRow' => 1,
                                            'displayCol' => 1,
                                            'type' => 'bool',
-                                           'updateTracker' => TRUE,
+                                           'updateTracker' => true,
                                            'description' => 'Track IPv6 Peers'],
 
         'SitewideFreeleechStartTime'   => ['value' => '0000-00-00 00:00:00',
@@ -37,7 +38,7 @@ class Tracker extends Service {
                                            'displayRow' => 2,
                                            'displayCol' => 1,
                                            'type' => 'date',
-                                           'updateTracker' => TRUE,
+                                           'updateTracker' => true,
                                            'description' => 'Sitewide Freeleech Start Time'],
 
         'SitewideFreeleechEndTime'     => ['value' => '0000-00-00 00:00:00',
@@ -45,7 +46,7 @@ class Tracker extends Service {
                                            'displayRow' => 2,
                                            'displayCol' => 2,
                                            'type' => 'date',
-                                           'updateTracker' => TRUE,
+                                           'updateTracker' => true,
                                            'description' => 'Sitewide Freeleech End Time'],
 
         'SitewideFreeleechMode'        => ['value' => 'off',
@@ -54,7 +55,7 @@ class Tracker extends Service {
                                            'displayCol' => 3,
                                            'type' => 'enum',
                                            'validation' => ['inarray' => ['off', 'timed', 'perma']],
-                                           'updateTracker' => TRUE,
+                                           'updateTracker' => true,
                                            'description' => 'Sitewide Freeleech Mode'],
 
         'SitewideDoubleseedStartTime'  => ['value' => '0000-00-00 00:00:00',
@@ -62,7 +63,7 @@ class Tracker extends Service {
                                            'displayRow' => 3,
                                            'displayCol' => 1,
                                            'type' => 'date',
-                                           'updateTracker' => TRUE,
+                                           'updateTracker' => true,
                                            'description' => 'Sitewide Doubleseed Start Time'],
 
         'SitewideDoubleseedEndTime'    => ['value' => '0000-00-00 00:00:00',
@@ -70,7 +71,7 @@ class Tracker extends Service {
                                            'displayRow' => 3,
                                            'displayCol' => 2,
                                            'type' => 'date',
-                                           'updateTracker' => TRUE,
+                                           'updateTracker' => true,
                                            'description' => 'Sitewide Doubleseed End Time'],
 
         'SitewideDoubleseedMode'       => ['value' => 'off',
@@ -79,13 +80,12 @@ class Tracker extends Service {
                                            'displayCol' => 3,
                                            'type' => 'enum',
                                            'validation' => ['inarray' => ['off', 'timed', 'perma']],
-                                           'updateTracker' => TRUE,
+                                           'updateTracker' => true,
                                            'description' => 'Sitewide Doubleseed Mode'],
     ];
 
 
-    public function options($name, $value)
-    {
+    public function options($name, $value) {
         if (!array_key_exists($name, self::$defaultOptions)) return false;
 
         switch (self::$defaultOptions[$name]['type']) {
@@ -111,11 +111,9 @@ class Tracker extends Service {
 
 
 
-    public function validateParams($params)
-    {
-        foreach ($params as $key => $value)
-        {
-            switch($key) {
+    public function validateParams($params) {
+        foreach ($params as $key => $value) {
+            switch ($key) {
                 case 'id':
                 case 'userid':
                 case 'new_announce_interval':
@@ -192,8 +190,7 @@ class Tracker extends Service {
      * @param $doubleseed  int    DS status, 0 == none, 1 == doubleseed
      * @return             bool   Whether the request was successfully sent
      */
-    public function addTorrent($torrentID, $infohash, $freetorrent=0, $doubleseed=0)
-    {
+    public function addTorrent($torrentID, $infohash, $freetorrent = 0, $doubleseed = 0) {
         $params = ['id'             => $torrentID,
                    'info_hash'      => $infohash,
                    'freetorrent'    => $freetorrent,
@@ -213,8 +210,7 @@ class Tracker extends Service {
      * @param $doubleseed  int    DS status, 0 == none, 1 == doubleseed
      * @return             bool   Whether the request was successfully sent
      */
-    public function updateTorrent($infohash, $freetorrent=0, $doubleseed=0)
-    {
+    public function updateTorrent($infohash, $freetorrent = 0, $doubleseed = 0) {
         $params = ['info_hash'      => $infohash,
                    'freetorrent'    => $freetorrent,
                    'doubletorrent'  => $doubleseed];
@@ -233,8 +229,7 @@ class Tracker extends Service {
      * @param $doubleseed  int    DS status, 0 == none, 1 == doubleseed, will be set for all torrents
      * @return             bool   Whether the request was successfully sent
      */
-    public function updateTorrents($infohashes, $freetorrent=0, $doubleseed=0)
-    {
+    public function updateTorrents($infohashes, $freetorrent = 0, $doubleseed = 0) {
         $params = ['info_hashes'    => $infohashes,
                    'freetorrent'    => $freetorrent,
                    'doubletorrent'  => $doubleseed];
@@ -253,8 +248,7 @@ class Tracker extends Service {
      * @param $time     int    A utc timestamp for the datetime the token ends
      * @return          bool   Whether the request was successfully sent
      */
-    public function addTokenFreeleech($infohash, $userid, $time)
-    {
+    public function addTokenFreeleech($infohash, $userid, $time) {
         $params = ['info_hash'  => $infohash,
                    'userid'     => $userid,
                    'time'       => $time];
@@ -273,8 +267,7 @@ class Tracker extends Service {
      * @param $time     int    A utc timestamp for the datetime the token ends
      * @return          bool   Whether the request was successfully sent
      */
-    public function addTokenDoubleseed($infohash, $userid, $time)
-    {
+    public function addTokenDoubleseed($infohash, $userid, $time) {
         $params = ['info_hash'  => $infohash,
                    'userid'     => $userid,
                    'time'       => $time];
@@ -292,8 +285,7 @@ class Tracker extends Service {
      * @param $userid   int    The userID of the user to remove tokens for
      * @return          bool   Whether the request was successfully sent
      */
-    public function removeTokens($infohash, $userid)
-    {
+    public function removeTokens($infohash, $userid) {
         $params = ['info_hash'  => $infohash,
                    'userid'     => $userid];
 
@@ -309,8 +301,7 @@ class Tracker extends Service {
      * @param $infohash string The torrent info hash (should not be rawurlencoded first)
      * @return          bool   Whether the request was successfully sent
      */
-    public function deleteTorrent($infohash)
-    {
+    public function deleteTorrent($infohash) {
         // @param $reason int The reason for deleting
         // a code for the delete reason - atm the codes defined in the tracker are whatcd related
         // ['reason'  => $reason];
@@ -329,8 +320,7 @@ class Tracker extends Service {
      * @param $userid  int        The userID of the user to add
      * @return         bool       Whether the request was successfully sent
      */
-    public function addUser($passkey, $userid)
-    {
+    public function addUser($passkey, $userid) {
         $params = ['passkey'  => $passkey,
                    'id'       => $userid];
 
@@ -346,8 +336,7 @@ class Tracker extends Service {
      * @param $newpasskey string(32) The new passkey hash for this user
      * @return            bool       Whether the request was successfully sent
      */
-    public function changePasskey($oldpasskey, $newpasskey)
-    {
+    public function changePasskey($oldpasskey, $newpasskey) {
         $params = ['oldpasskey'  => $oldpasskey,
                    'newpasskey'  => $newpasskey];
 
@@ -365,8 +354,7 @@ class Tracker extends Service {
      * @param $track_ipv6  int        Track user's IPv6 address 0 == no, 1 == yes
      * @return             bool       Whether the request was successfully sent
      */
-    public function updateUser($passkey, $canleech = null, $visible = null, $trackipv6 = null)
-    {
+    public function updateUser($passkey, $canleech = null, $visible = null, $trackipv6 = null) {
         $params = ['passkey'    => $passkey,
                    'can_leech'  => $canleech,
                    'visible'    => $visible,
@@ -388,8 +376,7 @@ class Tracker extends Service {
      * @param $passkey string(32) The passkey hash for this user
      * @return         bool       Whether the request was successfully sent
      */
-    public function removeUser($passkey)
-    {
+    public function removeUser($passkey) {
         $params = ['passkey'  => $passkey];
 
         if ($this->validateParams($params)) {
@@ -403,8 +390,7 @@ class Tracker extends Service {
      * @param $passkey string(32) The passkey hash for this user
      * @return         bool       Whether the request was successfully sent
      */
-    public function removeUsers($passkeys)
-    {
+    public function removeUsers($passkeys) {
         $params = ['passkeys'  => $passkeys];
 
         if ($this->validateParams($params)) {
@@ -419,8 +405,7 @@ class Tracker extends Service {
      * @param $time     int         A utc timestamp for the datetime the PFL ends
      * @return          bool        Whether the request was successfully sent
      */
-    public function setPersonalFreeleech($passkey, $time)
-    {
+    public function setPersonalFreeleech($passkey, $time) {
         $params = ['passkey'  => $passkey,
                    'time'     => $time];
 
@@ -436,8 +421,7 @@ class Tracker extends Service {
      * @param $time     int         A utc timestamp for the datetime the PDS ends
      * @return          bool        Whether the request was successfully sent
      */
-    public function setPersonalDoubleseed($passkey, $time)
-    {
+    public function setPersonalDoubleseed($passkey, $time) {
         $params = ['passkey'  => $passkey,
                    'time'     => $time];
 
@@ -452,8 +436,7 @@ class Tracker extends Service {
      * @param $peerid int   The peerid to add
      * @return        bool  whether the request was successfully sent
      */
-    public function addBlacklist($peerid)
-    {
+    public function addBlacklist($peerid) {
         $params = ['peer_id'  => $peerid];
 
         if ($this->validateParams($params)) {
@@ -467,8 +450,7 @@ class Tracker extends Service {
      * @param $peerid int   The peerid to remove
      * @return        bool  whether the request was successfully sent
      */
-    public function removeBlacklist($peerid)
-    {
+    public function removeBlacklist($peerid) {
         $params = ['peer_id'  => $peerid];
 
         if ($this->validateParams($params)) {
@@ -483,8 +465,7 @@ class Tracker extends Service {
      * @param $newpeerid  int   The peerid to add
      * @return            bool  whether the request was successfully sent
      */
-    public function editBlacklist($oldpeerid, $newpeerid)
-    {
+    public function editBlacklist($oldpeerid, $newpeerid) {
         $params = ['old_peer_id'  => $oldpeerid,
                    'new_peer_id'  => $newpeerid];
 
@@ -499,8 +480,7 @@ class Tracker extends Service {
      * @param $announceInterval int  The announce interval for the tracker
      * @return                  bool  whether the request was successfully sent
      */
-    public function updateAnnounceInterval($announceInterval)
-    {
+    public function updateAnnounceInterval($announceInterval) {
         $params = ['new_announce_interval'  => $announceInterval];
 
         if ($this->validateParams($params)) {
@@ -514,8 +494,7 @@ class Tracker extends Service {
      * @param $infohash string  The torrent info hash (should not be rawurlencoded first)
      * @return          bool    whether the request was successfully sent
      */
-    public function infoTorrent($infohash)
-    {
+    public function infoTorrent($infohash) {
         $params = ['info_hash'  => $infohash];
 
         if ($this->validateParams($params)) {
@@ -582,7 +561,7 @@ class Tracker extends Service {
         $Err = false;
         if ($this->send($Get, $MaxAttempts, $Err) === false) {
             if ($this->cache->get_value('tracker_error_reported') === false) {
-		        // nope, get can include passkeys
+                // nope, get can include passkeys
                 //write_log("Tracker error: Failed to update radiance: $Err : $Get");
                 $this->cache->cache_value('tracker_error_reported', true, $this->options->ErrorLoggingFreqS);
             }
@@ -632,12 +611,16 @@ class Tracker extends Service {
             $Response = @file_get_contents('http://' . $this->settings->tracker->host . ':' . $this->settings->tracker->port . '/' . $Get);
 
             // $http_response_header is auto-populated by file_get_contents
-            $ResponseCode = substr($http_response_header[0], 9, 3);
+            if (empty($http_response_header)) {
+                $Success = false;
+            } else {
+                $ResponseCode = substr($http_response_header[0], 9, 3);
 
-            // Check to see if we got a response and whether or not the response was
-            // a 2xx sucess response. Tracker supports 200, 204 and 500 for now.
-            if(!($Response === false) && $ResponseCode >= 200 && $ResponseCode < 300) {
-                $Success = true;
+                // Check to see if we got a response and whether or not the response was
+                // a 2xx sucess response. Tracker supports 200, 204 and 500 for now.
+                if (!($Response === false) && $ResponseCode >= 200 && $ResponseCode < 300) {
+                    $Success = true;
+                }
             }
         }
         $Request = array(

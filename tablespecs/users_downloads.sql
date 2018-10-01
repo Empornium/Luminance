@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS `users_downloads` (
   PRIMARY KEY (`UserID`,`TorrentID`),
   KEY `TorrentID` (`TorrentID`),
   KEY `Time` (`Time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

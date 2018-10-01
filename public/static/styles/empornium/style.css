@@ -147,15 +147,10 @@ ul.thin li { margin:0px 0px; padding:0px; }
     text-align: center;
     margin: 0px auto 20px;
 }
+
 #content {
-    width: 90%;
-    min-width: 980px;
-    max-width: 1200px;
     background-color: #e0e8eb;
-    margin: 0px auto 0px auto;
-    padding: 0.6em 0.6em 30px;
     border: 1px solid #98AAB1;
-    /* overflow: hidden; */
 }
 
 #modal_content {
@@ -623,33 +618,6 @@ li.searchbars {
 
 #compose {
     margin: 20px auto;
-}
-
-/* staff pms */
-.messagecontainer {
-    height: 20px;
-    margin: 0px auto 10px auto;
-}
-.messagebar {  /* #0261a3; */
-    padding-top: 3px;
-    height: 20px;
-    background-color: #1a1;
-    text-align: center;
-    font-weight: bold;
-    color: white;
-    border-radius: 10px;       /* FF9+ IE9+ */
-    -moz-border-radius: 10px; /* for FF5 */
-    -webkit-border-radius: 10px; /* for opera */
-    border: 1px solid #151;
-    white-space:nowrap;
-}
-.messagebar.alert {
-    background-color: #e11;
-    border: 1px solid #511;
-}
-.messagebar.checking {
-    background-color: white;
-    color: black;
 }
 
 /* user classes */
@@ -1683,6 +1651,7 @@ td.sig {
      /* border-top: 1px solid #dcdde4;    */
     padding: 8px;
     vertical-align: top;
+    font: normal 9pt "Lucida Grande", Helvetica, Arial, Verdana, sans-serif;
 }
 /*
 #sig {
@@ -1695,10 +1664,10 @@ td.sig {
     max-width: 800px;
 }*/
 table .scale_image {
-	max-width: 800px;
+  max-width: 800px;
 }
 #collage table .scale_image {
-	max-width: 600px;
+  max-width: 600px;
 }
 
 td.postbody {
@@ -1767,12 +1736,6 @@ tr.unreadpm {
     font-weight: bold;
     text-align: right;
     width: 130px;
-}
-
-.permissions {
-    width:930px;
-    margin-left:auto;
-    margin-right:auto;
 }
 
 .permission_container {
@@ -1955,19 +1918,13 @@ code.error {
     padding:1px 0px;
 }
 code.bbcode {
-    display:inline-block;
     background-color: #fffff3;
     color: #333;
-    padding:0px 2px;
 }
 code.bbcodeblock {
-    display:block;
     font-family: "PT Mono", monospace;
     background-color: #f4f4f4;
     color: black;
-    text-align: left;
-    margin: 10px;
-    padding: 10px;
     border: 1px dashed #98AAB1;
 }
 
@@ -2085,10 +2042,10 @@ a.bb_button:hover {
 }
 
 .color_pick td {
-	padding:2px;
-	width:10px;
-	height:10px;
-	cursor:pointer;
+  padding:2px;
+  width:10px;
+  height:10px;
+  cursor:pointer;
 }
 
 .picker_holder {
@@ -2097,83 +2054,32 @@ a.bb_button:hover {
 
 .color_pick {
     display: block;
-	border-collapse:collapse;
+  border-collapse:collapse;
 }
 
 .color_pick, .color_pick td {
-	border:1px solid #333333;
+  border:1px solid #333333;
 }
 
 .color_pick td:hover {
     border:1px solid #333333;
 }
 
-/*  Torrent Buttons  */
-
-#torrent_buttons {
-    /*margin-left: 10px;*/
-    margin-bottom: 10px;
-}
-
-a.button {
-	display: inline-block;
-	-moz-border-radius: 3px;
-	border-radius: 3px;
-	-webkit-border-radius: 3px;
-	/* margin: 3px 6px 3px 0; */
-      margin: 0px 8px 4px 0px;
-	text-decoration: none;
-	color: #fff;
-	border: none;
-	font-size: 11px;
-	vertical-align: top;
-	cursor: pointer;  /* hand; */
-	line-height: 11px;
-	text-align: center;
-	font-size: 12px;
-	line-height: 12px;
-	font-family: "Open Sans",Verdana, Geneva, sans-serif;
-	padding: 7px 15px;
-      /*font-weight: bold; */
-}
-
-.greenButton {
-	background: #5da53a;
-}
-
-.greenButton:hover {
-	background: #48802d;
-}
-
-.blueButton {
-	background: #1f9db4;
-}
-
-.blueButton:hover {
-	background: #187b8c;
-}
-
-
-.redButton {
-	background: #ab3041;
-}
-
-.redButton:hover {
-	background: #812;
-}
-
-.infoButton {
-    background: #5A8Bb8;    /* #024a7c;#BACBD8 #9AaBb8 */
-}
-.infoButton:hover {
-    background: #3A6B98;
-}
-.orangeButton {
-	background: #ff7f26;
-}
-
-.orangeButton:hover {
-	background: #d96d21;
+.button {
+  display: inline-block;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+  -webkit-border-radius: 3px;
+  margin: 0px 8px 4px 0px;
+  text-decoration: none;
+  color: #fff;
+  border: none;
+  cursor: pointer;  /* hand; */
+  text-align: center;
+  font-size: 12px;
+  line-height: 12px;
+  font-family: "Open Sans",Verdana, Geneva, sans-serif;
+  padding: 7px 15px;
 }
 
 .overlay, .leftOverlay, .rightOverlay {
@@ -2291,7 +2197,7 @@ img.win.flash {
 }
 
 .statusown a {
-	cursor: pointer;
+  cursor: pointer;
 }
 
 .status_box {
@@ -2302,28 +2208,28 @@ img.win.flash {
       padding:4px;
 }
 .staffstatus {
-	display: inline-block;
-	border-radius: 6px;
-	-moz-border-radius: 6px;
-	-webkit-border-radius: 6px;
+  display: inline-block;
+  border-radius: 6px;
+  -moz-border-radius: 6px;
+  -webkit-border-radius: 6px;
       margin: 4px 4px;
-	text-decoration: none;
-	color: #fff;
-	font-size: 11px;
-	vertical-align: top;
-	cursor: default;
-	line-height: 11px;
-	text-align: center;
-	font-size: 12px;
-	line-height: 12px;
-	font-family: Verdana, Geneva, sans-serif;
-	padding: 3px 15px;
+  text-decoration: none;
+  color: #fff;
+  font-size: 11px;
+  vertical-align: top;
+  cursor: default;
+  line-height: 11px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 12px;
+  font-family: Verdana, Geneva, sans-serif;
+  padding: 3px 15px;
 }
 .staffstatus a {
-	color: #000;
+  color: #000;
 }
 .staffstatus a:visited {
-	color: #000;
+  color: #000;
 }
 .status_checking {
     float:right;
@@ -2403,21 +2309,21 @@ img.win.flash {
 
 
 .donate_drives .button {
-	display: inline-block;
-	-moz-border-radius: 2px;
-	border-radius: 2px;
-	-webkit-border-radius: 2px;
+  display: inline-block;
+  -moz-border-radius: 2px;
+  border-radius: 2px;
+  -webkit-border-radius: 2px;
     margin: 0px 3px 3px 0px;
-	text-decoration: none;
-	color: #fff;
+  text-decoration: none;
+  color: #fff;
     font-weight: bold;
-	border: none;
-	vertical-align: top;
-	padding: 4px 4px;
+  border: none;
+  vertical-align: top;
+  padding: 4px 4px;
 }
 
 .greyButton {
-	background: #bbb;
+  background: #bbb;
 }
 
 
@@ -2430,8 +2336,8 @@ img.win.flash {
 #active_drive {
     position: relative;
     text-align: left;
-	text-decoration: none;
-	vertical-align: top;
+  text-decoration: none;
+  vertical-align: top;
 
     width: 90%;
     min-width: 980px;
@@ -2451,21 +2357,21 @@ img.win.flash {
 }
 
 #active_drive a{
-	text-decoration: none;
+  text-decoration: none;
     font-weight: bold;
     font-size: 14px;
 }
 #active_drive a:hover {
-	text-decoration: underline;
+  text-decoration: underline;
 }
 #active_drive a.link{
     float:right;
-	text-decoration: none;
+  text-decoration: none;
     font-weight: normal;
     font-size: 10px;
 }
 #active_drive a.link:hover {
-	text-decoration: underline;
+  text-decoration: underline;
 }
 
 #donorbargreen {
@@ -2778,9 +2684,9 @@ span.anon_name {
 }
 
 .bb_video {
-	border: none;
-	width: 640px;
-	height: 320px;
+  border: none;
+  width: 640px;
+  height: 320px;
 }
 
 .quarter_width_checkbox_container { /* used for latest forum topics selection on settings page */

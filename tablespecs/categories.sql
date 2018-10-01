@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS `categories` (
   `tag` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No Description',
   `open` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

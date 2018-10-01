@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS `tags` (
   KEY `TagType` (`TagType`),
   KEY `Uses` (`Uses`),
   KEY `UserID` (`UserID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

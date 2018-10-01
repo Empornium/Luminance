@@ -1,0 +1,11 @@
+{% extends "core/base.html.twig" %}
+
+{% block content %}
+    <div style="color:red;font-weight:bold; background-color: rgba(255, 255, 255, 0.12); width:300px;border-radius:5px;padding:10px;">
+        <h2>Your account has been blocked</h2></br>
+        <p>You have re-used the same password on another site that got breached.</p><br>
+        <p>
+            To avoid anyone getting access to your Empornium account, you need to <a href="/users/recover">change your password</a> to a unique password used only on Empornium.
+        </p>
+    </div>
+{% endblock %}

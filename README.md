@@ -1,7 +1,6 @@
 Luminance
 =========
 
-[![PHP56](https://img.shields.io/badge/PHP-5.6-brightgreen.svg)]()
 [![PHP70](https://img.shields.io/badge/PHP-7.0-brightgreen.svg)]()
 [![PHP71](https://img.shields.io/badge/PHP-7.1-blue.svg)]()
 [![HHVM](https://img.shields.io/badge/HHVM-3.x-blue.svg)]()
@@ -12,7 +11,7 @@ Note: **BETA SOFTWARE**. This software is currently in heavy development; do not
 Luminance is a webapplication for hosting authentication-restricted torrent tracker websites.
 It builds on the heavily altered version of the Gazelle software that has been in use by the Empornium tracker website since 2011.
 
-This document is current as of 2017-10-11.
+This document is current as of 2018-09-24.
 
 
 Goals
@@ -53,16 +52,19 @@ For interested developers, the current changes have been applied to the code in 
 -   Database access abstracted into PDO-based ORM layer, preventing SQL injection by design.
 -   Twig-based HTML templates.
 -   Monolog-based logging.
--   Clean application model based on Entities (ORM-based), Repositories, Services and Controllers (the latter being mainly Builtins/Plugins)..
+-   Clean application model based on Entities (ORM-based), Repositories, Services and Controllers (the latter being mainly Plugins).
 -   Fully revised security model based on strong & peer-reviewed cryptographic primitives.
 
 
 Roadmap
 -------
 
-0.5 - First version suitable for peer review and general publication.
-0.6-0.9 - Intermediate milestones TBD.
-1.0 - Stable version that can be painlessly deployed.
+-   0.5 - First version suitable for peer review and general publication.
+-   0.6 - All display code rended via TWIG templates.
+-   0.7 - All database accesses via ORM/PDO.
+-   0.8 - TBD
+-   0.9 - TBD
+-   1.0 - Stable version that can be painlessly deployed.
 
 
 Development

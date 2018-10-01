@@ -24,9 +24,9 @@ CREATE TABLE IF NOT EXISTS `bitcoin_donations` (
   `staffID` int(11) NOT NULL,
   `state` enum('unused','submitted','cleared') NOT NULL DEFAULT 'unused',
   `public` varchar(64) NOT NULL,
-  `time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `time` datetime DEFAULT NULL,
   `userID` int(11) unsigned NOT NULL,
-  `received` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `received` datetime DEFAULT NULL,
   `bitcoin_rate` double NOT NULL DEFAULT '0',
   `amount_bitcoin` double NOT NULL DEFAULT '0',
   `amount_euro` double NOT NULL DEFAULT '0',
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS `bitcoin_donations` (
   UNIQUE KEY `public` (`public`),
   KEY `state` (`state`),
   KEY `userID` (`userID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

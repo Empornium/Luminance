@@ -272,14 +272,9 @@ ul.thin li {
     font-weight: normal;
 }
 #content {
-    width: 90%;
-    min-width: 940px;
-    max-width: 1300px;
     background: rgba(32, 32, 32, 0.6);
     box-shadow: 0 0 30 -5px black;
-    margin: 40px auto 0 auto;
     border: 1px solid #202020;
-    padding: 0 0 35px;
 }
 #modal_content {
     width: 90%;
@@ -287,7 +282,7 @@ ul.thin li {
     max-width: 1300px;
     background: rgba(32, 32, 32, 0.6);
     box-shadow: 0 0 30 -5px black;
-    margin: 40px auto 0 auto;
+    margin: 0px auto 0 auto;
     border: 1px solid #202020;
     padding: 0 0 35px;
 }
@@ -773,30 +768,7 @@ li.searchbars {
 #compose {
     margin: 20px auto;
 }
-/* staff pms */
 
-.messagecontainer {
-    height: 20px;
-    margin: 0px auto 10px auto;
-}
-.messagebar {
-    padding-top: 3px;
-    height: 20px;
-    background-color: #1a1;
-    text-align: center;
-    font-weight: bold;
-    color: white;
-    border: 1px solid #151;
-    white-space: nowrap;
-}
-.messagebar.alert {
-    background-color: #e11;
-    border: 1px solid #511;
-}
-.messagebar.checking {
-    background-color: white;
-    color: black;
-}
 /* user classes */
 
 .user_name {
@@ -1966,6 +1938,7 @@ td.sig {
     padding: 8px;
     vertical-align: top;
     height: 0;
+    font: normal 9pt "Lucida Grande", Helvetica, Arial, Verdana, sans-serif;
 }
 table .scale_image {
     max-width: 800px;
@@ -2051,11 +2024,6 @@ tr.unreadpm {
     font-weight: bold;
     text-align: right;
     width: 130px;
-}
-.permissions {
-    width: 930px;
-    margin-left: auto;
-    margin-right: auto;
 }
 .permission_container {
     margin-top: 20px;
@@ -2279,22 +2247,16 @@ code.error {
     padding: 1px 0px;
 }
 code.bbcode {
-    display: inline-block;
     background-color: #fffff3;
     color: #333;
-    padding: 0px 4px;
     border-width: 1px;
     border-color: #D3CFB7;
     border-style: dotted;
 }
 code.bbcodeblock {
-    display: block;
     font-family: "PT Mono", monospace;
     background-color: #f4f4f4;
     color: black;
-    text-align: left;
-    margin: 10px;
-    padding: 10px;
     border: 1px dashed #98AAB1;
 }
 /*  Stuff for the bbcode assistant  */
@@ -2402,23 +2364,13 @@ a.bb_button:hover {
 .color_pick td:hover {
     border: 1px solid #333333;
 }
-/*  Torrent Buttons  */
-
-#torrent_buttons {
-    margin-bottom: 10px;
-}
-a.button {
+.button {
     display: inline-block;
     margin: 0px 8px 4px 0px;
     text-decoration: none;
     color: #fff;
     border: none;
-    font-size: 11px;
-    vertical-align: top;
-    cursor: pointer;
-    /* hand; */
-
-    line-height: 11px;
+    cursor: pointer;    /* hand; */
     text-align: center;
     font-size: 12px;
     line-height: 12px;
@@ -2427,36 +2379,6 @@ a.button {
 }
 a.button:visited {
     color: #fff;
-}
-.greenButton {
-    background: #5da53a;
-}
-.greenButton:hover {
-    background: #48802d;
-}
-.blueButton {
-    background: #1f9db4;
-}
-.blueButton:hover {
-    background: #187b8c;
-}
-.redButton {
-    background: #ab3041;
-}
-.redButton:hover {
-    background: #812;
-}
-.infoButton {
-    background: #5A8Bb8;
-}
-.infoButton:hover {
-    background: #3A6B98;
-}
-.orangeButton {
-    background: #ff7f26;
-}
-.orangeButton:hover {
-    background: #d96d21;
 }
 table.overlay {
     border: 1px solid #202020;

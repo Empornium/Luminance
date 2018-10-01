@@ -1,0 +1,14 @@
+The following user just logged in with an IP that recently logged into a disabled account. This could mean 3 things:
+
+[b][size=3]Explaination[/size][/b]
+
+[*] The user has made multiple accounts: don't be too harsh if it's old!
+[*] The user is hacked and the IP was just trying multiple accounts until it find a good one: check the IP history carefully
+[*] It's a coincidence, the user just shares the same IP with someone else: check if the IP is a VPN using services like [url=https://iphub.info/]IPHub[/url]
+[b][size=3]Summary[/size][/b]
+
+User: [user]{{ UserID }}[/user]
+IP: {{ IP }} ({{ CC }})
+Time: {{ CurrentTime }}
+
+Disabled hits: {% for Hit in Hits %}[user]{{ Hit.UserID }}[/user] ({{ Hit.Time }}) {% endfor %}

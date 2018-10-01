@@ -22,10 +22,10 @@
 CREATE TABLE IF NOT EXISTS `users_slots` (
   `UserID` int(11) NOT NULL,
   `TorrentID` int(11) NOT NULL,
-  `FreeLeech` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `DoubleSeed` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `FreeLeech` datetime DEFAULT NULL,
+  `DoubleSeed` datetime DEFAULT NULL,
   PRIMARY KEY (`UserID`,`TorrentID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

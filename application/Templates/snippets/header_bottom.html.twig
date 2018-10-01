@@ -1,0 +1,116 @@
+<div id="header_bottom">
+    <div id="major_stats_left">
+        <ul id="userinfo_major">
+            <li id="nav_donate" class="brackets"><a href="/donate.php">{{ get_icon('nav_icons', 'nav_donate')|raw }}Donate</a></li>
+{% if options.EnableUploads %}
+            <li id="nav_upload" class="brackets"><a href="/upload.php">{{ get_icon('nav_icons', 'nav_upload')|raw }}Upload</a></li>
+{% endif %}
+            <li id="nav_conncheck" class="normal"><a href="/user.php?action=connchecker">{{ get_icon('nav_icons', 'nav_conncheck')|raw }}Conn-Checker</a></li>
+            <li><a id="nav_seeding" class="user_peers" href="/torrents.php?type=seeding&amp;userid={{ ActiveUser.ID }}" title="View seeding torrents">{{ get_icon('nav_icons', 'nav_seeding')|raw }}seed:
+                {% if seeding > 0 %}<span id="nav_seeding_r">{{ seeding|number_format }}</span>{% else %}0{% endif %}
+            </a></li>
+            <li><a id="nav_leeching" class="user_peers" href="/torrents.php?type=leeching&amp;userid={{ ActiveUser.ID }}" title="View leeching torrents">{{ get_icon('nav_icons', 'nav_leeching')|raw }}leech:
+                {% if leeching > 0 %}<span id="nav_leeching_r">{{ leeching|number_format }}</span>{% else %}0{% endif %}
+            </a></li>
+        </ul>
+    </div>
+{% if not freeleech_html is empty or not doubleseed_html is empty %}
+    <div class="nicebar_container">
+    {% if not freeleech_html is empty %}
+        <div class="freeleech_bar" style="display:inline-block">{{ freeleech_html|raw }}</div>
+    {% endif %}
+    {% if not doubleseed_html is empty %}
+        <div class="doubleseed_bar" style="display:inline-block">{{ doubleseed_html|raw }}</div>
+    {% endif %}
+    </div>
+{% endif %}
+    <div id="major_stats">
+{% if userinfo_invites and not master.repos.restrictions.is_restricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::INVITE')) %}
+        <ul id="userinfo_invites">
+            <li id="nav_invites" class="brackets"><a href="/users/{{ ActiveUser.ID }}/invite" title="Invite new user">{{ get_icon('nav_icons', 'nav_invites')|raw }}Invites:
+            {% if userinfo_unlimited_invites %}&infin;{% else %}<span id="nav_invites_r">{{ invites|number_format }}</span>{% endif %}</a></li></ul>
+{% endif %}
+{% if userinfo_tools %}
+        <ul id="userinfo_tools">
+            <li id="nav_tools"><a href="/tools.php">{{ get_icon('nav_icons', 'nav_tools')|raw }}Tools</a>
+                <ul>
+                {% for entry in userinfo_tools %}
+                    <li><a href="/{{ entry.target }}">{{ entry.title }}</a></li>
+                {% endfor %}
+                </ul>
+            </li>
+        </ul>
+{% endif %}
+        <ul id="userinfo_username">
+            <li id="nav_userinfo" class="{% if hv.NewMessages or hv.NumUnansweredStaffPMs or hv.NewStaffPMs or hv.NewNotifications or hv.NewSubscriptions %}highlight{% else %}normal{% endif %}"><a href="/user.php?id={{ ActiveUser.ID }}" class="username">{{ get_icon('nav_icons', 'nav_userinfo')|raw }}{{ ActiveUser.Username }}</a>
+            <ul>
+                <li id="nav_inbox" class="{% if hv.NewMessages %}highlight{% else %}normal{% endif %}"><a onmousedown="Stats('inbox');" href="/inbox.php">{{ get_icon('nav_icons', 'nav_inbox')|raw }}Inbox{% if hv.NewMessages %}({{ hv.NewMessages }}){% endif %}</a></li>
+{% if ActiveUser.legacy.SupportFor or Permissions.DisplayStaff %}
+                <li id="nav_staffinbox" class="{% if hv.NumUnansweredStaffPMs %}highlight{% else %}normal{% endif %}">
+                    <a onmousedown="Stats('staffinbox');" href="/staffpm.php?action=staff_inbox&amp;view=open">
+                    {{ get_icon('nav_icons', 'nav_staffinbox')|raw }}Staff Inbox ({{ hv.NumUnansweredStaffPMs }}) ({{ hv.NumOpenStaffPMs }})</a>
+                </li>
+{% endif %}
+                <li id="nav_staffmessages" class="{% if hv.NewStaffPMs %}highlight{% else %}normal{% endif %}"><a onmousedown="Stats('staffpm');" href="/staffpm.php?action=user_inbox">{{ get_icon('nav_icons', 'nav_staffmessages')|raw }}Message Staff{% if hv.NewStaffPMs %}({{ hv.NewStaffPMs }}){% endif %}</a></li>
+                <li id="nav_uploaded" class="normal"><a onmousedown="Stats('uploads');" href="/torrents.php?type=uploaded&amp;userid={{ ActiveUser.ID }}">{{ get_icon('nav_icons', 'nav_uploaded')|raw }}Uploads</a></li>
+{% if check_perms('site_submit_requests') %}
+                <li id="nav_myrequests" class="normal"><a onmousedown="Stats('requests');" href="/requests.php?type=created">{{ get_icon('nav_icons', 'nav_myrequests')|raw }}My Requests</a></li>
+{% endif %}
+                <li id="nav_bookmarks" class="normal"><a onmousedown="Stats('bookmarks');" href="/bookmarks.php?type=torrents">{{ get_icon('nav_icons', 'nav_bookmarks')|raw }}Bookmarks</a></li>
+{% if check_perms('site_torrents_notify') %}
+                <li id="nav_notifications" class="{% if hv.NewNotifications %}highlight{% else %}normal{% endif %}"><a onmousedown="Stats('notifications');" href="/torrents.php?action=notify">{{ get_icon('nav_icons', 'nav_notifications')|raw }}Notifications{% if hv.NewNotifications %} ({{ hv.NewNotifications }}){% endif %}</a></li>
+{% endif %}
+                <li id="nav_subscriptions" class="{% if hv.NewSubscriptions %}highlight{% else %}normal{% endif %}"><a onmousedown="Stats('subscriptions');" href="/userhistory.php?action=subscriptions"{% if hv.NewSubscriptions %} class="new-subscriptions"{% endif %}>{{ get_icon('nav_icons', 'nav_subscriptions')|raw }}Subscriptions{% if hv.NewSubscriptions %}({{ hv.NewSubscriptions }}){% endif %}</a></li>
+                <li id="nav_posthistory" class="normal"><a href="/userhistory.php?action=posts&amp;group=0&amp;showunread=0">{{ get_icon('nav_icons', 'nav_posthistory')|raw }}Post History</a></li>
+                <li id="nav_comments" class="normal"><a onmousedown="Stats('comments');" href="/userhistory.php?action=comments">{{ get_icon('nav_icons', 'nav_comments')|raw }}Comments</a></li>
+{% if check_perms('site_can_invite_always') %}
+                <li id="nav_invites" class="normal"><a onmousedown="Stats('invites');" href="/users/{{ ActiveUser.ID }}/invite">{{ get_icon('nav_icons', 'nav_invites')|raw }}Invites</a></li>
+{% endif %}
+                <li id="nav_friends" class="normal"><a onmousedown="Stats('friends');" href="/friends.php">{{ get_icon('nav_icons', 'nav_friends')|raw }}Friends</a></li>
+                <li id="nav_mydonations" class="normal"><a href="/donate.php?action=my_donations">{{ get_icon('nav_icons', 'nav_mydonations')|raw }}My Donations</a></li>
+                <li id="nav_bonus" class="normal" title="Spend your credits in the bonus shop"><a href="/bonus.php">{{ get_icon('nav_icons', 'nav_bonus')|raw }}Bonus Shop</a></li>
+{% if check_perms('site_give_specialgift') %}
+                <li id="nav_gift" class="normal" title="Give a gift of credits to a perv in need"><a href="/bonus.php?action=gift">{{ get_icon('nav_icons', 'nav_gift')|raw }}Special Gift</a></li>
+{% endif %}
+                <li id="nav_sandbox" class="normal"><a href="/sandbox.php">{{ get_icon('nav_icons', 'nav_sandbox')|raw }}Sandbox</a></li>
+{% if check_perms('site_play_slots') %}
+                <li id="nav_slots" class="normal"><a href="/bonus.php?action=slot">{{ get_icon('nav_icons', 'nav_slots')|raw }}Slot Machine</a></li>
+{% endif %}
+            <li id="nav_useredit" class="normal"><a href="/user.php?action=edit&amp;userid={{ ActiveUser.ID }}" title="Edit User Settings">{{ get_icon('nav_icons', 'nav_useredit')|raw }}Settings</a></li>
+            <li id="nav_usersecure" class="normal"><a href="/users/{{ ActiveUser.ID }}/security" title="Security Settings">{{ get_icon('nav_icons', 'nav_security')|raw }}Security</a></li>
+            <li id="nav_logout" class="normal">
+                <form method="POST" id="logout" action="/logout" />
+                    <input type="hidden" name="token" value="{{ secretary.getToken("users.logout") }}" />
+                </form>
+                <a href="javascript:{}" onclick="document.getElementById('logout').submit(); return false;">{{ get_icon('nav_icons', 'nav_logout')|raw }}Logout</a>
+            </li>
+            </ul>
+            </li>
+        </ul>
+    </div>
+</div>
+
+{# include 'snippets/donation_bar.html.twig' #}
+{% if donation_drive %}
+<div id="active_drive">
+    <div id="donorbar">
+        <div>
+            <a href="/forums.php?action=viewthread&amp;threadid={{ donation_drive.threadid }}" title="click for details">{{ donation_drive.name }}</a>
+            <a class="link" href="/donate.php" title="click to donate"><!--so far we have raised <strong>&euro;{{ donation_drive.raised_euros|number_format(2) }}</strong> out of-->
+                target: <strong>&euro;{{ donation_drive.target_euros|number_format(2) }}</strong> - to help support the site click to donate
+            </a>
+            <div>
+                <a href="/donate.php" title="click to donate">
+                    <div id="donorbargreen" style="width:{{ donation_drive.percentdone }}%;"> {% if donation_drive.percent_done > 94 %}{{ donation_drive.percentdone }}%{% endif %} &nbsp;</div><div id="donorbarred" style="width:{{ 100 - donation_drive.percentdone }}%;"> &nbsp;{% if donation_drive.percent_done <= 94 %}{{ percentdone }}%{% endif %}</div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if not ActiveUser.legacy.Donor and settings.site.advert_html %}
+<div id="adbar">
+    {{ settings.site.advert_html }}
+</div>
+{% endif %}

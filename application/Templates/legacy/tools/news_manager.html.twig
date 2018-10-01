@@ -1,0 +1,45 @@
+{% block content %}
+    <div class="thin">
+        <h2>{{ request.getGetString('action') == 'news' ? 'Create a news post' : 'Edit news post' }}</h2>
+        <div id="quickreplypreview">
+            <div id="contentpreview" style="text-align:left;"></div>
+        </div>
+        <form  id="quickpostform" action="tools.php" method="post">
+            <div class="box pad">
+                <div id="quickreplytext">
+                <input type="hidden" name="action" value="{{ request.getGetString('action') == 'news' ? 'takenewnews' : 'takeeditnews' }}" />
+                <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                <input type="hidden" name="page" value="{{ page }}" />
+                {% if request.getGetString('action') == 'editnews' %}
+                    <input type="hidden" name="newsid" value="{{ edit.ID }}" />
+                {% endif %}
+                <h3>Title</h3>
+                <input type="text" name="title" size="95" value="{{ edit.Title }}" />
+                <br />
+                <h3>Body</h3>
+                      {{ bbcode.display_bbcode_assistant('textbody')|raw }}
+                      <textarea id="textbody" name="body" class="long" rows="15">{{ edit.Body }}</textarea>
+                </div>
+                <br />
+               <div class="center">
+                <input id="post_preview" type="button" value="Preview" onclick="if (this.preview) {Quick_Edit_Blog();} else {Quick_Preview_Blog();}" />
+                      <input type="submit" value="{{ request.getGetString('action') == 'news' ? 'Create a news post' : 'Edit news post' }}" />
+                </div>
+            </div>
+        </form>
+        <br /><br />
+        <h2>News archive</h2>
+        <div class="linkbox">{{ pages|raw }}</div>
+        {% for record in records %}
+            <div class="head">
+                    <strong>{{ record.Title }}</strong> - posted {{ time_diff(record.Time)|raw }}
+                    - <a href="/tools.php?action=editnews&amp;id={{ record.ID }}&amp;page={{ page }}">[Edit]</a>
+                    <a href="/tools.php?action=deletenews&amp;id={{ record.ID }}&amp;page={{ page }}&amp;auth={{ ActiveUser.legacy.AuthKey }}">[Delete]</a>
+            </div>
+            <div class="box vertical_space">
+                <div class="pad">{{ bbcode.full_format(record.Body, true)|raw }}</div>
+            </div>
+        {% endfor %}
+        <div class="linkbox">{{ pages|raw }}</div>
+    </div>
+{% endblock %}

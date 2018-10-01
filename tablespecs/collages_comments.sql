@@ -24,13 +24,13 @@ CREATE TABLE IF NOT EXISTS `collages_comments` (
   `CollageID` int(10) NOT NULL,
   `Body` mediumtext NOT NULL,
   `UserID` int(10) NOT NULL DEFAULT '0',
-  `Time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `Time` datetime DEFAULT NULL,
   `EditedUserID` int(10) DEFAULT NULL,
   `EditedTime` datetime DEFAULT NULL,
   PRIMARY KEY (`ID`),
   KEY `CollageID` (`CollageID`),
   KEY `UserID` (`UserID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

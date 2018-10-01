@@ -24,10 +24,10 @@ CREATE TABLE IF NOT EXISTS `do_not_upload` (
   `Name` varchar(255) NOT NULL,
   `Comment` varchar(255) NOT NULL,
   `UserID` int(10) NOT NULL,
-  `Time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `Time` datetime DEFAULT NULL,
   PRIMARY KEY (`ID`),
   KEY `Time` (`Time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

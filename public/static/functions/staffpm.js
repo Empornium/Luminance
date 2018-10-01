@@ -123,27 +123,27 @@ function GotoDelete()
     var src = jQuery('#urlnew a.link').attr('href');
     var tid = src.substr(src.indexOf("id=")+3);
     var ids = GetLinkIDs();
-    window.location = window.location.origin + "/torrents.php?action=delete&type=dupe&torrentid=+"+tid+"&extraIDs="+encodeURI(ids);
+    window.location = window.location.origin + "/torrents.php?action=delete&type=dupe&torrentid="+tid+"&extraIDs="+encodeURI(ids);
 }
 
 
 function SetMessage() {
-	var id = document.getElementById('common_answers_select').value;
+  var id = document.getElementById('common_answers_select').value;
 
-	ajax.get("?action=get_response&plain=1&id=" + id, function (data) {
-		if ( $('#quickpost').raw().value != '') data = "\n"+data+"\n";
+  ajax.get("?action=get_response&plain=1&id=" + id, function (data) {
+    if ( $('#quickpost').raw().value != '') data = "\n"+data+"\n";
         insert(data, 'quickpost');
-		$('#common_answers').hide();
-	});
+    $('#common_answers').hide();
+  });
 }
 
 function UpdateMessage() {
-	var id = document.getElementById('common_answers_select').value;
+  var id = document.getElementById('common_answers_select').value;
 
-	ajax.get("?action=get_response&plain=0&id=" + id, function (data) {
-		$('#common_answers_body').raw().innerHTML = data;
-		$('#first_common_response').remove()
-	});
+  ajax.get("?action=get_response&plain=0&id=" + id, function (data) {
+    $('#common_answers_body').raw().innerHTML = data;
+    $('#first_common_response').remove()
+  });
 }
 
 function ValidateForm(id) {
@@ -153,7 +153,7 @@ function ValidateForm(id) {
 
     if (name==null || name=="" || message==null || message=="")
     {
-	  $(ajax_message).raw().innerHTML = 'One or more fields were blank.';
+    $(ajax_message).raw().innerHTML = 'One or more fields were blank.';
         $(ajax_message).add_class('alert');
         $(ajax_message).show();
         jQuery(ajax_message).fadeIn(0);
@@ -181,76 +181,76 @@ function Display_Message(added_id){
 }
 
 function SaveMessage(id) {
-	var ajax_message = '#ajax_message_' + id;
-	var ToPost = [];
+  var ajax_message = '#ajax_message_' + id;
+  var ToPost = [];
 
-	ToPost['id'] = id;
-	ToPost['name'] = $('#response_name_' + id).raw().value;
-	ToPost['message'] = $('#response_message_' + id).raw().value;
+  ToPost['id'] = id;
+  ToPost['name'] = $('#response_name_' + id).raw().value;
+  ToPost['message'] = $('#response_message_' + id).raw().value;
 
-	ajax.post("?action=edit_response", ToPost, function (data) {
-			if (data == '1') {
-				$(ajax_message).raw().innerHTML = 'Response successfully created.';
+  ajax.post("?action=edit_response", ToPost, function (data) {
+      if (data == '1') {
+        $(ajax_message).raw().innerHTML = 'Response successfully created.';
                         $(ajax_message).remove_class('alert');
-			} else if (data == '2') {
-				$(ajax_message).raw().innerHTML = 'Response successfully edited.';
+      } else if (data == '2') {
+        $(ajax_message).raw().innerHTML = 'Response successfully edited.';
                         $(ajax_message).remove_class('alert');
 
-			} else if (data == '-1') {
-				$(ajax_message).raw().innerHTML = 'One or more fields were blank.';
+      } else if (data == '-1') {
+        $(ajax_message).raw().innerHTML = 'One or more fields were blank.';
                         $(ajax_message).add_class('alert');
-			} else if (data == '-2') {
-				$(ajax_message).raw().innerHTML = 'Not a valid ID!';
+      } else if (data == '-2') {
+        $(ajax_message).raw().innerHTML = 'Not a valid ID!';
                         $(ajax_message).add_class('alert');
-			} else {
-				$(ajax_message).raw().innerHTML = data;
+      } else {
+        $(ajax_message).raw().innerHTML = data;
                         $(ajax_message).add_class('alert');
-			}
-			$(ajax_message).show();
+      }
+      $(ajax_message).show();
                   jQuery(ajax_message).fadeIn(0);
                   setTimeout("jQuery('" + ajax_message + "').fadeOut(400)", 2000);
-		}
-	);
+    }
+  );
 }
 
 
 function DeleteMessage(id) {
       var tt = $('#response_name_' + id).raw().value;
       if(!confirm("Are you sure you want to delete response #" + id + "\n'" + tt + "' ?")) return;
-	var ajax_message = '#ajax_message_' + id;
+  var ajax_message = '#ajax_message_' + id;
 
-	var ToPost = [];
-	ToPost['id'] = id;
-	ajax.post("?action=delete_response", ToPost, function (data) {
-		$('#response_head_' + id).hide();
-		$('#response_' + id).hide();
-		if (data == '1') {
-			$(ajax_message).raw().textContent = "Response #" + id + " successfully deleted.";
-		} else {
-			$(ajax_message).raw().textContent = 'Something went wrong.';
-		}
-		$(ajax_message).show();
+  var ToPost = [];
+  ToPost['id'] = id;
+  ajax.post("?action=delete_response", ToPost, function (data) {
+    $('#response_head_' + id).hide();
+    $('#response_' + id).hide();
+    if (data == '1') {
+      $(ajax_message).raw().textContent = "Response #" + id + " successfully deleted.";
+    } else {
+      $(ajax_message).raw().textContent = 'Something went wrong.';
+    }
+    $(ajax_message).show();
         jQuery(ajax_message).fadeIn(0);
-		setTimeout("jQuery('" + ajax_message + "').fadeOut(400)", 2000);
-		setTimeout("$('#container_" + id + "').hide()", 2400);
-	});
+    setTimeout("jQuery('" + ajax_message + "').fadeOut(400)", 2000);
+    setTimeout("$('#container_" + id + "').hide()", 2400);
+  });
 }
 
 function Assign() {
-	var ToPost = [];
-	ToPost['assign'] = document.getElementById('assign_to').value;
-	ToPost['convid'] = document.getElementById('convid').value;
-	ajax.post("?action=assign", ToPost, function (data) {
-		if (data == '1') {
-			document.getElementById('ajax_message').textContent = 'Conversation successfully assigned.';
-		} else {
-			document.getElementById('ajax_message').textContent = 'Something went wrong.';
-		}
-		$('#ajax_message').show();
+  var ToPost = [];
+  ToPost['assign'] = document.getElementById('assign_to').value;
+  ToPost['convid'] = document.getElementById('convid').value;
+  ajax.post("?action=assign", ToPost, function (data) {
+    if (data == '1') {
+      document.getElementById('ajax_message').textContent = 'Conversation successfully assigned.';
+    } else {
+      document.getElementById('ajax_message').textContent = 'Something went wrong.';
+    }
+    $('#ajax_message').show();
         jQuery('#ajax_message').fadeIn(0);
-		setTimeout("jQuery('#ajax_message').fadeOut(400)", 2000);
+    setTimeout("jQuery('#ajax_message').fadeOut(400)", 2000);
         location.reload();
-	});
+  });
 }
 
 
@@ -289,40 +289,42 @@ function AssignUrgency() {
 }
 
 function PreviewResponse(id) {
-	var div = '#response_div_'+id;
-	if ($(div).has_class('hidden')) {
-		var ToPost = [];
-		ToPost['message'] = document.getElementById('response_message_'+id).value;
-		ajax.post('?action=preview', ToPost, function (data) {
-			document.getElementById('response_div_'+id).innerHTML = data;
-			$(div).toggle();
-			$('#response_editor_'+id).toggle();
+  var div = '#response_div_'+id;
+  if ($(div).has_class('hidden')) {
+    var ToPost = [];
+    ToPost['message'] = document.getElementById('response_message_'+id).value;
+    ajax.post('?action=preview', ToPost, function (data) {
+      document.getElementById('response_div_'+id).innerHTML = data;
+      $(div).toggle();
+      $('#response_editor_'+id).toggle();
       Prism.highlightAll();
+      MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
       lazy_load();
-		});
-	} else {
-		$(div).toggle();
-		$('#response_editor_'+id).toggle();
-	}
+    });
+  } else {
+    $(div).toggle();
+    $('#response_editor_'+id).toggle();
+  }
 }
 
 function PreviewMessage() {
-	if ($('#preview').has_class('hidden')) {
-		var ToPost = [];
-		ToPost['message'] = document.getElementById('quickpost').value;
-		ajax.post('?action=preview', ToPost, function (data) {
-			document.getElementById('preview').innerHTML = data;
-			$('#preview').toggle();
-			$('#quickpost').toggle();
-			$('.bb_holder').toggle();
-			$('#previewbtn').raw().value = "Edit";
+  if ($('#preview').has_class('hidden')) {
+    var ToPost = [];
+    ToPost['message'] = document.getElementById('quickpost').value;
+    ajax.post('?action=preview', ToPost, function (data) {
+      document.getElementById('preview').innerHTML = data;
+      $('#preview').toggle();
+      $('#quickpost').toggle();
+      $('.bb_holder').toggle();
+      $('#previewbtn').raw().value = "Edit";
       Prism.highlightAll();
+      MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
       lazy_load();
-		});
-	} else {
-		$('#preview').toggle();
-		$('#quickpost').toggle();
+    });
+  } else {
+    $('#preview').toggle();
+    $('#quickpost').toggle();
     $('.bb_holder').toggle();
-		$('#previewbtn').raw().value = "Preview";
-	}
+    $('#previewbtn').raw().value = "Preview";
+  }
 }

@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `forums_polls_votes` (
   `UserID` int(10) unsigned NOT NULL,
   `Vote` tinyint(3) unsigned NOT NULL,
   PRIMARY KEY (`TopicID`,`UserID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

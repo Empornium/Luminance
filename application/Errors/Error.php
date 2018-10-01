@@ -22,7 +22,8 @@ class Error extends \Exception {
         return [
             'http_status'=>$this->http_status,
             'message'=>$this->public_message,
-            'description'=>$this->public_description
+            'description'=>$this->public_description,
+            'bscripts'=> []
         ];
     }
 }

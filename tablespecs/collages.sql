@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS `collages` (
   UNIQUE KEY `Name` (`Name`),
   KEY `UserID` (`UserID`),
   KEY `CategoryID` (`CategoryID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

@@ -1,6 +1,7 @@
 <?php
 namespace Luminance\Services;
 
+use Luminance\Core\Service;
 use Luminance\Core\Request;
 use Luminance\Errors\InternalError;
 
@@ -37,7 +38,6 @@ class Router extends Service {
         } else {
             return null;
         }
-
     }
 
     protected function match_path($route_path, $request_path) {
@@ -62,5 +62,4 @@ class Router extends Service {
         }
         return $path_matches;
     }
-
 }

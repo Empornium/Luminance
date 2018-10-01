@@ -6,7 +6,7 @@ var minVote = 100 * 1024 * 1024;
 
 function SynchInterface() {
     change_tagtext();
-    resize('tags');
+    resize('taginput');
 }
 
 function Cover_Toggle() {
@@ -109,8 +109,6 @@ function Preview_Request() {
 		$('#previewbtn').raw().value = "Preview";
 	}
 }
-
-
 
 // used on the requests page and user profile
 function VotePromptMB(requestid) {
@@ -261,11 +259,11 @@ function Calculate() {
 
 
 function add_tag() {
-	if ($('#tags').raw().value == "") {
-		$('#tags').raw().value = $('#genre_tags').raw().options[$('#genre_tags').raw().selectedIndex].value;
+	if ($('#taginput').raw().value == "") {
+		$('#taginput').raw().value = $('#genre_tags').raw().options[$('#genre_tags').raw().selectedIndex].value;
 	} else if ($('#genre_tags').raw().options[$('#genre_tags').raw().selectedIndex].value == "---") {
 	} else {
-		$('#tags').raw().value = $('#tags').raw().value + " " + $('#genre_tags').raw().options[$('#genre_tags').raw().selectedIndex].value;
+		$('#taginput').raw().value = $('#taginput').raw().value + " " + $('#genre_tags').raw().options[$('#genre_tags').raw().selectedIndex].value;
 	}
 }
 

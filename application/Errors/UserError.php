@@ -9,8 +9,8 @@ class UserError extends Error {
     public function __construct($message = null, $public_description = null) {
         parent::__construct($message, $public_description);
         if (!is_null($message)) {
-            $this->public_message = $message; # UserErrors are only relevant for the user, so the message is meant for them
+            # UserErrors are only relevant for the user, so the message is meant for them
+            $this->public_message = $message;
         }
     }
-
-};
+}

@@ -23,10 +23,10 @@ CREATE TABLE IF NOT EXISTS `torrents_files_temp` (
   `ID` int(10) NOT NULL AUTO_INCREMENT,
   `filename` varchar(255) NOT NULL,
   `file` mediumblob NOT NULL,
-  `time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `time` datetime DEFAULT NULL,
   PRIMARY KEY (`ID`),
   KEY `time` (`time`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `blog` (
   `UserID` int(10) unsigned NOT NULL,
   `Title` varchar(255) NOT NULL,
   `Body` text NOT NULL,
-  `Time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `Time` datetime DEFAULT NULL,
   `ThreadID` int(10) unsigned DEFAULT NULL,
   `Section` ENUM ('Blog','Contests') DEFAULT 'Blog',
   `Image` varchar(255) NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `blog` (
   KEY `UserID` (`UserID`),
   KEY `Time` (`Time`),
   KEY `Section` (`Section`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

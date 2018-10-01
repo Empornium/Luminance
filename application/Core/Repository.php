@@ -70,16 +70,24 @@ abstract class Repository {
     }
 
     public function load($ID, $post_load = true) {
-        //if (array_key_exists($ID, $this->internal_cache)) {
-        //    return $this->internal_cache[$ID];
-        //}
-        if ($this->use_cache) {
-            $entity = $this->load_from_cache($ID);
-        }
-        if (!$entity) {
-            $entity = $this->orm->load($this->entityName, $ID);
-            if ($this->use_cache && $entity) {
-                $this->save_to_cache($entity);
+        $cls = "Luminance\\Entities\\{$this->entityName}";
+        if ($ID instanceof $cls) {
+            $entity = $ID;
+        } else {
+            //if (array_key_exists($ID, $this->internal_cache)) {
+            //    return $this->internal_cache[$ID];
+            //}
+            if ($this->use_cache) {
+                $entity = $this->load_from_cache($ID);
+            } else {
+                $entity = null;
+            }
+
+            if (!$entity) {
+                $entity = $this->orm->load($this->entityName, $ID);
+                if ($this->use_cache && $entity) {
+                    $this->save_to_cache($entity);
+                }
             }
         }
         if ($post_load) {
@@ -121,5 +129,4 @@ abstract class Repository {
         //    unset($this->internal_cache[$ID]);
         //}
     }
-
 }

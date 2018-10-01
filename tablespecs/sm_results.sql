@@ -20,17 +20,14 @@
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `sm_results` (
-  `ID` int(11) NOT NULL AUTO_INCREMENT,
   `UserID` int(11) NOT NULL,
-  `Spins` smallint(1) NOT NULL,
+  `Spins` int(11) NOT NULL,
   `Won` int(11) NOT NULL,
-  `Bet` mediumint(5) NOT NULL,
-  `Result` varchar(12) CHARACTER SET utf8 NOT NULL,
+  `Bet` int(11) NOT NULL,
   `Time` datetime NOT NULL,
-  PRIMARY KEY (`ID`),
-  KEY `UserID` (`UserID`),
+  PRIMARY KEY (`UserID`),
   KEY `Won` (`Won`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

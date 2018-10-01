@@ -23,15 +23,16 @@ CREATE TABLE IF NOT EXISTS `forums_posts` (
   `ID` int(10) NOT NULL AUTO_INCREMENT,
   `TopicID` int(10) NOT NULL,
   `AuthorID` int(10) NOT NULL,
-  `AddedTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `AddedTime` datetime DEFAULT NULL,
   `Body` mediumtext,
   `EditedUserID` int(10) DEFAULT NULL,
   `EditedTime` datetime DEFAULT NULL,
   `TimeLock` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`ID`),
   KEY `TopicID` (`TopicID`),
-  KEY `AuthorID` (`AuthorID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  KEY `AuthorID` (`AuthorID`),
+  KEY `AddedTime` (`AddedTime`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

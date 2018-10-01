@@ -28,9 +28,9 @@ class Master {
         # [method] [path match] [auth level] [target function] <extra arguments>
 
         // CLI stuff
-        [ 'CLI',  'peerupdate',      0, 'legacy', 'peerupdate' ],
-        [ 'CLI',  'btcupdate',       0, 'legacy', 'btcupdate'  ],
         [ 'CLI',  'schedule',        0, 'legacy', 'schedule'   ],
+        [ 'CLI',  'schedulev2',      0, 'legacy', 'schedulev2' ],
+        [ 'CLI',  'tests',           0, 'func',   'tests'      ],
 //        [ 'CLI',  'script',          0, 'legacy', 'script'     ],
 
         // Small stuff
@@ -61,7 +61,6 @@ class Master {
         [ '*',    'groups.php',      2, 'legacy', 'groups'      ],
         [ '*',    'inbox.php',       2, 'legacy', 'inbox'       ],
         [ '*',    'index.php',       2, 'legacy', 'index'       ],
-        [ '*',    'irc.php',         2, 'legacy', 'irc'         ],
         [ '*',    'log.php',         2, 'legacy', 'log'         ],
         [ '*',    'opensearch.php',  2, 'legacy', 'opensearch'  ],
         [ '*',    'reports.php',     2, 'legacy', 'reports'     ],
@@ -106,36 +105,45 @@ class Master {
         if (!$this->settings->modes->profiler) {
             $this->profiler->disable();
         }
-        $this->request = new Request($this);
+        try {
+            $this->request = new Request($this);
+        } catch (SystemError $e) {
+            error_log("Caught " . get_class($e) . ": ". $e->getMessage() . "\n" . $e->getTraceAsString());
+            die();
+        }
         $this->debug->start();
         $this->registerPlugins();
 
+        // For legacy functions included below
+        define('SERVER_ROOT', $application_path);
         require_once($this->application_path . '/common/main_functions.php');
         require_once($this->application_path . '/common/time_functions.php');
         require_once($this->application_path . '/common/paranoia_functions.php');
-
     }
 
-    public function getRepository($name) {
+    public function &getRepository($name) {
         if (!array_key_exists($name, $this->repositories)) {
             $cls = "\\Luminance\\Repositories\\{$name}";
             $this->repositories[$name] = new $cls($this);
+            //$this->repositories[$name]->link();
         }
         return $this->repositories[$name];
     }
 
-    public function getService($name) {
+    public function &getService($name) {
         if (!array_key_exists($name, $this->services)) {
             $cls = "\\Luminance\\Services\\{$name}";
             $this->services[$name] = new $cls($this);
+            $this->services[$name]->link();
         }
         return $this->services[$name];
     }
 
-    public function getPlugin($name) {
+    public function &getPlugin($name) {
         if (!array_key_exists($name, $this->plugins)) {
-            $cls = "\\Luminance\\Builtins\\{$name}\\{$name}Plugin";
+            $cls = "\\Luminance\\Plugins\\{$name}\\{$name}Plugin";
             $this->plugins[$name] = new $cls($this);
+            $this->plugins[$name]->link();
         }
         return $this->plugins[$name];
     }
@@ -143,28 +151,26 @@ class Master {
     public function run() {
         try {
             if ($this->request->method === 'CLI') {
-                $errorTemplate = 'clierror.html';
+                $errorTemplate = 'clierror.html.twig';
                 $this->request->authLevel = 0;
             } else {
-                $errorTemplate = 'error.html';
+                $errorTemplate = 'error.html.twig';
                 $this->auth->checkSession();
                 $this->log->log_request($this->request);
             }
             $response = $this->handle_request($this->request);
             $this->process_response($response);
             return null; # We're done now
-
         } catch (AuthError $e) {
             $this->flasher->error($e->public_message);
             $response = new Redirect($e->redirect);
-
         } catch (UserError $e) {
             $response = new Rendered($errorTemplate, $e->get_template_vars(), $e->http_status);
-
+        } catch (SystemError $e) {
+            $response = new Rendered($errorTemplate, $e->get_template_vars(), $e->http_status);
         } catch (Error $e) {
             $response = new Rendered($errorTemplate, $e->get_template_vars(), $e->http_status);
             error_log("Caught " . get_class($e) . ": ". $e->getMessage() . "\n" . $e->getTraceAsString());
-
         } catch (\Exception $e) {
             # This one was thrown by PHP itself, it won't follow our Error structure
             $response = new Rendered($errorTemplate, ['message'=>'Internal Server Error', 'http_status'=>500], 500);
@@ -173,17 +179,14 @@ class Master {
 
         # This point is only reached if an exception was thrown
         $this->process_response($response);
-
     }
 
     public function process_response($response) {
         if ($response instanceof Rendered) {
             http_response_code($response->status);
-            $this->peon->display_page($response->template, $response->variables);
-
+            $this->render->display_page($response->template, $response->variables, $response->block);
         } elseif ($response instanceof Redirect) {
             $this->redirect($response->target, $response->parameters, $response->status);
-
         } elseif ($response instanceof Response) {
             http_response_code($response->status);
             print($response->content);
@@ -196,37 +199,43 @@ class Master {
                 ob_end_flush();
             }
         }
+    }
 
+    protected static $repos = [
+        'auth'         => 'Auth',
+        'cache'        => 'Cache',
+        'crypto'       => 'Crypto',
+        'debug'        => 'Debug',
+        'flasher'      => 'Flasher',
+        'guardian'     => 'Guardian',
+        'log'          => 'Log',
+        'options'      => 'Options',
+        'render'       => 'Render',
+        'profiler'     => 'Profiler',
+        'repos'        => 'Repos',
+        'router'       => 'Router',
+        'search'       => 'Search',
+        'secretary'    => 'Secretary',
+        'emailManager' => 'EmailManager',
+        'settings'     => 'Settings',
+        'tracker'      => 'Tracker',
+        'testing'      => 'Testing',
+        'security'     => 'Security',
+        'db'           => 'DB',
+        'orm'          => 'ORM',
+        'tpl'          => 'TPL',
+        'olddb'        => 'OldDB',
+    ];
+
+    public function __isset($name) {
+        return array_key_exists($name, self::$repos);
     }
 
     public function __get($name) {
-        switch ($name) {
-            case 'auth':
-            case 'cache':
-            case 'crypto':
-            case 'debug':
-            case 'flasher':
-            case 'guardian':
-            case 'log':
-            case 'options':
-            case 'peon':
-            case 'profiler':
-            case 'repos':
-            case 'router':
-            case 'search':
-            case 'secretary':
-            case 'emailManager':
-            case 'settings':
-            case 'tracker':
-                return $this->getService(ucfirst($name));
-            case 'db':
-            case 'orm':
-            case 'tpl':
-                return $this->getService(strtoupper($name));
-            case 'olddb':
-                return $this->getService('OldDB');
-            default:
-                throw new InternalError("Attempt to access undefined \$master->{$name}");
+        if ($this->__isset($name)) {
+            return $this->getService(self::$repos[$name]);
+        } else {
+            throw new InternalError("Attempt to access undefined \$master->{$name}");
         }
     }
 
@@ -236,14 +245,13 @@ class Master {
 
     protected function registerPlugins() {
         foreach ($this->builtinNames as $builtinName) {
-            $pluginClass = "\\Luminance\\Builtins\\{$builtinName}\\{$builtinName}Plugin";
+            $pluginClass = "\\Luminance\\Plugins\\{$builtinName}\\{$builtinName}Plugin";
             #$plugin = new $pluginClass($this);
-            $tplPath = $this->application_path . "/Builtins/{$builtinName}/templates";
+            $tplPath = $this->application_path . "/Plugins/{$builtinName}/templates";
             if (is_dir($tplPath)) {
                 $this->tpl->add_template_path($tplPath, $builtinName);
             }
             $pluginClass::register($this);
-            #$this->plugins[$builtinName] = $plugin;
         }
     }
 
@@ -258,8 +266,12 @@ class Master {
             $func = $route_match[0];
             $authLevel = $route_match[1];
             $args = array_slice($route_match, 2);
-            if ($this->request->authLevel < $authLevel)
-                throw new AuthError("Insufficient authentication level", "Unauthorized", '/');
+
+            if ($this->request->authLevel < $authLevel) {
+                $this->request->saveIntendedRoute();
+                throw new AuthError("Insufficient authentication level", "Unauthorized", '/login');
+            }
+
             if (method_exists($this, $func)) {
                 return call_user_func_array(array($this, $func), $args);
             } else {
@@ -270,7 +282,7 @@ class Master {
         }
     }
 
-    public function func($func, $args) {
+    public function func($func) {
         $args = array_slice(func_get_args(), 1);
         if (method_exists($this, $func)) {
             return call_user_func_array(array($this, $func), (array)$args);
@@ -304,7 +316,7 @@ class Master {
             print("d14:failure reason40:Invalid .torrent, try downloading again.e\n");
             exit;
         }
-        $http_host = $this->server['HTTP_HOST'];
+        $http_host = $this->server['HTTP_HOST'] ?? null;
         $request_uri = $this->server['REQUEST_URI'];
         $nonssl_url = $this->settings->main->nonssl_site_url;
         $ssl_url = $this->settings->main->ssl_site_url;
@@ -366,4 +378,7 @@ class Master {
         die();
     }
 
+    public function tests() {
+        return new Response($this->testing->run());
+    }
 }

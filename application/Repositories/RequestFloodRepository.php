@@ -16,7 +16,6 @@ class RequestFloodRepository extends Repository {
             $flood->IPID = $ip->ID;
             $flood->LastRequest = new \DateTime();
             $flood->Reqests = 0;
-            $flood->IPBans = 0;
             if ($user) {
                 $flood->UserID = $user->ID;
             }
@@ -24,5 +23,4 @@ class RequestFloodRepository extends Repository {
         }
         return $flood;
     }
-
 }

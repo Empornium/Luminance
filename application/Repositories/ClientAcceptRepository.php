@@ -15,5 +15,4 @@ class ClientAcceptRepository extends Repository {
         );
         return $ClientUserAgent;
     }
-
 }

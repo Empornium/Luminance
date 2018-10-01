@@ -22,7 +22,7 @@
 CREATE TABLE IF NOT EXISTS `upload_templates` (
   `ID` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `UserID` int(10) unsigned NOT NULL,
-  `TimeAdded` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `TimeAdded` datetime DEFAULT NULL,
   `Name` varchar(64) NOT NULL,
   `Public` enum('0','1') NOT NULL DEFAULT '0',
   `Title` varchar(255) NOT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS `upload_templates` (
   KEY `UserID` (`UserID`),
   KEY `TimeAdded` (`TimeAdded`),
   KEY `Public` (`Public`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

@@ -1,4 +1,4 @@
 <?php
 namespace Luminance\Errors;
 
-class AdminError extends Error{ };
+class AdminError extends Error{}

@@ -5,21 +5,27 @@ use Luminance\Core\Entity;
 
 class User extends Entity {
 
-    static $table = 'users';
+    public static $table = 'users';
+
+    protected static $useRepositories = [
+        'emails' => 'EmailRepository',
+        'users' => 'UserRepository',
+    ];
 
     public $legacy;
 
-    static $properties = [
+    public static $properties = [
         'ID'                => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'primary' => true, 'auto_increment' => true ],
-        'EmailID'           => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'nullable' => false ],
+        'EmailID'           => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'nullable' => true ],
+        'IPID'              => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'nullable' => true ],
         'Username'          => [ 'type' => 'str', 'nullable' => false ],
         'Password'          => [ 'type' => 'str', 'sqltype' => 'VARCHAR(255)', 'nullable' => true ],
-        'twoFactorSecret'   => [ 'type' => 'str', 'sqltype' => 'VARCHAR(255)', 'nullable' => true ],
+        'twoFactorSecret'   => [ 'type' => 'str', 'sqltype' => 'VARBINARY(255)', 'nullable' => true ],
 //        'StatusFlags'   => [ 'type' => 'int', 'sqltype' => 'TINYINT UNSIGNED', 'nullable' => false ],
 //        'SecurityFlags' => [ 'type' => 'int', 'sqltype' => 'TINYINT UNSIGNED', 'nullable' => false ],
     ];
 
-    static $indexes = [
+    public static $indexes = [
         'EmailID'       => [ 'columns' => [ 'EmailID' ] ],
         'Username'      => [ 'columns' => [ 'Username' ] ],
 //        'StatusFlags'   => [ 'columns' => [ 'StatusFlags' ] ],
@@ -38,7 +44,6 @@ class User extends Entity {
             'PermissionID' => $l['PermissionID'],
             'Paranoia' => $l['Paranoia'],
             'Donor' => $l['Donor'],
-            'Warned' => $l['Warned'],
             'Avatar' => $l['Avatar'],
             'Enabled' => $l['Enabled'],
             'Title' => $l['Title'],
@@ -60,9 +65,6 @@ class User extends Entity {
         if ($UserInfo['Paranoia'] === false) {
             $UserInfo['Paranoia'] = array();
         }
-        if (strtotime($UserInfo['Warned']) < time()) {
-            $UserInfo['Warned'] = '0000-00-00 00:00:00';
-        }
 
         return $UserInfo;
     }
@@ -70,43 +72,31 @@ class User extends Entity {
     public function heavy_info() {
         $l = $this->legacy;
         $HeavyInfo = [
-            'Invites' => $l['Invites'],
-            'torrent_pass' => $l['torrent_pass'],
-            'IP' => $l['IP'],
-            'CustomPermissions' => $l['CustomPermissions'],
-            'CanLeech' => $l['can_leech'],
-            'AuthKey' => $l['AuthKey'],
-            'RatioWatchEnds' => $l['RatioWatchEnds'],
-            'RatioWatchDownload' => $l['RatioWatchDownload'],
-            'StyleID' => $l['StyleID'],
-            'DisableInvites' => $l['DisableInvites'],
-            'DisablePosting' => $l['DisablePosting'],
-            'DisableUpload' => $l['DisableUpload'],
-            'DisableAvatar' => $l['DisableAvatar'],
-            'DisablePM' => $l['DisablePM'],
-            'DisableRequests' => $l['DisableRequests'],
-            'SiteOptions' => $l['SiteOptions'],
-            'DownloadAlt' => $l['DownloadAlt'],
-            'LastReadNews' => $l['LastReadNews'],
-            'LastReadBlog' => $l['LastReadBlog'],
-            'LastReadContests' => $l['LastReadContests'],
-            'LastBrowse' => $l['LastBrowse'],
-            'RestrictedForums' => $l['RestrictedForums'],
-            'PermittedForums' => $l['PermittedForums'],
-            'FLTokens' => $l['FLTokens'],
-            'personal_freeleech' => $l['personal_freeleech'],
+            'Invites'             => $l['Invites'],
+            'torrent_pass'        => $l['torrent_pass'],
+            'CustomPermissions'   => $l['CustomPermissions'],
+            'CanLeech'            => $l['can_leech'],
+            'AuthKey'             => $l['AuthKey'],
+            'RatioWatchEnds'      => $l['RatioWatchEnds'],
+            'RatioWatchDownload'  => $l['RatioWatchDownload'],
+            'StyleID'             => $l['StyleID'],
+            'SiteOptions'         => $l['SiteOptions'],
+            'DownloadAlt'         => $l['DownloadAlt'],
+            'LastReadNews'        => $l['LastReadNews'],
+            'LastReadBlog'        => $l['LastReadBlog'],
+            'LastReadContests'    => $l['LastReadContests'],
+            'LastBrowse'          => $l['LastBrowse'],
+            'RestrictedForums'    => $l['RestrictedForums'],
+            'PermittedForums'     => $l['PermittedForums'],
+            'FLTokens'            => $l['FLTokens'],
+            'personal_freeleech'  => $l['personal_freeleech'],
             'personal_doubleseed' => $l['personal_doubleseed'],
-            'Credits' => $l['Credits'],
-            'SupportFor' => $l['SupportFor'],
-            'BlockPMs' => $l['BlockPMs'],
-            'CommentsNotify' => $l['CommentsNotify'],
-            'TimeZone' => $l['TimeZone'],
-            'SuppressConnPrompt' => $l['SuppressConnPrompt'],
-            'DisableForums' => $l['DisableForums'],
-            'DisableTagging' => $l['DisableTagging'],
-            'DisableSignature' => $l['DisableSignature'],
-            'DisableTorrentSig' => $l['DisableTorrentSig'],
-            'DisableIRC' => $l['DisableIRC'],
+            'Credits'             => $l['Credits'],
+            'SupportFor'          => $l['SupportFor'],
+            'BlockPMs'            => $l['BlockPMs'],
+            'CommentsNotify'      => $l['CommentsNotify'],
+            'TimeZone'            => $l['TimeZone'],
+            'SuppressConnPrompt'  => $l['SuppressConnPrompt'],
         ];
 
         $NoEscape = ['CustomPermissions', 'SiteOptions'];
@@ -193,4 +183,83 @@ class User extends Entity {
         return $OnRatioWatch;
     }
 
+    public function send_email($subject, $template, $variables) {
+        $email = $this->emails->load($this->EmailID);
+        $email->send_email($subject, $template, $variables);
+    }
+
+    /**
+     * @param null $key The key to return from the options, if none return all options
+     * @param null $default The default value to return if the option is not found
+     * @return mixed|null
+     */
+    public function options($key = null, $default = null) {
+        $options = @unserialize($this->legacy['SiteOptions']);
+
+        if (!$options) {
+            return $default;
+        }
+
+        if (!$key) {
+            return $options;
+        }
+
+        if (!array_key_exists($key, $options)) {
+            return $default;
+        }
+
+        return $options[$key];
+    }
+
+    /**
+     * @param string $key
+     * @param $value
+     * @return bool
+     */
+    public function setOption(string $key, $value): bool {
+        $options = @unserialize($this->legacy['SiteOptions']);
+
+        if (!$options) {
+            $options = [];
+        }
+
+        // Set the new value
+        $options[$key] = $value;
+
+        // Update DB
+        $new_options = db_string(serialize($options));
+        $userID = (int) $this->ID;
+        $this->master->db->raw_query("UPDATE users_info SET SiteOptions = '{$new_options}' WHERE UserID = {$userID}");
+
+        // Clear cache
+        $this->users->uncache($this->ID);
+
+        return true;
+    }
+
+    /**
+     * @param string $key
+     * @return bool
+     */
+    public function unsetOption(string $key) {
+        $options = @unserialize($this->legacy['SiteOptions']);
+
+        if (!$options) {
+            return true;
+        }
+
+
+        // Unset the option
+        unset($options[$key]);
+
+        // Update DB
+        $new_options = db_string(serialize($options));
+        $userID = (int) $this->ID;
+        $this->master->db->raw_query("UPDATE users_info SET SiteOptions = '{$new_options}' WHERE UserID = {$userID}");
+
+        // Clear cache
+        $this->users->uncache($this->ID);
+
+        return true;
+    }
 }

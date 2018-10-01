@@ -20,5 +20,4 @@ abstract class Plugin extends Controller {
         parent::registerOptions($master);
         return null;
     }
-
 }

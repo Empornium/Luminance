@@ -22,19 +22,18 @@
    - Contributor(s):
    -
    - ***** END LICENSE BLOCK ***** -->
-   
+
 <trackerinfo
 	type="emp"
 	shortName="Emp"
 	longName="Empornium"
 	siteName="empornium.me">
-	
+
 	<settings>
-		<luminance_description/>
-		<luminance_authkey/>
-		<luminance_torrent_pass/>
+		<description/>
+		<torrent_pass/>
 	</settings>
-	
+
 	<servers>
 		<server
 			network="DigitalIRC"
@@ -43,11 +42,11 @@
 			announcerNames="^Wizard^"
 			/>
 	</servers>
-	
+
 	<parseinfo>
 		<linepatterns>
 			<extract>
-				<regex value="^\[(.*?)\] (.*?) -- Uploader: (.*?) -- https\:\/\/([^\/]+\/).*[&amp;\?]id=(.*)$"/>
+				<regex value="^\[(.*?)\] (.*?) -- Uploader: (.*?) -- (https://.*torrents.php\?)id=(.*)$"/>
 				<vars>
 					<var name="category"/>
 					<var name="torrentName"/>
@@ -59,12 +58,9 @@
 		</linepatterns>
 		<linematched>
 			<var name="torrentUrl">
-				<string value="https://"/>
 				<var name="$baseUrl"/>
-				<string value="torrents.php?action=download&amp;id="/>
+				<string value="action=download&amp;id="/>
 				<var name="$torrentId"/>
-				<string value="&amp;authkey="/>
-				<var name="authkey"/>
 				<string value="&amp;torrent_pass="/>
 				<var name="torrent_pass"/>
 			</var>

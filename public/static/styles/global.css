@@ -75,8 +75,8 @@ div.blog {
 
 #forcediv .urgent_container {
     position: relative;
-	top: 50%;
-	transform: translateY(-50%);
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .urgent_container {
@@ -184,6 +184,10 @@ span.label.label-warning {
 
 span.label.label-error {
     background-color: #d9534f;
+}
+
+span.label.label-disabled {
+    background-color: #999;
 }
 
 pre br {
@@ -347,10 +351,14 @@ div#AddArtists a {
 
 .clear:after {
     content: ".";
-    display: block;
     height: 0;
     clear: both;
     visibility: hidden;
+    display: block;
+}
+
+.main_column .clear:after {
+    display: inline;
 }
 
 .new-subscriptions {
@@ -448,11 +456,11 @@ table.mediainfo table td img{
    vertical-align:middle;
 }
 div.mediainfo {
-	margin: 0.5em;
-	padding: 1em;
-	padding-bottom: 0;
-	border: thin dashed #e4e6eb;
-	font-family: monospace;
+  margin: 0.5em;
+  padding: 1em;
+  padding-bottom: 0;
+  border: thin dashed #e4e6eb;
+  font-family: monospace;
 }
 
 /* YouTube lazy loading */
@@ -594,4 +602,100 @@ div.mediainfo {
 }
 .password {
     -webkit-text-security: disc;
+}
+
+#details-sidebar.visible {
+    visibility: visible;
+    opacity: 1;
+    transition: visibility 0s, opacity 0.5s linear;
+}
+
+#admin-sidebar > form > *, #user-sidebar > * {
+    display: inline-block;
+}
+
+#details-sidebar {
+    position: fixed;
+    opacity: 0;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    visibility: hidden;
+    transition: visibility 0s 0.5s, opacity 0.5s linear;
+}
+
+.greenButton {
+  background: #5da53a;
+}
+
+.greenButton:hover {
+  background: #48802d;
+}
+
+.blueButton {
+  background: #1f9db4;
+}
+
+.blueButton:hover {
+  background: #187b8c;
+}
+
+.purpleButton {
+  background: #8e43f2;
+}
+
+.purpleButton:hover {
+  background: #6535a6;
+}
+
+.redButton {
+  background: #ab3041;
+}
+
+.redButton:hover {
+  background: #812;
+}
+
+.orangeButton {
+  background: #ff7f26;
+}
+
+.orangeButton:hover {
+  background: #d96d21;
+}
+
+.infoButton {
+    background: #5A8BB8;
+}
+
+.infoButton:hover {
+    background: #3A6B98;
+}
+
+/* staff pms */
+.messagecontainer {
+    height: 20px;
+    margin: 0px auto 10px auto;
+}
+
+.messagebar {
+    padding-top: 3px;
+    background-color: #1a1;
+    text-align: center;
+    font-weight: bold;
+    color: white;
+    border-radius: 10px;       /* FF9+ IE9+ */
+    -moz-border-radius: 10px; /* for FF5 */
+    -webkit-border-radius: 10px; /* for opera */
+    border: 1px solid #151;
+}
+
+.messagebar.alert {
+    background-color: #e11;
+    border: 1px solid #511;
+}
+
+.messagebar.checking {
+    background-color: white;
+    color: black;
 }

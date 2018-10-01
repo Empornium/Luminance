@@ -4,16 +4,33 @@ namespace Luminance\Repositories;
 use Luminance\Core\Repository;
 use Luminance\Entities\User;
 
+use Luminance\Errors\InputError;
+
 class UserRepository extends Repository {
 
     protected $entityName = 'User';
 
     protected function post_load($ID, $user) {
+        // Stop here if we haven't received a valid user (e.g. System)
+        if ($user === null) {
+            return null;
+        }
+
+        // References the email repo, as an easy shortcut to send e-mails
+        $user->friends = null;
+
+        // Legacy data already loaded, we can stop here
+        if ($user->legacy !== null) {
+            return $user;
+        }
+
         $user_legacy = null;
+        $key = "_entity_User_legacy_{$ID}";
+
         if ($this->use_cache) {
-            $key = "_entity_User_legacy_{$ID}";
             $user_legacy = $this->cache->get_value($key);
         }
+
         if (!$user_legacy) {
             $user_legacy = $this->db->raw_query("SELECT * FROM users_main AS um LEFT JOIN users_info AS ui ON um.ID = ui.UserID WHERE um.ID = ?", [$ID])->fetch(\PDO::FETCH_ASSOC);
 
@@ -27,6 +44,7 @@ class UserRepository extends Repository {
                 $this->cache->cache_value($key, $user_legacy, 3600);
             }
         }
+
         if ($user_legacy) {
             if (!$user) {
                 $user = new User();
@@ -40,10 +58,10 @@ class UserRepository extends Repository {
             $user->legacy['NoContestAlerts']  = @unserialize($user->legacy['SiteOptions'])['NoContestAlerts'];
 
             if ($user->needs_update()) {
-                if (is_null($user->Username) || !strlen($user->Username)) {
+                if ($user->Username === null || !strlen($user->Username)) {
                     $user->Username = $user->legacy['Username'];
                 }
-                if (is_null($user->Password)) {
+                if ($user->Password === null) {
                     $encoded_secret = base64_encode($user->legacy['Secret']);
                     $encoded_hash = base64_encode(hex2bin($user->legacy['PassHash']));
                     $user->Password = "\$salted-md5\${$encoded_secret}\${$encoded_hash}";
@@ -51,6 +69,7 @@ class UserRepository extends Repository {
                 $this->save($user);
             }
         }
+
         return $user;
     }
 
@@ -66,5 +85,62 @@ class UserRepository extends Repository {
     public function get_by_username($Username) {
         $user = $this->get('`Username` = ?', [$Username]);
         return $user;
+    }
+
+    public function isAvailable($username) {
+        $user = $this->get_by_username($username);
+        if ($user) {
+            return false;
+        }
+
+        $stmt = $this->db->raw_query("SELECT ID FROM users_main WHERE Username = ?", [$username]);
+        $user_legacy = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if ($user_legacy) {
+            return false;
+        }
+        return true;
+    }
+
+    public function checkAvailable($username) {
+        if (!$this->isAvailable($username))
+            throw new InputError("That username is not available.");
+    }
+
+    /**
+     * Get users by IDs (Eager Loading)
+     *
+     * @param array $ids
+     * @return array
+     */
+    public function findIn(array $ids) {
+        // Invalid SQL if ID list is empty
+        if (empty($ids)) {
+            return null;
+        }
+
+        // Do not pass the ids directly,
+        // instead build a prepared statement
+        $inQuery = implode(',', array_fill(0, count($ids), '?'));
+        $users =  $this->find("ID IN ({$inQuery}) ORDER BY ID DESC", $ids);
+
+        // Load additional infos about the user (Legacy)
+        foreach ($users as &$user) {
+            $user = $this->post_load($user->ID, $user);
+        }
+
+        return $users;
+    }
+
+    /**
+     * Get all users invited by a specific user
+     *
+     * @param int $userID
+     * @return array
+     */
+    public function invitedBy($userID, $page = 1) {
+        list($page, $limit) = page_limit(50);
+        $ids = $this->db->raw_query("SELECT SQL_CALC_FOUND_ROWS UserID FROM users_info WHERE Inviter = ? ORDER BY UserID DESC LIMIT {$limit}", [$userID])->fetchAll(\PDO::FETCH_COLUMN);
+        $results = $this->db->found_rows();
+        return [$results, $this->findIn($ids)];
     }
 }

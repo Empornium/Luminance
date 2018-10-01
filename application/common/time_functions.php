@@ -6,6 +6,8 @@ if (!extension_loaded('date')) {
 function get_timestamp($TimeStamp) {
     if ($TimeStamp instanceof \DateTime) {
         $TimeStamp = $TimeStamp->format('Y-m-d H:i:s');
+    } elseif (is_int($TimeStamp)) {
+        $TimeStamp = date("Y-m-d H:i:s", $TimeStamp);
     }
     return $TimeStamp;
 }
@@ -14,7 +16,7 @@ function time_ago($TimeStamp)
 {
     $TimeStamp = get_timestamp($TimeStamp);
     if (!is_number($TimeStamp)) { // Assume that $TimeStamp is SQL timestamp
-        if ($TimeStamp == '0000-00-00 00:00:00') {
+        if ($TimeStamp == '0000-00-00 00:00:00' || $TimeStamp === null) {
             return false;
         }
         $TimeStamp = strtotime($TimeStamp);
@@ -29,16 +31,11 @@ function time_ago($TimeStamp)
 function time_diff($TimeStamp, $Levels=2, $Span=true, $Lowercase=false, $ForceFormat=-1)
 {
     global $LoggedUser;
-    $TimeStamp = get_timestamp($TimeStamp);
+    $TimeNow = get_timestamp($TimeStamp);
+    $TimeStamp = time_ago($TimeStamp);
 
-    if (!is_number($TimeStamp)) { // Assume that $TimeStamp is SQL timestamp
-        if ($TimeStamp == '0000-00-00 00:00:00') {
-            return 'Never';
-        }
-        $TimeStamp = strtotime($TimeStamp);
-    }
-    if ($TimeStamp == 0) {
-        return 'Never';
+    if ($TimeStamp === false) {
+        return 'Forever';
     }
 
     if (in_array($ForceFormat, array(0, 1))) {
@@ -48,21 +45,17 @@ function time_diff($TimeStamp, $Levels=2, $Span=true, $Lowercase=false, $ForceFo
     }
 
     if ($TimeFormat == 1 && !$Span) { // shortcut if only need plain date time format returned
-        $TimeNow = date('M d Y, H:i', $TimeStamp - (int) $LoggedUser['TimeOffset']);
-
-        return $TimeNow;
+        return date('M d Y, H:i', strtotime($TimeNow) - (int) $LoggedUser['TimeOffset']);
     }
 
-    $Time = time() - $TimeStamp;
-
     //If the time is negative, then we know that it expires in the future
-    if ($Time < 0) {
-        $Time = -$Time;
+    if ($TimeStamp < 0) {
+        $TimeStamp = -$TimeStamp;
         $HideAgo = true;
     }
 
-    $Years = floor($Time / 31556926); // seconds in a year
-    $Remain = $Time - $Years * 31556926;
+    $Years = floor($TimeStamp / 31556926); // seconds in a year
+    $Remain = $TimeStamp - $Years * 31556926;
 
     $Months = floor($Remain / 2629744); // seconds in a month
     $Remain = $Remain - $Months * 2629744;
@@ -162,14 +155,12 @@ function time_diff($TimeStamp, $Levels=2, $Span=true, $Lowercase=false, $ForceFo
         $TimeAgo = strtolower($TimeAgo);
     }
 
-    if ($TimeFormat == 1) {
-        $TimeNow = date('M d Y, H:i', $TimeStamp - (int) $LoggedUser['TimeOffset']);
+    $TimeNow = date('M d Y, H:i', strtotime($TimeNow) - (int) $LoggedUser['TimeOffset']);
 
+    if ($TimeFormat == 1) {
         return '<span class="time" alt="' . $TimeAgo . '" title="' . $TimeAgo . '">' . $TimeNow . '</span>';
     } else {
         if ($Span) {
-            $TimeNow = date('M d Y, H:i', $TimeStamp - (int) $LoggedUser['TimeOffset']);
-
             return '<span class="time" alt="' . $TimeNow . '" title="' . $TimeNow . '">' . $TimeAgo . '</span>';
         } else {
             return $TimeAgo;
@@ -247,14 +238,9 @@ function validDate($DateString)
 
 function time_span($TimeStamp, $Levels=2, $Lowercase=false)
 {
-    if (!is_number($TimeStamp)) { // Assume that $TimeStamp is SQL timestamp
-        if ($TimeStamp == '0000-00-00 00:00:00') {
-            return 'None';
-        }
-        $TimeStamp = strtotime($TimeStamp);
-    }
-    if ($TimeStamp == 0) {
-        return 'None';
+    $TimeStamp = time_ago($TimeStamp);
+    if ($TimeStamp === false) {
+        return 'Never';
     }
 
     $Time = $TimeStamp;

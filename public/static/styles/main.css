@@ -17,7 +17,7 @@
 }
 
 .flash.success {
-    background-color: red;
+    background-color: green;
     font-size: 11pt;
 }
 
@@ -111,4 +111,17 @@ input:checked + .slider:before {
 
 .slider.round:before {
     border-radius: 50%;
+}
+
+.disabled {
+    background: #c33c59 !important;
+    background-image: -webkit-linear-gradient(top, #c33c59, #933249) !important;
+    background-image: -moz-linear-gradient(top, #c33c59, #933249) !important;
+    background-image: -ms-linear-gradient(top, #c33c59, #933249) !important;
+    background-image: -o-linear-gradient(top, #c33c59, #933249) !important;
+    background-image: linear-gradient(to bottom, #c33c59, #933249) !important;
+}
+
+#password-help {
+    color: red;
 }

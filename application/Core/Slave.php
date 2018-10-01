@@ -2,6 +2,7 @@
 namespace Luminance\Core;
 
 use Luminance\Core\Master;
+use Luminance\Services\Options;
 
 abstract class Slave {
 
@@ -10,15 +11,18 @@ abstract class Slave {
 
     public function __construct(Master $master) {
         $this->master = $master;
-        $this->prepareRepositories();
-        $this->prepareServices();
         $this->request = $this->master->request;
     }
 
     public static function registerOptions(Master $master) {
         if (isset(static::$defaultOptions)) {
-            $master->options->register(static::$defaultOptions);
+            Options::register(static::$defaultOptions);
         }
+    }
+
+    public function link() {
+        $this->prepareRepositories();
+        $this->prepareServices();
     }
 
     protected function prepareRepositories() {
@@ -32,5 +36,4 @@ abstract class Slave {
             $this->{$localName} = $this->master->getService($serviceName);
         }
     }
-
 }

@@ -24,7 +24,7 @@ class PermissionRepository extends Repository {
     public function getMinUserLevel() {
         if (!$this->minUserLevel) {
             $MinUserLevel = $this->cache->get_value('min_user_level');
-            if($MinUserLevel===false) {
+            if ($MinUserLevel===false) {
                 $MinUserLevel = $this->db->raw_query("SELECT MIN(Level) FROM permissions WHERE isAutoPromote='1' AND IsUserClass='1'")->fetchColumn();
                 $this->cache->cache_value('min_user_level', $MinUserLevel);
             }
@@ -36,8 +36,8 @@ class PermissionRepository extends Repository {
     public function getMinUserClassID() {
         if (!$this->minUserClassID) {
             $MinUserClassID = $this->cache->get_value('min_user_classid');
-            if($MinUserClassID===false) {
-                $MinUserClassID = $this->db->raw_query("SELECT ID FROM permissions WHERE isAutoPromote='1' AND IsUserClass='1' HAVING MIN(Level)")->fetchColumn();
+            if ($MinUserClassID===false) {
+                $MinUserClassID = $this->db->raw_query("SELECT ID FROM permissions WHERE isAutoPromote='1' AND IsUserClass='1' ORDER BY Level ASC LIMIT 1")->fetchColumn();
                 $this->cache->cache_value('min_user_classid', $MinUserClassID);
             }
             $this->minUserClassID = $MinUserClassID;
@@ -48,7 +48,7 @@ class PermissionRepository extends Repository {
     public function getMinStaffLevel() {
         if (!$this->minStaffLevel) {
             $MinStaffLevel = $this->cache->get_value('min_staff_level');
-            if($MinStaffLevel===false){
+            if ($MinStaffLevel===false) {
                 $MinStaffLevel = $this->db->raw_query("SELECT MIN(Level) FROM permissions WHERE DisplayStaff='1'")->fetchColumn();
                 $this->cache->cache_value('min_staff_level', $MinStaffLevel);
             }
@@ -59,8 +59,11 @@ class PermissionRepository extends Repository {
 
     public function getMinClassPermission($perm = "") {
         $Classes = $this->db->raw_query("SELECT ID, `Values` FROM permissions ORDER BY Level")->fetchAll(\PDO::FETCH_COLUMN|\PDO::FETCH_GROUP);
-        foreach($Classes as $Class => $Permissions) {
-            if(unserialize($Permissions[0])[$perm] == 1) return $this->load($Class);
+        foreach ($Classes as $Class => $Permissions) {
+            if (is_null($Permissions)) continue;
+            $Permissions = unserialize($Permissions[0]);
+            if (!array_key_exists($perm, $Permissions)) continue;
+            if ($Permissions[$perm] == 1) return $this->load($Class);
         }
         return false;
     }
@@ -72,5 +75,4 @@ class PermissionRepository extends Repository {
         $this->cache->delete_value('min_staff_level');
         parent::uncache($ID);
     }
-
 }

@@ -22,13 +22,13 @@
 CREATE TABLE IF NOT EXISTS `pm_messages` (
   `ID` int(12) NOT NULL AUTO_INCREMENT,
   `ConvID` int(12) NOT NULL DEFAULT '0',
-  `SentDate` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `SentDate` datetime DEFAULT NULL,
   `SenderID` int(10) NOT NULL DEFAULT '0',
   `Body` text,
   PRIMARY KEY (`ID`),
   KEY `ConvID` (`ConvID`),
   KEY `SenderID` (`SenderID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

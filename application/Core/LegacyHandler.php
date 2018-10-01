@@ -31,21 +31,21 @@ class LegacyHandler {
             $Image_FileTypes, $Languages, $LightInfo, $LoggedUser, $LoginCookie,
             $master, $Match, $Media, $Method, $Mobile, $NewCategories, $NewIP,
             $OpenCategories, $OperatingSystem, $OrderBy, $OrderWay, $Paranoia, $Payout, $Permissions,
-            $PermissionsArray, $Reel, $Reels, $ScriptStartTime, $SessionID, $ShopActions,
+            $PermissionsArray, $Reel, $Reels, $SessionID, $ShopActions,
             $Sitewide_Freeleech, $Sitewide_Freeleech_On, $Sitewide_Doubleseed, $Sitewide_Doubleseed_On,
             $SpecialChars, $SS, $SSL, $Text, $Time, $TorrentID, $TorrentUserStatus,
             $Tracker, $UA, $UserID, $UserSessions, $UserStats, $Values, $Video_FileTypes,
             $Zip_FileTypes;
 
         $Document = $section;
-        require(SERVER_ROOT . '/sections/' . $section . '/index.php');
+        require(SERVER_ROOT . '/Legacy/sections/' . $section . '/index.php');
     }
 
     public function script_start() {
         # This code was originally part of script_start.php
 
         # First mark a whole lot of vars global since they were previously not inside a class context
-        global $SSL, $ScriptStartTime, $Debug, $DB, $Cache, $UA, $SS, $Browser, $OperatingSystem,
+        global $SSL, $Debug, $DB, $Cache, $UA, $SS, $Browser, $OperatingSystem,
             $Mobile, $Classes, $ClassLevels, $ClassNames, $NewCategories, $OpenCategories, $LoginCookie, $SessionID,
             $LoggedUser, $UserID, $UserSessions, $Enabled, $UserStats, $LightInfo, $HeavyInfo, $Permissions,
             $ipcc, $TorrentUserStatus, $Tracker, $Document;
@@ -66,7 +66,7 @@ class LegacyHandler {
         // Get permissions
         list($Classes, $ClassLevels, $ClassNames) = $Cache->get_value('classes');
         if (!$Classes || !$ClassLevels) {
-            $DB->query("SELECT ID, Name, Description, Level, Color, LOWER(REPLACE(Name,' ','')) AS ShortName, IsUserClass FROM permissions ORDER BY IsUserClass, Level"); //WHERE IsUserClass='1'
+            $DB->query("SELECT ID, Name, Description, Level, Color, LOWER(REPLACE(Name,' ','')) AS ShortName, IsUserClass, MaxAvatarWidth, MaxAvatarHeight FROM permissions ORDER BY IsUserClass, Level"); //WHERE IsUserClass='1'
             $Classes = $DB->to_array('ID');
             $ClassLevels = $DB->to_array('Level');
             $ClassNames = $DB->to_array('ShortName');
@@ -111,15 +111,16 @@ class LegacyHandler {
 
         $Debug->set_flag('completed module execution');
 
-        /* Required in the absence of session_start() for providing that pages will change
-           upon hit rather than being browser cache'd for changing content. */
-        header('Cache-Control: no-cache, must-revalidate, post-check=0, pre-check=0');
-        header('Pragma: no-cache');
+        if (!headers_sent()) {
+            /* Required in the absence of session_start() for providing that pages will change
+               upon hit rather than being browser cache'd for changing content. */
+            header('Cache-Control: no-cache, must-revalidate, post-check=0, pre-check=0');
+            header('Pragma: no-cache');
 
-        $Debug->set_flag('set headers and send to user');
+            $Debug->set_flag('set headers and send to user');
+        }
 
         //Attribute profiling
         $Debug->profile();
     }
-
 }

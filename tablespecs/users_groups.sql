@@ -23,13 +23,13 @@ CREATE TABLE IF NOT EXISTS `users_groups` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `GroupID` int(11) NOT NULL,
   `UserID` int(11) NOT NULL,
-  `AddedTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `AddedTime` datetime DEFAULT NULL,
   `AddedBy` int(11) NOT NULL,
   `Comment` text NOT NULL,
   PRIMARY KEY (`ID`),
   UNIQUE KEY `GroupID_2` (`GroupID`,`UserID`),
   KEY `GroupID` (`GroupID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

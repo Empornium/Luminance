@@ -2,8 +2,8 @@
 namespace Luminance\Services;
 
 use Luminance\Core\Master;
+use Luminance\Core\Service;
 
-# The Peon class is a useful little minion that helps tie interface/template logic together
 class Flasher extends Service {
 
     const SEVERITY_SUCCESS  = 1;
@@ -88,5 +88,4 @@ class Flasher extends Service {
     public function critical($message, $data = []) {
         $this->addFlash($message, $data, self::SEVERITY_CRITICAL);
     }
-
 }

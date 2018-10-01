@@ -34,17 +34,17 @@ CREATE TABLE IF NOT EXISTS `torrents` (
   `Leechers` int(6) NOT NULL DEFAULT '0',
   `Seeders` int(6) NOT NULL DEFAULT '0',
   `AverageSeeders` float NOT NULL DEFAULT '0',
-  `last_action` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `last_action` datetime DEFAULT NULL,
   `FreeTorrent` enum('0','1','2') NOT NULL DEFAULT '0',
   `DoubleTorrent` enum('0','1') NOT NULL DEFAULT '0',
-  `Time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `Time` datetime DEFAULT NULL,
   `Anonymous` enum('0','1') NOT NULL DEFAULT '0',
   `Thanks` text NOT NULL,
   `Snatched` int(10) unsigned NOT NULL DEFAULT '0',
   `balance` bigint(20) NOT NULL DEFAULT '0',
-  `LastLogged` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `LastLogged` datetime DEFAULT NULL,
   `pid` int(5) NOT NULL DEFAULT '0',
-  `LastReseedRequest` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `LastReseedRequest` datetime DEFAULT NULL,
   `ExtendedGrace` enum('0','1') NOT NULL DEFAULT '0',
   `Tasted` enum('0','1') NOT NULL DEFAULT '0',
   PRIMARY KEY (`ID`),
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS `torrents` (
   KEY `LastLogged` (`LastLogged`),
   KEY `FreeTorrent` (`FreeTorrent`),
   KEY `AverageSeeders` (`AverageSeeders`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

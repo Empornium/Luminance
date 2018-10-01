@@ -1,39 +1,11 @@
 <?php
 namespace Luminance\Services;
-/*************************************************************************|
-|--------------- Caching class -------------------------------------------|
-|*************************************************************************|
 
-This class is a wrapper for the Memcache class, and it's been written in
-order to better handle the caching of full pages with bits of dynamic
-content that are different for every user.
+use Luminance\Core\Master;
+use Luminance\Core\Service;
+use Luminance\Core\Entity;
 
-As this inherits memcache, all of the default memcache methods work -
-however, this class has page caching functions superior to those of
-memcache.
-
-Also, Memcache::get and Memcache::set have been wrapped by
-CACHE::get_value and CACHE::cache_value. get_value uses the same argument
-as get, but cache_value only takes the key, the value, and the duration
-(no zlib).
-
-//unix sockets
-memcached -d -m 5120 -s /var/run/memcached.sock -a 0777 -t16 -C -u root
-
-//tcp bind
-memcached -d -m 8192 -l 10.10.0.1 -t8 -C
-
-|*************************************************************************/
-
-// Compatibility, prefer Memcached
-if (class_exists('\Memcached')) {
-    class Memcache extends \Memcached {}
-} else {
-    class Memcache extends \Memcache {}
-}
-
-class Cache extends Memcache
-{
+class Cache extends Service {
     public $CacheHits  = array();
     public $CacheTimes = array();
     public $MemcacheDBArray = array();
@@ -48,37 +20,57 @@ class Cache extends Memcache
         'top10tor_*'
     );
 
+    private $Memcached = null;
+
     public $CanClear = false;
 
-    public function __construct($master)
-    {
+    public function __construct(Master $master) {
+        parent::__construct($master);
         $host = $master->settings->memcached->host;
         $port = $master->settings->memcached->port;
-        if(is_subclass_of($this, '\Memcache')) {
-            @$this->pconnect($host, $port);
-        } else {
-            if(substr($host, 0, 7 ) === "unix://") {
-                $host = str_replace('unix://', '', $host);
-                $port = 0;
+
+        if (is_null($this->Memcached)) {
+            // Compatibility, prefer Memcached
+            if (class_exists('\Memcached')) {
+                if (substr($host, 0, 7) === "unix://") {
+                    $host = str_replace('unix://', '', $host);
+                    $port = 0;
+                } else {
+                    $port = (int)$port;
+                }
+
+                $this->Memcached = new \Memcached("{$host}:{$port}_Luminance");
+                $servers = $this->Memcached->getServerList();
+                if (empty($servers)) {
+                    $this->Memcached->addServer($host, $port);
+                }
+
+            // Compatibility, fallback to Memcache
+            } elseif (class_exists('\Memcache')) {
+                $this->Memcached = new \Memcache();
+                @$this->Memcached->pconnect($host, $port);
             } else {
-                $port = (int)$port;
-            }
-            parent::__construct("{$host}:{$port}_Luminance");
-            $servers = $this->getServerList();
-            if(empty($servers)) {
-                $this->addServer($host, $port);
+                $this->enable = false;
             }
         }
     }
 
-    public function disable()
-    {
+    public function __call($func, $params) {
+        if (method_exists($this->Memcached, $func)) {
+            return call_user_func_array([$this->Memcached, $func], (array)$params);
+        } else {
+            return call_user_func_array([$this, $func], (array)$params);
+        }
+    }
+
+    public function disable() {
         $this->enable = false;
     }
 
-    public function enable()
-    {
-        $this->enable = true;
+    public function enable() {
+        if (!is_null($this->Memcached)) {
+            $this->enable = true;
+        }
     }
 
     public function enable_debug() {
@@ -89,9 +81,9 @@ class Cache extends Memcache
         $this->enable_debug = false;
     }
 
-    public function getStats($args){
-        $stats = parent::getStats($args);
-        if(is_subclass_of($this, '\Memcached')) {
+    public function getStats($args = null) {
+        $stats = $this->Memcached->getStats($args);
+        if (is_subclass_of($this, '\Memcached')) {
             $servers = array_keys($stats);
             $stats = $stats[$servers[0]];
         }
@@ -102,16 +94,14 @@ class Cache extends Memcache
 
     // Allows us to set an expiration on otherwise perminantly cache'd values
     // Useful for disabled users, locked threads, basically reducing ram usage
-    public function expire_value($Key, $Duration=2592000)
-    {
+    public function expire_value($Key, $Duration = 2592000) {
         $StartTime=microtime(true);
-        $this->set($Key, @$this->get($Key), $Duration);
+        $this->Memcached->set($Key, @$this->Memcached->get($Key), $Duration);
         $this->Time+=(microtime(true)-$StartTime)*1000;
     }
 
     // Wrapper for Memcache::set, with the zlib option removed and default duration of 30 days
-    public function cache_value($Key, $Value, $Duration=2592000)
-    {
+    public function cache_value($Key, $Value, $Duration = 2592000) {
         if (!$this->enable) return;
         $StartTime=microtime(true);
         if (empty($Key)) {
@@ -119,38 +109,34 @@ class Cache extends Memcache
         }
 
         // Default parameters for Memcache set function
-        $SetParams = [$Key, $Value, 0, $Duration];
-
-        // Memcached uses only 3 parameters (no flag)
-        if (is_subclass_of($this, '\Memcached')) {
-            unset($SetParams[2]);
+        if ($this->Memcached instanceof \Memcache) {
+            $success = $this->Memcached->set($Key, $Value, 0, $Duration);
+        } else {
+            $success = $this->Memcached->set($Key, $Value, $Duration);
         }
 
-        if (!$this->set(...$SetParams)) {
+        if (!$success) {
             //trigger_error("Cache insert failed for key $Key");
         }
+
         $this->Time+=(microtime(true)-$StartTime)*1000;
     }
 
-    public function replace_value($Key, $Value, $Duration=2592000)
-    {
+    public function replace_value($Key, $Value, $Duration = 2592000) {
         if (!$this->enable) return;
         $StartTime=microtime(true);
 
-        // Default parameters for Memcache set function
-        $ReplaceParams = [$Key, $Value, false, $Duration];
-
         // Memcached uses only 3 parameters (no flag)
-        if (is_subclass_of($this, '\Memcached')) {
-            unset($ReplaceParams[2]);
+        if ($this->Memcached instanceof \Memcache) {
+            $this->Memcached->replace($Key, $Value, false, $Duration);
+        } else {
+            $this->Memcached->replace($Key, $Value, $Duration);
         }
 
-        $this->replace(...$ReplaceParams);
         $this->Time+=(microtime(true)-$StartTime)*1000;
     }
 
-    public function get_value($Key, $NoCache=false)
-    {
+    public function get_value($Key, $NoCache = false) {
         if (!$this->enable) return;
         $StartTime=microtime(true);
         if (empty($Key)) {
@@ -164,25 +150,25 @@ class Cache extends Memcache
                 if (count($this->CacheHits) > 0) {
                     foreach (array_keys($this->CacheHits) as $HitKey) {
                         if (!in_array_partial($HitKey, $this->PersistentKeys)) {
-                            $this->delete($HitKey);
+                            $this->Memcached->delete($HitKey);
                             unset($this->CacheHits[$HitKey]);
                             unset($this->CacheTimes[$HitKey]);
                         }
                     }
                 }
-                $this->delete($Key);
+                $this->Memcached->delete($Key);
                 $this->Time+=(microtime(true)-$StartTime)*1000;
 
                 return false;
             } elseif ($_GET['clearcache'] == $Key) {
-                $this->delete($Key);
+                $this->Memcached->delete($Key);
                 $this->Time+=(microtime(true)-$StartTime)*1000;
 
                 return false;
             } elseif (in_array($_GET['clearcache'], $this->CacheHits)) {
                 unset($this->CacheHits[$_GET['clearcache']]);
                 unset($this->CacheTimes[$_GET['clearcache']]);
-                $this->delete($_GET['clearcache']);
+                $this->Memcached->delete($_GET['clearcache']);
             }
         }
 
@@ -192,31 +178,32 @@ class Cache extends Memcache
             return $this->CacheHits[$Key];
         }
 
-        $Return = @$this->get($Key);
+        $Return = @$this->Memcached->get($Key);
+        $EndTime = microtime(true);
         if ($Return !== false && !$NoCache && $this->enable_debug) {
-            $this->CacheHits[$Key]  = $Return;
-            $this->CacheTimes[$Key] =(microtime(true)-$StartTime)*1000;
-            $this->Time+=$this->CacheTimes[$Key];
+            if (count($this->CacheHits) < 200) {
+                $this->CacheHits[$Key]  = $Return;
+                $this->CacheTimes[$Key] = ($EndTime-$StartTime)*1000;
+            }
+            $this->Time+=($EndTime-$StartTime)*1000;
         }
 
         return $Return;
     }
 
     // Wrapper for Memcache::delete. For a reason, see above.
-    public function delete_value($Key)
-    {
+    public function delete_value($Key) {
         if (!$this->enable) return;
         $StartTime=microtime(true);
-        @$this->delete($Key);
+        @$this->Memcached->delete($Key);
         $this->Time+=(microtime(true)-$StartTime)*1000;
     }
 
     //---------- memcachedb functions ----------//
 
-    public function begin_transaction($Key)
-    {
+    public function begin_transaction($Key) {
         if (!$this->enable) return;
-        $Value = @$this->get($Key);
+        $Value = @$this->Memcached->get($Key);
         if (!is_array($Value)) {
             $this->InTransaction = false;
             $this->MemcacheDBKey = array();
@@ -231,16 +218,14 @@ class Cache extends Memcache
         return true;
     }
 
-    public function cancel_transaction()
-    {
+    public function cancel_transaction() {
         if (!$this->enable) return;
         $this->InTransaction = false;
         $this->MemcacheDBKey = array();
         $this->MemcacheDBKey = '';
     }
 
-    public function commit_transaction($Time=2592000)
-    {
+    public function commit_transaction($Time = 2592000) {
         if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
@@ -250,8 +235,7 @@ class Cache extends Memcache
     }
 
     // Updates multiple rows in an array
-    public function update_transaction($Rows, $Values)
-    {
+    public function update_transaction($Rows, $Values) {
         if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
@@ -273,8 +257,7 @@ class Cache extends Memcache
 
     // Updates multiple values in a single row in an array
     // $Values must be an associative array with key:value pairs like in the array we're updating
-    public function update_row($Row, $Values)
-    {
+    public function update_row($Row, $Values) {
         if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
@@ -311,8 +294,7 @@ class Cache extends Memcache
 
     // Increments multiple values in a single row in an array
     // $Values must be an associative array with key:value pairs like in the array we're updating
-    public function increment_row($Row, $Values)
-    {
+    public function increment_row($Row, $Values) {
         if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
@@ -339,8 +321,7 @@ class Cache extends Memcache
     }
 
     // Insert a value at the beginning of the array
-    public function insert_front($Key, $Value)
-    {
+    public function insert_front($Key, $Value) {
         if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
@@ -353,8 +334,7 @@ class Cache extends Memcache
     }
 
     // Insert a value at the end of the array
-    public function insert_back($Key, $Value)
-    {
+    public function insert_back($Key, $Value) {
         if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
@@ -364,11 +344,9 @@ class Cache extends Memcache
         } else {
             $this->MemcacheDBArray = $this->MemcacheDBArray + array($Key=>$Value);
         }
-
     }
 
-    public function insert($Key, $Value)
-    {
+    public function insert($Key, $Value) {
         if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
@@ -380,8 +358,7 @@ class Cache extends Memcache
         }
     }
 
-    public function delete_row($Row)
-    {
+    public function delete_row($Row) {
         if (!$this->enable) return;
         if (!$this->InTransaction) {
             return false;
@@ -392,8 +369,7 @@ class Cache extends Memcache
         unset($this->MemcacheDBArray[$Row]);
     }
 
-    public function update($Key, $Rows, $Values, $Time=2592000)
-    {
+    public function update($Key, $Rows, $Values, $Time = 2592000) {
         if (!$this->enable) return;
         if (!$this->InTransaction) {
             $this->begin_transaction($Key);
@@ -402,6 +378,5 @@ class Cache extends Memcache
         } else {
             $this->update_transaction($Rows, $Values);
         }
-
     }
 }

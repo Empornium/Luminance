@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `xbt_client_blacklist` (
   `vstring` varchar(200) DEFAULT '',
   PRIMARY KEY (`id`),
   UNIQUE KEY `peer_id` (`peer_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

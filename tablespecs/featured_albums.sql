@@ -23,9 +23,9 @@ CREATE TABLE IF NOT EXISTS `featured_albums` (
   `GroupID` int(10) NOT NULL DEFAULT '0',
   `ThreadID` int(10) NOT NULL DEFAULT '0',
   `Title` varchar(35) NOT NULL DEFAULT '',
-  `Started` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `Ended` datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  `Started` datetime DEFAULT NULL,
+  `Ended` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

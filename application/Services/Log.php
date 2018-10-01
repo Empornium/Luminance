@@ -2,6 +2,7 @@
 namespace Luminance\Services;
 
 use Luminance\Core\Master;
+use Luminance\Core\Service;
 use Luminance\Errors\ConfigurationError;
 use Luminance\Errors\SystemError;
 
@@ -39,9 +40,9 @@ class Log extends Service {
     public function get_message_prefix($request) {
         $ip = $this->master->server['REMOTE_ADDR'];
         if ($request->user) {
-            $prefix = "{$request->reference} {$request->IP} {$request->user->ID}/{$request->user->Username}";
+            $prefix = "{$request->reference} {$request->ip} {$request->user->ID}/{$request->user->Username}";
         } else {
-            $prefix = "{$request->reference} {$request->IP} -";
+            $prefix = "{$request->reference} {$request->ip} -";
         }
         return $prefix;
     }
@@ -50,6 +51,13 @@ class Log extends Service {
         if ($request->method !== 'CLI') {
             $prefix = $this->get_message_prefix($request);
             $this->PageLogger->addInfo("{$prefix} {$request->method} {$request->uri}");
+        }
+    }
+
+    public function log_event($request, $message) {
+        if ($request->method !== 'CLI') {
+            $prefix = $this->get_message_prefix($request);
+            $this->PageLogger->addInfo("{$prefix} $message");
         }
     }
 }

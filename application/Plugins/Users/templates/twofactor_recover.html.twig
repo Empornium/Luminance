@@ -1,0 +1,18 @@
+{% extends "core/base.html.twig" %}
+{% block ecmascripts %}
+{% endblock %}
+
+{% block content %}
+<div style="color:red;font-weight:bold; background-color: rgba(255, 255, 255, 0.12); width:300px;border-radius:5px;padding:10px;">
+    <h2>You require staff assistance to recover a 2FA protected account</h2></br>
+    </br>
+    <p>To discuss this come to our IRC at: {{irc_server}}</br>
+        And join {{disabled_chan}}
+    </p>
+    </br>
+</div>
+<br/>
+<form action="" method="post">
+    <iframe src="{{web_irc}}" width="98%" height="600"></iframe>
+</form>
+{% endblock %}

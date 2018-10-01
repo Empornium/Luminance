@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `users_freeleeches` (
   `Downloaded` bigint(20) unsigned NOT NULL DEFAULT '0',
   `Uploaded` bigint(20) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`UserID`,`TorrentID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

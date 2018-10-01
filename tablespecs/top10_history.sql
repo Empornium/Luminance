@@ -21,10 +21,10 @@
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `top10_history` (
   `ID` int(10) NOT NULL AUTO_INCREMENT,
-  `Date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `Date` datetime DEFAULT NULL,
   `Type` enum('Daily','Weekly') DEFAULT NULL,
   PRIMARY KEY (`ID`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

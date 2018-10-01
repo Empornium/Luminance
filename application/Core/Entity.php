@@ -6,38 +6,45 @@ use Luminance\Errors\InternalError;
 abstract class Entity {
 
     protected static $table;
-    protected static $properties;
-    protected static $indexes;
+    protected static $properties = [];
+    protected static $indexes    = [];
+    protected static $attributes = [];
+    protected static $useRepositories = [];
+    protected static $useServices = [];
 
-    protected $saved_values = []; # Values as they exist in the DB
+    protected $saved_values   = []; # Values as they exist in the DB
     protected $unsaved_values = []; # Values yet to be saved to the DB
-    protected $local_values = []; # Values not corresponding to defined properties (will never be saved)
+    protected $local_values   = []; # Values not corresponding to defined properties (will never be saved)
 
     # static functions
 
-    static function create_from_db($values) {
+    public static function create_from_db($values) {
         $instance = new static();
         $instance->set_saved_values($values);
         return $instance;
     }
 
-    static function get_table() {
+    public static function get_table() {
         return static::$table;
     }
 
-    static function get_properties() {
+    public static function get_properties() {
         return static::$properties;
     }
 
-    static function get_indexes() {
+    public static function get_indexes() {
         return static::$indexes;
     }
 
-    static function is_property($name) {
+    public static function get_attributes() {
+        return static::$attributes;
+    }
+
+    public static function is_property($name) {
         return array_key_exists($name, static::$properties);
     }
 
-    static function is_pkey_property($name) {
+    public static function is_pkey_property($name) {
         $result = (
             self::is_property($name) &&
             array_key_exists('primary', static::$properties[$name]) &&
@@ -46,7 +53,7 @@ abstract class Entity {
         return $result;
     }
 
-    static function get_pkey_property() {
+    public static function get_pkey_property() {
         foreach (static::$properties as $name => $options) {
             if (self::is_pkey_property($name)) {
                 return $name;
@@ -55,7 +62,7 @@ abstract class Entity {
         return null;
     }
 
-    static function cast_for_property($name, $value) {
+    public static function cast_for_property($name, $value) {
         if (array_key_exists('nullable', static::$properties[$name]) && static::$properties[$name]['nullable'] && is_null($value)) {
             return null;
         }
@@ -66,7 +73,7 @@ abstract class Entity {
             case 'str':
                 return strval($value);
             case 'bool':
-                return boolval($value); # Since PHP 5.5
+                return (int)boolval($value); # Since PHP 5.5
             case 'timestamp':
                 if ($value instanceof \Datetime) {
                     return $value->format('Y-m-d H:i:s');
@@ -79,21 +86,24 @@ abstract class Entity {
         }
     }
 
-    static function unflatten_from_property($name, $value) { # For lack of a better name...
+    # For lack of a better name...
+    public static function unflatten_from_property($name, $value) {
         if (array_key_exists('nullable', static::$properties[$name]) && static::$properties[$name]['nullable'] && is_null($value)) {
             return null;
         }
         $type = static::$properties[$name]['type'];
         switch ($type) {
             case 'timestamp':
+                if ($value == '0000-00-00 00:00:00') {
+                    return null;
+                }
                 return new \DateTime($value);
             default:
                 return $value;
         }
     }
 
-
-    static function get_auto_increment_column() {
+    public static function get_auto_increment_column() {
         foreach (static::$properties as $name => $options) {
             if (array_key_exists('auto_increment', $options) && $options['auto_increment']) {
                 return $name; # There can only be a single auto_increment column per table
@@ -105,9 +115,26 @@ abstract class Entity {
     # public functions
 
     public function __construct($values = null) {
+        global $master;
+        $this->master = $master;
         $this->set_defaults();
         if (!is_null($values)) {
             $this->set_unsaved_values($values);
+        }
+
+        $this->prepareRepositories();
+        $this->prepareServices();
+    }
+
+    protected function prepareRepositories() {
+        foreach (static::$useRepositories as $localName => $repositoryName) {
+            $this->{$localName} = $this->master->getRepository($repositoryName);
+        }
+    }
+
+    protected function prepareServices() {
+        foreach (static::$useServices as $localName => $serviceName) {
+            $this->{$localName} = $this->master->getService($serviceName);
         }
     }
 
@@ -131,7 +158,11 @@ abstract class Entity {
 
     public function set_defaults() {
         foreach (static::$properties as $name => $options) {
-            $this->unsaved_values[$name] = null; # TODO: configurable defaults & correct values for non-nullable columns
+            if (!empty($options['default'])) {
+                $this->unsaved_values[$name] = $options['default'];
+            } else {
+                $this->unsaved_values[$name] = null;
+            }
         }
     }
 
@@ -270,4 +301,15 @@ abstract class Entity {
         return $value;
     }
 
+    public function hasExpired($column = 'Expires') {
+        // Compare apples to apples
+        $treshold = new \DateTime();
+        $expires  = $this->$column;
+
+        // Make sure we have a DateTime object
+        if (!$expires instanceof \DateTime)
+            $expires = new \DateTime($this->$column);
+
+        return $expires < $treshold;
+    }
 }

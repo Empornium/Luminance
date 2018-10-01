@@ -2,6 +2,7 @@
 namespace Luminance\Services;
 
 use Luminance\Core\Master;
+use Luminance\Core\Service;
 use Luminance\Entities\Client;
 use Luminance\Entities\ClientUserAgent;
 use Luminance\Entities\ClientAccept;
@@ -9,7 +10,6 @@ use Luminance\Entities\ClientScreen;
 use Luminance\Entities\Session;
 use Luminance\Errors\InternalError;
 use Luminance\Errors\UserError;
-
 
 class Secretary extends Service {
 
@@ -20,6 +20,7 @@ class Secretary extends Service {
     protected static $useServices = [
         'crypto'   => 'Crypto',
         'settings' => 'Settings',
+        'flasher'  => 'Flasher',
     ];
 
     protected static $useRepositories = [
@@ -75,7 +76,7 @@ class Secretary extends Service {
     }
 
     public function checkClient() {
-        $this->request->ip = $this->ips->get_or_new($this->master->server['REMOTE_ADDR']);
+        $this->ips->check_banned($this->request->ip);
         $client = null;
         if (array_key_exists('cid', $this->request->cookie)) {
             $CID = $this->crypto->decrypt($this->request->cookie['cid'], 'cookie');
@@ -121,19 +122,6 @@ class Secretary extends Service {
             $this->clients->save($client);
         }
         return $client;
-    }
-
-    public function send_email($To, $Subject, $Body, $From='noreply', $ContentType='text/plain') {
-        # Legacy function
-        $Headers = 'MIME-Version: 1.0' . "\r\n";
-        $Headers.='Content-type: ' . $ContentType . '; charset=iso-8859-1' . "\r\n";
-        $Headers.='From: ' . $this->settings->main->site_name;
-        $Headers.=' <' . $From . '@' . $this->settings->main->site_url . '>' . "\r\n";
-        $Headers.='Reply-To: ' . $From . '@' . $this->settings->main->site_url . "\r\n";
-        $Headers.='X-Mailer: Project Luminance' . "\r\n";
-        $Headers.='Message-Id: <' . make_secret() . '@' . $this->settings->main->site_url . ">\r\n";
-        $Headers.='X-Priority: 3' . "\r\n";
-        mail($To, $Subject, $Body, $Headers, "-f " . $From . "@" . $this->settings->main->site_url);
     }
 
     public function parse_user_agent($UserAgentString) {
@@ -191,6 +179,9 @@ class Secretary extends Service {
         }
         $this->request->client->ClientScreenID = $screen->ID;
         $this->request->client->TimezoneOffset = $options['timezoneoffset'];
+        if (!empty($this->server['TLS_VERSION'])) {
+            $this->request->client->TLSVersion = $this->server['TLS_VERSION'];
+        }
         $this->clients->save($this->request->client);
     }
 
@@ -209,8 +200,7 @@ class Secretary extends Service {
         if ($Client->ClientAcceptID) {
             $Accept = $this->accepts->load($Client->ClientAcceptID);
             $Headers = $this->get_accept_headers();
-            if (
-                $Accept->Accept != $Headers['string'] ||
+            if ($Accept->Accept != $Headers['string'] ||
                 $Accept->AcceptCharset != $Headers['charset'] ||
                 $Accept->AcceptEncoding != $Headers['encoding'] ||
                 $Accept->AcceptLanguage != $Headers['language']

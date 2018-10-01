@@ -15,10 +15,16 @@ function Quick_Edit() {
 	$('#quickpost').show();
 }
 
-function Inbox_Preview(appendid) {
-      if (appendid == undefined ) appendid = '';
+function Inbox_Preview(appendid, isReport) {
+    // Inbox_Preview is called from different forms with different DOM ids
+	var data_form = (typeof isReport !== 'undefined') ? 'report_form' : 'messageform';
+
+	if (appendid == undefined) {
+	    appendid = '';
+	}
+
 	if ($('#preview'+appendid).has_class('hidden')) {
-		ajax.post('ajax.php?action=preview_newpm', "messageform"+appendid, function (response) {
+		ajax.post('ajax.php?action=preview_newpm', data_form+appendid, function (response) {
                   $('#preview'+appendid).raw().innerHTML = response;
                   $('#preview'+appendid).show();
 			$('#quickpost'+appendid).hide();

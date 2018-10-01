@@ -15,5 +15,4 @@ class ClientScreenRepository extends Repository {
         );
         return $ClientScreen;
     }
-
 }

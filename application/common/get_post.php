@@ -25,7 +25,7 @@ if (!$master->request->user) error(403);
 switch ($_REQUEST['section']) {
     case 'forums' :
         // Is the user allowed to view the post?
-        include_once(SERVER_ROOT.'/sections/forums/functions.php'); // Forum functions
+        include_once(SERVER_ROOT.'/Legacy/sections/forums/functions.php'); // Forum functions
 
         $DB->query("SELECT
             p.Body, t.ForumID

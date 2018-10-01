@@ -13,5 +13,4 @@ class SessionRepository extends Repository {
         $session = $this->get('`UserID` = ? AND `Flags` & 128', [$user->ID]);
         return $session;
     }
-
 }

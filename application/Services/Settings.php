@@ -2,6 +2,7 @@
 namespace Luminance\Services;
 
 use Luminance\Core\Master;
+use Luminance\Core\Service;
 use Luminance\Errors\ConfigurationError;
 
 class Settings extends Service {
@@ -17,6 +18,7 @@ class Settings extends Service {
             'nonssl_static_server'     => '/static/',
             'ssl_static_server'        => '/static/',
             'site_url'                 => null,
+            'mail_domain'              => null,
             'static_server'            => null,
             'additional_domains'       => null,
             'internal_urls_regex'      => null,
@@ -30,9 +32,9 @@ class Settings extends Service {
             'template_cache'           => null
         ],
         'keys' => [
-            'enckey'                   => '',
-            'crypto_key'               => '',
-            'rss_hash'                 => ''
+            'enckey'                   => null,
+            'crypto_key'               => null,
+            'rss_hash'                 => null
         ],
         'database' => [
             'host'                     => 'localhost',
@@ -40,7 +42,10 @@ class Settings extends Service {
             'password'                 => '',
             'db'                       => 'luminance',
             'port'                     => 3306,
-            'socket'                   => '/var/run/mysqld/mysqld.sock'
+            'socket'                   => '/var/run/mysqld/mysqld.sock',
+            'persistent_connections'   => true,
+            'strict_mode'              => false,
+            'buffer_size'              => 16777216
         ],
         'memcached' => [
             'host'                     => 'unix:///var/run/memcached.sock',
@@ -262,15 +267,21 @@ class Settings extends Service {
         $this->fill_settings();
     }
 
+    protected function check_cryptoKey() {
+        if (is_null($this->settings['keys']['crypto_key'])) {
+            $cryptoKey = bin2hex(openssl_random_pseudo_bytes(16, $strong));
+            if (!$strong) throw new ConfigurationError("Cannot generate strong crypto_key!");
+            $this->settings['keys']['crypto_key'] = $cryptoKey;
+        }
+    }
+
     protected function read_settings_file() {
         $filename = $this->settings_file;
         if (!is_file($filename) || !is_readable($filename)) {
             // Test for CLI mode, no request object is ready yet though
-            if(php_sapi_name() === "cli") {
+            if (php_sapi_name() === "cli") {
                 print_r("CAUTION! No settings file is present, generating new crypto key.\n\n");
-                $cryptoKey = bin2hex(openssl_random_pseudo_bytes(16, $strong));
-                if (!$strong) throw new ConfigurationError("Cannot generate strong crypto_key!");
-                $this->settings['keys']['crypto_key'] = $cryptoKey;
+                $this->check_cryptoKey();
                 return;
             } else {
                 throw new ConfigurationError("Unable to read settings file: {$filename}");
@@ -298,12 +309,15 @@ class Settings extends Service {
     }
 
     public function generateConfig($settings) {
-        foreach($this->settings as $section_name => $section) {
-            foreach($section as $setting => $value) {
-                if(isset($settings[$section_name][$setting]))
+        $this->settings = $this->defaults;
+        foreach ($this->settings as $section_name => $section) {
+            foreach ($section as $setting => $value) {
+                if (isset($settings[$section_name][$setting]))
                     $this->settings[$section_name][$setting] = $settings[$section_name][$setting];
             }
         }
+        $this->check_cryptoKey();
+        $this->fill_settings();
         ob_start();
         $this->print_settings(false, true);
         $file_settings = ob_get_contents();
@@ -311,7 +325,7 @@ class Settings extends Service {
         $this->write_settings_file($file_settings);
     }
 
-    public function print_settings($print_legacy=true, $print_minimal=false) {
+    public function print_settings($print_legacy = true, $print_minimal = false) {
         print("; Settings which don't have to be changed from the default can be left commented\n"
              ."; out or deleted entirely.\n");
 
@@ -321,7 +335,7 @@ class Settings extends Service {
                 // Filter out constants and defaults
                 if ($value===@$this->defaults[$section_name][$setting] && $print_minimal) continue;
                 if ($value===@$this->legacy_constant_names[$section_name][$setting] && $print_minimal) continue;
-                if(!$sectionHasContent) {
+                if (!$sectionHasContent) {
                      print("\n[{$section_name}]\n");
                      $sectionHasContent = true;
                 }
@@ -359,6 +373,17 @@ class Settings extends Service {
     }
 
     protected function fill_settings() {
+        // Remove http(s):// from site URLs
+        if (!is_null($this->settings['main']['nonssl_site_url'])) {
+            $this->settings['main']['nonssl_site_url'] = preg_replace('|http(s)?://|i', '', $this->settings['main']['nonssl_site_url']);
+        }
+        if (!is_null($this->settings['main']['ssl_site_url'])) {
+            $this->settings['main']['ssl_site_url'] = preg_replace('|http(s)?://|i', '', $this->settings['main']['ssl_site_url']);
+        }
+        if (!is_null($this->settings['main']['site_url'])) {
+            $this->settings['main']['site_url'] = preg_replace('|http(s)?://|i', '', $this->settings['main']['site_url']);
+        }
+
         if (is_null($this->settings['main']['announce_url'])) {
             $this->settings['main']['announce_url'] = 'http://' . $this->settings['main']['nonssl_site_url'] . ':' . $this->settings['tracker']['port'];
         }
@@ -370,12 +395,15 @@ class Settings extends Service {
         if (is_null($this->settings['main']['static_server'])) {
             $this->settings['main']['static_server'] = ($is_ssl) ? $this->settings['main']['ssl_static_server'] : $this->settings['main']['nonssl_static_server'];
         }
+        if (is_null($this->settings['main']['mail_domain'])) {
+            $this->settings['main']['mail_domain'] = $this->settings['main']['site_url'];
+        }
+
 
         if (is_null($this->settings['main']['internal_urls_regex'])) {
             $internal_urls_regex = '@^https?:\/\/' . $this->settings['main']['site_url'] . '\/';
             foreach (explode(',', $this->main->additional_domains) as $domain) {
-                # FIXME: $domain should really have '.' replaced by '\.', but for now we're only mimicking existing behaviour
-                $internal_urls_regex .= '|^https?:\/\/' .str_replace('.','\.', $domain). '\/';
+                $internal_urls_regex .= '|^https?:\/\/' .str_replace('.', '\.', $domain). '\/';
             }
             $internal_urls_regex .= '@';
             $this->settings['main']['internal_urls_regex'] = $internal_urls_regex;
@@ -384,11 +412,23 @@ class Settings extends Service {
         if (is_null($this->settings['main']['non_anon_urls_regex'])) {
             $non_anon_urls_regex = '@^https?:\/\/' . $this->settings['main']['site_url'];
             foreach (explode(',', $this->main->non_anon_domains) as $domain) {
-                $non_anon_urls_regex .= '|^https?:\/\/' . str_replace('.','\.', $domain);
+                $non_anon_urls_regex .= '|^https?:\/\/' . str_replace('.', '\.', $domain);
             }
             $non_anon_urls_regex .= '@';
             $this->settings['main']['non_anon_urls_regex'] = $non_anon_urls_regex;
         }
+    }
+
+    public function get_legacy_constants() {
+        $settings = $this->defaults;
+        foreach ($this->legacy_constant_names as $section_name => $section) {
+            foreach ($section as $key => $constant_name) {
+                if (defined($constant_name)) {
+                    $settings[$section_name][$key] = constant($constant_name);
+                }
+            }
+        }
+        return $settings;
     }
 
     public function set_legacy_constants() {
@@ -442,7 +482,7 @@ class Settings extends Service {
         $ShopActions = array('gb','givegb','givecredits','slot','title','badge','pfl','ufl');
 
         // for counting filetypes
-        $Video_FileTypes = array('3gp','aaf','asf','avi','divx','f4v','flv','hdmov','m2v','m4v','mpeg','m1v','mkv','mov','mp4','mpg','ogg','ogv','qt','rm','rmvb','swf','wmv','vob');
+        $Video_FileTypes = array('3gp','aaf','asf','avi','divx','f4v','flv','hdmov','m2v','m4v','mpeg','m1v','mkv','mov','mp4','mpg','ogg','ogv','qt','rm','rmvb','swf','wmv','webm','vob');
         $Image_FileTypes = array('bmp','gif','jpeg','jpg','png');
         $Zip_FileTypes = array('7','7z','gz','gzip','rar','z','zip');
 
@@ -469,12 +509,12 @@ class Settings extends Service {
 
     public function set_regex_constants() {
         //resource_type://username:password@domain:port/path?query_string#anchor
-        define('RESOURCE_REGEX','(https?|ftps?):\/\/');
-        define('IP_REGEX','(\d{1,3}\.){3}\d{1,3}');
-        define('DOMAIN_REGEX','(ssl.)?(www.)?[a-z0-9-\.]{1,255}\.[a-zA-Z]{2,6}');
+        define('RESOURCE_REGEX', '(https?|ftps?):\/\/');
+        define('IP_REGEX', '(\d{1,3}\.){3}\d{1,3}');
+        define('DOMAIN_REGEX', '(ssl.)?(www.)?[a-z0-9-\.]{1,255}\.[a-zA-Z]{2,6}');
         define('PORT_REGEX', '\d{1,5}');
-        define('URL_REGEX','('.RESOURCE_REGEX.')('.IP_REGEX.'|'.DOMAIN_REGEX.')(:'.PORT_REGEX.')?(\/\S*)*');
-        define('EMAIL_REGEX','[_a-z0-9-]+([.+][_a-z0-9-]+)*@'.DOMAIN_REGEX);
+        define('URL_REGEX', '('.RESOURCE_REGEX.')('.IP_REGEX.'|'.DOMAIN_REGEX.')(:'.PORT_REGEX.')?(\/\S*)*');
+        define('EMAIL_REGEX', '[_a-z0-9-]+([.+][_a-z0-9-]+)*@'.DOMAIN_REGEX);
         define('IMAGE_REGEX', URL_REGEX.'\/\S+\.(jpg|jpeg|tif|tiff|png|gif|bmp)(\?\S*)?');
         define('SITELINK_REGEX', $this->settings['main']['internal_urls_regex']);
         define('TORRENT_REGEX', '('.SITELINK_REGEX.')?\/torrents.php\?id=([0-9]+)');

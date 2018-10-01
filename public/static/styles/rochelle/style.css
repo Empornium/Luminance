@@ -241,16 +241,12 @@ ul.thin li { margin:0px 0px; padding:0px; }
     text-align: center;
     margin: 0px auto 20px;
 }
+
 #content {
-    width: 90%;
-    min-width: 980px;
-    max-width: 1200px;
     background-color: transparent;
-    margin: 0px auto 0px auto;
-    padding: 0.6em 0.6em 30px;
     border: none;
-    /* overflow: hidden; */
 }
+
 #modal_content {
     width: 90%;
     min-width: 350px;
@@ -775,39 +771,6 @@ li.searchbars {
 
 #compose {
     margin: 20px auto;
-}
-
-/*
-=================================================================================================
-=3.7=
-=LAYOUT==EVERY PAGE==STAFF==PM'S
-=================================================================================================
-*/
-
-.messagecontainer {
-    height: 20px;
-    margin: 0px auto 10px auto;
-}
-.messagebar {  /* #0261a3; */
-    padding-top: 3px;
-    height: 20px;
-    background-color: #1a1;
-    text-align: center;
-    font-weight: bold;
-    color: white;
-    border-radius: 10px;       /* FF9+ IE9+ */
-    -moz-border-radius: 10px; /* for FF5 */
-    -webkit-border-radius: 10px; /* for opera */
-    border: 1px solid #151;
-    white-space:nowrap;
-}
-.messagebar.alert {
-    background-color: #e11;
-    border: 1px solid #511;
-}
-.messagebar.checking {
-    background-color: white;
-    color: black;
 }
 
 /*
@@ -2133,6 +2096,7 @@ td.sig {
      /* border-top: 1px solid #dcdde4;    */
     padding: 8px;
     vertical-align: top;
+    font: normal 9pt "Lucida Grande", Helvetica, Arial, Verdana, sans-serif;
 }
 
 table .scale_image {
@@ -2231,12 +2195,6 @@ background-color: rgba(20, 18, 0, 0.3);
     font-weight: bold;
     text-align: right;
     width: 130px;
-}
-
-.permissions {
-    width:930px;
-    margin-left:auto;
-    margin-right:auto;
 }
 
 .permission_container {
@@ -2438,19 +2396,13 @@ code.error {
     padding:1px 0px;
 }
 code.bbcode {
-    display:inline-block;
     background-color: #fffff3;
     color: #333;
-    padding:0px 2px;
 }
 code.bbcodeblock {
-    display:block;
     font-family: "Courier New", Courier, "Lucida Sans Typewriter", "Lucida Typewriter", monospace;
     background-color: #f4f4f4;
     color: black;
-    text-align: left;
-    margin: 10px;
-    padding: 10px;
     border: 1px dashed rgba(122, 100, 83, 0.19);
 }
 
@@ -2601,27 +2553,12 @@ a.bb_button:hover {
     border:1px solid #333333;
 }
 
-/*
-=================================================================================================
-=16.0=
-=TORRENT BUTTONS=
-=================================================================================================
-*/
-
-#torrent_buttons {
-    /*margin-left: 10px;*/
-    margin-bottom: 10px;
-}
-
-a.button {
-display: inline-block;
+.button {
+    display: inline-block;
     margin: 3px 6px 3px 0;
     margin: 0px 8px 4px 0px;
     text-decoration: none;
-    font-size: 11px;
-    vertical-align: top;
     cursor: pointer;
-    line-height: 11px;
     text-align: center;
     font-size: 12px;
     line-height: 12px;
@@ -2661,46 +2598,6 @@ display: inline-block;
 
 a.button.blueButton{
 color:#fff;
-}
-
-
-.greenButton {
-    background: #5da53a;
-}
-
-.greenButton:hover {
-    background: #48802d;
-}
-
-/*.blueButton {
-    background: #1f9db4;
-}*/
-
-.blueButton:hover {
-    background: #187b8c;
-}
-
-
-.redButton {
-    background: #ab3041;
-}
-
-.redButton:hover {
-    background: #812;
-}
-
-.infoButton {
-    background: #5A8Bb8;    /* #024a7c;#BACBD8 #9AaBb8 */
-}
-.infoButton:hover {
-    background: #3A6B98;
-}
-.orangeButton {
-    background: #ff7f26;
-}
-
-.orangeButton:hover {
-    background: #d96d21;
 }
 
 .overlay, .leftOverlay, .rightOverlay {
@@ -3414,4 +3311,4 @@ BORDER
     font-style: italic;
     color: #e33;
     margin-right: 12px;
-}
+}

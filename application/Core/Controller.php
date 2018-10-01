@@ -10,7 +10,6 @@ use Luminance\Errors\NotFoundError;
 use Luminance\Responses\Response;
 use Luminance\Responses\Rendered;
 
-
 abstract class Controller extends Slave {
 
     public $routes = [];
@@ -22,20 +21,24 @@ abstract class Controller extends Slave {
     public function handle_path() {
         $path = func_get_args();
         # implode/explode to ensure path is as we expect
-        $path = explode('/', implode('/',$path));
+        $path = explode('/', implode('/', $path));
         $route_match = $this->master->router->resolve($this->routes, $this->request, $path);
 
         if (is_array($route_match)) {
             $func = $route_match[0];
             $authLevel = $route_match[1];
             $args = array_slice($route_match, 2);
-            if ($this->request->authLevel < $authLevel)
-                throw new AuthError("Insufficient authentication level", "Unauthorized", '/');
+
+            if ($this->request->authLevel < $authLevel) {
+                $this->request->saveIntendedRoute();
+                throw new AuthError("Insufficient authentication level", "Unauthorized", '/login');
+            }
+
             if (method_exists($this, $func)) {
                 $result = call_user_func_array(array($this, $func), $args);
 
                 if (is_array($result)) {
-                    $template = "{$func}.html";
+                    $template = "{$func}.html.twig";
                     return new Rendered($template, $result);
                 } elseif (is_string($result)) {
                     return new Response($result);
@@ -46,7 +49,6 @@ abstract class Controller extends Slave {
                 } else {
                     throw new InternalError("View function {$func} returned invalid result.");
                 }
-
             } else {
                 throw new InternalError("Route resolved to nonexistent Controller method: {$func}");
             }

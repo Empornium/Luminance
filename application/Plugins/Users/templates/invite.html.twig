@@ -1,0 +1,86 @@
+{% extends "core/page.html.twig" %}
+
+{% block title %}User Invites{% endblock %}
+
+{% block main_content %}
+    <div class="linkbox">
+        [<a href="/user.php?action=invitetree">Invite tree</a>]
+    </div>
+
+    {% if userID == ActiveUser.ID and canInvite %}
+    <div class="box pad">
+        {{ bbcode.full_format(get_article('inviterules'))|raw }}
+    </div>
+
+    <div class="box pad">
+        <form action="/users/{{ userID }}/invite/send" method="post">
+            <input type="hidden" name="token" value="{{ secretary.getToken('users.invite.send') }}" />
+            <table cellpadding="6" cellspacing="1" border="0" class="border" width="100%">
+                <tr>
+                    <td class="label">Email:</td>
+                    <td>
+                        <input type="text" name="email" size="60" />
+                        <strong>Anon:</strong>
+                        <input type="checkbox" name="anon" />
+                        <input type="submit" value="Invite" />
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if pendingInvites is not empty %}
+    <div class="head">Pending invites</div>
+    <div class="box pad">
+        <table width="100%">
+            <tr class="colhead">
+                <td>Email</td>
+                <td>Expires in</td>
+                <td>Action</td>
+            </tr>
+            {% for invite in pendingInvites %}
+                <tr class="row{{ loop.index % 2 ? 'a' : 'b' }}">
+                    <td>{{ invite.Email }}</td>
+                    <td>{{ time_diff(invite.Expires) | raw }}</td>
+                    <td>
+                        <form style="display: inline-block;" action="/users/{{ userID }}/invite/delete" method="POST">
+                            <input type="hidden" name="token" value="{{ secretary.getToken('users.invite.delete') }}" />
+                            <input type="hidden" name="inviteID" value="{{ invite.ID }}">
+                            <button style="all: unset" type="submit" value="Delete" title="Delete">{{ get_icon('misc_icons', 'misc_trash') | raw }}</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="linkbox">{{ pages|raw }}</div>
+    <div class="head">Invitee list</div>
+    <div class="box pad">
+        <table width="100%">
+            <tr class="colhead">
+                <td>Username</td>
+                <td>Email</td>
+                <td>Joined</td>
+                <td>Last Seen</td>
+                <td>Uploaded</td>
+                <td>Downloaded</td>
+                <td>Ratio</td>
+            </tr>
+            {% for invitee in invitees %}
+                <tr class="row{{ loop.index % 2 ? 'a' : 'b' }}">
+                    <td>{{ render.username(invitee, {'useSpan': true})|raw }}</a></td>
+                    <td>{{ invitee.legacy.Email }}</td>
+                    <td>{{ time_diff(invitee.legacy.JoinDate, 1)|raw }}</td>
+                    <td>{{ check_paranoia('lastseen', invitee.legacy.Paranoia, invitee.legacy.Class, invitee.ID) ? time_diff(invitee.legacy.LastAccess, 1) | raw : '-' }}</td>
+                    <td>{{ check_paranoia('uploaded', invitee.legacy.Paranoia, invitee.legacy.Class, invitee.ID) ? get_size(invitee.legacy.Uploaded) : '-' }}</td>
+                    <td>{{ check_paranoia('downloaded', invitee.legacy.Paranoia, invitee.legacy.Class, invitee.ID) ? get_size(invitee.legacy.Downloaded) : '-' }}</td>
+                    <td>{{ check_paranoia('ratio', invitee.legacy.Paranoia, invitee.legacy.Class, invitee.ID) ? ratio(invitee.legacy.Uploaded, invitee.legacy.Downloaded) | raw : '-' }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div class="linkbox">{{ pages|raw }}</div>
+{% endblock %}

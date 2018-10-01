@@ -9,12 +9,12 @@ function submitOnEnter(e) {
 }
 
 function add_tag(tag) {
-    if ($('#tags').raw().value == "") {
-        $('#tags').raw().value = tag;
+    if ($('#taginput').raw().value == "") {
+        $('#taginput').raw().value = tag;
     } else {
-        $('#tags').raw().value = $('#tags').raw().value + " " + tag;
+        $('#taginput').raw().value = $('#taginput').raw().value + " " + tag;
     }
-    CursorToEnd($('#tags').raw());
+    CursorToEnd($('#taginput').raw());
 }
 
 function CursorToEnd(textarea){

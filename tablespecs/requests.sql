@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `requests` (
   `FillerID` int(10) unsigned NOT NULL DEFAULT '0',
   `UploaderID` int(10) unsigned NOT NULL DEFAULT '0',
   `TorrentID` int(10) unsigned NOT NULL DEFAULT '0',
-  `TimeFilled` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `TimeFilled` datetime DEFAULT NULL,
   `Visible` binary(1) NOT NULL DEFAULT '1',
   `GroupID` int(10) DEFAULT NULL,
   PRIMARY KEY (`ID`),
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `requests` (
   KEY `TimeFilled` (`TimeFilled`),
   KEY `LastVote` (`LastVote`),
   KEY `GroupID` (`GroupID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

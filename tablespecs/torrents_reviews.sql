@@ -22,19 +22,19 @@
 CREATE TABLE IF NOT EXISTS `torrents_reviews` (
   `ID` int(10) NOT NULL AUTO_INCREMENT,
   `GroupID` int(10) NOT NULL,
-  `Time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `Time` datetime DEFAULT NULL,
   `ReasonID` int(10) NOT NULL,
   `UserID` int(10) NOT NULL,
   `ConvID` int(10) DEFAULT NULL,
   `Status` enum('None','Okay','Warned','Pending') NOT NULL DEFAULT 'None',
   `Reason` varchar(255) DEFAULT NULL,
-  `KillTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `KillTime` datetime DEFAULT NULL,
   PRIMARY KEY (`ID`),
   KEY `GroupID` (`GroupID`),
   KEY `Time` (`Time`),
   KEY `UserID` (`UserID`),
   KEY `Status` (`Status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

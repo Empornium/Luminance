@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS `reportsv2` (
   `UserComment` text NOT NULL,
   `ResolverID` int(10) unsigned NOT NULL DEFAULT '0',
   `Status` enum('New','InProgress','Resolved') DEFAULT 'New',
-  `ReportedTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `LastChangeTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `ReportedTime` datetime DEFAULT NULL,
+  `LastChangeTime` datetime DEFAULT NULL,
   `ModComment` text NOT NULL,
   `Track` text,
   `Image` text,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS `reportsv2` (
   KEY `TorrentID` (`TorrentID`),
   KEY `ResolverID` (`ResolverID`),
   KEY `ReporterID` (`ReporterID`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

@@ -3,7 +3,7 @@ Luminance Installation
 
 Dependencies
 ------------
- - PHP >= 5.6
+ - PHP >= 7.0
  - MySQL >= 5.6
  - Memcached
  - Nginx (recommended) or Apache
@@ -31,7 +31,7 @@ Database
 You need to create a database before running the Luminance install:
 ```
 mysql -u root -p
-create database luminance
+create database luminance;
 grant all privileges on luminance.* to 'luminance'@'localhost' identified by '<DatabasePassword>';
 ```
 Ensure the database password is both stong and unique, preferably a random string.
@@ -71,7 +71,6 @@ crontab -e
 Set the following as contents for the file:
 ```
 0,15,30,45  *  *   *    *       /usr/bin/php /var/www/localhost/application/entry.php schedule >> /root/schedule.log
-10,25,40,55 *  *   *    *       /usr/bin/php /var/www/localhost/application/entry.php peerupdate >> /root/peerupdate.log
 *           *  *   *    *       /usr/bin/indexer -c /etc/sphinx/sphinx.conf --rotate delta
 5           *  *   *    *       /usr/bin/indexer -c /etc/sphinx/sphinx.conf --rotate --all
 ```

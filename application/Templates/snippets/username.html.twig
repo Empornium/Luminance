@@ -1,0 +1,92 @@
+{% if user.ID == 0 %}
+    System
+{% elseif user.Username == '' %}
+    Unknown [{{ user.ID }}];
+{% else %}
+
+    {% if options.drawInBox %}
+        <span class="user_name">
+    {% endif %}
+
+    {% if options.dropDown and ActiveUser.ID != user.ID %}
+        <div id="user_dropdown">
+    {% endif %}
+
+    <a href="/user.php?id={{ user.ID }}">
+    {% if options.colorname %}
+        <span style="color:#{{ class.Color }}">{{ user.Username|decode }}</span>
+    {% else %}
+      {{ user.Username|decode }}
+    {% endif %}
+    </a>
+
+    {% if options.dropDown and ActiveUser.ID != user.ID %}
+        <ul>
+            <li><a href="/user.php?id={{ user.ID }}" title="View {{ user.Username|decode }}'s  profile">View profile</a></li>
+            {% if check_perms('users_mod') %}
+                <li><a href="staffpm.php?action=compose&amp;toid={{ user.ID }}" title="Start a Staff Conversation with {{ user.Username|decode }}">Staff Message</a></li>
+            {% endif %}
+            {% if not master.repos.restrictions.is_restricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::PM')) %}
+                <li><a href="inbox.php?action=compose&amp;to={{ user.ID }}" title="Send a Private Message to {{ user.Username|decode }}">Send PM</a></li>
+            {% endif %}
+
+            {% if user.friends %}
+                <li><a href="/friends.php?action=Defriend&amp;friendid={{ user.ID }}&amp;auth={{ ActiveUser.legacy.AuthKey }}" title="Remove this user from your friends list">Remove friend</a></li>
+            {% else %}
+                <li><a href="/friends.php?action=add&amp;friendid={{ user.ID }}&amp;auth={{ ActiveUser.legacy.AuthKey }}" title="Add this user to your friends list">Add to friends</a></li>
+            {% endif %}
+
+            {% if user.blocked %}
+                <li><a href="/friends.php?action=Unblock&amp;friendid={{ user.ID }}&amp;type=blocked&amp;auth={{ ActiveUser.legacy.AuthKey }}" title="Remove this user from your blocked list">Remove block</a></li>
+            {% else %}
+                <li><a href="/friends.php?action=add&amp;friendid={{ user.ID }}&amp;type=blocked&amp;auth={{ ActiveUser.legacy.AuthKey }}" title="Add this user to your blocked list (blocks from sending PMs to you)">Block User</a></li>
+            {% endif %}
+        </ul>
+    {% endif %}
+
+    {% if not options.noIcons %}
+        {% if user.legacy.Donor %}
+            <a href="donate.php"><img src="{{ settings.main.static_server }}common/symbols/donor.png" alt="Donor" title="Donor" /></a>
+        {% endif %}
+
+        {% if master.repos.restrictions.is_warned(user) %}
+            <img src="{{ settings.main.static_server }}common/symbols/warned.png" alt="Warned" title=
+            {% if check_perms('users_mod') %}
+                "Warned for {{ time_diff(master.repos.restrictions.get_expiry(user, constant('Luminance\\Entities\\Restriction::WARNED')),2,false,false) }}"
+            {% else %}
+                "Warned"
+            {% endif %}
+            />
+        {% endif %}
+
+        {% if user.legacy.Enabled is same as('0')  %}
+            <img src="{{ settings.main.static_server }}common/symbols/unconfirmed.png" alt="Unconfirmed" title="This user has not confirmed their membership" />
+        {% elseif user.legacy.Enabled is same as('2')  %}
+            <img src="{{ settings.main.static_server }}common/symbols/disabled.png" alt="Banned" title="Be good, and you won't end up like this user" />
+        {% endif %}
+    {% endif %}
+
+    {% if user.legacy.GroupPermissionID and not options.noGroup %}
+        {% include 'snippets/usergroup.html.twig' %}
+    {% endif %}
+    {% if user.legacy.PermissionID and not options.noClass %}
+        {% include 'snippets/userclass.html.twig' %}
+    {% endif %}
+
+    {% if user.legacy.Title and not options.noTitle %}
+        {% if (user.legacy.PermissionID and not options.colorname) or user.legacy.GroupPermissionID %}
+            &nbsp;<span class="user_title">{{ user.legacy.Title|decode }}</span>
+        {% else %}
+            &nbsp;(<span class="user_title">{{ user.legacy.Title|decode }}</span>
+        {% endif %}
+    {% endif %}
+
+
+    {% if options.dropDown and ActiveUser.ID != user.ID %}
+        </div>
+    {% endif %}
+
+    {% if options.drawInBox %}
+        </span>
+    {% endif %}
+{% endif %}

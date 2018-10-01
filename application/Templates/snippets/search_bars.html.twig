@@ -1,0 +1,90 @@
+    <div id="searchbars">
+        <ul>
+            <li id="searchbar_torrents">
+                <form action="/torrents.php" method="get">
+                    <div class="searchcontainer">
+                        <input
+                            id="searchbox_torrents"
+                            class="searchbox"
+                            accesskey="t"
+                            spellcheck="false"
+                            placeholder="Search Torrents"
+                            value="" type="text" name="searchtext" title="Search Torrents - enter text and press return to search"
+                        />
+                        <input type="submit" class="searchbutton" value="" tabindex="-1" />
+                    </div>
+                </form>
+            </li>
+            <li id="searchbar_tags">
+                <form action="/torrents.php" method="get">
+                    <div class="searchcontainer">
+                        <input
+                            id="searchbox_tags"
+                            class="searchbox"
+                            spellcheck="false"
+                            placeholder="Search Tags"
+                            value="" type="text" name="taglist" title="Search Tags - enter text and press return to search"
+                        />
+                        <input type="submit" class="searchbutton" value="" tabindex="-1" />
+                    </div>
+                </form>
+            </li>
+            <li id="searchbar_requests">
+                <form action="/requests.php" method="get">
+                    <div class="searchcontainer">
+                        <input
+                            id="searchbox_requests"
+                            class="searchbox"
+                            spellcheck="false"
+                            placeholder="Search Requests"
+                            value="" type="text" name="search" title="Search Requests - enter text and press return to search"
+                        />
+                        <input type="submit" class="searchbutton" value="" tabindex="-1" />
+                    </div>
+                </form>
+            </li>
+            <li id="searchbar_forums">
+                <form action="/forums.php" method="get">
+                    <div class="searchcontainer">
+                        <input value="search" type="hidden" name="action" />
+                        <input
+                            id="searchbox_forums"
+                            class="searchbox"
+                            placeholder="Search Forums"
+                            value="" type="text" name="search" title="Search Forums - enter text and press return to search"
+                        />
+                        <input type="submit" class="searchbutton" value="" tabindex="-1" />
+                    </div>
+                </form>
+            </li>
+            <li id="searchbar_help">
+                <form action="/articles.php" method="get">
+                    <div class="searchcontainer">
+                        <input
+                            id="searchbox_help"
+                            class="searchbox"
+                            placeholder="Search Help"
+                            value="" type="text" name="searchtext" title="Search Help &amp; Rules Articles - enter text and press return to search"
+                        />
+                        <input type="submit" class="searchbutton" value="" tabindex="-1" />
+                    </div>
+                </form>
+            </li>
+            <li id="searchbar_users">
+                <form action="/user.php" method="post">
+                    <div class="searchcontainer">
+                        <input type="hidden" name="token" value="{{ secretary.getToken("users.search") }}" />
+                        <input type="hidden" name="action" value="search" />
+                        <input
+                            id="searchbox_users"
+                            class="searchbox"
+                            placeholder="Search Users"
+                            value="" type="text" name="search" size="17" title="Search Users - enter text and press return to search"
+                        />
+                        <input type="submit" class="searchbutton" value="" tabindex="-1" />
+                    </div>
+                </form>
+            </li>
+        </ul>
+    </div>
+    </div>

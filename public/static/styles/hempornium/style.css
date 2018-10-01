@@ -1,4 +1,4 @@
-	/*
+  /*
 **********************************************
 *****           *Hempornium*            ******
 **********************************************
@@ -41,7 +41,7 @@ a , .torrent_table .linkbox a {
     color:#1b1;
     text-decoration: none;
     border: none;
-	transition: color .5s;
+  transition: color .5s;
 }
 a:visited, .torrent_table .linkbox a:visited {
     color:#649;
@@ -163,6 +163,7 @@ ul.thin li { margin:0px 0px; padding:0px; }
     text-align: center;
     margin:20px auto -10px;
 }
+
 #header {
     width: 100%;
     min-width:960px;
@@ -170,27 +171,24 @@ ul.thin li { margin:0px 0px; padding:0px; }
     background-color: rgba(20,20,20, 0.60);
     font-weight: normal;
 }
+
 #content {
-    width: 90%;
-    min-width: 940px;
-    max-width: 1300px;
     background: rgba(8,8,8, 0.81);
     box-shadow: 0px 0px 60px -10px #999;
-    margin: 40px auto 0px auto;
     border: 0px solid #0054b0;
-    padding: 0px 0px 35px;
     -moz-border-radius: 0px 0px 0 0;
     -webkit-border-top-left-radius: 0px;
     -webkit-border-top-right-radius: 0px;
     border-radius: 0px 0px 0 0;
 }
+
 #modal_content {
     width: 90%;
     min-width: 350px;
     max-width: 1300px;
     background: rgba(8,8,8, 0.81);
     box-shadow: 0px 0px 60px -10px #999;
-    margin: 40px auto 0px auto;
+    margin: 0px auto 0px auto;
     border: 0px solid #0054b0;
     padding: 0px 0px 35px;
     -moz-border-radius: 0px 0px 0 0;
@@ -212,7 +210,7 @@ ul.thin li { margin:0px 0px; padding:0px; }
     padding: 1em 0 0;
     color: #fff;
     font-size: 1em;
-	text-shadow: 0 0 1px #000, 0 0 2px #000, 0 0 3px #000;
+  text-shadow: 0 0 1px #000, 0 0 2px #000, 0 0 3px #000;
 }
 #footer p a, #footer p a:visited {
     color: #eee;
@@ -266,12 +264,12 @@ ul.thin li { margin:0px 0px; padding:0px; }
 #menu a {
     color: #fff;
     font-weight: bold;
-	transition: text-shadow .8s, color 1s;
+  transition: text-shadow .8s, color 1s;
     font-variant: small-caps;
 }
 #menu a:hover {
-	text-shadow: 0px 0px 5px #ff0, 0px 0px 8px #ff0, 0px 0px 15px #ff0;
-	color: #505;
+  text-shadow: 0px 0px 5px #ff0, 0px 0px 8px #ff0, 0px 0px 15px #ff0;
+  color: #505;
 }
 span.infinity {
     font-weight: bold;
@@ -409,8 +407,8 @@ span.inside_stat {
     margin: 0 0 0 10px;
 }
 #major_stats > ul > li > a {
-	display: inline-block;
-	padding: 0px 4px 1px 4px;
+  display: inline-block;
+  padding: 0px 4px 1px 4px;
 }
 #major_stats_left > ul > li > a {
         display: inline-block;
@@ -483,16 +481,16 @@ span.inside_stat {
     margin-right: 20px;
 }
 #userinfo_username a {
-	background-repeat: no-repeat;
-	background-position: 0px 0px;
+  background-repeat: no-repeat;
+  background-position: 0px 0px;
         color: #ccc
 }
 #userinfo_tools a {
-	background-repeat: no-repeat;
-	background-position: 0px 0px;
+  background-repeat: no-repeat;
+  background-position: 0px 0px;
 }
 #userinfo_major a {
-	background-repeat: no-repeat;
+  background-repeat: no-repeat;
 }
 #nav_tools > a:after, #nav_userinfo > a:after {
     content:" \25BC";
@@ -688,32 +686,6 @@ li.searchbars {
 /* Compose Staff Message form */
 #compose {
     margin: 20px auto;
-}
-/* staff pms */
-.messagecontainer {
-    height: 20px;
-    margin: 0px auto 10px auto;
-}
-.messagebar {
-    padding-top: 3px;
-    height: 20px;
-    background-color: #1a1;
-    text-align: center;
-    font-weight: bold;
-    color: white;
-    border-radius: 10px;       /* FF9+ IE9+ */
-    -moz-border-radius: 10px; /* for FF5 */
-    -webkit-border-radius: 10px; /* for opera */
-    border: 1px solid #151;
-    white-space:nowrap;
-}
-.messagebar.alert {
-    background-color: #e11;
-    border: 1px solid #511;
-}
-.messagebar.checking {
-    background-color: white;
-    color: black;
 }
 /* user classes */
 .user_name {
@@ -1108,7 +1080,7 @@ table.boxstat a, table.boxstat a:visited {
 }
 .tags a:hover {
     color: #fa0;
-	text-shadow: 0 0 2px #fa0;
+  text-shadow: 0 0 2px #fa0;
 }
 .tags a:visited {
     color: #86b;
@@ -1278,7 +1250,7 @@ td.colhead, .colhead td {
     background: -moz-linear-gradient(top, rgba(20,20,20,.9) 0%, rgba(20,20,20,.7) 40%, rgba(20,20,20,.5) 100%); /* firefox */
     background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(20,20,20,.9)), color-stop(40%,rgba(20,20,20,.7)), color-stop(100%,rgba(20,20,20,.5))); /* webkit */
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#0074b7', endColorstr='#004b9d',GradientType=0 ); /* ie */
-	color: #eee;
+  color: #eee;
     border-top: 1px solid #0f0;
     border-bottom: 1px solid #0f0;
     line-height: 20px;
@@ -1421,12 +1393,12 @@ ul.poll li.graph {
     color: white;
     /* background-color: rgba(0,0,0,.6); */
     background-color: rgba(50,50,50,.7)!important;
-	border: 0px solid white;
-	margin: 3px 0;
-	border-radius: 0;
+  border: 0px solid white;
+  margin: 3px 0;
+  border-radius: 0;
 }
 .filter_torrents .inputtext:focus, .filter_torrents .smallish:focus, .filter_torrents .smallest:focus {
-	border-bottom: 1px solid #f6f;
+  border-bottom: 1px solid #f6f;
 }
 .filter_torrents .smaller {
     width:300px;
@@ -1654,7 +1626,7 @@ div.tagtable {
 }
 table.forum_post {
     margin: 10px 0px;
-    font-size: 10pt;
+    font-size: 9pt;
     border: 0px solid #98AAB1;
 }
 #requests table.forum_post {
@@ -1669,9 +1641,9 @@ table.forum_post td, td.bbcode {
 }
 table.forum_unread {
     box-shadow: 0 0 6px #fff;
-	animation-name: boxglow;
+  animation-name: boxglow;
     animation-duration: .6s;
-	animation-timing-function: linear;
+  animation-timing-function: linear;
     animation-iteration-count: infinite;
     animation-direction: alternate;
 }
@@ -1719,10 +1691,10 @@ td.sig {
 }
 
 table .scale_image {
-	max-width: 800px;
+  max-width: 800px;
 }
 #collage table .scale_image {
-	max-width: 600px;
+  max-width: 600px;
 }
 td.postbody {
     padding:0px;
@@ -1782,11 +1754,6 @@ tr.unreadpm {
     font-weight: bold;
     text-align: right;
     width: 130px;
-}
-.permissions {
-    width:930px;
-    margin-left:auto;
-    margin-right:auto;
 }
 .permission_container {
     margin-top: 20px;
@@ -2006,28 +1973,22 @@ code.error {
     padding:1px 0px;
 }
 code.bbcode {
-    display:inline-block;
     background-color: rgba(0,0,0,.6);
     color: #fff;
-    padding:1px 4px;
     border-width:0px;
     border-color: #D3CFB7;
     border-style: outset;
 }
 code.bbcodeblock {
-    display:block;
     font-family: "PT Mono", monospace;
     background-color: #f4f4f4;
     color: black;
-    text-align: left;
-    margin: 10px;
-    padding: 10px;
     border: 1px dashed #98AAB1;
 }
 /*  Stuff for the bbcode assistant  */
 table.bb_holder {
-	border-collapse:collapse;
-	background: rgba(0,0,0,.8);
+  border-collapse:collapse;
+  background: rgba(0,0,0,.8);
       width: 100%;
       margin: 0px;
 }
@@ -2112,79 +2073,42 @@ a.bb_button:hover {
     color: #BACBD8;
 }
 .color_pick td {
-	padding:2px;
-	width:10px;
-	height:10px;
-	cursor:pointer;
+  padding:2px;
+  width:10px;
+  height:10px;
+  cursor:pointer;
 }
 .picker_holder {
     display: block;
 }
 .color_pick {
     display: block;
-	border-collapse:collapse;
+  border-collapse:collapse;
 }
 .color_pick, .color_pick td {
-	border:1px solid #333333;
+  border:1px solid #333333;
 }
 .color_pick td:hover {
     border:1px solid #333333;
 }
-/*  Torrent Buttons  */
-#torrent_buttons {
-    margin-bottom: 10px;
-}
-a.button {
-	display: inline-block;
-	-moz-border-radius: 3px;
-	border-radius: 3px;
-	-webkit-border-radius: 3px;
-      margin: 0px 8px 4px 0px;
-	text-decoration: none;
-	color: #fff;
-	border: none;
-	font-size: 11px;
-	vertical-align: top;
-	cursor: pointer;  /* hand; */
-	line-height: 11px;
-	text-align: center;
-	font-size: 12px;
-	line-height: 12px;
-	font-family: Verdana, Geneva, sans-serif;
-	padding: 7px 15px;
+.button {
+  display: inline-block;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+  -webkit-border-radius: 3px;
+  margin: 0px 8px 4px 0px;
+  text-decoration: none;
+  color: #fff;
+  border: none;
+  cursor: pointer;  /* hand; */
+  text-align: center;
+  font-size: 12px;
+  line-height: 12px;
+  font-family: Verdana, Geneva, sans-serif;
+  padding: 7px 15px;
 }
 a.button:visited {
-	color: #fff;
-}
-.greenButton {
-	background: #5da53a;
-}
-.greenButton:hover {
-	background: #48802d;
-}
-.blueButton {
-	background: #1f9db4;
-}
-.blueButton:hover {
-	background: #187b8c;
-}
-.redButton {
-	background: #ab3041;
-}
-.redButton:hover {
-	background: #812;
-}
-.infoButton {
-    background: #5A8Bb8;
-}
-.infoButton:hover {
-    background: #3A6B98;
-}
-.orangeButton {
-	background: #ff7f26;
-}
-.orangeButton:hover {
-	background: #d96d21;
+  color: #fff;
 }
 #overDiv  {
 }
@@ -2199,7 +2123,7 @@ a.button:visited {
     margin: auto;
 }
 .overlay .rightOverlay {
-	display:none;
+  display:none;
     vertical-align: top;
 }
 #overDiv table tr:first-of-type{
@@ -2286,7 +2210,7 @@ img.win.flash {
     color:black;
 }
 .statusown a {
-	cursor: pointer;
+  cursor: pointer;
 }
 .thin > h2:first-child + .status_box {
       margin: -15px auto 10px;
@@ -2301,28 +2225,28 @@ img.win.flash {
       padding:4px;
 }
 .staffstatus {
-	display: inline-block;
-	border-radius: 6px;
-	-moz-border-radius: 6px;
-	-webkit-border-radius: 6px;
+  display: inline-block;
+  border-radius: 6px;
+  -moz-border-radius: 6px;
+  -webkit-border-radius: 6px;
   margin: 4px 4px;
-	text-decoration: none;
-	color: #fff;
-	font-size: 11px;
-	vertical-align: top;
-	cursor: default;
-	line-height: 11px;
-	text-align: center;
-	font-size: 12px;
-	line-height: 12px;
-	font-family: Verdana, Geneva, sans-serif;
-	padding: 3px 15px;
+  text-decoration: none;
+  color: #fff;
+  font-size: 11px;
+  vertical-align: top;
+  cursor: default;
+  line-height: 11px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 12px;
+  font-family: Verdana, Geneva, sans-serif;
+  padding: 3px 15px;
 }
 .staffstatus a {
-	color: #222;
+  color: #222;
 }
 .staffstatus a:visited {
-	color: #222;
+  color: #222;
 }
 .status_checking {
     float:right;
@@ -2404,20 +2328,20 @@ img.win.flash {
     width: 100px;
 }
 .donate_drives .button {
-	display: inline-block;
-	-moz-border-radius: 2px;
-	border-radius: 2px;
-	-webkit-border-radius: 2px;
+  display: inline-block;
+  -moz-border-radius: 2px;
+  border-radius: 2px;
+  -webkit-border-radius: 2px;
     margin: 0px 3px 3px 0px;
-	text-decoration: none;
-	color: #fff;
+  text-decoration: none;
+  color: #fff;
     font-weight: bold;
-	border: none;
-	vertical-align: top;
-	padding: 4px 4px;
+  border: none;
+  vertical-align: top;
+  padding: 4px 4px;
 }
 .greyButton {
-	background: #bbb;
+  background: #bbb;
 }
 .scrollbox {
     max-height:400px;
@@ -2425,9 +2349,9 @@ img.win.flash {
 }
 #active_drive {
     position: relative;
-	-moz-border-radius: 12px;
-	border-radius: 12px;
-	-webkit-border-radius: 12px;
+  -moz-border-radius: 12px;
+  border-radius: 12px;
+  -webkit-border-radius: 12px;
     width: 90%;
     min-width: 940px;
     max-width: 1200px;
@@ -2436,11 +2360,11 @@ img.win.flash {
     background-color: #003875;
     padding: 0px;
     text-align: left;
-	text-decoration: none;
-	color: white;
+  text-decoration: none;
+  color: white;
     font-weight: bold;
     font-size: 14px;
-	vertical-align: top;
+  vertical-align: top;
 }
 #donorbar {
     width: 96%;
@@ -2450,25 +2374,25 @@ img.win.flash {
 }
 
 #active_drive a{
-	text-decoration: none;
-	color: white;
+  text-decoration: none;
+  color: white;
     font-weight: bold;
     font-size: 14px;
 }
 #active_drive a:hover {
-	text-decoration: underline;
-	color: white;
+  text-decoration: underline;
+  color: white;
 }
 #active_drive a.link{
     float:right;
-	text-decoration: none;
-	color: white;
+  text-decoration: none;
+  color: white;
     font-weight: normal;
     font-size: 12px;
 }
 #active_drive a.link:hover {
-	text-decoration: underline;
-	color: white;
+  text-decoration: underline;
+  color: white;
 }
 
 #donorbargreen {
@@ -2690,7 +2614,7 @@ td.bbcode.vab  {
 
 .button_sort {
     display: inline-block;
-	color: #f0f;
+  color: #f0f;
     border-radius: 3px;
     background-color: #fff;
     text-align: center;
@@ -2698,8 +2622,8 @@ td.bbcode.vab  {
     width: 50px;
     margin: auto;
     cursor: pointer;
-	font-weight: 900;
-	transition: box-shadow 1s;
+  font-weight: 900;
+  transition: box-shadow 1s;
 }
 .button_sort.sort_select {
     background-color: #f0f;
@@ -2714,7 +2638,7 @@ td.bbcode.vab  {
 .button_sort:hover {
     background-color: #f6f;
     color: white;
-	box-shadow: 0 0 3px #ff0;
+  box-shadow: 0 0 3px #ff0;
 }
 .button_sort:hover a {
     color: #fff;
@@ -2741,37 +2665,37 @@ span.anon_name {
     text-align: center;
 }
 #thanksbutton {
-	cursor: pointer;
+  cursor: pointer;
 }
 input[type="submit"], input[type="button"], button {
-	padding: 4px;
-	background: #808;
-	color: #fff;
-	border: 2px outset #808;
-	border-radius: 5px;
-	cursor: pointer;
-	margin: 10px 5px;
-	font-weight: 900;
-	-webkit-transition: text-shadow .3s, border-style .5s;
-	transition: text-shadow .3s, border-style .5s;
+  padding: 4px;
+  background: #808;
+  color: #fff;
+  border: 2px outset #808;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 10px 5px;
+  font-weight: 900;
+  -webkit-transition: text-shadow .3s, border-style .5s;
+  transition: text-shadow .3s, border-style .5s;
 }
 input[type="submit"]:hover, input[type="button"]:hover, button:hover {
-	text-shadow: 0 0 7px #ff0;
+  text-shadow: 0 0 7px #ff0;
 }
 input[type=submit]:active,input[type=button]:active,button:active {
     border-style:inset;
-	text-shadow: 0 0 2px #ff0;
+  text-shadow: 0 0 2px #ff0;
 }
 #userinfo_invites {
-	margin-right: 10px;
+  margin-right: 10px;
 }
 .torrent_table strong {
-	color: #909;
-	text-shadow: 0px 0px 5px #ff0, 0px 0px 8px #ff0, 0px 0px 15px #ff0;
+  color: #909;
+  text-shadow: 0px 0px 5px #ff0, 0px 0px 8px #ff0, 0px 0px 15px #ff0;
 }
 .middle_column .torrent_table strong {
-	color: #eee;
-	text-shadow: none;
+  color: #eee;
+  text-shadow: none;
 }
 
 .quarter_width_checkbox_container { /* used for latest forum topics selection on settings page */

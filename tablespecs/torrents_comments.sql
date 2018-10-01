@@ -24,14 +24,14 @@ CREATE TABLE IF NOT EXISTS `torrents_comments` (
   `GroupID` int(10) NOT NULL,
   `TorrentID` int(10) unsigned NOT NULL,
   `AuthorID` int(10) NOT NULL,
-  `AddedTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `AddedTime` datetime DEFAULT NULL,
   `Body` mediumtext,
   `EditedUserID` int(10) DEFAULT NULL,
   `EditedTime` datetime DEFAULT NULL,
   PRIMARY KEY (`ID`),
   KEY `TopicID` (`GroupID`),
   KEY `AuthorID` (`AuthorID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

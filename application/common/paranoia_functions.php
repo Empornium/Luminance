@@ -14,7 +14,7 @@
 // uniquegroups+, perfectflacs+: the length of those lists
 // If "uploads+" is disallowed, so is "uploads". So if "uploads" is in the array, the user is a little paranoid, "uploads+", very paranoid.
 
-// The following are almost only used in /sections/user/user.php:
+// The following are almost only used in /Legacy/sections/user/user.php:
 // requiredratio
 // requestsfilled_count: the number of requests the user has filled
 //   requestsfilled_bounty: the bounty thus earned
@@ -42,7 +42,8 @@ define('PARANOIA_MSG','This users privacy (paranoia) settings mean you cannot vi
  */
 function check_paranoia($Property, $Paranoia, $UserClass, $UserID = false)
 {
-    global $LoggedUser, $Classes;
+    global $master;
+
     if (check_perms('users_override_paranoia', $UserClass)) {
         return true;
     }
@@ -61,7 +62,7 @@ function check_paranoia($Property, $Paranoia, $UserClass, $UserID = false)
 
         return $all;
     } else {
-        if (($UserID !== false) && ($LoggedUser['ID'] == $UserID)) {
+        if (($UserID !== false) && ($master->request->user->ID == $UserID)) {
             return true;
         }
 

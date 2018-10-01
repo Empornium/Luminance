@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS `reports` (
   `Comment` text,
   `ResolverID` int(10) unsigned NOT NULL DEFAULT '0',
   `Status` enum('New','InProgress','Resolved') DEFAULT 'New',
-  `ResolvedTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `ReportedTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `ResolvedTime` datetime DEFAULT NULL,
+  `ReportedTime` datetime DEFAULT NULL,
   `Reason` text NOT NULL,
   `ConvID` int(10) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`ID`),
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS `reports` (
   KEY `Type` (`Type`),
   KEY `ResolvedTime` (`ResolvedTime`),
   KEY `ResolverID` (`ResolverID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

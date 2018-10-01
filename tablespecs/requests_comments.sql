@@ -23,14 +23,14 @@ CREATE TABLE IF NOT EXISTS `requests_comments` (
   `ID` int(10) NOT NULL AUTO_INCREMENT,
   `RequestID` int(10) NOT NULL,
   `AuthorID` int(10) NOT NULL,
-  `AddedTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `AddedTime` datetime DEFAULT NULL,
   `Body` mediumtext,
   `EditedUserID` int(10) DEFAULT NULL,
   `EditedTime` datetime DEFAULT NULL,
   PRIMARY KEY (`ID`),
   KEY `TopicID` (`RequestID`),
   KEY `AuthorID` (`AuthorID`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

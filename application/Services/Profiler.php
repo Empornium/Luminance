@@ -1,16 +1,22 @@
 <?php
 namespace Luminance\Services;
 
+use Luminance\Core\Master;
+use Luminance\Core\Service;
+use Luminance\Core\Entity;
+
 use Luminance\Errors\InternalError;
 
-class Profiler {
+class Profiler extends Service {
 
     public $start_time = null;
     public $profile_log = [];
     public $states = [];
     protected $disabled = false;
 
-    public function __construct($master) {
+
+    public function __construct(Master $master) {
+        parent::__construct($master);
         $this->master = $master;
         $real_start_time = $master->start_time;
         if (is_null($real_start_time)) {
@@ -35,7 +41,7 @@ class Profiler {
     protected function add_log($timestamp, $state_text) {
         $this->profile_log[] = [$timestamp, $state_text];
     }
-    
+
     public function enter_state($state_name) {
         if ($this->disabled) {
             return;
@@ -89,5 +95,4 @@ class Profiler {
         $this->leave_state('profiler_running');
         error_log(print_r($this->profile_log, true));
     }
-
 }

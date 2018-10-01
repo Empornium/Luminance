@@ -1,0 +1,1611 @@
+{% block content %}
+<div class="thin">
+    <h2>{{ render.username(user, {'drawInBox': true, 'useSpan': true})|raw }}</h2>
+    <div class="linkbox">
+        {% if not ownProfile %}
+            {% if not user.blockedPM and not master.repos.restrictions.is_restricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::PM')) %}
+                [<a href="/inbox.php?action=compose&amp;to={{ user.ID }}" title="Send a Private Message to {{ user.Username }}">Send PM</a>]
+            {% endif %}
+            {% if (not preview and ActiveUser.legacy.DisplayStaff == 1) or check_perms_here(preview, 'users_mod') %}
+                [<a href="/staffpm.php?action=compose&amp;toid={{ user.ID }}" title="Start a Staff Conversation with {{ user.Username }}">Staff Message</a>]
+            {% endif %}
+            {% if user.friendStatus == 'friends' %}
+                [<a href="/friends.php?action=Defriend&amp;type=friends&amp;friendid={{ user.ID }}&amp;auth={{ ActiveUser.legacy.AuthKey }}">Remove friend</a>]
+            {% else %}
+                [<a href="/friends.php?action=add&amp;type=friends&amp;friendid={{ user.ID }}&amp;auth={{ ActiveUser.legacy.AuthKey }}">Add to friends</a>]
+            {% endif %}
+            {% if user.friendStatus == 'blocked' %}
+                [<a href="/friends.php?action=Unblock&amp;type=blocked&amp;friendid={{ user.ID }}&amp;auth={{ ActiveUser.legacy.AuthKey }}">Remove block</a>]
+            {% else %}
+                [<a href="/friends.php?action=add&amp;type=blocked&amp;friendid={{ user.ID }}&amp;auth={{ ActiveUser.legacy.AuthKey }}">Block user</a>]
+            {% endif %}
+            [<a href="/reports.php?action=report&amp;type=user&amp;id={{ user.ID }}">Report User</a>]
+            <br/>
+        {% endif %}
+
+        {% if check_perms_here(preview, 'users_edit_profiles', user.perm.Level) %}
+            [<a href="/user.php?action=edit&amp;userid={{ user.ID }}">Settings</a>]
+        {% endif %}
+        {% if check_perms_here(preview, 'users_view_email', user.perm.Level) %}
+            [<a href="/users/{{ user.ID }}/security">Security</a>]
+        {% endif %}
+        {% if check_perms_here(preview, 'users_view_invites', user.perm.Level) %}
+            [<a href="/users/{{ user.ID }}/invite">Invites</a>]
+        {% endif %}
+        {% if check_perms_here(preview, 'admin_manage_permissions', user.perm.Level) %}
+            [<a href="/user.php?action=permissions&amp;userid={{ user.ID }}">Permissions</a>]
+        {% endif %}
+        {% if check_perms_here(preview, 'users_logout', user.perm.Level) and check_perms_here(preview, 'users_view_ips', user.perm.Level) %}
+            [<a href="/user.php?action=sessions&amp;userid={{ user.ID }}">Sessions</a>]
+        {% endif %}
+        {% if check_perms_here(preview, 'admin_reports') %}
+            [<a href="/reportsv2.php?view=reporter&amp;id={{ user.ID }}">Reports</a>]
+        {% endif %}
+        {% if check_perms_here(preview, 'users_mod') %}
+            [<a href="/userhistory.php?action=token_history&amp;userid={{ user.ID }}">Slots</a>]
+        {% endif %}
+        {% if check_perms_here(preview, 'admin_manage_ipbans') %}
+            [<a href="/tools.php?action=ip_ban&amp;userid={{ user.ID }}&amp;uip={{ user.ip }}" title="Ban this users current IP ({{ user.ip }})">IP Ban</a>]
+        {% endif %}
+        {% if (ownProfile or check_perms('users_mod')) and not preview %}
+            [<a href="/user.php?id={{ user.ID }}&amp;preview=1"
+            {% if ownProfile%}
+                title="View your userpage as another user would see it"
+            {% else %}
+                title="View this userpage as a user would see it"
+            {% endif%}
+            >Preview</a>]
+        {% endif %}
+
+        {% if check_perms_here(preview, 'users_manage_cheats', user.perm.Level) %}
+            <span id="wl">
+            {% if user.watchlisted is not empty %}
+                    [<a onclick="watchlist_remove('{{ user.ID }}');return false;" href="#" title="Remove this user from the speed records user watchlist">Remove from watchlist</a>]
+            {% else %}
+                    [<a onclick="watchlist_add('{{ user.ID }}');return false;" href="#" title="Add this user to the speed records user watchlist">Add to watchlist</a>]
+            {% endif %}
+
+            {% if user.whitelisted is not empty %}
+                [<a onclick="excludelist_remove('{{ user.ID }}',true); return false;" href="#" title="Remove this user from the speed records user excludelist">Remove from excludelist</a>]
+            {% else %}
+                [<a
+                {% if user.legacy.Enabled == '1' %}
+                    href="/tools.php?action=speed_records&amp;viewspeed=0&amp;userid={{ user.ID }}"
+                {% else %}
+                    href="/tools.php?action=speed_records&amp;viewspeed=0&amp;userid={{ user.ID }}&amp;viewbanned=1"
+                {% endif %}
+                title="View speed records for this user">View speed records</a>]
+            {% endif %}
+            </span>
+        {% endif %}
+    </div>
+
+    <div class="sidebar">
+        {% if not ActiveUser.heavy_info.DisableAvatars %}
+            <div class="head colhead_dark">Avatar</div>
+            <div class="box">
+                <div align="center">
+                    {% if user.legacy.Avatar %}
+                        <img src="{{ user.legacy.Avatar }}" class="avatar" style="{{ get_avatar_css(classes[user.legacy.PermissionID].MaxAvatarWidth, classes[user.legacy.PermissionID].MaxAvatarHeight) }}" alt="{{ user.Username }}'s avatar" />
+                    {% else %}
+                        <img src="{{ settings.main.static_server }}common/avatars/default.png" class="avatar" style="{{ get_avatar_css(100, 120) }}" alt="Default avatar" />
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if user.legacy.Flag is not empty and user.legacy.Flag != '??' %}
+            <div class="head colhead_dark">Flag</div>
+            <div class="box center">
+                  <img src="static/common/flags/64/{{ user.legacy.Flag }}.png" alt="{{ user.legacy.Flag }}" title="{{ user.legacy.Flag }}" />
+            </div>
+        {% endif %}
+
+        <div class="head colhead_dark">Stats</div>
+        <div class="box">
+            <ul class="stats nobullet">
+                <li>Joined: {{ time_diff(user.legacy.JoinDate)|raw }}</li>
+                {% if check_force_anon(ActiveUser.ID) and check_paranoia_here(preview, 'lastseen') %}
+                    <li>Last Seen: {{ time_diff(user.legacy.LastAccess)|raw }}</li>
+                {% endif %}
+                {% if check_force_anon(ActiveUser.ID) and check_paranoia_here(preview, 'uploaded') %}
+                    <li>Uploaded: {{ get_size(user.legacy.Uploaded) }}</li>
+                {% endif %}
+                {% if check_force_anon(ActiveUser.ID) and check_paranoia_here(preview, 'downloaded') %}
+                    <li>Downloaded: {{ get_size(user.legacy.Downloaded) }}</li>
+                {% endif %}
+                {% if check_paranoia_here(preview, 'ratio') %}
+                    <li>Ratio: {{ ratio(user.legacy.Uploaded, user.legacy.Downloaded)|raw }}</li>
+                {% endif %}
+                {% if check_force_anon(ActiveUser.ID) and check_paranoia_here(preview, 'requiredratio') and user.legacy.RequiredRatio is defined %}
+                    <li>Required ratio: {{ user.legacy.RequiredRatio|number_format(2) }}</li>
+                {% endif %}
+                {% if check_force_anon(ActiveUser.ID) and ((not preview and ownProfile) or check_paranoia_here(preview, false)) %}
+                    <li><a href="/userhistory.php?action=token_history&amp;userid={{ user.ID }}">Slots</a>: {{ user.legacy.FLTokens|number_format }}</li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <div class="head colhead_dark">Percentile Rankings (Hover for values)</div>
+        <div class="box">
+            <ul class="stats nobullet">
+                {% if check_paranoia_here(preview, 'uploaded') %}
+                    <li title="{{ get_size(user.legacy.Uploaded) }}">Data uploaded: {{ user.rank.uploaded|number_format }}</li>
+                {% endif %}
+                {% if check_paranoia_here(preview, 'downloaded') %}
+                    <li title="{{ get_size(user.legacy.Downloaded) }}">Data downloaded: {{ user.rank.downloaded|number_format }}</li>
+                {% endif %}
+                {% if check_paranoia_here(preview, 'uploads+') %}
+                    <li title="{{ user.uploads.count }}">Torrents uploaded: {{ user.rank.uploads|number_format }}</li>
+                {% endif %}
+                {% if check_paranoia_here(preview, 'requestsfilled_count') %}
+                    <li title="{{ user.requests.count }}">Requests filled: {{ user.rank.requests|number_format }}</li>
+                {% endif %}
+                {% if check_paranoia_here(preview, 'requestsvoted_bounty') %}
+                    <li title="{{ get_size(user.requestsVotes.bounty) }}">Bounty spent: {{ user.rank.bounty|number_format }}</li>
+                {% endif %}
+                {# forum posts are not subject to paranoia #}
+                <li title="{{ user.forumPosts }}">Posts made: {{ user.rank.posts|number_format }}</li>
+                {% if check_paranoia_here(preview, ['uploaded', 'downloaded', 'uploads+', 'requestsfilled_count', 'requestsvoted_bounty']) %}
+                    <li><strong>Overall rank: {{ user.rank.overall|number_format }}</strong></li>
+                {% endif %}
+            </ul>
+        </div>
+
+{# History div only contains information for staff #}
+{% if check_perms_here(preview, 'users_view_email', user.perm.Level) or
+      check_perms_here(preview, 'users_view_ips', user.perm.Level) or
+      check_perms_here(preview, 'users_view_keys', user.perm.Level) or
+      check_perms_here(preview, 'users_mod', user.perm.Level)
+%}
+    <div class="head colhead_dark">History</div>
+    <div class="box">
+        <ul class="stats nobullet">
+            {% if check_perms_here(preview, 'users_view_email', user.perm.Level) %}
+                <li>Emails: {{ user.emailChanges|number_format }} [<a href="/users/{{ user.ID }}/security">View</a>]</li>
+            {% endif %}
+            {% if check_perms_here(preview, 'users_view_ips', user.perm.Level) %}
+                <li>IPs: {{ user.IPChanges|number_format }} [<a href="/userhistory.php?action=ips&amp;userid={{ user.ID }}">View</a>]&nbsp;[<a href="/userhistory.php?action=ips&amp;userid={{ user.ID }}&amp;usersonly=1">View Users</a>]</li>
+            {% endif %}
+            {% if check_perms_here(preview, 'users_view_ips', user.perm.Level) and check_perms_here(preview, 'users_mod', user.perm.Level) %}
+                <li>Tracker IPs: {{ user.trackerIPs|number_format }} [<a href="/userhistory.php?action=tracker_ips&amp;userid={{ user.ID }}">View</a>]</li>
+            {% endif %}
+            {% if check_perms_here(preview, 'users_view_keys', user.perm.Level) %}
+                <li>Passkeys: {{ user.passkeyChanges|number_format }} [<a href="/userhistory.php?action=passkeys&amp;userid={{ user.ID }}">View</a>]</li>
+            {% endif %}
+            {% if check_perms_here(preview, 'users_mod', user.perm.Level) %}
+                <li>Passwords: {{ user.passwordChanges|number_format }} [<a href="/userhistory.php?action=passwords&amp;userid={{ user.ID }}">View</a>]</li>
+                <li>Stats: N/A [<a href="/userhistory.php?action=stats&amp;userid={{ user.ID }}">View</a>]</li>
+            {% endif %}
+        </ul>
+    </div>
+{% endif %}
+
+    <div class="head colhead_dark">Personal</div>
+    <div class="box">
+        <ul class="stats nobullet">
+            {% if check_perms_here(preview, 'users_view_language', user.perm.Level) or (not preview and ownProfile) %}
+                {% if user.languages is not empty %}
+                    <li>Languages:
+                        {% for language in user.languages %}
+                            <img style="vertical-align: bottom" title="{{ language.language }}" alt="[{{ language.code }}]" src="/static/common/flags/iso16/{{ language.cc }}.png" />
+                        {% endfor %}
+                    </li>
+                {% endif %}
+            {% endif %}
+
+            <li>Class: {{ user.perm.Name }}</li>
+
+            {% if check_force_anon(user.ID) %}
+                <li>Paranoia level: <span title="{{ user.paranoiaLevel }}">
+                    {# An easy way for people to measure the paranoia of a user, for e.g. contest eligibility #}
+                    {% if user.paranoiaLevel == 0 %}
+                        Off
+                    {% elseif user.paranoiaLevel == 1 %}
+                        Very Low
+                    {% elseif user.paranoiaLevel <= 5 %}
+                        Low
+                    {% elseif user.paranoiaLevel <= 10 %}
+                        Medium
+                    {% elseif user.paranoiaLevel <= 20 %}
+                        High
+                    {% else %}
+                        Very high
+                    {% endif %}
+                </span></li>
+            {% endif %}
+
+            {% if check_perms_here(preview, 'users_view_email', user.perm.Level) or (not preview and ownProfile) %}
+                <li>Email: <a href="/mailto:{{ user.email.Address }}">{{ user.email.Address }}</a>
+                {% if check_perms_here(preview, 'users_view_email', user.perm.Level) %}
+                    [<a href="/user.php?action=search&amp;email_history=on&amp;email={{ user.email.Address }}" title="Search">S</a>]
+                {% endif %}
+                </li>
+            {% endif %}
+            {% if check_perms_here(preview, 'users_view_ips', user.perm.Level) %}
+                <li>IP: {{ display_ip(user.ip, user.legacy.ipcc) | raw }}</li>
+                <li>Host: {{ get_host(user.ip) | raw }}</li>
+            {% endif %}
+            {% if check_perms_here(preview, 'users_view_keys', user.perm.Level) or (not preview and ownProfile) %}
+                <li>Passkey: {{ user.legacy.torrent_pass }}</li>
+            {% endif %}
+            {% if check_perms_here(preview, 'users_view_invites') %}
+                <li>Invited By:
+                {% if user.legacy.Inviter is empty %}
+                    <i>Nobody</i>
+                {% else %}
+                    <a href="/user.php?id={{ user.legacy.Inviter }}">{{ user.inviter.Username }}</a>
+                {% endif %}
+                </li>
+                <li>Invites:
+                {% if master.repos.restrictions.is_restricted(user, constant('Luminance\\Entities\\Restriction::INVITE')) %}
+                    X
+                {% else %}
+                    {{ user.legacy.Invites|number_format }}
+                {% endif %}
+                ({{ user.invitesPending}})
+                </li>
+            {% endif %}
+            {% if check_perms_here(preview, 'users_mod') or (not preview and ownProfile) %}
+                <li>Clients:
+                    {% for torrentClient in user.torrentClients %}
+                        <br/>&nbsp; &bull; <span title=\"{{ torrentClient.clientid }} on {{ torrentClient.ip }}\">{{ torrentClient.useragent }}</span>
+                    {% endfor %}
+                </li>
+                <li>Connectable: <br/>
+                    {% set elemid = 0 %}
+                    {% for connectable in user.connectable %}
+                        {% if connectable.status == 'yes' %}
+                            {% set color = 'green' %}
+                            {% set show = 'Yes' %}
+                        {% elseif connectable.status == 'no' %}
+                            {% set color = 'red' %}
+                            {% set show = 'No' %}
+                        {% else %}
+                            {% set color = 'grey' %}
+                            {% set show = '?' %}
+                        {% endif %}
+                        <span id="statuscont{{ elemid }}" title="status last checked at {{ time_diff(connectable.timeChecked,2,false,false,0) }}">
+                            <span id="status{{ elemid }}" class="{{ color }}">{{ show }}</span> &nbsp; {{ connectable.ip }} &nbsp;&nbsp;
+                            {% if connectable.status != unset %}
+                                <a id="unset{{ elemid }}" style="cursor: pointer;" onclick="unset_conn_status('status{{ elemid }}', 'unset{{ elemid }}', '{{ user.ID }}','{{ connectable.ip }}')" title="Set this connectable record to status=unset">[U]</a>
+                            {% endif %}
+                            <a style="cursor: pointer;" onclick="delete_conn_record('statuscont{{ elemid }}','{{ user.ID }}','{{ connectable.ip }}')" title="Remove this connectable record">[X]</a>
+                            {% if connectable.port is not empty %}
+                                [<a href="/user.php?action=connchecker&amp;checkuser={{ user.ID }}&amp;checkip={{ connectable.ip }}&amp;checkport={{ connectable.port }}" title="check now">check</a>]
+                            {% endif %}
+                        </span><br/>
+                        {% set elemid = elemid +1 %}
+                    {% endfor %}
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div id="community" class="head colhead_dark">Community</div>
+    <div class="box">
+        <ul class="stats nobullet">
+            {% if check_force_anon(user.ID) and check_paranoia_here(preview, 'tags') %}
+                <li>Tags added: <span title="Tags on other uploaders torrents added">{{ user.tags.otherTags }}</span>
+                                <span title="Tags on own torrents added ({{ user.tags.totalTags }} total)">(+{{ user.tags.ownTags }}) </span>
+                                [<a href="/userhistory.php?action=tag_history&amp;type=added&amp;userid={{ user.ID }}" title="View all tags added by {{ user.Username }}">View</a>]
+                </li>
+                <li>Tags voted on: <span title="Tags on other uploaders torrents voted for">{{ user.tags.otherTagVotes }}</span>
+                                   <span title="Tags on own torrents voted for ({{ user.tags.totalTagVotes }} total)">(+{{ user.tags.ownTagVotes }})</span>
+                                   [<a href="/userhistory.php?action=tag_history&amp;type=votes&amp;userid={{ user.ID }}" title="View all tags voted on by {{ user.Username }}">View</a>]
+                </li>
+            {% elseif check_paranoia_here(preview, 'tags+') %}
+                <li>Tags added: <span title="Tags on other uploaders torrents added">{{ user.tags.otherTags }}</span>
+                                <span title="Tags on own torrents added ({{ user.tags.totalTags }} total)">(+{{ user.tags.ownTags }}) </span>
+                </li>
+                <li>Tags voted on: <span title="Tags on other uploaders torrents voted for">{{ user.tags.otherTagVotes }}</span>
+                                   <span title="Tags on own torrents voted for ({{ user.tags.totalTagVotes }} total)">(+{{ user.tags.ownTagVotes }})</span>
+                </li>
+            {% endif %}
+            <li>Forum Posts: {{ user.forumPosts|number_format }} [<a href="/userhistory.php?action=posts&amp;userid={{ user.ID }}" title="View all forum posts by {{ user.Username }}">View</a>]</li>
+            {% if check_force_anon(user.ID) and check_paranoia_here(preview, 'torrentcomments') %}
+                <li>Torrent Comments: {{ user.comments|number_format }} [<a href="/userhistory.php?action=comments&amp;userid={{ user.ID }}" title="View all torrent comments by {{ user.Username }}">View</a>]</li>
+            {% elseif check_paranoia_here(preview, 'torrentcomments+') %}
+                <li>Torrent Comments: {{ user.comments|number_format }}</li>
+            {% endif %}
+            {% if check_force_anon(user.ID) and check_paranoia_here(preview, 'collages') %}
+                <li>Collages started: {{ user.collages|length|number_format }} [<a href="/collages.php?userid={{ user.ID }}" title="View all collages started by {{ user.Username }}">View</a>]</li>
+            {% elseif check_paranoia_here(preview, 'collages+') %}
+                <li>Collages started: {{ user.collages|length|number_format }}</li>
+            {% endif %}
+            {% if check_force_anon(user.ID) and check_paranoia_here(preview, 'collagecontribs') %}
+                <li>Collages contributed to: {{ user.collageTorrents|number_format }} [<a href="/collages.php?userid={{ user.ID }}&amp;contrib=1" title="View all collages added to by {{ user.Username }}">View</a>]</li>
+            {% elseif check_paranoia_here(preview, 'collagecontribs+') %}
+                <li>Collages contributed to: {{ user.collageTorrents|number_format }}</li>
+            {% endif %}
+            {% if check_force_anon(user.ID) and check_paranoia_here(preview, 'requestsfilled_list') %}
+                <li>Requests filled: {{ user.requests.count|number_format }} for {{ get_size(user.requests.bounty) }} [<a href="/requests.php?type=filled&amp;userid={{ user.ID }}" title="View all requests filled by {{ user.Username }}">View</a>]</li>
+            {% elseif check_paranoia_here(preview, ['requestsfilled_count', 'requestsfilled_bounty']) %}
+                <li>Requests filled: {{ user.requests.count|number_format }} for {{ get_size(user.requests.bounty) }}</li>
+            {% elseif check_paranoia_here(preview, 'requestsfilled_count') %}
+                <li>Requests filled: {{ user.requests.count|number_format }}</li>
+            {% elseif check_paranoia_here(preview, 'requestsfilled_bounty') %}
+                <li>Requests filled: {{ get_size(user.requests.bounty) }} collected</li>
+            {% endif %}
+            {% if check_force_anon(user.ID) and check_paranoia_here(preview, 'requestsvoted_list') %}
+                <li>Requests voted: {{ user.requestsVotes.count|number_format }} for {{ get_size(user.requestsVotes.bounty) }} [<a href="/requests.php?type=voted&amp;userid={{ user.ID }}" title="View all requests added to by {{ user.Username }}">View</a>]</li>
+            {% elseif check_paranoia_here(preview, ['requestsvoted_count', 'requestsvoted_bounty']) %}
+                <li>Requests voted: {{ user.requestsVotes.count|number_format }} for {{ get_size(user.requestsVotes.bounty) }}</li>
+            {% elseif check_paranoia_here(preview, 'requestsvoted_count') %}
+                <li>Requests voted: {{ user.requestsVotes.count|number_format }}</li>
+            {% elseif check_paranoia_here(preview, 'requestsvoted_bounty') %}
+                <li>Requests voted: {{ get_size(user.requestsVotes.bounty) }} spent</li>
+            {% endif %}
+            {% if check_force_anon(user.ID) and check_paranoia_here(preview, 'uploads') %}
+                <li title="{{ get_size(user.uploads.totalSize) }}">Uploaded: {{ user.uploads.count|number_format }} [<a href="/torrents.php?type=uploaded&amp;userid={{ user.ID }}" title="View all uploads by {{ user.Username }}">View</a>]
+                {% if (check_perms('torrents_download_override') or options.EnableDownloads) and ((not preview and ownProfile) or check_perms_here(preview, 'site_zip_downloader')) %}
+                    [<a href="/torrents.php?action=redownload&amp;type=uploads&amp;userid={{ user.ID }}" title="Download all uploaded torrents in a zip" onclick="return confirm('If you no longer have the content, your ratio WILL be affected, be sure to check the size of all torrents before redownloading.');">Download</a>]
+                {% endif %}
+                {% if user.extra.Ducky is not empty %}
+                    <a href="/torrents.php?id={{ user.extra.DuckyTID }}" title="This user has a Golden Ducky award!"><span class="icon icon_ducky"></span></a>
+                {% endif %}
+                </li>
+            {% elseif check_paranoia_here(preview, 'uploads+') %}
+                <li title="{{ get_size(user.uploads.totalSize) }}">Uploaded: {{ user.uploads.count|number_format }}
+                    {% if user.extra.Ducky is not empty %}
+                        <span class="icon icon_ducky" title="This user has a Golden Ducky award!"></span>
+                    {% endif %}
+                </li>
+            {% endif %}
+            {% if check_force_anon(user.ID) and check_paranoia_here(preview, 'seeding') %}
+                <li>Seeding: {{ user.peers.Seeding|number_format }}
+                    {% if user.snatched.total is not empty and ((not preview and ownProfile) or check_paranoia_here(preview, false)) %}
+                        ( {{ 100*min(1,(user.peers.Seeding/max(1,user.snatched.unique)) | round(2) ) }} %)
+                    {% endif %}
+                    [<a href="/torrents.php?type=seeding&amp;userid={{ user.ID }}" title="View seeding torrents">View</a>]
+                    {% if (check_perms('torrents_download_override') or options.EnableDownloads) and (ownProfile or check_perms_here(preview, 'site_zip_downloader')) %}
+                        [<a href="/torrents.php?action=redownload&amp;type=seeding&amp;userid={{ user.ID }}"  title="Download all seeding torrents in a zip"onclick="return confirm('If you no longer have the content, your ratio WILL be affected, be sure to check the size of all torrents before redownloading.');">Download</a>]
+                    {% endif %}
+                </li>
+            {% elseif check_paranoia_here(preview, 'seeding+') %}
+                <li>Seeding: {{ user.peers.Seeding|number_format }}</li>
+            {% endif %}
+            {% if check_force_anon(user.ID) and check_paranoia_here(preview, 'leeching') %}
+                <li>Leeching: {{ user.peers.Leeching|number_format }}
+                    [<a href="/torrents.php?type=leeching&amp;userid={{ user.ID }}" title="View leeching torrents">View</a>]
+                    {% if user.legacy.can_leech == 0 and check_perms_here(preview, 'users_view_ips') %}
+                        <strong> (Disabled)</strong>
+                    {% endif %}
+                </li>
+            {% elseif check_paranoia_here(preview, 'leeching+') %}
+                <li>Leeching: {{ user.peers.Leeching|number_format }}</li>
+            {% endif %}
+            {% if check_force_anon(user.ID) and check_paranoia_here(preview, 'snatched') %}
+                <li>Snatched: <span title="total snatched">{{ user.snatched.total|number_format }}</span>
+                              <span title="total unique snatched">({{ user.snatched.unique|number_format }})</span>
+                              [<a href="/torrents.php?type=snatched&amp;userid={{ user.ID }}" title="View snatched torrents">View</a>]
+                    {% if (check_perms('torrents_download_override') or options.EnableDownloads) and ((not preview and ownProfile) or check_perms_here(preview, 'site_zip_downloader')) %}
+                        [<a href="/torrents.php?action=redownload&amp;type=snatches&amp;userid={{ user.ID }}" title="Download all snatched torrents in a zip" onclick="return confirm('If you no longer have the content, your ratio WILL be affected, be sure to check the size of all torrents before redownloading.');">Download</a>]
+                    {% endif %}
+                </li>
+            {% elseif check_paranoia_here(preview, 'snatched+') %}
+                <li>Snatched: <span title="total snatched">{{ user.snatched.total|number_format }}</span>
+                              <span title="total unique snatched">({{ user.snatched.unique|number_format }})</span>
+                </li>
+            {% endif %}
+            {% if check_paranoia_here(preview, 'grabbed+') %}
+                <li>Grabbed: <span title="total grabbed">{{ user.grabbed.total|number_format }}</span>
+                             <span title="total unique grabbed">({{ user.grabbed.unique|number_format }}) </span>
+
+                    {% if check_force_anon(user.ID) and check_paranoia_here(preview, 'grabbed') %}
+                        [<a href="/torrents.php?type=downloaded&amp;userid={{ user.ID }}" title="View grabbed torrents">View</a>]
+                        {% if (check_perms('torrents_download_override') or options.EnableDownloads) and ((not preview and ownProfile) or check_perms_here(preview, 'site_zip_downloader')) %}
+                            [<a href="/torrents.php?action=redownload&amp;type=grabbed&amp;userid={{ user.ID }}" title="Download all grabbed torrents in a zip" onclick="return confirm('If you no longer have the content, your ratio WILL be affected, be sure to check the size of all torrents before redownloading.');">Download</a>]
+                        {% endif %}
+                    {% endif %}
+                </li>
+            {% endif %}
+            {% if (not preview and ownProfile) or check_perms_here(preview, 'users_view_donor') %}
+                <li>Donated: <strong>&euro;{{ user.donations.total|number_format(2) }}</strong>
+                    &nbsp; <span title="number of donations made">{{ user.donations.count|number_format }}</span>
+                    <span title="donation addresses unused">({{ user.unusedDonationAddresses|number_format }})</span>
+                    [<a href="/donate.php?action=my_donations&amp;userid={{ user.ID }}" title="View donations">View</a>]
+                </li>
+            {% endif %}
+            {% if check_force_anon(user.ID) and check_paranoia_here(preview, 'invitedcount') %}
+                <li>Invited: {{ user.invitedUsers|number_format }}</li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+
+<div class="main_column">
+    {% if check_force_anon(user.ID) and  user.legacy.RatioWatchEnds !='0000-00-00 00:00:00' and (user.legacy.Downloaded * user.legacy.RequiredRatio) > user.legacy.Uploaded %}
+        <div class="head clear">Ratio watch</div>
+        <div class="box pad">
+            {% if user.legacy.can_leech == 0 %}
+                This user is currently on ratio watch, and must upload {{ get_size((user.legacy.Downloaded * user.legacy.RequiredRatio) - user.legacy.Uploaded) }} in the next {{ time_diff(user.legacy.RatioWatchEnds, 2, true, false, 0)|raw }}, or their leeching privileges will be revoked.
+                <br/>Amount downloaded while on ratio watch: {{ get_size(user.legacy.Downloaded - user.legacy.RatioWatchDownload) }}
+            {% else %}
+                This user is currently on ratio watch, their downloading privileges are disabled until they meet their required ratio.
+            {% endif %}
+            <br/><span class="red">Upload required: {{ get_size((user.legacy.Downloaded * user.legacy.RequiredRatio)-user.legacy.Uploaded) }}</span>
+            <br/>Download required to be removed : {{ get_size(user.legacy.Downloaded - (user.legacy.Uploaded / user.legacy.RequiredRatio)) }}
+        </div>
+    {% endif %}
+    <div class="head clear">
+        <span style="float:left;">Profile
+            {% if user.legacy.Title is not empty %}
+                - {{ user.legacy.Title }}
+            {% endif %}
+        </span>
+        <span style="float:right;">
+            {% if user.badges is not empty %}
+                {{ user.badges | raw }}&nbsp;&nbsp;
+            {% endif %}
+            <a id="profilebutton" href="#" onclick="return Toggle_view('profile');">(Hide)</a>
+        </span>
+    </div>
+    <div class="box">
+        <div id="profilediv">
+            <div class="pad">
+                {% if user.legacy.Info is empty %}
+                    This profile is currently empty.
+                {% else %}
+                    {{ bbcode.full_format(user.legacy.Info, get_permissions_advtags(user.ID))|raw }}
+                {% endif %}
+            </div>
+            {% if user.userBadges is not empty %}
+                <div id="userbadges" class="badgesrow badges">
+                    {{ print_badges_array(user.userBadges, false) }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% if check_perms_here(preview, 'admin_login_watch', user.perm.Level) and user.floods is not empty %}
+        <div class="head clear">
+            <span style="float:left;">Login Watch</span>
+            <span style="float:right;"><a id="loginwatchbutton" href="#" onclick="return Toggle_view('loginwatch');">(Hide)</a></span>
+        </div>
+        <div class="box">
+            <table width="100%" id="loginwatchdiv" class="shadow">
+                <tr class="colhead">
+                    <td>IP</td>
+                    <td>Type</td>
+                    <td>Attempts</td>
+                    <td>Last Attempt</td>
+                    <td>Bans</td>
+                    <td>Remaining</td>
+                    <td style="width:160px"></td>
+                </tr>
+                {% for flood in user.floods if flood.ip is not empty %}
+                    <tr class="row{{ loop.index % 2 ? 'a' : 'b' }}">
+                        <td>
+                            {{ display_ip(flood.ip, flood.ip.geoip) | raw }}
+                        </td>
+                        <td>
+                            {{ flood.Type }}
+                        </td>
+                        <td>
+                            {{ flood.Requests }}
+                        </td>
+                        <td>
+                            {{ time_diff(flood.LastRequest)|raw }}
+                        </td>
+                        <td>
+                            {{ flood.ip.Bans }}
+                        </td>
+                        <td>
+                            {{ time_diff(flood.ip.BannedUntil)|raw }}
+                        </td>
+                        <td>
+                            <form action="user.php?id={{ user.ID }}" method="post" style="display:inline-block">
+                                <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                                <input type="hidden" name="loginid" value="{{ flood.ID }}" />
+                                <input type="hidden" name="action" value="reset_login_watch" />
+                                <input type="hidden" name="id" value="{{ user.ID }}" />
+                                <input type="submit" name="submit" title="remove any bans (and reset attempts) from login watch" value="Unban" />
+                            </form>
+                            {% if check_perms_here(preview, 'admin_manage_ipbans') %}
+                                <form action="tools.php" method="post" style="display:inline-block">
+                                    <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                                    <input type="hidden" name="id" value="{{ flood.ID }}" />
+                                    <input type="hidden" name="action" value="ip_ban" />
+                                    <input type="hidden" name="start" value="{{ flood.ip }}" />
+                                    <input type="hidden" name="notes" value="Banned for {{ flood.Requests }} unsuccessful logins." />
+                                    <input type="submit" name="submit" title="IP Ban this ip address (use carefully!)" value="IP Ban" />
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+    {% if check_perms_here(preview, 'admin_manage_ipbans') %}
+        <div class="head clear">
+            <span style="float:left;">IP Ban</span>
+            <span style="float:right;"><a id="ipbanbutton" href="#" onclick="return Toggle_view('ipban');">(Hide)</a></span>
+        </div>
+        <div class="box">
+            <table id="ipbandiv" class="shadow">
+                <tr>
+                    <td class="label">IP</td>
+                    <td>{{ user.ip }}</td>
+                    <td class="label">Duration</td>
+                    <td>
+                        <form action="tools.php" method="post">
+                            <input type="hidden" name="action" value="ip_ban" />
+                            <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                            <input type="hidden" name="id" value="{{ loginID }}" />
+                            <input type="hidden" name="start" value="{{ user.ip }}"/>
+                            <input type="hidden" name="end"  value="{{ user.ip }}"/>
+                            <select name="endtime" autocomplete="off">
+                                {% if request.get.uend is empty %}
+                                    {% set endtime = {'uend' : '2016'} %}
+                                {% else %}
+                                    {% set endtime = {'uend' : request.get.uend} %}
+                                {% endif %}
+                                <option value="24"   {{  selected('uend',   '24', 'selected', endtime) }}>24 hours</option>
+                                <option value="48"   {{  selected('uend',   '48', 'selected', endtime) }}>48 hours</option>
+                                <option value="72"   {{  selected('uend',   '72', 'selected', endtime) }}>72 hours</option>
+                                <option value="168"  {{  selected('uend',  '168', 'selected', endtime) }}>1 week</option>
+                                <option value="336"  {{  selected('uend',  '336', 'selected', endtime) }}>2 weeks</option>
+                                <option value="672"  {{  selected('uend',  '672', 'selected', endtime) }}>4 weeks</option>
+                                <option value="2016" {{  selected('uend', '2016', 'selected', endtime) }}>12 weeks</option>
+                                <option value="4032" {{  selected('uend', '4032', 'selected', endtime) }}>24 weeks</option>
+                                <option value="8064" {{  selected('uend', '8064', 'selected', endtime) }}>48 weeks</option>
+                                <option value="0"    {{  selected('uend',    '0', 'selected', endtime) }}>Never</option>
+                            </select>
+                        </td>
+                        <td class="label">Reason</td>
+                        <td>
+                            <input type="text" name="notes" id="notes0" size="30" />
+                        <td class="label">    </td>
+                        <td>
+                            <input type="submit" name="submit" value="IP Ban" />
+                        </form>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    {% endif %}
+    {% if check_perms_here(preview, 'users_view_bonuslog', user.perm.Level) or (not preview and ownProfile) %}
+        <div class="head clear">
+            <span style="float:left;">Bonus Credits</span>
+            <span style="float:right;"><a id="bonusbutton" href="#" onclick="return Toggle_view('bonus');">(Hide)</a></span>
+        </div>
+        <div class="box">
+            <div class="pad" id="bonusdiv">
+                <h4 class="center">Credits:
+                    {% if user.legacy.Credits is empty %}
+                        0.00
+                    {% else %}
+                        {{ user.legacy.Credits|number_format(2) }}
+                    {% endif %}
+                </h4>
+                <span style="float:right;"><a href="#" onclick="$('#bonuslogdiv').toggle(); this.innerHTML=(this.innerHTML=='(Show Log)'?'(Hide Log)':'(Show Log)'); return false;">(Show Log)</a></span>&nbsp;
+                <div class="hidden" id="bonuslogdiv" style="padding-top: 10px;">
+                    <div id="bonuslog" class="box pad scrollbox">
+                        {% if user.legacy.BonusLog is empty %}
+                            no bonus history
+                        {% else %}
+                            {{ bbcode.full_format(user.legacy.BonusLog)|raw }}
+                        {% endif %}
+                    </div>
+                    {% if user.slotResults is not empty %}
+                        <div class="box pad" title="spins: {{ user.slotResults.total }} | -{{ user.slotResults.bet }} | +{{ user.slotResults.won }} | return: {{ user.slotResults.return }}">
+                            <strong>Slot Machine:</strong> {{  user.slotResults.won - user.slotResults.bet }} credits
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    {% if user.legacy.Enabled == '1' and not ownProfile and not user.blockedGift %}
+        <div class="head clear">
+            <span style="float:left;">Donate to user</span>
+            <span style="float:right;"><a id="donatebutton" href="#" onclick="return Toggle_view('donate');">(Hide)</a></span>
+        </div>
+        <div class="box">
+            <table width="100%" id="donatediv">
+                {% for shopItem in user.shopItems %}
+                    {% if ActiveUser.legacy.Credits >= shopItem.Cost %}
+                        {% set canBuy = true %}
+                    {% else %}
+                        {% set canBuy = false %}
+                    {% endif %}
+                    <tr class="row{{ loop.index % 2 ? 'a' : 'b' }}">
+                        <td title="{{ shopItem.Description }}">
+                            <strong>
+                              {% if shopItem.Action == 'givegb' %}
+                                  {{ shopItem.Title | replace({'other': user.Username}) }}
+                              {% else %}
+                                  {{ shopItem.Title }} to {{ user.Username }}
+                              {% endif %}
+                            </strong>
+                        </td>
+                        <td style="text-align: left;">
+                            (cost {{ shopItem.Cost|number_format }}c)
+                        </td>
+                        <td style="text-align: right;">
+                            <form method="post" action="bonus.php" style="display:inline-block" onsubmit="return SetMessage('message{{ shopItem.ID }}');">
+                                <input type="hidden" name="action" value="buy" />
+                                <input type="hidden" name="othername" value="{{ user.Username }}" />
+                                <input type="hidden" id="message{{ shopItem.ID }}" name="message" value="" />
+                                <input type="hidden" name="userid" value="{{ ActiveUser.ID }}" />
+                                <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                                <input type="hidden" name="itemid" value="{{ shopItem.ID }}" />
+                                <input type="hidden" name="retu" value="{{ user.ID }}" />
+                                <input type="submit" name="submit"
+                                    {% if canBuy %}
+                                        class="shopbutton itembuy" value="Buy"
+                                    {% else %}
+                                        class="shopbutton itemnotbuy" value="X" disabled="disabled"
+                                    {% endif %}
+                                />
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+    {% if user.snatched.total > 0 and check_paranoia_here(preview, 'snatched') and check_force_anon(user.ID) %}
+        <div class="head clear">
+            <span style="float:left;">Recent Snatches</span>
+            <span style="float:right;"><a id="snatchesbutton" href="#" onclick="return Toggle_view('recentsnatches');">(Hide)</a></span>
+        </div>
+        <div class="box">
+            <table id="recentsnatchesdiv" class="recent shadow" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    {% for recentSnatch in user.recentSnatches %}
+                        <td width="20%">
+                            <div>
+                                <a href="/torrents.php?id={{ recentSnatch.ID }}" title="{{ recentSnatch.Name }}">
+                                    {% if recentSnatch.Image is not empty %}
+                                        <img src="{{ recentSnatch.Image }}" alt="{{ recentSnatch.Name }}" width="120px" />
+                                    {% else %}
+                                        {{ recentSnatch.Name }}
+                                    {% endif %}
+                                </a>
+                            </div>
+                        </td>
+                    {% endfor %}
+                </tr>
+            </table>
+        </div>
+    {% endif %}
+    {% if user.uploads.count > 0 and check_paranoia_here(preview, 'uploads') and check_force_anon(user.ID) %}
+        {% if user.recentUploads|length > 0 %}
+            <div class="head clear">
+                <span style="float:left;">Recent Uploads</span>
+                <span style="float:right;"><a id="recentuploadsbutton" href="#" onclick="return Toggle_view('recentuploads');">(Hide)</a></span>
+            </div>
+            <div class="box">
+                <table id="recentuploadsdiv" class="recent shadow" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        {% for recentUpload in user.recentUploads  %}
+                            <td width="20%">
+                                <div>
+                                    <a href="/torrents.php?id={{ recentUpload.ID }}" title="{{ recentUpload.Name }}">
+                                        {% if recentUpload.Image is not empty %}
+                                            <img src="{{ recentUpload.Image }}" alt="{{ recentUpload.Name }}" width="120px" />
+                                        {% else %}
+                                            {{ recentUpload.Name }}
+                                        {% endif %}
+                                    </a>
+                                </div>
+                            </td>
+                        {% endfor %}
+                    </tr>
+                </table>
+            </div>
+        {% endif %}
+    {% endif %}
+
+    {% if (user.collages|length) %}
+    <div class="head clear">
+        <span style="float:left;">{{ user.collages|length }} Collage{{ user.collages|length == 1 ? '' : 's' }}</span>
+        <span style="float:right;"><a id="collagesbutton" href="#" onclick="return Toggle_view('collages');">(Hide)</a></span>
+    </div>
+    <div class="box">
+        <div id="collagesdiv" class="">
+            <table cellpadding="6" cellspacing="1" border="0" class="shadow" width="100%">
+                <tr class="colhead">
+                    <td style="width:48%;"><strong>Collage Name</strong></td>
+                    <td><strong>Torrents</strong></td>
+                    <td><strong>Total size</strong></td>
+                    <td><strong>Last update</strong></td>
+                </tr>
+                {% for collage in user.collages if collage is not empty %}
+                    <tr class="row{{ loop.index % 2 ? 'a' : 'b' }}">
+                        <td><a href='collages.php?id={{ collage.ID }}'>{{ collage.Name }}</a></td>
+                        <td>{{ collage.NumTorrents }}</td>
+                        <td>{{ get_size(collage.TotalSize) }}</td>
+                        <td>{{ time_diff(collage.LastUpdate)|raw }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Linked accounts #}
+    {% if check_perms_here(preview, 'users_mod', user.perm.Level) %}
+        {{ user.dupes | raw }}
+    {% endif %}
+
+    {% if user.invitedUsers > 0 and check_perms_here(preview, 'users_view_invites') %}
+        <div class="head clear">
+            <span style="float:left;">Invite Tree</span>
+            <span style="float:right;"><a id="invitebutton" href="#" onclick="return Toggle_view('invite');">(Hide)</a></span>
+        </div>
+        <div class="box">
+            <div id="invitediv" class="">
+                {{ user.inviteTree.make_tree() }}
+            </div>
+        </div>
+    {% endif %}
+
+    {# Requests #}
+    {% if check_force_anon(user.ID) and check_paranoia_here(preview, 'requestsvoted_list') and user.recentRequests|length > 0 %}
+        <div class="head clear">
+            <span style="float:left;">{{ user.recentRequests|length }} Request{{ user.recentRequests|length == 1 ? '' : 's' }}</span>
+            <span style="float:right;"><a id="requestsbutton" href="#" onclick="return Toggle_view('requests');">(Hide)</a></span>
+        </div>
+        <div class="box">
+            <div id="requestsdiv" class="">
+                <table cellpadding="6" cellspacing="1" border="0" class="shadow" width="100%">
+                    <tr class="colhead">
+                        <td style="width:48%;"><strong>Request Name</strong></td>
+                        <td><strong>Votes</strong></td>
+                        <td><strong>Bounty</strong></td>
+                        <td><strong>Added</strong></td>
+                    </tr>
+                    {% for recentRequest in user.recentRequests if recentRequest is not empty %}
+                        <tr class="row{{ loop.index % 2 ? 'a' : 'b' }}">
+                            <td>
+                                <a href='requests.php?action=view&amp;id={{ recentRequest.id }}'>{{ recentRequest.title }}</a>
+                                {% if ActiveUser.HideTagsInLists != 1 %}
+                                    <div class="tags">
+                                        {% for tag in recentRequest.tags %}
+                                            <a href='requests.php?tags={{ TagName }}'>{{ TagName }}</a>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span id="vote_count_{{ recentRequest.id }}">{{ recentRequest.votes }}</span>
+                                {% if check_perms_here(preview, 'site_vote') %}
+                                    <input type="hidden" id="auth" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                                    &nbsp;&nbsp; <a href="javascript:VotePromptMB({{ recentRequest.id }})"><strong>(+)</strong></a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span id="bounty_{{ recentRequest.id }}">{{ get_size(recentRequest.bounty) }}</span>
+                            </td>
+                            <td>
+                                {{ time_diff(recentRequest.timeAdded)|raw }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    {% endif %}
+
+
+    {% if (check_perms_here(preview, 'users_mod') or check_perms_here(preview, 'users_fls'))  and user.staffPMs|length > 0 %}
+        <div class="head clear">
+                <span style="float:left;">{{ user.staffPMs|length }} Staff PM{{ user.staffPMs|length == 1 ? '' : 's' }}</span>
+                <span style="float:right;"><a id="staffpmsbutton" href="#" onclick="return Toggle_view('staffpms');">(Hide)</a></span>
+        </div>
+        <div class="box">
+            <table width="100%" class="shadow" id="staffpmsdiv">
+                <tr class="colhead">
+                    <td>Subject</td>
+                    <td>Date</td>
+                    <td>Assigned To</td>
+                    <td>Resolved By</td>
+                </tr>
+                {% for staffPM in user.staffPMs %}
+                <tr class="row{{ loop.index % 2 ? 'a' : 'b' }}">
+                    <td><a href="/staffpm.php?action=viewconv&amp;id={{ staffPM.ID }}">{{ staffPM.Subject }}</a></td>
+                    <td>{{ time_diff(staffPM.Date, 2, true)|raw }}</td>
+                    <td>
+                        {% if staffPM.AssignedToUser == '' %}
+                              {{ staffPM.Level == 0 ? "First Line Support" : classes[staffPM.PermID].Name }}
+                              {{ staffPM.Assigned != 'Sysop' ? "+" }}
+                        {% else %}
+                              {{ render.username(staffPM.AssignedToUser, {'useSpan': true, 'noTitle': true})|raw }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if staffPM.ResolverID is not empty and staffPM.Status == 'Resolved' %}
+                            {{ render.username(staffPM.ResolverID, {'useSpan': true, 'noTitle': true})|raw }}
+                        {% else %}
+                            (unresolved)
+                        {% endif %}
+                    </td>
+                </tr>
+              {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+
+    {% if (check_perms_here(preview, 'admin_reports') or check_perms_here(preview, 'users_fls')) and user.reports is not empty %}
+        <div class="head clear">
+            <span style="float:left;">{{ user.reports|length }} Report{{ user.reports|length == 1 ? '' : 's' }}</span>
+            <span style="float:right;"><a id="reportsbutton" href="#" onclick="return Toggle_view('reports');">(Hide)</a></span>
+        </div>
+        <div class="box">
+            <table width="100%" class="shadow" id="reportsdiv">
+                <tr class="colhead">
+                    <td title="Report ID">ID</td>
+                    <td width="80px">Torrent</td>
+                    <td>Type</td>
+                    <td>User Comment</td>
+                    <td width="80px">Date</td>
+                    <td>Resolved By</td>
+                    <td width="100px">Mod Comment</td>
+                </tr>
+                {% for report in user.reports %}
+                    <tr class="row{{ loop.index % 2 ? 'a' : 'b' }}">
+                        <td><a href="/reportsv2.php?view=report&amp;id={{ report.ID }}">#{{ report.ID }}</a></td>
+                        <td>
+                            {% if report.Name is not empty %}
+                                <a href="/torrents.php?id={{ report.TorrentID }}">{{ report.Name|slice(0, 30) }}</a>
+                            {% else %}
+                                <a href="/log.php?search=Torrent+{{ report.TorrentID }}">{{ report.TorrentID }} (deleted)</a>
+                            {% endif %}
+                        </td>
+                        <td>{{ report.Type }}</td>
+                        <td>{{ bbcode.full_format(report.UserComment|slice(0, 120))|raw }}</td>
+                        <td>{{ time_diff(report.ReportedTime, 2, true)|raw }}</td>
+                        <td>
+                            {% if report.Status == 'Resolved' %}
+                                {{ render.username(report.ResolverID, {'useSpan': true, 'noTitle': true})|raw }}
+                            {% else %}
+                                (unresolved)
+                            {% endif %}
+                        </td>
+                        <td>{{ bbcode.full_format(report.ModComment|slice(0,120))|raw }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+
+    {% if check_perms_here(preview, 'users_mod', user.perm.Level) or check_perms_here(preview, 'users_view_notes', user.perm.Level) %}
+        {% if check_perms_here(preview, 'users_mod', user.perm.Level) or check_perms_here(preview, 'users_add_notes', user.perm.Level) %}
+            <form id="form" action="user.php" method="post">
+                <input type="hidden" name="action" value="moderate" />
+                <input type="hidden" name="userid" value="{{ user.ID }}" />
+                <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+        {% endif %}
+                <script>
+                    function Filter_Staffnotes(e, filterid)
+                    {
+                        var lines = document.getElementsByClassName('staffnote-'+filterid);
+                        for (i = 0; i < lines.length; i++) {
+                            lines[i].style.display = e.checked ? 'inline' : 'none';
+                        }
+                    }
+                </script>
+
+                <div class="head clear">
+                    <span style="float:left;">Staff Notes</span>
+                    <span style="float:right;"><a id="notesbutton" href="#" onclick="return Toggle_view('notes');">(Hide)</a></span>
+                </div>
+                <div class="box" >
+                    <div class="pad" id="notesdiv" style="padding-bottom: 20px;">
+                        <input type="hidden" name="comment_hash" value="{{ user.extra.CommentHash }}">
+                        <table>
+                            <tbody>
+                                <tr>
+                                    {% for notesFilter in user.notesFilters %}
+                                        <td><label><input type="checkbox" checked onclick="Filter_Staffnotes(this, '{{  trim_filter(notesFilter.name) }}')"> {{  notesFilter.name }} ({{  notesFilter.count }})</label></td>
+                                    {% endfor %}
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div id="admincommentlinks" class="AdminComment box pad scrollbox">
+                            {{  user.parsedAdminComments|raw }}
+                        </div>
+                        <textarea id="admincomment" onkeyup="resize('admincomment');" class="AdminComment hidden" name="AdminComment" cols="65" rows="26" style="width:98%;">{{ user.legacy.AdminComment }}</textarea>
+                        {% if check_perms_here(preview, 'users_edit_notes', user.perm.Level) %}
+                            <span style="float:right;">
+                                <a href="#" name="admincommentbutton" onclick="ChangeTo('text'); return false;">(Edit Notes)</a>
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <script type="text/javascript">
+                    resize('admincomment');
+                </script>
+    {% endif %}
+    {% if check_perms_here(preview, 'users_mod', user.perm.Level) %}
+        <div class="head clear">
+            <span style="float:left;">Tracker History</span>
+            <span style="float:right;"><a id="historybutton" href="#" onclick="return Toggle_view('history');">(Hide)</a></span>
+        </div>
+        <div class="box">
+            <div class="pad" id="historydiv">
+                This is a record of up/down from the tracker, plus credits awarded
+                <div class="box pad seedhistory scrollbox">
+                    Total &nbsp;&nbsp; | {{ hoursdays(user.legacy.SeedHours) }}<br/>
+                    Today &nbsp;&nbsp; | {{ hoursdays(user.legacy.SeedHoursDaily) }} | {{ user.legacy.CreditsDaily }} credits
+                </div>
+                <div class="box pad seedhistory scrollbox">{{ bbcode.full_format(user.legacy.SeedHistory)|raw }}</div>
+            </div>
+        </div>
+    {% endif %}
+    {% if check_perms_here(preview, 'users_mod', user.perm.Level) %}
+        <div class="head clear">
+            <span style="float:left;">User Moderation</span>
+            <span style="float:right;"><a id="infobutton" href="#" onclick="Toggle_view('info');return false;">(Hide)</a></span>
+        </div>
+        <div class="box">
+            <table id="infodiv" class="shadow">
+                {% if check_perms_here(preview, 'users_edit_usernames', user.perm.Level) %}
+                    <tr>
+                        <td class="label">Username:</td>
+                        <td>
+                            <input type="text" size="40" name="Username" maxlength="20" value="{{ user.Username }}" />
+                            <span id="UsernameAlert" style="color: red; display: none;">Invalid username [A-Za-z0-9_.!-] (1-20 chars.)</span>
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if check_perms_here(preview, 'users_edit_titles') %}
+                    <tr>
+                        <td class="label">CustomTitle:<br/>(max 32)</td>
+                        <td><input class="long" type="text" name="Title" maxlength="32" value="{{ user.legacy.Title }}" /></td>
+                    </tr>
+                {% endif %}
+                {% if check_perms_here(preview, 'users_promote_below', user.perm.Level) or check_perms_here(preview, 'users_promote_to', user.perm.Level-1) %}
+                    <tr>
+                        <td class="label">Class:</td>
+                        <td>
+                            <select name="Class">
+                                {% for class in classes if class.IsUserClass == '1' %}
+                                    {% if (check_perms_here(preview, 'users_promote_below', user.perm.Level) and class.Level<ActiveUser.perm.Level)
+                                       or (check_perms_here(preview, 'users_promote_to', user.perm.Level-1) and class.Level<=ActiveUser.perm.Level)
+                                       or class.Level == ActiveUser.perm.Level and user.ID == ActiveUser.ID %}
+                                        <option value="{{ class.ID }}" {{ selected('PermissionID', class.ID, 'selected', user.legacy) }}>{{ class.Name }} ({{ class.Level }})</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if check_perms_here(preview, 'admin_manage_permissions', user.perm.Level) or check_perms_here(preview, 'users_group_permissions', user.perm.Level)  %}
+                    <tr>
+                        <td class="label">Group Permissions:</td>
+                        <td>
+                            <select name="GroupPermission">
+                                <option value="0" {{ user.legacy.GroupPermissionID == '0' ? 'selected="selected"' }}> -none- &nbsp;</option>
+                                {% for group in classes if group.IsUserClass == '0' %}
+                                    <option value="{{ group.ID }}" {{ selected('GroupPermissionID', group.ID, 'selected', user.legacy) }}>{{ group.Name }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if check_perms_here(preview, 'users_give_donor') %}
+                    <tr>
+                        <td class="label">Donor:</td>
+                        <td><input type="checkbox" name="Donor" {{ user.legacy.Donor == 1 ? 'checked="checked"' }} /></td>
+                    </tr>
+                {% endif %}
+                {% if check_perms_here(preview, 'users_make_invisible') %}
+                    <tr>
+                        <td class="label">Visible:</td>
+                        <td>
+                            <input type="checkbox" title="Allow the tracker to distribute user's IP in peerlists" name="Visible"  id="Visible" {{ user.legacy.Visible == 1 ? 'checked="checked"' }} />
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if check_perms_here(preview, 'users_disable_any') %}
+                    <tr>
+                        <td class="label">Leeching:</td>
+                        <td>
+                            <input type="checkbox" title="Allow user to leech on the tracker" name="CanLeech" id="CanLeech" {{ user.legacy.can_leech == 1 ? 'checked="checked"' }} />
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if (check_perms_here(preview, 'users_edit_ratio', user.perm.Level) and not ownProfile)
+                   or (check_perms_here(preview, 'users_edit_own_ratio') and ownProfile) %}
+                    <tr>
+                        <td class="label">Adjust Upload:</td>
+                        <td>
+                            <input type="hidden" name="OldUploaded" value="{{ user.legacy.Uploaded }}" />
+                            <input type="text" size="10" name="adjustupvalue" id="adjustupvalue" value="" onkeyup="CalculateAdjustUpload('adjustup', document.forms.form.elements.adjustup,{{ user.legacy.Uploaded }})" title="Use '-' to remove from Upload" /> &nbsp;&nbsp;
+                            <input name="adjustup" value="mb" type="radio"  onchange="CalculateAdjustUpload('adjustup', document.forms.form.elements.adjustup,{{ user.legacy.Uploaded }})" /> MB&nbsp;&nbsp;
+                            <input name="adjustup" value="gb" type="radio" onchange="CalculateAdjustUpload('adjustup', document.forms.form.elements.adjustup,{{ user.legacy.Uploaded }})" checked="checked" /> GB&nbsp;&nbsp;
+                            <input name="adjustup" value="tb" type="radio" onchange="CalculateAdjustUpload('adjustup', document.forms.form.elements.adjustup,{{ user.legacy.Uploaded }})" /> TB
+
+                            <span style="margin-left:40px;" title="Current Upload">{{ get_size(user.legacy.Uploaded, 2) }}</span>
+                            <span style="margin-left: 10px;" id="adjustupresult" name="adjustupresult" title="Preview of Total Upload after adjustment"></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Adjust Download:</td>
+                        <td>
+                            <input type="hidden" name="OldDownloaded" value="{{ user.legacy.Downloaded }}" />
+                            <input type="text" size="10" name="adjustdownvalue" id="adjustdownvalue" value="" onkeyup="CalculateAdjustUpload('adjustdown', document.forms.form.elements.adjustdown,{{ user.legacy.Downloaded }})" title="Use '-' to remove from Download" /> &nbsp;&nbsp;
+                            <input name="adjustdown" value="mb" type="radio"  onchange="CalculateAdjustUpload('adjustdown', document.forms.form.elements.adjustdown,{{ user.legacy.Downloaded }})" /> MB&nbsp;&nbsp;
+                            <input name="adjustdown" value="gb" type="radio" onchange="CalculateAdjustUpload('adjustdown', document.forms.form.elements.adjustdown,{{ user.legacy.Downloaded }})" checked="checked" /> GB&nbsp;&nbsp;
+                            <input name="adjustdown" value="tb" type="radio" onchange="CalculateAdjustUpload('adjustdown', document.forms.form.elements.adjustdown,{{ user.legacy.Downloaded }})" /> TB
+
+                            <span style="margin-left: 40px;" title="Current Download">{{ get_size(user.legacy.Downloaded, 2) }}</span>
+                            <span style="margin-left: 10px;" id="adjustdownresult" name="adjustdownresult" title="Preview of Total Download after adjustment"></span>
+                        </td>
+                    </tr>
+                    <script type="text/javascript">
+                        CalculateAdjustUpload('adjustdown', document.forms['form'].elements['adjustdown'], {{ user.legacy.Downloaded }});
+                        CalculateAdjustUpload('adjustup', document.forms['form'].elements['adjustup'], {{ user.legacy.Uploaded }});
+                    </script>
+                    <tr>
+                        <td class="label">Merge Stats <strong>From:</strong></td>
+                        <td>
+                            <input class="long" type="text" name="MergeStatsFrom" />
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if (check_perms_here(preview, 'users_edit_tokens', user.perm.Level) and not ownProfile)
+                   or (check_perms_here(preview, 'users_edit_own_tokens') and ownProfile) %}
+                    <tr>
+                        <td class="label">Slots:</td>
+                        <td>
+                            <input type="text" size="10" name="FLTokens" value="{{ user.legacy.FLTokens }}" />
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if (check_perms_here(preview, 'users_edit_credits', user.perm.Level) and not ownProfile)
+                   or (check_perms_here(preview, 'users_edit_own_credits') and ownProfile) %}
+                    <tr>
+                        <td class="label">Adjust Bonus Credits:</td>
+                        <td>
+                            <input type="hidden" name="OldCredits" value="{{ user.legacy.Credits }}" />
+                            <input type="text" size="10" name="adjustcreditsvalue" id="adjustcreditsvalue" value="" onkeyup="CalculateAdjustCredits({{ user.legacy.Credits }})" title="Use '-' to remove from Credits" /> &nbsp;&nbsp;
+                            <span style="margin-left: 10px;" title="Current Bonus Credits">{{ user.legacy.Credits|number_format }} credits</span>
+                            <span style="margin-left: 10px;" id="adjustcreditsresult" name="adjustcreditsresult" title="Preview of Total Credits after adjustment"></span>
+                        </td>
+                    </tr>
+                    <script type="text/javascript">
+                        CalculateAdjustCredits({{ user.legacy.Credits }});
+                    </script>
+                {% endif %}
+                {% if check_perms_here(preview, 'users_edit_invites') %}
+                    <tr>
+                        <td class="label">Invites:</td>
+                        <td><input type="text" size="10" name="Invites" value="{{ user.legacy.Invites }}" /></td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <td class="label">Golden Duck:</td>
+                    <td>
+                        {% if check_perms_here(preview, 'users_edit_badges') %}
+                            <input type="checkbox" name="Ducky"
+                                {% if user.extra.DuckyTID is not empty %}
+                                    title="If you remove the Ducky it will only be reawarded if you recheck this. It can only be re-awarded to this users first uploaded torrent if it has snatched>=1 (if they now have no torrents it cannot be re-awarded)"
+                                {% else %}
+                                    title="If checked the site will only award this to this users first uploaded torrent if it has snatched>=1 (if they have no torrents it cannot be awarded)"
+                                {% endif %}
+                                {{ user.extra.DuckyTID is not empty ? 'checked="checked"' }}
+                            />
+                            {% if user.extra.Ducky is not empty %}
+                                <span class="icon icon_ducky" title="This torrent was awarded a Golden Ducky award!"></span>
+                            {% elseif user.extra.DuckyTID is not empty %}
+                                &nbsp;<span title=\"This will be awarded when torrent#{{ user.extra.DuckyTID }} has been snatched\">(pending)&nbsp;"
+                            {% else %}
+                                &nbsp;(not awarded)&nbsp;
+                            {% endif %}
+                            {% if user.extra.DuckyTID is not empty %}
+                                {{ bbcode.full_format("[torrent]" ~ user.extra.DuckyTID ~ "[/torrent]", false)|raw }}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if check_perms_here(preview, 'users_set_suppressconncheck') %}
+                    <tr>
+                        <td class="label">Suppress ConnCheck prompt:</td>
+                        <td>
+                            <input type="checkbox" name="ConnCheck" {{ user.legacy.SuppressConnPrompt == 1 ? 'checked="checked"' }} />
+                            &nbsp;if checked then this user will never see a prompt to check their connectable status in the header bar
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if (check_perms_here(preview, 'users_edit_pfl', user.perm.Level) and not ownProfile)
+                   or (check_perms_here(preview, 'users_edit_own_pfl') and ownProfile) %}
+                    <tr>
+                        <td class="label">Personal Freeleech</td>
+                        <td>
+                            <select name="PersonalFreeLeech">
+                                <option value="0" {{ user.legacy.personal_freeleech < sqltime() ? 'selected="selected"' }}>None</option>
+                                <option value="24">24 hours</option>
+                                <option value="48">48 hours</option>
+                                <option value="168">1 week</option>
+                                <option value="87648">10 years</option>
+                                {% if user.legacy.personal_freeleech > sqltime() %}
+                                    <option value="1" selected="selected">{{ time_diff(user.legacy.personal_freeleech, 2, false,false,0) }} (current)</option>
+                                {% endif %}
+                            </select>
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if (check_perms_here(preview, 'users_edit_pfl', user.perm.Level) and not ownProfile)
+                   or (check_perms_here(preview, 'users_edit_own_pfl') and ownProfile) %}
+                    <tr>
+                        <td class="label">Personal Doubleseed</td>
+                        <td>
+                            <select name="PersonalDoubleseed">
+                                <option value="0" {{ user.legacy.personal_doubleseed < sqltime() ? 'seleced="selected"' }}>None</option>
+                                <option value="24">24 hours</option>
+                                <option value="48">48 hours</option>
+                                <option value="168">1 week</option>
+                                <option value="87648">10 years</option>
+                                {% if user.legacy.personal_doubleseed > sqltime() %}
+                                    <option value="1" selected="selected">{{ time_diff(user.legacy.personal_doubleseed, 2, false,false,0) }} (current)</option>
+                                {% endif %}
+                            </select>
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if check_perms_here(preview, 'admin_manage_fls') or (check_perms_here(preview, 'users_mod') and (not preview and ownProfile)) %}
+                    <tr>
+                        <td class="label">First Line Support:</td>
+                        <td><input class="long" type="text" name="SupportFor" value="{{ user.legacy.SupportFor }}" /></td>
+                    </tr>
+                {% endif %}
+                {% if check_perms_here(preview, 'users_edit_reset_keys') %}
+                    <tr>
+                        <td class="label">Reset:</td>
+                        <td>
+                            <input type="checkbox" name="ResetRatioWatch" id="ResetRatioWatch" /> <label for="ResetRatioWatch">Ratio Watch</label> |
+                            <input type="checkbox" name="ResetPasskey" id="ResetPasskey" /> <label for="ResetPasskey">Passkey</label> |
+                            <input type="checkbox" name="ResetAuthkey" id="ResetAuthkey" /> <label for="ResetAuthkey">Authkey</label> |
+                            <input type="checkbox" name="ResetIPHistory" id="ResetIPHistory" /> <label for="ResetIPHistory">IP History</label> |
+                            <input type="checkbox" name="ResetEmailHistory" id="ResetEmailHistory" /> <label for="ResetEmailHistory">Email History</label>
+                            <br />
+                            <input type="checkbox" name="ResetSnatchList" id="ResetSnatchList" /> <label for="ResetSnatchList">Snatch List</label> |
+                            <input type="checkbox" name="ResetDownloadList" id="ResetDownloadList" /> <label for="ResetDownloadList">Download List</label>
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if check_perms_here(preview, 'users_edit_password') %}
+                    <tr>
+                        <td class="label">New Password:</td>
+                        <td>
+                            <input class="long" type="text" id="change_password" name="ChangePassword" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">(repeat) New Password:</td>
+                        <td>
+                            <input class="long" type="text" id="change_password2" name="ChangePassword2" />
+                        </td>
+                    </tr>
+                {% endif %}
+            </table>
+        </div>
+    {% endif %}
+    {% if check_perms_here(preview, 'users_mod', user.perm.Level) %}
+        {% if (check_perms_here(preview, 'users_edit_badges', user.perm.Level) and not ownProfile)
+           or (check_perms_here(preview, 'users_edit_own_badges') and ownProfile) %}
+            <div class="head clear">
+                <span style="float:left;">User Badges</span>
+                <span style="float:right;"><a id="badgesadminbutton" href="#" onclick="return Toggle_view('badgesadmin');">(Hide)</a></span>
+            </div>
+            <div class="box">
+                <div class="pad" id="badgesadmindiv">
+                    {% if user.userBadges %}
+                        <div class="pad"><h3>Current user badges (select to remove)</h3>
+                            {% for badge in user.userBadges %}
+                                <div class="badge">
+                                    <img src="/static/common/badges/{{ badge.Image }}" title="The {{ badge.Name }} {{ badge.Description }}" alt="{{ badge.Name }}" />
+                                    <br />
+                                    <input type="checkbox" name="delbadge[]" value="{{ badge.ID }}" />
+                                    <label for="delbadge[]">
+                                        {{ badge.Name }}
+                                        <br/>
+                                        {% if badge.Type=='Unique' %}
+                                            *(unique)
+                                        {% elseif badge.Auto %}
+                                            (automatically awarded)
+                                        {% else %}
+                                            ({{ badge.Type }})
+                                        {% endif %}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <hr/>
+                    {% endif %}
+                    <div class="pad addbadges">
+                        <h3>Add user badges (select to add)</h3>
+                        <p>Shop and single type items can be owned once by each user, multiple type items many times, and unique items only by one user at once</p>
+                        <table class="noborder">
+
+                            {% for availableBadge in user.availableBadges %}
+                                {% if availableBadge.type not in ['Single', 'Shop', 'Donor'] or availableBadge.maxRank is empty or availableBadge.maxRank < availableBadge.rank %}
+                                    <tr>
+                                        <td width="60px">
+                                            <div class="badge">
+                                                <img src="/static/common/badges/{{ availableBadge.image }}" title="The {{ availableBadge.title }} {{ availableBadge.description }}" alt="{{ availableBadge.title }}" />
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <input  type="checkbox" name="addbadge[]" value="{{ availableBadge.badgeID }}"
+                                                {% if not availableBadge.available or
+                                                (availableBadge.type != 'Multiple' and availableBadge.badgeID in user.userBadges) %}
+                                                    disabled="disabled" title="award is unavailable"
+                                                {% endif %}
+                                            />
+                                            <label for="addbadge[]"> {{ availableBadge.title }}
+                                                {% if availableBadge.type=='Unique' %}
+                                                    *(unique)
+                                                {% else %}
+                                                    ({{ availableBadge.type }})
+                                                {% endif %}
+                                            </label>
+                                            <br />
+                                            <input
+                                                class="long"
+                                                type="text"
+                                                id="addbadge{{ availableBadge.badgeID }}"
+                                                name="addbadge{{ availableBadge.badgeID }}"
+                                                {% if not availableBadge.available or
+                                                (availableBadge.type != 'Multiple' and availableBadge.badgeID in user.userBadges) %}
+                                                    disabled="disabled" title="award is unavailable"
+                                                {% endif %}
+                                                value="{{ availableBadge.description }}"
+                                            />
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+    {% if check_perms_here(preview, 'users_mod', user.perm.Level) %}
+        {% if check_perms_here(preview, 'users_warn') %}
+            <div class="head clear">
+                  <span style="float:left;">Warn User</span>
+                  <span style="float:right;"><a id="warnbutton" href="#" onclick="return Toggle_view('warn');">(Hide)</a></span>
+            </div>
+            <div class="box">
+                    <input type="hidden" name="token" value="{{ secretary.getToken('users.restriction.add') }}" />
+                    <table id="warndiv" class="shadow">
+                        <tr>
+                            <td class="label">Warned:</td>
+                            <td>
+                                <input type="checkbox" name="warn" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label">Expiration:</td>
+                            <td>
+                                <select name="WarnLength">
+                                    <option value="">---</option>
+                                    <option value="1"> 1 Week</option>
+                                    <option value="2"> 2 Weeks</option>
+                                    <option value="4"> 4 Weeks</option>
+                                    <option value="8"> 8 Weeks</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label">Disable:</td>
+                            <td>
+                                <table>
+                                    <tr>
+                                        {% if check_perms_here(preview, 'users_disable_posts') %}
+                                            <td>
+                                                <input type="checkbox" title="Disable users ability to post in threads and all comments (torrent, collage, requests)" name="DisablePost" id="DisablePost" />
+                                                <label title="Disable users ability to post in threads and all comments (torrent, collage, requests)" for="DisablePost">Posting</label>
+                                            </td>
+                                        {% endif %}
+                                        {% if check_perms_here(preview, 'users_disable_any') %}
+                                            <td>
+                                                <input type="checkbox" title="Disable user avatar" name="DisableAvatar" id="DisableAvatar" />
+                                                <label title="Disable user avatar" for="DisableAvatar">Avatar</label>
+                                            </td>
+                                            <td>
+                                                <input type="checkbox" title="Disable user invites" name="DisableInvite" id="DisableInvite" />
+                                                <label title="Disable user invites" for="DisableInvite">Invites</label>
+                                            </td>
+                                        {% endif %}
+                                        {% if check_perms_here(preview, 'users_disable_posts') %}
+                                            <td>
+                                                <input type="checkbox" title="Disable user from being able to access the forums (no read permission)" name="DisableForum" id="DisableForum" />
+                                                <label title="Disable user from being able to access the forums (no read permission)" for="DisableForum">Forums</label>
+                                            </td>
+                                        {% endif %}
+                                        {% if check_perms_here(preview, 'users_disable_any') %}
+                                            </tr><tr>
+                                        <td>
+                                            <input type="checkbox" title="Disable user from being able to add tags" name="DisableTagging" id="DisableTagging" />
+                                            <label title="Disable user from being able to add tags" for="DisableTagging">Tagging</label>
+                                        </td>
+                                        <td>
+                                            <input type="checkbox" title="Disable user from being able to access the requests section" name="DisableRequest" id="DisableRequest" />
+                                            <label title="Disable user from being able to access the requests section" for="DisableRequest">Requests</label>
+                                        </td>
+                                        <td>
+                                            <input type="checkbox" title="Disable user ability to upload torrents" name="DisableUpload" id="DisableUpload" />
+                                            <label title="Disable user ability to upload torrents" for="DisableUpload">Upload</label>
+                                        </td>
+                                        <td>
+                                            <input type="checkbox" title="Disable user ability to send private messages" name="DisablePM" id="DisablePM" />
+                                            <label title="Disable user ability to send private messages" for="DisablePM">PM</label>
+                                        </td>
+                                    </tr><tr>
+                                        <td>
+                                            <input type="checkbox" title="Disable user ability to send StaffPMs" name="DisableStaffPM" id="DisableStaffPM" />
+                                            <label title="Disable user ability to send StaffPMs" for="DisableStaffPM">StaffPM</label>
+                                        </td>
+                                        <td>
+                                            <input type="checkbox" title="Disable user ability to report" name="DisableReport" id="DisableReport" />
+                                            <label title="Disable user ability to report" for="DisableReport">Report</label>
+                                        </td>
+                                        <td>
+                                            <input type="checkbox" title="Disable user ability to change their signature" name="DisableSignature" id="DisableSignature" />
+                                            <label title="Disable user ability to change their signature" for="DisableSignature">Signature</label>
+                                        </td>
+                                        <td>
+                                            <input type="checkbox" title="Disable user ability to change their torrent signature" name="DisableTorrentSig" id="DisableTorrentSig" />
+                                            <label title="Disable user ability to change their torrent signature" for="DisableTorrentSig">Torrent Signature</label>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Comment:</td>
+                        <td>
+                            <input class="long" type="text" name="WarnComment" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">User Reason:</td>
+                        <td>
+                            <input class="long" type="text" name="WarnReason" />
+                        </td>
+                    </tr>
+                </table>
+                {% if user.restrictions | length %}
+                <table width="100%" class="shadow" id="restrictionsdiv">
+                    <tr class="colhead">
+                        <td title="Restriction ID">ID</td>
+                        <td>Type</td>
+                        <td>Restrictions</td>
+                        <td width="80px">Issued</td>
+                        <td width="80px">Expires</td>
+                        <td>Issued By</td>
+                        <td width="100px">Comment</td>
+                        <td width="100px"></td>
+                    </tr>
+                    {% for restriction in user.restrictions %}
+                        <tr class="row{{ loop.index % 2 ? 'a' : 'b' }}">
+                            <td>
+                                {{ restriction.ID }}
+                            </td>
+                            <td>
+                                {% if restriction.hasExpired %}
+                                    <span class="label label-disabled">
+                                        {% if restriction.is_warning() %}
+                                            expired warning
+                                        {% else %}
+                                            expired restriction
+                                        {% endif %}
+                                    </span>
+                                {% else %}
+                                    {% if restriction.is_warning() %}
+                                        <span class="label label-error">warned</span>
+                                    {% elseif restriction.Expires is null %}
+                                        <span class="label label-warning">restricted</span>
+                                    {% else %}
+                                        <span class="label label-default">timed restricted</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ restriction.get_restrictions() |join(', ') }}
+                            </td>
+                            <td>
+                                {{ time_diff(restriction.Created, 2, true, false, 0)|raw }}
+                            </td>
+                            <td>
+                                {{ time_diff(restriction.Expires, 2, true, false, 0)|raw }}
+                            </td>
+                            <td>
+                                {{ render.username(restriction.StaffID, {'useSpan': true, 'noTitle': true})|raw }}
+                            </td>
+                            <td>
+                                {{ bbcode.full_format(restriction.Comment)|raw }}
+                            </td>
+                            <td>
+                              <div id="warning_delete_{{ restriction.ID }}" style="display: inline-block;" data-action="/users/{{ user.ID }}/restriction/delete" data-method="POST">
+                                  <input type="hidden" name="token" value="{{ secretary.getToken('users.restriction.delete') }}" />
+                                  <input type="hidden" name="restrictionID" value="{{ restriction.ID }}">
+                                  <button style="all: unset" type="submit" value="Delete" title="Delete" onclick="event.preventDefault();submit_warning('warning_delete_{{ restriction.ID }}')">{{ get_icon('misc_icons', 'misc_trash')|raw }}</button>
+                              </div>
+                              {% if not restriction.hasExpired() %}
+                                  <div id="warning_cancel_{{ restriction.ID }}" style="display: inline-block;" data-action="/users/{{ user.ID }}/restriction/cancel" data-method="POST">
+                                      <input type="hidden" name="token" value="{{ secretary.getToken('users.restriction.cancel') }}" />
+                                      <input type="hidden" name="restrictionID" value="{{ restriction.ID }}">
+                                      <button style="all: unset" type="submit" value="Cancel" title="Cancel" onclick="event.preventDefault();submit_warning('warning_cancel_{{ restriction.ID }}')">{{ get_icon('misc_icons', 'misc_cancel')|raw }}</button>
+                                  </div>
+                              {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% endif %}
+    {% if check_perms_here(preview, 'users_mod', user.perm.Level) %}
+        <div class="head clear">
+            <span style="float:left;">User Privileges</span>
+            <span style="float:right;"><a id="privilegebutton" href="#" onclick="return Toggle_view('privilege');">(Hide)</a></span>
+        </div>
+        <div class="box">
+            <table id="privilegediv" class="shadow">
+                {% if check_perms_here(preview, 'users_view_email') and check_perms_here(preview, 'users_view_ips') %}
+                    {% if check_perms_here(preview, 'users_disable_any') %}
+                        <tr>
+                            <td class="label">Hacked:</td>
+                            <td>
+                                <input type="checkbox" name="SendHackedMail" id="SendHackedMail" /> <label for="SendHackedMail">Send hacked account email</label> to
+                                <select name="HackedEmail">
+                                    {% for email in user.emails %}
+                                        <option value="{{ email.Address }}">{{ email.Address }} - {{ master.repos.ips.load(email.IPID) }}</option>
+                                    {% endfor %}
+                                </select> (disables the account)
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if user.legacy.Enabled == '0' and check_perms_here(preview, 'users_mod') %}
+                        <tr>
+                            <td class="label">Confirm Account:</td>
+                            <td>
+                                <input type="checkbox" name="SendConfirmMail" id="SendConfirmMail" />
+                                <label for="SendConfirmMail">Resend confirmation email</label> to
+                                <select name="ConfirmEmail">
+                                    {% for email in user.emails %}
+                                        <option value="{{ email.Address }}">{{ email.Address }} - {{ master.repos.ips.load(email.IPID) }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endif %}
+
+                {% set reasons = {0:'Unknown', 1:'Manual', 2:'Ratio', 3:'Inactive', 4:'Cheating'} %}
+
+                <tr>
+                    <td class="label">Account:</td>
+                    <td>
+                        <select name="UserStatus">
+                            <option value="0" {{ user.legacy.Enabled=='0' ? 'selected="selected"' }}>Unconfirmed</option>
+                            <option value="1" {{ user.legacy.Enabled=='1' ? 'selected="selected"' }}>Enabled</option>
+                            <option value="2" {{ user.legacy.Enabled=='2' ? 'selected="selected"' }}>Disabled</option>
+                            {% if check_perms_here(preview, 'users_delete_users') %}
+                                <optgroup label="-- WARNING --"></optgroup>
+                                <option value="delete">Delete Account</option>
+                            {% endif %}
+                        </select>
+                        &nbsp;&nbsp;
+                        <label for="ban_reason" title="When disabling a user this will be recorded as the ban reason">Ban Reason (when disabling) </label>
+                        <select name="ban_reason" title="When disabling a user this will be recorded as the ban reason">
+                            {% for key, reason in reasons %}
+                                <option value="{{ key }}" {{ key==user.legacy.BanReason ? 'selected="selected"' }}>&nbsp;{{ reason }} &nbsp;</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">User Reason:</td>
+                    <td>
+                        <input class="long" type="text" name="UserReason" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Restricted Forum ID's (comma-delimited):</td>
+                    <td>
+                        <input class="long" type="text" name="RestrictedForums" value="{{ user.legacy.RestrictedForums }}" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Extra Forum ID's (comma-delimited):</td>
+                    <td>
+                        <input class="long" type="text" name="PermittedForums" value="{{ user.legacy.PermittedForums }}" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    {% endif %}
+    {% if check_perms_here(preview, 'users_mod', user.perm.Level) or check_perms_here(preview, 'users_add_notes', user.perm.Level) %}
+        {% if check_perms_here(preview, 'users_logout') %}
+            <div class="head clear">
+                <span style="float:left;">Session</span>
+                <span style="float:right;"><a id="sessionbutton" href="#" onclick="return Toggle_view('session');">(Hide)</a></span>
+            </div>
+            <div class="box">
+                <table id="sessiondiv" class="shadow">
+                    <tr>
+                        <td class="label">Reset session:</td>
+                        <td>
+                            <input type="checkbox" name="ResetSession" id="ResetSession" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Log out:</td>
+                        <td>
+                            <input type="checkbox" name="LogOut" id="LogOut" />
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        {% endif %}
+        <div class="head clear">
+            <span style="float:left;">Submit</span>
+            <span style="float:right;"><a id="submitbutton" href="#" onclick="return Toggle_view('submit');">(Hide)</a></span>
+        </div>
+        <div class="box">
+            <table id="submitdiv" class="shadow">
+                <tr>
+                    <td class="label">Additional Staff Notes:</td>
+                    <td>
+                        <textarea rows="8" class="long" name="Reason" id="Reason" onkeyup="resize('Reason');"></textarea>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" colspan="2">
+                        <input type="submit" value="Save Changes" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </form>
+    {% endif %}
+
+    {# END MODERATION PANEL #}
+
+    {% if check_perms_here(preview, 'users_edit_usernames', user.perm.Level) %}
+        <script type="text/javascript">
+            /* We have old usernames with now-forbidden chars,
+             * setting a pattern attribute prevents staff to moderate them
+             * This function aims to replace the pattern attribute purpose,
+             * which is warning staff when they input invalid characters.
+             * The check is done in back-end anyway.
+             * */
+            jQuery('input[name="Username"]').on('textInput input', function() {
+                if (this.value.match(/[^A-Za-z0-9_.!-]/i) !== null) {
+                    jQuery('#UsernameAlert').fadeIn();
+                } else {
+                    jQuery('#UsernameAlert').hide();
+                }
+            });
+        </script>
+    {% endif %}
+    <script type="text/javascript">
+        var cookieitems= new Array( '{{  user.cookieItems|join('\',\'')|raw }}' );
+    </script>
+
+{#
+    <a id="torrents"></a>
+    {% if ActiveUser.HideUserTorrents==0 and check_paranoia_here(preview, 'uploads') and check_force_anon(user.ID) %}
+        $INLINE=true;
+        $_GET.userid = user.ID;
+        $_GET.type = 'uploaded';
+        include(SERVER_ROOT.'/Legacy/sections/torrents/user.php');
+    {% endif %}
+
+    </div>
+    <div class="clear"></div>
+    </div>
+#}
+{% endblock %}

@@ -5,20 +5,20 @@ use Luminance\Core\Entity;
 
 class Session extends Entity {
 
-    static $table = 'sessions';
+    public static $table = 'sessions';
 
-    static $properties = [
+    public static $properties = [
         'ID'       => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'primary' => true, 'auto_increment' => true ],
         'IPID'     => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'nullable' => false],
         'UserID'   => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'nullable' => false ],
         'ClientID' => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'nullable' => false ],
         'Active'   => [ 'type' => 'bool', 'nullable' => false ],
         'Flags'    => [ 'type' => 'int', 'sqltype' => 'TINYINT UNSIGNED', 'nullable' => false ],
-        'Created'  => [ 'type' => 'timestamp', 'nullable' => false ],
-        'Updated'  => [ 'type' => 'timestamp', 'nullable' => false ],
+        'Created'  => [ 'type' => 'timestamp', 'nullable' => true ],
+        'Updated'  => [ 'type' => 'timestamp', 'nullable' => true ],
     ];
 
-    static $indexes = [
+    public static $indexes = [
         'UserID'   => [ 'columns' => [ 'UserID' ] ],
         'ClientID' => [ 'columns' => [ 'ClientID' ] ],
         'Active'   => [ 'columns' => [ 'Active' ] ],
@@ -27,9 +27,8 @@ class Session extends Entity {
         'Updated'  => [ 'columns' => [ 'Updated' ] ],
     ];
 
-    const KEEP_LOGGED_IN = 1;
-    const IP_LOCKED = 2;
-    const TWO_FACTOR = 4;
-    const LEGACY = 128;
-
+    const KEEP_LOGGED_IN = 1 << 0;
+    const IP_LOCKED      = 1 << 1;
+    const TWO_FACTOR     = 1 << 2;
+    const LEGACY         = 1 << 7;
 }

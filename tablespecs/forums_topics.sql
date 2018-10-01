@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `forums_topics` (
   `NumPosts` int(10) NOT NULL DEFAULT '0',
   `NumViews` int(7) NOT NULL DEFAULT '0',
   `LastPostID` int(10) NOT NULL,
-  `LastPostTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `LastPostTime` datetime DEFAULT NULL,
   `LastPostAuthorID` int(10) NOT NULL,
   `StickyPostID` int(10) NOT NULL DEFAULT '0',
   `Notes` mediumtext,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `forums_topics` (
   KEY `IsSticky` (`IsSticky`),
   KEY `LastPostID` (`LastPostID`),
   KEY `Title` (`Title`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

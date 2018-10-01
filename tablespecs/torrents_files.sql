@@ -21,9 +21,10 @@
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `torrents_files` (
   `TorrentID` int(10) NOT NULL,
+  `Version` int(10) NOT NULL DEFAULT 0,
   `File` mediumblob NOT NULL,
   PRIMARY KEY (`TorrentID`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

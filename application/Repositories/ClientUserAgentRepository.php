@@ -12,5 +12,4 @@ class ClientUserAgentRepository extends Repository {
         $ClientUserAgent = $this->get('`String` = ?', [$String]);
         return $ClientUserAgent;
     }
-
 }

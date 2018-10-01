@@ -240,15 +240,10 @@ ul.thin li { margin:0px 0px; padding:0px; }
 }
 
 #content {
-    width: 90%;
-    min-width: 940px;
-    max-width: 1300px;
     background: #334B7B;  /* ie fallback */
     background: rgba(90, 120, 190, 0.3);
     box-shadow: 0px 3px 30px -5px black;
-    margin: 40px auto 0px auto;
     border: 1px solid rgba(30,60,120,.5);
-    padding: 0px 0px 35px;
     border-radius: 14px 14px 0 0;
 }
 
@@ -258,7 +253,7 @@ ul.thin li { margin:0px 0px; padding:0px; }
     max-width: 1300px;
     background: #334B7B;  /* ie fallback */
     box-shadow: 0px 3px 30px -5px black;
-    margin: 40px auto 0px auto;
+    margin: 0px auto 0px auto;
     border: 1px solid rgba(30,60,120,.5);
     padding: 0px 0px 15px;
     border-radius: 14px 14px 0 0;
@@ -290,7 +285,7 @@ ul.thin li { margin:0px 0px; padding:0px; }
 }
 
 #menu {
-    margin: 0px 210px;
+    margin: 0px 245px;
     text-align: center;
     padding-top: 12px;
     font-size: 1.2em;
@@ -737,33 +732,6 @@ li.searchbars {
 /* Compose Staff Message form */
 #compose {
     margin: 20px auto;
-}
-
-/* staff pms */
-.messagecontainer {
-    height: 20px;
-    margin: 0px auto 10px auto;
-}
-.messagebar {
-    padding-top: 3px;
-    height: 20px;
-    background-color: #1a1;
-    text-align: center;
-    font-weight: bold;
-    color: white;
-    border-radius: 10px;       /* FF9+ IE9+ */
-    -moz-border-radius: 10px; /* for FF5 */
-    -webkit-border-radius: 10px; /* for opera */
-    border: 1px solid #151;
-    white-space:nowrap;
-}
-.messagebar.alert {
-    background-color: #e11;
-    border: 1px solid #511;
-}
-.messagebar.checking {
-    background-color: white;
-    color: black;
 }
 
 /* user classes */
@@ -1956,10 +1924,10 @@ td.sig {
 }
 
 table .scale_image {
-	max-width: 800px;
+  max-width: 800px;
 }
 #collage table .scale_image {
-	max-width: 600px;
+  max-width: 600px;
 }
 ul.collage_images li {
   padding: 5px;
@@ -2046,12 +2014,6 @@ tr.unreadpm {
     font-weight: bold;
     text-align: right;
     width: 130px;
-}
-
-.permissions {
-    width:930px;
-    margin-left:auto;
-    margin-right:auto;
 }
 
 .permission_container {
@@ -2294,30 +2256,24 @@ code.error {
     padding:1px 0px;
 }
 code.bbcode {
-    display:inline-block;
     background-color: #fffff3;
     color: #333;
-    padding:0px 4px;
     border-width:1px;
     border-color: #D3CFB7;
     border-style: dotted;
 }
 
 code.bbcodeblock {
-    display:block;
     font-family: "PT Mono", monospace;
     background-color: #f4f4f4;
     color: black;
-    text-align: left;
-    margin: 10px;
-    padding: 10px;
     border: 1px dashed #98AAB1;
 }
 /*  Stuff for the bbcode assistant  */
 
 table.bb_holder {
-	border-collapse:collapse;
-	background:	#808080;
+  border-collapse:collapse;
+  background:	#808080;
       width: 100%;
       margin: 0px;
 }
@@ -2418,10 +2374,10 @@ a.bb_button:hover {
 }
 
 .color_pick td {
-	padding:2px;
-	width:10px;
-	height:10px;
-	cursor:pointer;
+  padding:2px;
+  width:10px;
+  height:10px;
+  cursor:pointer;
 }
 
 .picker_holder {
@@ -2430,83 +2386,35 @@ a.bb_button:hover {
 
 .color_pick {
     display: block;
-	border-collapse:collapse;
+  border-collapse:collapse;
 }
 
 .color_pick, .color_pick td {
-	border:1px solid #333333;
+  border:1px solid #333333;
 }
 
 .color_pick td:hover {
     border:1px solid #333333;
 }
 
-/*  Torrent Buttons  */
-
-#torrent_buttons {
-    margin-bottom: 10px;
-}
-
-a.button {
-	display: inline-block;
-	-moz-border-radius: 3px;
-	border-radius: 3px;
-	-webkit-border-radius: 3px;
-      margin: 0px 8px 4px 0px;
-	text-decoration: none;
-	color: #fff;
-	border: none;
-	font-size: 11px;
-	vertical-align: top;
-	cursor: pointer;  /* hand; */
-	line-height: 11px;
-	text-align: center;
-	font-size: 12px;
-	line-height: 12px;
-	font-family: Verdana, Geneva, sans-serif;
-	padding: 7px 15px;
+.button {
+  display: inline-block;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+  -webkit-border-radius: 3px;
+  margin: 0px 8px 4px 0px;
+  text-decoration: none;
+  color: #fff;
+  border: none;
+  cursor: pointer;  /* hand; */
+  text-align: center;
+  font-size: 12px;
+  line-height: 12px;
+  font-family: Verdana, Geneva, sans-serif;
+  padding: 7px 15px;
 }
 a.button:visited {
-	color: #fff;
-}
-
-.greenButton {
-	background: #5da53a;
-}
-
-.greenButton:hover {
-	background: #48802d;
-}
-
-.blueButton {
-	background: #1f9db4;
-}
-
-.blueButton:hover {
-	background: #187b8c;
-}
-
-
-.redButton {
-	background: #ab3041;
-}
-
-.redButton:hover {
-	background: #812;
-}
-
-.infoButton {
-    background: #5A8Bb8;
-}
-.infoButton:hover {
-    background: #3A6B98;
-}
-.orangeButton {
-	background: #ff7f26;
-}
-
-.orangeButton:hover {
-	background: #d96d21;
+  color: #fff;
 }
 
 table.overlay {
@@ -2615,7 +2523,7 @@ img.win.flash {
 }
 
 .statusown a {
-	cursor: pointer;
+  cursor: pointer;
 }
 .thin > h2:first-child + .status_box {
       margin: -15px auto 10px;
@@ -2630,28 +2538,28 @@ img.win.flash {
       padding:4px;
 }
 .staffstatus {
-	display: inline-block;
-	border-radius: 6px;
-	-moz-border-radius: 6px;
-	-webkit-border-radius: 6px;
+  display: inline-block;
+  border-radius: 6px;
+  -moz-border-radius: 6px;
+  -webkit-border-radius: 6px;
   margin: 4px 4px;
-	text-decoration: none;
-	color: #fff;
-	font-size: 11px;
-	vertical-align: top;
-	cursor: default;
-	line-height: 11px;
-	text-align: center;
-	font-size: 12px;
-	line-height: 12px;
-	font-family: Verdana, Geneva, sans-serif;
-	padding: 3px 15px;
+  text-decoration: none;
+  color: #fff;
+  font-size: 11px;
+  vertical-align: top;
+  cursor: default;
+  line-height: 11px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 12px;
+  font-family: Verdana, Geneva, sans-serif;
+  padding: 3px 15px;
 }
 .staffstatus a {
-	color: #222;
+  color: #222;
 }
 .staffstatus a:visited {
-	color: #222;
+  color: #222;
 }
 .status_checking {
     float:right;
@@ -2788,21 +2696,21 @@ div#site_debug:hover {
 
 
 .donate_drives .button {
-	display: inline-block;
-	-moz-border-radius: 2px;
-	border-radius: 2px;
-	-webkit-border-radius: 2px;
+  display: inline-block;
+  -moz-border-radius: 2px;
+  border-radius: 2px;
+  -webkit-border-radius: 2px;
     margin: 0px 3px 3px 0px;
-	text-decoration: none;
-	color: #fff;
+  text-decoration: none;
+  color: #fff;
     font-weight: bold;
-	border: none;
-	vertical-align: top;
-	padding: 4px 4px;
+  border: none;
+  vertical-align: top;
+  padding: 4px 4px;
 }
 
 .greyButton {
-	background: #bbb;
+  background: #bbb;
 }
 
 
@@ -2815,9 +2723,9 @@ div#site_debug:hover {
 
 #active_drive {
     position: relative;
-	-moz-border-radius: 12px;
-	border-radius: 12px;
-	-webkit-border-radius: 12px;
+  -moz-border-radius: 12px;
+  border-radius: 12px;
+  -webkit-border-radius: 12px;
     width: 90%;
     min-width: 940px;
     max-width: 1200px;
@@ -2826,11 +2734,11 @@ div#site_debug:hover {
     background-color: #003875;
     padding: 0px;
     text-align: left;
-	text-decoration: none;
-	color: white;
+  text-decoration: none;
+  color: white;
     font-weight: bold;
     font-size: 14px;
-	vertical-align: top;
+  vertical-align: top;
 }
 
 #donorbar {
@@ -2841,25 +2749,25 @@ div#site_debug:hover {
 }
 
 #active_drive a{
-	text-decoration: none;
-	color: white;
+  text-decoration: none;
+  color: white;
     font-weight: bold;
     font-size: 14px;
 }
 #active_drive a:hover {
-	text-decoration: underline;
-	color: white;
+  text-decoration: underline;
+  color: white;
 }
 #active_drive a.link{
     float:right;
-	text-decoration: none;
-	color: white;
+  text-decoration: none;
+  color: white;
     font-weight: normal;
     font-size: 12px;
 }
 #active_drive a.link:hover {
-	text-decoration: underline;
-	color: white;
+  text-decoration: underline;
+  color: white;
 }
 
 #donorbargreen {

@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `articles` (
   `Title` varchar(50) NOT NULL,
   `Description` varchar(100) NOT NULL,
   `Body` text NOT NULL,
-  `Time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `Time` datetime DEFAULT NULL,
   PRIMARY KEY (`ID`),
   UNIQUE KEY `TopicID` (`TopicID`),
   KEY `Category` (`Category`),
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS `articles` (
   FULLTEXT KEY `Description` (`Description`),
   FULLTEXT KEY `Body` (`Body`),
   FULLTEXT KEY `Title` (`Title`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

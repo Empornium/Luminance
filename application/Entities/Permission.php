@@ -7,9 +7,9 @@ class Permission extends Entity {
 
     protected $unserialized = null;
 
-    static $table = 'permissions';
+    public static $table = 'permissions';
 
-    static $properties = [
+    public static $properties = [
         'ID'              => [ 'type' => 'int',    'sqltype' => 'INT UNSIGNED', 'primary' => true, 'auto_increment' => true ],
         'Level'           => [ 'type' => 'int',    'sqltype' => 'INT UNSIGNED', 'nullable' => false ],
         'Name'            => [ 'type' => 'str',    'sqltype' => 'VARCHAR(25)', 'nullable' => false ],
@@ -29,10 +29,10 @@ class Permission extends Entity {
         'reqRatio'        => [ 'type' => 'double', 'sqltype' => 'DOUBLE(10,8)',  'default' => 99.99999999],
     ];
 
-    static $indexes = [
-        'Level' => [ 'columns' => [ 'Level' ] ],
+    public static $indexes = [
+        'Level'        => [ 'columns' => [ 'Level' ] ],
         'DisplayStaff' => [ 'columns' => [ 'DisplayStaff' ] ],
-        'IsUserClass' => [ 'columns' => [ 'IsUserClass' ] ],
+        'IsUserClass'  => [ 'columns' => [ 'IsUserClass' ] ],
     ];
 
     public function getUnserialized() {
@@ -52,5 +52,4 @@ class Permission extends Entity {
         $p['DisplayStaff'] = $this->DisplayStaff;
         return $p;
     }
-
 }

@@ -22,11 +22,11 @@
 CREATE TABLE IF NOT EXISTS `users_watch_list` (
   `UserID` int(10) NOT NULL,
   `StaffID` int(10) NOT NULL,
-  `Time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `Time` datetime DEFAULT NULL,
   `Comment` varchar(255) NOT NULL,
   `KeepTorrents` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`UserID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

@@ -2,7 +2,9 @@
 function change_pmto(reportid) {
 	
     var val = $('#pm_type'+reportid).raw().options[$('#pm_type'+reportid).raw().selectedIndex].innerHTML;
-    //alert(val);
+    var username = val.replace(/ \((Offender|Reporter)\)$/i, '');
+
+    $('#quickpost'+reportid+' :input[name="username"]').raw().value = username;
     $('#submit_pm'+reportid).raw().value = "Send message to "+val;
 }
 

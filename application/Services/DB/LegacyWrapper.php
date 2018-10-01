@@ -28,7 +28,6 @@ class LegacyWrapper {
                     return false;
                 }
             }
-
         }
         $row = $this->cached_results[$this->cached_index];
         $this->cached_index++;
@@ -109,5 +108,4 @@ class LegacyWrapper {
                 error_log("Unable to filter row for type {$type}");
         }
     }
-
 }

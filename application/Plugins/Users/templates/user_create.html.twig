@@ -1,0 +1,41 @@
+{% extends "core/page.html.twig" %}
+{% block ecmascripts %}
+    <script src="/static/functions/cinfo.js" type="text/javascript"></script>
+    {% if (master.options.HaveIBeenPwned) %}
+        <script src="/static/functions/jquery.js" type="text/javascript"></script>
+        <script src="/static/functions/hibp/sha1.js" type="text/javascript"></script>
+        <script src="/static/functions/hibp/hibp.js" type="text/javascript"></script>
+    {% endif %}
+{% endblock %}
+
+{% block title %}Register new user{% endblock %}
+
+{% block main_content %}
+
+    <form method="POST" action="/users/create" />
+        <div>
+            <input type="hidden" name="token" value="{{ token }}" />
+            <input type="hidden" name="cinfo" value="auth" id="cinfo" />
+            E-mail: <strong>{{ email }}</strong>
+        </div>
+        <div>
+            <input type="text" name="username" placeholder="Desired username" />
+        </div>
+        <div>
+            <input type="password" name="password" placeholder="Desired password" />
+        </div>
+        <div>
+            <input type="password" name="password_check" placeholder="Password again" />
+            <p id="password-help" class="hidden"></p>
+        </div>
+        <div id="options">
+            {% if (master.options.HaveIBeenPwned) %}
+                <input type="submit" name="submit" value="Register" disabled class="disabled" />
+                <input type="submit" name="submit" value="Check" class="hidden" onclick="event.preventDefault();return haveibeenpwned();" />
+            {% else %}
+                <input type="submit" name="submit" value="Register" />
+            {% endif %}
+        </div>
+    </form>
+
+{% endblock %}

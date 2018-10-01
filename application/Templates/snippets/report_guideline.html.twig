@@ -1,0 +1,15 @@
+<p>Following these guidelines will help the moderators deal with your report in a timely fashion. </p>
+<ul>
+    {% if guidelines | length > 0  %}
+        {% for guideline in guidelines  %}
+            <li>{{ guideline }}</li>
+        {% endfor  %}
+    {% else  %}
+    <li>The Report comment option is specifically for reporting when the Chat Rules have been broken.</li>
+    <li>Such as posts containing racism, offensive language, flaming, and other rules violations.</li>
+    <li>We encourage all users to use this feature when they see a rules violation of any form.</li>
+    <li>This will get quicker action than PMing a staff member will.</li>
+    <li>Please restrict the use of this feature to reporting Rules violations, and remember, this is for reporting comments, not replying to them.</li>
+    {% endif  %}
+</ul>
+<p>In short, please include as much detail as possible when reporting. Thank you. </p>

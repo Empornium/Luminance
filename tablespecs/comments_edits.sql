@@ -20,14 +20,14 @@
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `comments_edits` (
-  `Page` enum('forums','collages','requests','torrents','staffpm') DEFAULT NULL,
+  `Page` enum('forums','collages','requests','torrents','staffpm','articles') DEFAULT NULL,
   `PostID` int(10) DEFAULT NULL,
   `EditUser` int(10) DEFAULT NULL,
   `EditTime` datetime DEFAULT NULL,
   `Body` mediumtext,
   KEY `Page` (`Page`,`PostID`),
   KEY `EditUser` (`EditUser`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

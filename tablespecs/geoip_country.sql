@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS `geoip_country` (
   `EndIP` int(11) unsigned NOT NULL,
   `Code` varchar(2) NOT NULL,
   PRIMARY KEY (`StartIP`,`EndIP`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

@@ -22,11 +22,11 @@
 CREATE TABLE IF NOT EXISTS `log` (
   `ID` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `Message` text NOT NULL,
-  `Time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `Time` datetime DEFAULT NULL,
   PRIMARY KEY (`ID`),
   KEY `Message` (`Message`(255)),
   KEY `Time` (`Time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

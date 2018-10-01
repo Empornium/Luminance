@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `full_log` (
   KEY `userid` (`userid`),
   KEY `ipnum` (`ipnum`),
   KEY `variables` (`variables`(3))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
