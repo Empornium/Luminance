@@ -17,7 +17,8 @@ use Luminance\Entities\User;
 use Luminance\Entities\IP;
 use Luminance\Services\Crypto;
 
-class Auth extends Service {
+class Auth extends Service
+{
 
     protected static $defaultOptions = [
         'UsersLimit'             => ['value' => 5000,  'section' => 'users',    'displayRow' => 1, 'displayCol' => 1, 'type' => 'int',  'description' => 'Maximum users'],
@@ -62,13 +63,15 @@ class Auth extends Service {
 
     public $usedPermissions = [];
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
         $this->request = $this->master->request;
         $this->log = $this->master->log;
     }
 
-    public function checkSession() {
+    public function checkSession()
+    {
         $this->secretary->checkClient();
         $this->request->authLevel = 0;
 
@@ -148,7 +151,8 @@ class Auth extends Service {
         }
     }
 
-    public function cookieAuth() {
+    public function cookieAuth()
+    {
         $sessionID = $this->crypto->decrypt($this->request->cookie['sid'], 'cookie');
         if (!$sessionID) {
             # Corrupted cookie - delete it!
@@ -179,10 +183,13 @@ class Auth extends Service {
         $this->request->user = $user;
         $this->request->authLevel = 2;
         // Not sure about this yet, but let's start here
-        if ($session->getFlag(Session::IP_LOCKED)) $this->request->authLevel++;
+        if ($session->getFlag(Session::IP_LOCKED)) {
+            $this->request->authLevel++;
+        }
     }
 
-    public function authenticate($username, $password, $options) {
+    public function authenticate($username, $password, $options)
+    {
         if (is_null($this->request->authLevel)) {
             # Make sure auth status has been checked so we can abort if the client is already logged in.
             throw new InternalError("Attempt to call authenticate() before check_auth()");
@@ -229,7 +236,8 @@ class Auth extends Service {
         return $session;
     }
 
-    public function twofactor_check($user, $code, $secret = null) {
+    public function twofactor_check($user, $code, $secret = null)
+    {
         if (is_null($secret)) {
             $secret = $this->crypto->decrypt($user->twoFactorSecret);
         }
@@ -241,7 +249,8 @@ class Auth extends Service {
         }
     }
 
-    public function twofactor_authenticate($user, $code) {
+    public function twofactor_authenticate($user, $code)
+    {
         if ($this->twofactor_check($user, $code)) {
             $this->request->session->setFlags(Session::TWO_FACTOR);
             $this->sessions->save($this->request->session);
@@ -251,7 +260,8 @@ class Auth extends Service {
         }
     }
 
-    public function twofactor_enable($user, $secret, $code) {
+    public function twofactor_enable($user, $secret, $code)
+    {
         if (!is_null($user->twoFactorSecret)) {
             throw new UserError('Two Factor Authentication already enabled');
         }
@@ -268,7 +278,8 @@ class Auth extends Service {
         }
     }
 
-    public function twofactor_disable($user, $code) {
+    public function twofactor_disable($user, $code)
+    {
         if ($this->twofactor_check($user, $code) || $this->isAllowed('users_edit_2fa')) {
             $user->twoFactorSecret = null;
             $this->users->save($user);
@@ -283,12 +294,14 @@ class Auth extends Service {
         }
     }
 
-    public function twofactor_createSecret() {
+    public function twofactor_createSecret()
+    {
         $ga = new \PHPGangsta_GoogleAuthenticator();
         return $ga->createSecret();
     }
 
-    public function unauthenticate() {
+    public function unauthenticate()
+    {
         if ($this->request->session) {
             $this->request->session->Active = false;
             $this->request->session->Updated = new \DateTime();
@@ -297,7 +310,8 @@ class Auth extends Service {
         $this->purge_session();
     }
 
-    public function create_session($user, $options) {
+    public function create_session($user, $options)
+    {
         $session = new Session();
         $session->UserID = $user->ID;
         $session->ClientID = $this->request->client->ID;
@@ -313,7 +327,8 @@ class Auth extends Service {
         return $session;
     }
 
-    public function handle_login_failure($user = null) {
+    public function handle_login_failure($user = null)
+    {
         if ($user) {
             $Attempt = $this->guardian->log_attempt('login', $user->ID);
         } else {
@@ -323,13 +338,15 @@ class Auth extends Service {
         return $Attempt;
     }
 
-    public function purge_session() {
+    public function purge_session()
+    {
         if (array_key_exists('sid', $this->request->cookie)) {
             $this->request->delete_cookie('sid');
         }
     }
 
-    public function setLegacySessionGlobals() {
+    public function setLegacySessionGlobals()
+    {
         global $User, $SessionID, $UserSessions, $UserID, $Enabled, $UserStats,
             $Permissions, $LightInfo, $HeavyInfo, $LoggedUser, $Browser, $OperatingSystem, $Mobile;
 
@@ -353,12 +370,14 @@ class Auth extends Service {
         }
     }
 
-    public function check_login($userID, $password) {
+    public function check_login($userID, $password)
+    {
         $user = $this->users->load($userID);
         return $this->check_password($user, $password);
     }
 
-    public function set_password($user, $password) {
+    public function set_password($user, $password)
+    {
         // If we're passed a userID the load the user object
         $userID = false;
         if (is_numeric($user)) {
@@ -390,14 +409,16 @@ class Auth extends Service {
         }
     }
 
-    protected function rehash_password($user, $password) {
+    protected function rehash_password($user, $password)
+    {
             # Re-hash as bcrypt
             $user->Password = $this->create_hash_bcrypt($password);
             $this->users->save($user);
             return $this->check_password($user, $password, false);
     }
 
-    public function check_password($user, $password, $allow_rehash = true) {
+    public function check_password($user, $password, $allow_rehash = true)
+    {
         if (is_null($user->Password) || !strlen($user->Password)) {
             throw new UserError("You must set a new password.");
         }
@@ -444,7 +465,8 @@ class Auth extends Service {
         return $result;
     }
 
-    protected function check_password_salted_md5($password, $values) {
+    protected function check_password_salted_md5($password, $values)
+    {
         list($encoded_secret, $encoded_hash) = $values;
         $secret = base64_decode($encoded_secret);
         # Use hex strings since strlen() might be risky for binary data (mbstring overload)
@@ -462,7 +484,8 @@ class Auth extends Service {
         return $result;
     }
 
-    protected function check_password_md5($password, $values) {
+    protected function check_password_md5($password, $values)
+    {
         list(, $encoded_hash) = $values;
         # Use hex strings since strlen() might be risky for binary data (mbstring overload)
         $stored_hash = Crypto::bin2hex(base64_decode($encoded_hash));
@@ -478,7 +501,8 @@ class Auth extends Service {
         return $result;
     }
 
-    protected function check_password_salted_sha1($password, $values) {
+    protected function check_password_salted_sha1($password, $values)
+    {
         list($encoded_secret, $encoded_hash) = $values;
         $secret = base64_decode($encoded_secret);
         # Use hex strings since strlen() might be risky for binary data (mbstring overload)
@@ -496,7 +520,8 @@ class Auth extends Service {
         return $result;
     }
 
-    protected function check_password_sha1($password, $values) {
+    protected function check_password_sha1($password, $values)
+    {
         list(, $encoded_hash) = $values;
         # Use hex strings since strlen() might be risky for binary data (mbstring overload)
         $stored_hash = Crypto::bin2hex(base64_decode($encoded_hash));
@@ -512,7 +537,8 @@ class Auth extends Service {
         return $result;
     }
 
-    protected function create_hash_bcrypt($password) {
+    protected function create_hash_bcrypt($password)
+    {
         # password_hash does most of the work for us here
         # we use defaults for now, which is to generate a salt automatically and use cost = 10
         $encoded_hash = password_hash($password, PASSWORD_DEFAULT);
@@ -520,13 +546,15 @@ class Auth extends Service {
         return $hash_string;
     }
 
-    protected function check_password_bcrypt($password, $values) {
+    protected function check_password_bcrypt($password, $values)
+    {
         $hash_string = "\$" . implode("\$", $values);
         $result = password_verify($password, $hash_string);
         return ($result === true);
     }
 
-    public function getUserPermissions(User $user, $includeCustom = true) {
+    public function getUserPermissions(User $user, $includeCustom = true)
+    {
         $userPermID = $user->legacy['PermissionID'];
         $userPerms = $this->permissions->getLegacyPermission($userPermID);
 
@@ -548,7 +576,8 @@ class Auth extends Service {
         return $userPermissions;
     }
 
-    public function getMinUserPermissions() {
+    public function getMinUserPermissions()
+    {
         if (is_null($this->minUserPermissions)) {
             $userPerms = $this->permissions->getLegacyPermission($this->permissions->getMinUserClassID());
             $this->minUserPermissions = $userPerms['Permissions'];
@@ -556,7 +585,8 @@ class Auth extends Service {
         return $this->minUserPermissions;
     }
 
-    public function getActiveUserPermissions() {
+    public function getActiveUserPermissions()
+    {
         if (is_null($this->activeUserPermissions)) {
             if (!$this->request->user) {
                 return [];
@@ -566,7 +596,8 @@ class Auth extends Service {
         return $this->activeUserPermissions;
     }
 
-    protected function recordCheck($name) {
+    protected function recordCheck($name)
+    {
         if (empty($this->usedPermissions[$name])) {
             $this->usedPermissions[$name] = 1;
         } else {
@@ -574,7 +605,8 @@ class Auth extends Service {
         }
     }
 
-    public function isAllowed($name) {
+    public function isAllowed($name)
+    {
         # Determine if something is allowed, and return the answer as a boolean.
         if (!$this->request->user) {
             return false;
@@ -585,7 +617,8 @@ class Auth extends Service {
         return $allowed;
     }
 
-    public function isAllowedByMinUser($name) {
+    public function isAllowedByMinUser($name)
+    {
         # Determine if something is allowed, and return the answer as a boolean.
         $this->recordCheck($name);
         $permissions = $this->getMinUserPermissions();
@@ -593,7 +626,8 @@ class Auth extends Service {
         return $allowed;
     }
 
-    public function checkAllowed($name) {
+    public function checkAllowed($name)
+    {
         # Determine if something is allowed, and throw an exception if it's not the case.
         if (!$this->request->user) {
             throw new UnauthorizedError();
@@ -603,7 +637,8 @@ class Auth extends Service {
         }
     }
 
-    public function checkLevel($userID) {
+    public function checkLevel($userID)
+    {
         $user = $this->users->load($userID);
         $userLevel = $this->permissions->load($user->legacy['PermissionID'])->Level;
         $staffLevel = $this->permissions->load($this->request->user->legacy['PermissionID'])->Level;
@@ -612,7 +647,8 @@ class Auth extends Service {
         }
     }
 
-    public function get_user_stats($userID) {
+    public function get_user_stats($userID)
+    {
             $UserStats = $this->cache->get_value('user_stats_' . $userID);
         if (!is_array($UserStats)) {
             $UserStats = $this->db->raw_query(
@@ -627,16 +663,19 @@ class Auth extends Service {
             return $UserStats;
     }
 
-    public function get_user_permissions($user) {
+    public function get_user_permissions($user)
+    {
         $Permission = $this->permissions->getLegacyPermission($user->legacy['PermissionID']);
         return $Permission;
     }
 
-    public function get_active_user() {
+    public function get_active_user()
+    {
         return $this->request->user;
     }
 
-    public function get_legacy_logged_user() {
+    public function get_legacy_logged_user()
+    {
         if (!$this->request->user) {
             return [];
         }
@@ -657,14 +696,16 @@ class Auth extends Service {
         return $LoggedUser;
     }
 
-    public function legacy_enforce_login() {
+    public function legacy_enforce_login()
+    {
         if (!$this->request->user) {
             $this->request->saveIntendedRoute();
             throw new ForbiddenError();
         }
     }
 
-    public function createUser($username, $password, $email, $inviter = 0) {
+    public function createUser($username, $password, $email, $inviter = 0)
+    {
         $this->users->checkAvailable($username);
         $this->emails->checkAvailable($email);
 

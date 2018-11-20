@@ -17,7 +17,8 @@ class SecurityLogRepository extends Repository
      * @param $userID
      * @return SecurityLog
      */
-    public function passkeyChange($userID) {
+    public function passkeyChange($userID)
+    {
         return $this->log('Passkey reset', $userID, $this->master->request->user->ID);
     }
 
@@ -27,7 +28,8 @@ class SecurityLogRepository extends Repository
      * @param $userID
      * @return SecurityLog
      */
-    public function passwordChange($userID) {
+    public function passwordChange($userID)
+    {
         return $this->log('Password changed', $userID, $this->master->request->user->ID);
     }
 
@@ -37,7 +39,8 @@ class SecurityLogRepository extends Repository
      * @param $userID
      * @return SecurityLog
      */
-    public function passwordReset($userID) {
+    public function passwordReset($userID)
+    {
         // The author of the event is not logged yet (0),
         // but we do have to force the IP
         return $this->log('Password reset', $userID, 0, $this->master->request->ip);
@@ -49,7 +52,8 @@ class SecurityLogRepository extends Repository
      * @param $userID
      * @return SecurityLog
      */
-    public function twoFactorEnabling($userID) {
+    public function twoFactorEnabling($userID)
+    {
         return $this->log('2-Factor Authentication enabled', $userID, $this->master->request->user->ID);
     }
 
@@ -59,7 +63,8 @@ class SecurityLogRepository extends Repository
      * @param $userID
      * @return SecurityLog
      */
-    public function twoFactorDisabling($userID) {
+    public function twoFactorDisabling($userID)
+    {
         return $this->log('2-Factor Authentication disabled', $userID, $this->master->request->user->ID);
     }
 
@@ -70,7 +75,8 @@ class SecurityLogRepository extends Repository
      * @param $email
      * @return SecurityLog
      */
-    public function newEmail($userID, $email) {
+    public function newEmail($userID, $email)
+    {
         return $this->log("{$email} added", $userID, $this->master->request->user->ID);
     }
 
@@ -81,7 +87,8 @@ class SecurityLogRepository extends Repository
      * @param $email
      * @return SecurityLog
      */
-    public function removeEmail($userID, $email) {
+    public function removeEmail($userID, $email)
+    {
         return $this->log("{$email} removed", $userID, $this->master->request->user->ID);
     }
 
@@ -92,7 +99,8 @@ class SecurityLogRepository extends Repository
      * @param $email
      * @return SecurityLog
      */
-    public function deleteEmail($userID, $email) {
+    public function deleteEmail($userID, $email)
+    {
         return $this->log("{$email} deleted", $userID, $this->master->request->user->ID);
     }
 
@@ -103,7 +111,8 @@ class SecurityLogRepository extends Repository
      * @param $email
      * @return SecurityLog
      */
-    public function restoreEmail($userID, $email) {
+    public function restoreEmail($userID, $email)
+    {
         return $this->log("{$email} restored", $userID, $this->master->request->user->ID);
     }
 
@@ -117,7 +126,8 @@ class SecurityLogRepository extends Repository
      * @param \DateTime|null $date
      * @return SecurityLog
      */
-    private function log($event, $subject, $author = 0, IP $ip = null, \DateTime $date = null) {
+    private function log($event, $subject, $author = 0, IP $ip = null, \DateTime $date = null)
+    {
         // User type conversion for the subject
         if (!is_int($subject)) {
             if (!$subject instanceof User) {

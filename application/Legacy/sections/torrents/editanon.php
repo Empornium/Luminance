@@ -4,7 +4,9 @@
 ************************************************************************/
 
 $GroupID = $_GET['groupid'];
-if (!is_number($GroupID) || !$GroupID) { error(0); }
+if (!is_number($GroupID) || !$GroupID) {
+    error(0);
+}
 
 // Quick SQL injection check
 if (!$_REQUEST['groupid'] || !is_number($_REQUEST['groupid'])) {
@@ -27,17 +29,19 @@ if (!$CanEdit) {
     $CanEdit = check_perms('site_upload_anon') && $AuthorID == $LoggedUser['ID'];
 }
 
-if (!$CanEdit) { error(403); }
+if (!$CanEdit) {
+    error(403);
+}
 
-show_header('Edit Anonymous status' );
+show_header('Edit Anonymous status');
 
 // Start printing form
 ?>
 <div class="thin">
 <?php
-    if ($Err) { ?>
+if ($Err) { ?>
             <div id="messagebar" class="messagebar alert"><?=$Err?></div>
-<?php 	}
+<?php   }
 // =====================================================
 
 ?>
@@ -54,8 +58,12 @@ show_header('Edit Anonymous status' );
                         <td class="label">Show/Hide Uploader name</td>
                         <td>
 
-                            <input name="anonymous" value="0" type="radio"<?php  if($IsAnon!=1) echo ' checked="checked"';?>/> Show uploader name&nbsp;&nbsp;
-                            <input name="anonymous" value="1" type="radio"<?php  if($IsAnon==1) echo ' checked="checked"';?>/> Hide uploader name (Anonymous)&nbsp;&nbsp;
+                            <input name="anonymous" value="0" type="radio"<?php  if ($IsAnon!=1) {
+                                echo ' checked="checked"';
+                                                                          }?>/> Show uploader name&nbsp;&nbsp;
+                            <input name="anonymous" value="1" type="radio"<?php  if ($IsAnon==1) {
+                                echo ' checked="checked"';
+                                                                          }?>/> Hide uploader name (Anonymous)&nbsp;&nbsp;
 
                         </td>
                     </tr>

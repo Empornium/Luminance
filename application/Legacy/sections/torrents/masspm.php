@@ -3,7 +3,7 @@ if (!check_perms('site_mass_pm_snatchers')) {
     error(403);
 }
 
-if ( !isset($_GET['torrentid']) || !is_number($_GET['torrentid']) ) {
+if (!isset($_GET['torrentid']) || !is_number($_GET['torrentid'])) {
     error(0);
 }
 
@@ -16,9 +16,11 @@ $DB->query("SELECT
         JOIN torrents_group AS tg ON tg.ID=t.GroupID
         WHERE t.ID='$TorrentID'");
 
-list($Properties) = $DB->to_array(false,MYSQLI_BOTH);
+list($Properties) = $DB->to_array(false, MYSQLI_BOTH);
 
-if (!$Properties) { error(404); }
+if (!$Properties) {
+    error(404);
+}
 
 if (isset($_GET['type']) && in_array($_GET['type'], ['reseed'])) {
     $Type = $_GET['type'];
@@ -40,8 +42,12 @@ switch ($Type) {
 }
 
 // Legacy code, I'm not sure where $Body and $Subject are supposed to come from
-if (!empty($Body)) $Message = $Body;
-if (!empty($Subject)) $MessageTitle = $Subject;
+if (!empty($Body)) {
+    $Message = $Body;
+}
+if (!empty($Subject)) {
+    $MessageTitle = $Subject;
+}
 
 show_header('Send Mass PM', 'upload,bbcode,inbox');
 

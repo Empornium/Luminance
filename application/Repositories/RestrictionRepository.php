@@ -6,11 +6,13 @@ use Luminance\Entities\User;
 use Luminance\Entities\Restriction;
 use Luminance\Errors\UnauthorizedError;
 
-class RestrictionRepository extends Repository {
+class RestrictionRepository extends Repository
+{
 
     protected $entityName = 'Restriction';
 
-    public function get_expiry($user, $section) {
+    public function get_expiry($user, $section)
+    {
         if ($user instanceof User) {
             $user = $user->ID;
         }
@@ -28,7 +30,8 @@ class RestrictionRepository extends Repository {
         return $expiry;
     }
 
-    public function is_restricted($user, $section) {
+    public function is_restricted($user, $section)
+    {
         if ($user instanceof User) {
             $user = $user->ID;
         }
@@ -43,24 +46,28 @@ class RestrictionRepository extends Repository {
         return false;
     }
 
-    public function check_restricted($user, $section) {
+    public function check_restricted($user, $section)
+    {
         if ($this->is_restricted($user, $section)) {
             $section = Restriction::$decode[$section];
             throw new UnauthorizedError("Your {$section['name']} rights have been removed");
         }
     }
 
-    public function is_warned($user) {
+    public function is_warned($user)
+    {
         return $this->is_restricted($user, Restriction::WARNED);
     }
 
-    public function check_warned($user) {
+    public function check_warned($user)
+    {
         if ($this->is_warned($user)) {
             throw new UnauthorizedError();
         }
     }
 
-    public function get_restrictions($user) {
+    public function get_restrictions($user)
+    {
         $restrictions = $this->find('`UserID` = ? AND Expires >= NOW()', [$user]);
         $flags = 0;
         foreach ($restrictions as $restriction) {
@@ -69,8 +76,9 @@ class RestrictionRepository extends Repository {
 
         $decoded = [];
         foreach (Restriction::$decode as $key => $restrict) {
-            if ($flags & $key != 0)
+            if ($flags & $key != 0) {
                 $decoded[] = $restrict['name'];
+            }
         }
         return $decoded;
     }
@@ -81,7 +89,8 @@ class RestrictionRepository extends Repository {
      * @param int $userID
      * @throws UnauthorizedError
      */
-    public function check_user(Restriction $restriction, $userID) {
+    public function check_user(Restriction $restriction, $userID)
+    {
         if ((int) $restriction->UserID !== (int) $userID) {
             throw new UnauthorizedError();
         }

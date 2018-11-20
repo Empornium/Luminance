@@ -1,11 +1,15 @@
 <?php
-if (!check_perms('users_mod')) { error(403); }
+if (!check_perms('users_mod')) {
+    error(403);
+}
 
 if (isset($_REQUEST['addtokens'])) {
     authorize();
     $Tokens = $_REQUEST['numtokens'];
 
-    if (!is_number($Tokens) || ($Tokens < 0)) {	error("Please enter a valid number of tokens."); }
+    if (!is_number($Tokens) || ($Tokens < 0)) {
+        error("Please enter a valid number of tokens.");
+    }
     $sql = "UPDATE users_main SET FLTokens = FLTokens + $Tokens WHERE Enabled = '1'";
     if (!isset($_REQUEST['leechdisabled'])) {
         $sql .= " AND can_leech = 1";
@@ -24,7 +28,9 @@ if (isset($_REQUEST['addtokens'])) {
     authorize();
     $Tokens = $_REQUEST['numtokens'];
 
-    if (!is_number($Tokens) || ($Tokens < 0)) {	error("Please enter a valid number of tokens."); }
+    if (!is_number($Tokens) || ($Tokens < 0)) {
+        error("Please enter a valid number of tokens.");
+    }
 
     if (isset($_REQUEST['onlydrop'])) {
         $Where = "WHERE FLTokens > $Tokens";

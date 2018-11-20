@@ -62,18 +62,18 @@ show_header('View request: '.$FullName, 'comments,requests,bbcode,jquery,jquery.
     <a id="messages" ></a>
     <div class="linkbox">
 <?php
-    if ($CanEdit) { ?>
+if ($CanEdit) { ?>
         <a href="/requests.php?action=edit&amp;id=<?=$RequestID?>">[Edit]</a>
 <?php   }
-    if (check_perms('site_moderate_requests') ) { ?>
+if (check_perms('site_moderate_requests')) { ?>
         <a href="/requests.php?action=delete&amp;id=<?=$RequestID?>">[Delete]</a>
 <?php   }
-    if (has_bookmarked('request', $RequestID)) { ?>
+if (has_bookmarked('request', $RequestID)) { ?>
         <a href="#" id="bookmarklink_request_<?=$RequestID?>" onclick="Unbookmark('request', <?=$RequestID?>,'[Bookmark]');return false;">[Remove bookmark]</a>
-<?php 	} else { ?>
+<?php   } else { ?>
         <a href="#" id="bookmarklink_request_<?=$RequestID?>" onclick="Bookmark('request', <?=$RequestID?>,'[Remove bookmark]');return false;">[Bookmark]</a>
-<?php 	} ?>
-        <?php if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], \Luminance\Entities\Restriction::REPORT)): ?>
+<?php   } ?>
+        <?php if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], \Luminance\Entities\Restriction::REPORT)) : ?>
         <a href="/reports.php?action=report&amp;type=request&amp;id=<?=$RequestID?>">[Report Request]</a>
         <?php endif; ?>
         <a href="/upload.php?requestid=<?=$RequestID?><?=($GroupID?"&groupid=$GroupID":'')?>">[Upload Request]</a>
@@ -99,12 +99,12 @@ show_header('View request: '.$FullName, 'comments,requests,bbcode,jquery,jquery.
         </div>
         <div id="tag_container" class="box box_tags">
             <ul id="torrent_tags" class="stats nobullet">
-<?php 	foreach ((array)$Request['Tags'] as $TagID => $TagName) { ?>
+<?php   foreach ((array)$Request['Tags'] as $TagID => $TagName) { ?>
                 <li>
                     <a href="?taglist=<?=$TagName?>"><?=display_str($TagName)?></a>
                     <br style="clear:both" />
                 </li>
-<?php 	} ?>
+<?php   } ?>
             </ul>
         </div><br/>
         <div class="head"><strong>Top Contributors</strong></div>
@@ -146,34 +146,39 @@ show_header('View request: '.$FullName, 'comments,requests,bbcode,jquery,jquery.
             <tr>
                 <td class="label">Created</td>
                 <td>
-                    <?=time_diff($TimeAdded)?>	by  <strong><?=format_username($RequestorID, $RequestorName)?></strong>
+                    <?=time_diff($TimeAdded)?>  by  <strong><?=format_username($RequestorID, $RequestorName)?></strong>
                 </td>
             </tr>
             <tr>
                 <td class="label">Expiry Date</td>
                 <td <?php
-                if(  $TimeExpires < $NowTime ) echo ' class="greybar"';
-                elseif( ( $TimeExpires - $NowTime ) <= (3600*24*7) ) echo ' class="redbar"';
+                if ($TimeExpires < $NowTime) {
+                    echo ' class="greybar"';
+                } elseif (( $TimeExpires - $NowTime ) <= (3600*24*7)) {
+                    echo ' class="redbar"';
+                }
                 ?> title="On the expiry date if this request is not filled all bounties will be returned to the requestors and the request removed automatically">
-                    <?=time_diff($TimeExpires,2,false,false,1)." &nbsp; (".time_diff($TimeExpires,2,false,false,0).')';
-                    if (!$IsFilled && $TimeExpires < $NowTime) echo "<br/>this request will be deleted and the bounties returned within 24 hours";
+                    <?=time_diff($TimeExpires, 2, false, false, 1)." &nbsp; (".time_diff($TimeExpires, 2, false, false, 0).')';
+                    if (!$IsFilled && $TimeExpires < $NowTime) {
+                        echo "<br/>this request will be deleted and the bounties returned within 24 hours";
+                    }
                 ?>
                 </td>
             </tr>
 
-<?php 	if ($GroupID) { ?>
+<?php   if ($GroupID) { ?>
             <tr>
                 <td class="label">Torrent Group</td>
                 <td><a href="/torrents.php?id=<?=$GroupID?>">torrents.php?id=<?=$GroupID?></td>
             </tr>
-<?php 	} ?>
+<?php   } ?>
             <tr>
                 <td class="label">Votes</td>
                 <td>
                     <span id="votecount"><?=$VoteCount?></span>
                 </td>
             </tr>
-<?php 	if ($CanVote) { ?>
+<?php   if ($CanVote) { ?>
             <tr id="voting">
                 <td class="label">Custom Vote</td>
                 <td>
@@ -201,29 +206,29 @@ show_header('View request: '.$FullName, 'comments,requests,bbcode,jquery,jquery.
                         <input type="hidden" id="total_bounty" value="<?=$RequestVotes['TotalBounty']?>" />
                         If you add the entered <strong><span id="new_bounty">0.00 MB</span></strong> of bounty, your new stats will be: <br/>
                         Uploaded: <span id="new_uploaded"><?=get_size($LoggedUser['BytesUploaded'])?></span><br/>
-                        Ratio: <span id="new_ratio"><?=ratio($LoggedUser['BytesUploaded'],$LoggedUser['BytesDownloaded'])?></span>
+                        Ratio: <span id="new_ratio"><?=ratio($LoggedUser['BytesUploaded'], $LoggedUser['BytesDownloaded'])?></span>
                         <input type="button" id="button_vote" value="Vote!" disabled="disabled" onclick="Vote();"/>
                     </form>
                 </td>
             </tr>
 <?php  }?>
 <?php
-    if ($IsFilled) {
+if ($IsFilled) {
 ?>
-            <tr>
-                <td class="label">Filled</td>
-                <td>
-                    <strong><a href="/torrents.php?id=<?=$TorrentID?>"><?php echo ($TorrentTitle == '') ? "(torrent deleted)" : $TorrentTitle; ?></a></strong>
-<?php       if( ( $TimeExpires>$NowTime &&  ($LoggedUser['ID'] == $RequestorID || $LoggedUser['ID'] == $FillerID) ) || check_perms('site_moderate_requests')) { ?>
+    <tr>
+        <td class="label">Filled</td>
+        <td>
+            <strong><a href="/torrents.php?id=<?=$TorrentID?>"><?php echo ($TorrentTitle == '') ? "(torrent deleted)" : $TorrentTitle; ?></a></strong>
+<?php       if (( $TimeExpires>$NowTime &&  ($LoggedUser['ID'] == $RequestorID || $LoggedUser['ID'] == $FillerID) ) || check_perms('site_moderate_requests')) { ?>
                         - <span title="Unfilling a request without a valid, nontrivial reason will result in a warning."><a href="/requests.php?action=unfill&amp;id=<?=$RequestID?>">[Unfill]</a></span>
 <?php       } ?>
-                   <br/>Filled by <?=torrent_username($FillerID, $FillerName, $FillerID==$UploaderID?$IsAnon:false)?>
-<?php       if ( $UploaderID != 0 && $TorrentTitle != '' ) {
+           <br/>Filled by <?=torrent_username($FillerID, $FillerName, $FillerID==$UploaderID?$IsAnon:false)?>
+<?php       if ($UploaderID != 0 && $TorrentTitle != '') {
                     echo ", uploaded by ".torrent_username($UploaderID, $UploaderName, $IsAnon);
-            } ?>
-                </td>
+} ?>
+            </td>
             </tr>
-<?php 	} elseif ($TimeExpires > $NowTime) { ?>
+<?php   } elseif ($TimeExpires > $NowTime) { ?>
             <tr>
                 <td class="label" valign="top">Fill request</td>
                 <td>
@@ -249,7 +254,7 @@ show_header('View request: '.$FullName, 'comments,requests,bbcode,jquery,jquery.
 
                 </td>
             </tr>
-<?php 	} ?>
+<?php   } ?>
         </table>
 
     </div>
@@ -275,7 +280,7 @@ if ($Results === false) {
     $Cache->cache_value('request_comments_'.$RequestID, $Results, 0);
 }
 
-list($Page,$Limit) = page_limit(TORRENT_COMMENTS_PER_PAGE,$Results);
+list($Page,$Limit) = page_limit(TORRENT_COMMENTS_PER_PAGE, $Results);
 
 //Get the cache catalogue
 $CatalogueID = floor((TORRENT_COMMENTS_PER_PAGE*$Page-TORRENT_COMMENTS_PER_PAGE)/THREAD_CATALOGUE);
@@ -300,16 +305,16 @@ if ($Catalogue === false) {
             WHERE c.RequestID = '$RequestID'
             ORDER BY c.ID
             LIMIT $CatalogueLimit");
-    $Catalogue = $DB->to_array(false,MYSQLI_ASSOC);
+    $Catalogue = $DB->to_array(false, MYSQLI_ASSOC);
     $Cache->cache_value('request_comments_'.$RequestID.'_catalogue_'.$CatalogueID, $Catalogue, 0);
 }
 
 //This is a hybrid to reduce the catalogue down to the page elements: We use the page limit % catalogue
-$Thread = array_slice($Catalogue,((TORRENT_COMMENTS_PER_PAGE*$Page-TORRENT_COMMENTS_PER_PAGE)%THREAD_CATALOGUE),TORRENT_COMMENTS_PER_PAGE,true);
+$Thread = array_slice($Catalogue, ((TORRENT_COMMENTS_PER_PAGE*$Page-TORRENT_COMMENTS_PER_PAGE)%THREAD_CATALOGUE), TORRENT_COMMENTS_PER_PAGE, true);
 ?>
     <div class="linkbox"><a name="comments"></a>
 <?php
-$Pages=get_pages($Page,$Results,TORRENT_COMMENTS_PER_PAGE,9,'#comments');
+$Pages=get_pages($Page, $Results, TORRENT_COMMENTS_PER_PAGE, 9, '#comments');
 echo $Pages;
 ?>
     </div>
@@ -332,12 +337,12 @@ foreach ($Thread as $Key => $Post) {
 <?php if (can_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime)) { ?>
                 - <a href="#post<?=$PostID?>" onclick="Edit_Form('requests','<?=$PostID?>','<?=$Key?>');">[Edit]</a>
 <?php }
-      if (check_perms('site_admin_forums')) { ?>
+if (check_perms('site_admin_forums')) { ?>
                 - <a href="#post<?=$PostID?>" onclick="Delete('<?=$PostID?>');">[Delete]</a>
 <?php } ?>
             </span>
             <span id="bar<?=$PostID?>" style="float:right;">
-                <?php if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], \Luminance\Entities\Restriction::REPORT)): ?>
+                <?php if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], \Luminance\Entities\Restriction::REPORT)) : ?>
                 <a href="/reports.php?action=report&amp;type=requests_comment&amp;id=<?=$PostID?>">[Report]</a>
                 <?php endif; ?>
                 &nbsp;
@@ -354,7 +359,7 @@ foreach ($Thread as $Key => $Post) {
             <img src="<?=STATIC_SERVER?>common/avatars/default.png" class="avatar" style="<?=get_avatar_css(100, 120)?>" alt="Default avatar" />
     <?php }
           $UserBadges = get_user_badges($AuthorID);
-          if ( !empty($UserBadges) ) { ?>
+if (!empty($UserBadges)) { ?>
                <div class="badges">
 <?php              print_badges_array($UserBadges, $AuthorID); ?>
                </div>
@@ -370,9 +375,9 @@ foreach ($Thread as $Key => $Post) {
                         <div class="post_footer">
 <?php     if (check_perms('site_moderate_forums')) { ?>
                 <a href="#content<?=$PostID?>" onclick="LoadEdit('requests', <?=$PostID?>, 1); return false;">&laquo;</a>
-<?php  	  } ?>
+<?php     } ?>
                         <span class="editedby">Last edited by
-                            <?=format_username($EditedUserID, $EditedUsername) ?> <?=time_diff($EditedTime,2,true,true)?>
+                            <?=format_username($EditedUserID, $EditedUsername) ?> <?=time_diff($EditedTime, 2, true, true)?>
                         </span>
                         </div>
 <?php } ?>
@@ -394,7 +399,7 @@ if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\En
                     <tr class="smallhead">
                         <td colspan="2">
                             <span style="float:left;"><a href='#quickreplypreview'>#XXXXXX</a>
-                                <?=format_username($LoggedUser['ID'], $LoggedUser['Username'], $LoggedUser['Donor'], true, $LoggedUser['Enabled'], $LoggedUser['PermissionID'],$LoggedUser['Title'],true)?>
+                                <?=format_username($LoggedUser['ID'], $LoggedUser['Username'], $LoggedUser['Donor'], true, $LoggedUser['Enabled'], $LoggedUser['PermissionID'], $LoggedUser['Title'], true)?>
                                 Just now
                             </span>
                             <span id="barpreview" style="float:right;">

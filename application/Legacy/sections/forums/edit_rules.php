@@ -12,11 +12,13 @@ if (!is_number($ForumID)) {
 if (!empty($_POST['add']) || (!empty($_POST['del']))) {
     if (!empty($_POST['add'])) {
         if (is_number($_POST['new_thread'])) {
-
             $ThreadID = (int) $_POST['new_thread'];
-            $DB->query("SELECT ID FROM forums_topics WHERE ID = $ThreadID" );
-            if ($DB->record_count()==0) $ResultMessage ="No thread with id=$ThreadID!";
-            else $DB->query("INSERT INTO forums_specific_rules (ForumID, ThreadID) VALUES ( $ForumID, $ThreadID)");
+            $DB->query("SELECT ID FROM forums_topics WHERE ID = $ThreadID");
+            if ($DB->record_count()==0) {
+                $ResultMessage ="No thread with id=$ThreadID!";
+            } else {
+                $DB->query("INSERT INTO forums_specific_rules (ForumID, ThreadID) VALUES ( $ForumID, $ThreadID)");
+            }
         }
     }
     if (!empty($_POST['del'])) {
@@ -29,7 +31,7 @@ if (!empty($_POST['add']) || (!empty($_POST['del']))) {
 
 $DB->query("SELECT ThreadID , Title
               FROM forums_specific_rules AS fs LEFT JOIN forums_topics AS ft ON ft.ID=fs.ThreadID
-             WHERE fs.ForumID = $ForumID" );
+             WHERE fs.ForumID = $ForumID");
 
 $ThreadIDs = $DB->to_array();
 

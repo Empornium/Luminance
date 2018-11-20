@@ -3,9 +3,13 @@ authorize();
 
 $UserID = $LoggedUser['ID'];
 $ConvID = $_POST['convid'];
-if (!is_number($ConvID)) { error(404); }
+if (!is_number($ConvID)) {
+    error(404);
+}
 $DB->query("SELECT UserID FROM pm_conversations_users WHERE UserID='$UserID' AND ConvID='$ConvID'");
-if ($DB->record_count() == 0) { error(403); }
+if ($DB->record_count() == 0) {
+    error(403);
+}
 
 if (isset($_POST['delete'])) {
     $DB->query("UPDATE pm_conversations_users SET

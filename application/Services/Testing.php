@@ -31,7 +31,8 @@ class Testing extends Service
      * Testing constructor.
      * @param \Luminance\Core\Master $master
      */
-    public function __construct($master) {
+    public function __construct($master)
+    {
         parent::__construct($master);
 
         $this->setDirectory();
@@ -43,7 +44,8 @@ class Testing extends Service
     /**
      * @return string
      */
-    public function run() {
+    public function run()
+    {
         if (!$this->loadedTests) {
             return 'No test to run';
         }
@@ -55,7 +57,8 @@ class Testing extends Service
     /**
      * Load unit tests files
      */
-    private function load() {
+    private function load()
+    {
         foreach (glob($this->getDirectory()) as $path) {
             require_once $path;
             $this->suite->addTestSuite($this->getClass($path));
@@ -68,7 +71,8 @@ class Testing extends Service
      * @param $path
      * @return bool|mixed|string
      */
-    private function getClass($path) {
+    private function getClass($path)
+    {
         $file = substr(strrchr($path, "/"), 1);
         $file = preg_replace('/\.php$/i', '', $file);
 
@@ -80,7 +84,8 @@ class Testing extends Service
      * @param $path
      * @return bool|mixed|string
      */
-    private function setDirectory() {
+    private function setDirectory()
+    {
         $this->directory = $this->master->application_path . "/../tests";
     }
 
@@ -89,7 +94,8 @@ class Testing extends Service
      * @param $path
      * @return bool|mixed|string
      */
-    private function getDirectory() {
+    private function getDirectory()
+    {
         return $this->directory."/*.php";
     }
 }

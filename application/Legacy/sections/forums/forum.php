@@ -50,7 +50,7 @@ if (!isset($Forum) || !is_array($Forum)) {
         WHERE t.ForumID = '$ForumID'
         ORDER BY t.IsSticky DESC, t.LastPostTime DESC
         LIMIT $Limit"); // Can be cached until someone makes a new post
-    $Forum = $DB->to_array('ID',MYSQLI_ASSOC);
+    $Forum = $DB->to_array('ID', MYSQLI_ASSOC);
     if ($Page==1) {
         $DB->query("SELECT COUNT(ID) FROM forums_topics WHERE ForumID='$ForumID' AND IsSticky='1'");
         list($Stickies) = $DB->next_record();
@@ -58,12 +58,18 @@ if (!isset($Forum) || !is_array($Forum)) {
     }
 }
 
-if (!isset($Forums[$ForumID])) { error(404); }
+if (!isset($Forums[$ForumID])) {
+    error(404);
+}
 // Make sure they're allowed to look at the page
 if (!check_perms('site_moderate_forums')) {
-    if (isset($LoggedUser['CustomForums'][$ForumID]) && $LoggedUser['CustomForums'][$ForumID] === 0) { error(403); }
+    if (isset($LoggedUser['CustomForums'][$ForumID]) && $LoggedUser['CustomForums'][$ForumID] === 0) {
+        error(403);
+    }
 }
-if ($LoggedUser['CustomForums'][$ForumID] != 1 && $Forums[$ForumID]['MinClassRead'] > $LoggedUser['Class']) { error(403); }
+if ($LoggedUser['CustomForums'][$ForumID] != 1 && $Forums[$ForumID]['MinClassRead'] > $LoggedUser['Class']) {
+    error(403);
+}
 
 // Start printing
 $forumName = display_str($Forums[$ForumID][Name]);
@@ -115,7 +121,9 @@ show_header(empty($LoggedUser['ShortTitles'])?"Forums > {$forumName}":$forumName
     <div class="box pad center">
 <?php foreach ($Forums[$ForumID]['SpecificRules'] as $ThreadIDs) {
     $Thread = get_thread_info($ThreadIDs);
-    if ($Thread === false) { error(404); }
+    if ($Thread === false) {
+        error(404);
+    }
 ?>
             &nbsp;&nbsp;[<a href="/forums.php?action=viewthread&amp;threadid=<?=$ThreadIDs?>"><?=$Thread['Title']?></a>]&nbsp;&nbsp;
 <?php } ?>
@@ -123,7 +131,7 @@ show_header(empty($LoggedUser['ShortTitles'])?"Forums > {$forumName}":$forumName
 <?php } ?>
     <div class="linkbox pager">
 <?php
-$Pages=get_pages($Page,$Forums[$ForumID]['NumTopics'],TOPICS_PER_PAGE,9);
+$Pages=get_pages($Page, $Forums[$ForumID]['NumTopics'], TOPICS_PER_PAGE, 9);
 echo $Pages;
 ?>
     </div>
@@ -200,11 +208,18 @@ if (count($Forum) == 0) {
         } else {
             $Read = 'read';
         }
-        if ($Locked) { $Read .= "_locked"; }
-        if ($Sticky) { $Read .= "_sticky"; }
+        if ($Locked) {
+            $Read .= "_locked";
+        }
+        if ($Sticky) {
+            $Read .= "_sticky";
+        }
 ?>
-    <tr class="row<?=$Row; if($Sticky)echo' sticky'?>">
-        <td class="<?=$Read?>" title="<?=ucwords(str_replace('_',' ',$Read))?>"></td>
+    <tr class="row<?=$Row;
+    if ($Sticky) {
+        echo' sticky';
+    }?>">
+        <td class="<?=$Read?>" title="<?=ucwords(str_replace('_', ' ', $Read))?>"></td>
         <td>
             <span style="float:left;" class="last_topic">
 <?php
@@ -216,11 +231,11 @@ if (count($Forum) == 0) {
                 </strong>
                 <?=$PagesText?>
             </span>
-<?php		if (!empty($LastRead[$TopicID])) { ?>
+<?php	  if (!empty($LastRead[$TopicID])) { ?>
             <span style="float: left;" class="last_read" title="Jump to last read">
                 <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;page=<?=$LastRead[$TopicID]['Page']?>#post<?=$LastRead[$TopicID]['PostID']?>"></a>
             </span>
-<?php		} ?>
+<?php	  } ?>
             <span style="float: right;" class="first_poster">
                 started by <?=format_username($AuthorID, $AuthorName)?>
             </span>
@@ -229,14 +244,14 @@ if (count($Forum) == 0) {
         <td style="text-align: center;"><?=number_format($NumViews)?></td>
         <td>
                 <span style="float: left;" class="last_poster">
-                    by <?=format_username($LastAuthorID, $LastAuthorName)?> <?=time_diff($LastTime,1)?>
+                    by <?=format_username($LastAuthorID, $LastAuthorName)?> <?=time_diff($LastTime, 1)?>
                 </span>
             <span style="float: left;" class="last_post" title="Jump to last post">
                 <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$LastID?>#post<?=$LastID?>"></a>
             </span>
             </td>
     </tr>
-<?php	}
+    <?php	}
 } ?>
 </table>
     <div class="linkbox pager">

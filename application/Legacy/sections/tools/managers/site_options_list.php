@@ -16,13 +16,13 @@ show_header('Manage Site Options');
                 <input type="hidden" name="action" value="take_site_options" />
                 <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
 <?php
-foreach($master->options->getSections() as $section) {
+foreach ($master->options->getSections() as $section) {
     ?>
                 <div class="site_option_section">
                     <h2><?=ucfirst($section)?></h2>
     <?php
     $displayRow=1;
-    foreach($master->options->getAll($section) as $name => $option) {
+    foreach ($master->options->getAll($section) as $name => $option) {
         if (isset($option['displayRow']) && ($option['displayRow'] > $displayRow)) {
             $displayRow = $option['displayRow'];
         ?>
@@ -46,7 +46,7 @@ foreach($master->options->getSections() as $section) {
                             </label>
                         <?php } elseif ($option['type'] == 'enum') { ?>
                             <select name="<?=$name?>">
-                            <?php foreach($option['validation']['inarray'] as $value) {?>
+                            <?php foreach ($option['validation']['inarray'] as $value) {?>
                                 <option value="<?=$value?>" <?=($option['value']==$value)?'selected':''?>><?=$value?></option>
                             <?php } ?>
                             </select>

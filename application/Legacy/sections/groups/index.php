@@ -1,23 +1,25 @@
 <?php
 enforce_login();
 
-if(!check_perms('users_groups')) error(403);
+if (!check_perms('users_groups')) {
+    error(403);
+}
 
 if (!empty($_REQUEST['groupid'])) {
     $GroupID = (int) $_REQUEST['groupid'];
 }
 
 if (empty($_POST['action'])) {
-
-    if ($GroupID > 0)
+    if ($GroupID > 0) {
         include(SERVER_ROOT . '/Legacy/sections/groups/group.php');
-    else
+    } else {
         include(SERVER_ROOT . '/Legacy/sections/groups/groups.php');
-
+    }
 } else {
-
     $ApplyTo = isset($_POST['applyto'])?$_POST['applyto']:'';
-    if (!in_array($ApplyTo, array('user','group'))) error(0);
+    if (!in_array($ApplyTo, array('user','group'))) {
+        error(0);
+    }
 
     if ($ApplyTo == 'user') {
         if (!empty($_REQUEST['userid'])) {
@@ -31,21 +33,26 @@ if (empty($_POST['action'])) {
             authorize();
 
             if ($ApplyTo == 'user') {  // add user to group
-                if (!$GroupID || !$UserID) error(0);
+                if (!$GroupID || !$UserID) {
+                    error(0);
+                }
                 $DB->query("INSERT IGNORE INTO users_groups (GroupID, UserID, AddedTime, AddedBy)
                                  VALUES ('$GroupID', '$UserID','" . sqltime() . "','" . $LoggedUser['ID'] . "')");
                 $Log = sqltime() . " - User [user]{$UserID}[/user] [color=blue]added[/color] by [user]{$LoggedUser['ID']}[/user]";
                 $DB->query("UPDATE groups SET Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
 
                 header('Location: groups.php?groupid=' . $GroupID);
-
             } else {    // add group
 
-                if (!$P[name] || $P[name] == '') error("Name of new group cannot be empty");
+                if (!$P[name] || $P[name] == '') {
+                    error("Name of new group cannot be empty");
+                }
                 $Log = sqltime() . " - Usergroup [color=green]$P[name][/color] [color=blue]created[/color] by [user]{$LoggedUser['ID']}[/user]";
                 $DB->query("INSERT IGNORE INTO groups (Name, Log) VALUES ('$P[name]', '$Log')");
                 $GroupID = (int) $DB->inserted_id();
-                if (!$GroupID) error("Error - Failed to create new group!");
+                if (!$GroupID) {
+                    error("Error - Failed to create new group!");
+                }
                 header('Location: groups.php' . ($GroupID ? '?groupid=' . $GroupID : ''));
             }
 
@@ -53,10 +60,14 @@ if (empty($_POST['action'])) {
 
         case 'update': // comment
             authorize();
-            if (!$GroupID) error(0);
+            if (!$GroupID) {
+                error(0);
+            }
 
             if ($ApplyTo == 'user') { // update user comment in group
-                if (!$UserID) error(0);
+                if (!$UserID) {
+                    error(0);
+                }
                 $DB->query("UPDATE users_groups SET Comment='$P[comment]' WHERE GroupID='$GroupID' AND UserID='$UserID'");
                 header('Location: groups.php?groupid=' . $GroupID . '&userid=' . $UserID);
             } else { // update group comment
@@ -68,7 +79,9 @@ if (empty($_POST['action'])) {
         case 'remove':  // user
             authorize();
 
-            if (!$UserID || !$GroupID) error(0);
+            if (!$UserID || !$GroupID) {
+                error(0);
+            }
 
             $DB->query("DELETE FROM users_groups WHERE GroupID='$GroupID' AND UserID='$UserID'");
             $Log = sqltime() . " - User [user]{$UserID}[/user] [color=red]removed[/color] by [user]{$LoggedUser['ID']}[/user]";
@@ -78,15 +91,21 @@ if (empty($_POST['action'])) {
             break;
 
         case 'pm user':
-            if (!$UserID) error(0);
+            if (!$UserID) {
+                error(0);
+            }
             header('Location: inbox.php?action=compose&to=' . $UserID);
             break;
 
         case 'change name': // group
             authorize();
 
-            if (!$GroupID) error(0);
-            if (!$P['name'] || $P['name'] == '') error("Name of group cannot be empty");
+            if (!$GroupID) {
+                error(0);
+            }
+            if (!$P['name'] || $P['name'] == '') {
+                error("Name of group cannot be empty");
+            }
             $Log = sqltime() . " - Name [color=blue]changed[/color] to [color=green]$P[name][/color] by [user]{$LoggedUser['ID']}[/user]";
             $DB->query("UPDATE groups SET Name='$P[name]', Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
             header('Location: groups.php?groupid=' . $GroupID);
@@ -96,7 +115,9 @@ if (empty($_POST['action'])) {
         case 'delete':  // group
             authorize();
 
-            if (!$GroupID) error(0);
+            if (!$GroupID) {
+                error(0);
+            }
             $DB->query("DELETE FROM groups WHERE ID='$GroupID'");
             $DB->query("DELETE FROM users_groups WHERE GroupID='$GroupID'");
             header('Location: groups.php');
@@ -105,11 +126,13 @@ if (empty($_POST['action'])) {
         case 'checkusers':
             authorize();    // ajax call
 
-            if (!$P['userlist']) error("No users in list", true);
+            if (!$P['userlist']) {
+                error("No users in list", true);
+            }
 
             $Items = array();
             // split on both whitespace and commas
-            $Preitems = str_replace('\n', ' ',$P['userlist']);
+            $Preitems = str_replace('\n', ' ', $P['userlist']);
             $Preitems = explode(",", $Preitems);
             foreach ($Preitems as $pitem) {
                 $Items = array_merge($Items, explode(" ", $pitem));
@@ -117,14 +140,18 @@ if (empty($_POST['action'])) {
             $IDs = array();
             foreach ($Items as $item) {
                 $item = trim($item);
-                if ($item == '') continue;
+                if ($item == '') {
+                    continue;
+                }
                 if (is_number($item)) {
                     $UserID = (int) $item;
-                    if(in_array($UserID, $IDs)) continue;
+                    if (in_array($UserID, $IDs)) {
+                        continue;
+                    }
                     $DB->query("SELECT Username FROM users_main WHERE ID=$UserID");
-                    if ($DB->record_count()==0)
+                    if ($DB->record_count()==0) {
                         $result = '<img src="'. STATIC_SERVER .'common/symbols/warned.png" alt="No result" title="Could not find user with id='.$UserID.'" /> Could not find user with id='.$UserID.'<br/>';
-                    else  {
+                    } else {
                         list($Username) = $DB->next_record();
                         $result = '<img src="'. STATIC_SERVER .'common/symbols/tick.png" alt="found" title="Found '.$Username.'" /> <a href="/user.php?id='.$UserID.'">'.$Username.'</a><br/>';
                         $IDs[] = $UserID;
@@ -132,31 +159,42 @@ if (empty($_POST['action'])) {
                 } else {
                     $Username = $item;
                     $DB->query("SELECT ID FROM users_main WHERE Username = '" . db_string($Username). "'");
-                    if ($DB->record_count()==0)
+                    if ($DB->record_count()==0) {
                         $result = '<img src="'. STATIC_SERVER .'common/symbols/warned.png" alt="No result" title="Could not find user '.$Username.'" /> Could not find user \''.$Username.'\'<br/>';
-                    else  {
+                    } else {
                         list($UserID) = $DB->next_record();
-                        if(in_array($UserID, $IDs)) continue;
+                        if (in_array($UserID, $IDs)) {
+                            continue;
+                        }
                         $result = '<img src="'. STATIC_SERVER .'common/symbols/tick.png" alt="found" title="Found '.$Username.'" /> <a href="/user.php?id='.$UserID.'">'.$Username.'</a><br/>';
                         $IDs[] = $UserID;
                     }
                 }
                 echo $result;
             }
-            if (count($IDs)>0) $IDs = implode(',', $IDs);
-            else $IDs = '';
+            if (count($IDs)>0) {
+                $IDs = implode(',', $IDs);
+            } else {
+                $IDs = '';
+            }
             echo '<input type="hidden" id="userids" name="userids" value="'.$IDs.'" />';
             break;
 
         case 'add users':
             authorize();
 
-            if (!$GroupID) error(0);
-            if (!$P['userids']) error("No users in list");
+            if (!$GroupID) {
+                error(0);
+            }
+            if (!$P['userids']) {
+                error("No users in list");
+            }
 
             $IDs = explode(",", $P['userids']);
             foreach ($IDs as &$id) {
-                if (!is_number($id)) error(0);
+                if (!is_number($id)) {
+                    error(0);
+                }
                 $id=(int) $id;
             }
 
@@ -165,7 +203,8 @@ if (empty($_POST['action'])) {
 
             $IDs = implode(',', $IDs);
             $DB->query("SELECT ID, Username FROM users_main WHERE ID IN ($IDs)");
-            $Log = ''; $Div ='';
+            $Log = '';
+            $Div ='';
             while (list($Uid, $Username) = $DB->next_record()) {
                 $Log .= "{$Div}[url=/user.php?id=$Uid]{$Username}[/url]";
                 $Div =', ';
@@ -180,7 +219,9 @@ if (empty($_POST['action'])) {
         case 'remove all':
             authorize();
 
-            if (!$GroupID) error(0);
+            if (!$GroupID) {
+                error(0);
+            }
 
             $DB->query("SELECT ug.UserID, Username
                           FROM users_main AS um
@@ -188,8 +229,8 @@ if (empty($_POST['action'])) {
                          WHERE ug.GroupID = $GroupID");
 
             if ($DB->record_count()>0) {
-
-                $Log = ''; $Div ='';
+                $Log = '';
+                $Div ='';
                 while (list($Uid, $Username) = $DB->next_record()) {
                     $Log .= "{$Div}[url=/user.php?id=$Uid]{$Username}[/url]";
                     $Div =', ';
@@ -199,40 +240,56 @@ if (empty($_POST['action'])) {
                 $Log = sqltime() . " - [color=red]All Users[/color] ($Log) [color=red]removed[/color] by [user]{$LoggedUser['ID']}[/user]";
                 $DB->query("UPDATE groups SET Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
             }
-            header('Location: groups.php?groupid=' . $GroupID );
+            header('Location: groups.php?groupid=' . $GroupID);
 
             break;
 
         case 'mass pm': // users in group
-            if (!$GroupID) error(0);
+            if (!$GroupID) {
+                error(0);
+            }
             include(SERVER_ROOT . '/Legacy/sections/groups/masspm.php');
             break;
 
         case 'takemasspm':
-            if (!$GroupID) error(0);
+            if (!$GroupID) {
+                error(0);
+            }
             include(SERVER_ROOT . '/Legacy/sections/groups/takemasspm.php');
             break;
 
         case 'group award':
-            if (!$GroupID) error(0);
+            if (!$GroupID) {
+                error(0);
+            }
             include(SERVER_ROOT . '/Legacy/sections/groups/massaward.php');
             break;
 
         case 'takemassaward':
-            if (!$GroupID) error(0);
+            if (!$GroupID) {
+                error(0);
+            }
             include(SERVER_ROOT . '/Legacy/sections/groups/takemassaward.php');
             break;
 
         case 'give credits':
             authorize();
-            if (!check_perms('users_edit_credits')) error(403);
-            if (!$GroupID) error(0);
+            if (!check_perms('users_edit_credits')) {
+                error(403);
+            }
+            if (!$GroupID) {
+                error(0);
+            }
             $DB->query('SELECT UserID FROM users_groups WHERE GroupID='.$GroupID);
 
             if ($DB->record_count()>0) {
                 $AdjustCredits = $_POST['credits'];
-                if ( $AdjustCredits[0]=='+') $AdjustCredits = substr($AdjustCredits, 1);
-                if ( !is_number($AdjustCredits)) error(0);
+                if ($AdjustCredits[0]=='+') {
+                    $AdjustCredits = substr($AdjustCredits, 1);
+                }
+                if (!is_number($AdjustCredits)) {
+                    error(0);
+                }
                 $AdjustCredits = (int) $AdjustCredits;
                 $textCredits = number_format($AdjustCredits);
                 if ($AdjustCredits>0) {
@@ -254,27 +311,37 @@ if (empty($_POST['action'])) {
                 }
             }
 
-            $Log = db_string( sqltime()." - [color=purple]Credits awarded[/color] by $LoggedUser[Username] - amount: $textCredits" );
+            $Log = db_string(sqltime()." - [color=purple]Credits awarded[/color] by $LoggedUser[Username] - amount: $textCredits");
             $DB->query("UPDATE groups SET Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
 
-            header('Location: groups.php?groupid=' . $GroupID );
+            header('Location: groups.php?groupid=' . $GroupID);
 
             break;
 
         case 'adjust download':
             authorize();
-            if (!check_perms('users_edit_ratio')) error(403);
-            if (!$GroupID) error(0);
+            if (!check_perms('users_edit_ratio')) {
+                error(403);
+            }
+            if (!$GroupID) {
+                error(0);
+            }
             $DB->query('SELECT UserID FROM users_groups WHERE GroupID='.$GroupID);
 
             if ($DB->record_count()>0) {
                 $AdjustDownload = $_POST['download'];
-                if ( $AdjustDownload[0]=='+') $AdjustDownload = substr($AdjustDownload, 1);
-                if ( !is_number($AdjustDownload)) error(0);
+                if ($AdjustDownload[0]=='+') {
+                    $AdjustDownload = substr($AdjustDownload, 1);
+                }
+                if (!is_number($AdjustDownload)) {
+                    error(0);
+                }
                 $AdjustDownload = (int) $AdjustDownload;
                 $AdjustDownload = get_bytes("{$AdjustDownload}gb");
                 $StrDownload = get_size($AdjustDownload);
-                if ($AdjustDownload>0) $AdjustDownload = "+$AdjustDownload";
+                if ($AdjustDownload>0) {
+                    $AdjustDownload = "+$AdjustDownload";
+                }
 
                 $Users = $DB->collect('UserID');
                 $UserIDs = implode(',', $Users);
@@ -291,14 +358,14 @@ if (empty($_POST['action'])) {
                 }
             }
 
-            $Log = db_string( sqltime()." - [color=purple]Download adjusted[/color] by $LoggedUser[Username] - amount: $StrDownload" );
+            $Log = db_string(sqltime()." - [color=purple]Download adjusted[/color] by $LoggedUser[Username] - amount: $StrDownload");
             $DB->query("UPDATE groups SET Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
 
-            header('Location: groups.php?groupid=' . $GroupID );
+            header('Location: groups.php?groupid=' . $GroupID);
 
             break;
 
-        default :
+        default:
             error(0);
             break;
     }

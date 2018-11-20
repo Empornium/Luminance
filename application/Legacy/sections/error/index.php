@@ -1,13 +1,12 @@
 <?php
 $Errors = array('403','404','413','504');
 
-if (!empty($_GET['e']) && in_array($_GET['e'],$Errors)) {
+if (!empty($_GET['e']) && in_array($_GET['e'], $Errors)) {
     //Webserver error
     include($_GET['e'].'.php');
 } else {
     //Gazelle error (Come from the error() function)
     switch ($Error) {
-
         case '403':
             $Title = "Error 403";
             $Description = "You just tried to go to a page that you don't have enough permission to view.";

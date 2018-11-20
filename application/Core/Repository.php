@@ -5,7 +5,8 @@ use Luminance\Core\Master;
 
 use Luminance\Errors\InternalError;
 
-abstract class Repository {
+abstract class Repository
+{
 
     protected $db;
     protected $orm;
@@ -16,14 +17,16 @@ abstract class Repository {
     // same data in memory twice, this is a bad idea IMO.
     //protected $internal_cache = [];
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         $this->master = $master;
         $this->db = $this->master->db;
         $this->orm = $this->master->orm;
         $this->cache = $this->master->cache;
     }
 
-    public function load_from_cache($ID) {
+    public function load_from_cache($ID)
+    {
         $key = $this->get_cache_key($ID);
         $values = $this->cache->get_value($key);
         if (is_array($values)) {
@@ -35,30 +38,36 @@ abstract class Repository {
         }
     }
 
-    public function get($sql, $params = null) {
+    public function get($sql, $params = null)
+    {
         $object = $this->orm->get($this->entityName, $sql, $params);
         return $object;
     }
 
-    public function find($sql, $params = null) {
+    public function find($sql, $params = null)
+    {
         $objects = $this->orm->find($this->entityName, $sql, $params);
         return $objects;
     }
 
-    public function find_count($sql, $params = null) {
+    public function find_count($sql, $params = null)
+    {
         $result = $this->orm->find_count($this->entityName, $sql, $params);
         return $result;
     }
 
-    public function disable_cache() {
+    public function disable_cache()
+    {
         $this->use_cache = false;
     }
 
-    public function enable_cache() {
+    public function enable_cache()
+    {
         $this->use_cache = true;
     }
 
-    public function save_to_cache($entity) {
+    public function save_to_cache($entity)
+    {
         if (!$entity->exists_in_db()) {
             throw new InternalError("Attempt to cache non-saved entity.");
         }
@@ -69,7 +78,8 @@ abstract class Repository {
         }
     }
 
-    public function load($ID, $post_load = true) {
+    public function load($ID, $post_load = true)
+    {
         $cls = "Luminance\\Entities\\{$this->entityName}";
         if ($ID instanceof $cls) {
             $entity = $ID;
@@ -99,30 +109,35 @@ abstract class Repository {
         return $entity;
     }
 
-    protected function post_load($ID, $entity) {
+    protected function post_load($ID, $entity)
+    {
         return $entity; # Override where needed
     }
 
-    public function save(Entity $entity) {
+    public function save(Entity $entity)
+    {
         if ($this->use_cache && $entity->exists_in_db()) {
             $this->uncache($entity->get_pkey_value());
         }
         $this->orm->save($entity);
     }
 
-    public function delete(Entity $entity) {
+    public function delete(Entity $entity)
+    {
         if ($this->use_cache && $entity->exists_in_db()) {
             $this->uncache($entity->get_pkey_value());
         }
         $this->orm->delete($entity);
     }
 
-    public function get_cache_key($ID) {
+    public function get_cache_key($ID)
+    {
         $key = "_entity_{$this->entityName}_{$ID}";
         return $key;
     }
 
-    public function uncache($ID) {
+    public function uncache($ID)
+    {
         $key = $this->get_cache_key($ID);
         $this->cache->delete_value($key);
         //if (array_key_exists($ID, $this->internal_cache)) {

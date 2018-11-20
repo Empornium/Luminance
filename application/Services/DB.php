@@ -7,7 +7,8 @@ use Luminance\Core\Entity;
 use Luminance\Errors\SystemError;
 use Luminance\Services\DB\LegacyWrapper;
 
-function db_is_number($Str) {
+function db_is_number($Str)
+{
     $Return = true;
     if ($Str < 0) {
         $Return = false;
@@ -18,7 +19,8 @@ function db_is_number($Str) {
     return $Return;
 }
 
-function db_is_utf8($Str) {
+function db_is_utf8($Str)
+{
     return preg_match('%^(?:
         [\x09\x0A\x0D\x20-\x7E]			 // ASCII
         | [\xC2-\xDF][\x80-\xBF]			// non-overlong 2-byte
@@ -31,7 +33,8 @@ function db_is_utf8($Str) {
         )*$%xs', $Str);
 }
 
-function db_make_utf8($Str) {
+function db_make_utf8($Str)
+{
     if ($Str != "") {
         if (db_is_utf8($Str)) {
             $Encoding = "UTF-8";
@@ -50,7 +53,8 @@ function db_make_utf8($Str) {
     }
 }
 
-function db_display_str($Str) {
+function db_display_str($Str)
+{
     if ($Str === null || $Str === false || is_array($Str)) {
         return '';
     }
@@ -75,7 +79,8 @@ function db_display_str($Str) {
     return $Str;
 }
 
-function db_display_array($Array, $Escape = array()) {
+function db_display_array($Array, $Escape = array())
+{
     foreach ($Array as $Key => $Val) {
         if ((!is_array($Escape) && $Escape == true) || !in_array($Key, $Escape)) {
             $Array[$Key] = db_display_str($Val);
@@ -85,14 +90,16 @@ function db_display_array($Array, $Escape = array()) {
     return $Array;
 }
 
-class DB extends Service {
+class DB extends Service
+{
 
     public $pdo;
     public $Queries = array();
     public $Time = 0.0;
     protected $enable_debug = true;
 
-    public function connect() {
+    public function connect()
+    {
         if (is_null($this->pdo)) {
             # Test for presence of PDO driver
             if (!(extension_loaded('mysqlnd') || extension_loaded('mysql'))) {
@@ -123,11 +130,13 @@ class DB extends Service {
         }
     }
 
-    public function enable_debug() {
+    public function enable_debug()
+    {
         $this->enable_debug = true;
     }
 
-    public function disable_debug() {
+    public function disable_debug()
+    {
         $this->enable_debug = false;
     }
 
@@ -140,7 +149,8 @@ class DB extends Service {
      * @param array $params The array of substitution parameters
      * @return string The interpolated query
      */
-    public static function interpolateQuery($query, $params) {
+    public static function interpolateQuery($query, $params)
+    {
         $keys = array();
 
         # Ensure $params is an array using a blind cast
@@ -158,7 +168,8 @@ class DB extends Service {
         return $query;
     }
 
-    public function raw_query($sql, $parameters = array()) {
+    public function raw_query($sql, $parameters = array())
+    {
         $QueryStartTime=microtime(true);
         $this->connect();
         $stmt = $this->pdo->prepare($sql);
@@ -173,7 +184,8 @@ class DB extends Service {
         return $stmt;
     }
 
-    public function legacy_query($sql) {
+    public function legacy_query($sql)
+    {
         try {
             $QueryStartTime=microtime(true);
             $this->connect();
@@ -194,33 +206,40 @@ class DB extends Service {
         return $wrapper;
     }
 
-    public function last_insert_id() {
+    public function last_insert_id()
+    {
         return $this->pdo->lastInsertId();
     }
 
-    public function found_rows() {
+    public function found_rows()
+    {
         $count = $this->pdo->query('SELECT FOUND_ROWS()')->fetchColumn();
         return $count;
     }
 
-    public function in_transaction() {
+    public function in_transaction()
+    {
         return $this->pdo->inTransaction();
     }
 
-    public function begin_transaction() {
+    public function begin_transaction()
+    {
         return $this->pdo->beginTransaction();
     }
 
-    public function commit_transaction() {
+    public function commit_transaction()
+    {
         return $this->pdo->commit();
     }
 
-    public function rollback_transaction() {
+    public function rollback_transaction()
+    {
         return $this->pdo->rollBack();
     }
 
     // a helper function to build a param array and param String for use in an IN ( ) clause
-    public function bindParamArray($prefix, $values, &$params) {
+    public function bindParamArray($prefix, $values, &$params)
+    {
         $str = "";
         foreach ($values as $index => $value) {
             // build named param string in form ':id0,:id1',

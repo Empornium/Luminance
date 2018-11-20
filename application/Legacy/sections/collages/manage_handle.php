@@ -2,7 +2,9 @@
 authorize();
 
 $CollageID = $_POST['collageid'];
-if (!is_number($CollageID)) { error(404); }
+if (!is_number($CollageID)) {
+    error(404);
+}
 
 $DB->query("SELECT UserID, Name, Permissions FROM collages WHERE ID='$CollageID'");
 list($UserID, $Name, $CPermissions) = $DB->next_record();
@@ -16,11 +18,15 @@ if (!check_perms('site_collages_manage')) {
     } else {
           $CanEdit=false; // can be overridden by permissions
     }
-    if (!$CanEdit) { error(403); }
+    if (!$CanEdit) {
+        error(403);
+    }
 }
 
 $GroupID = $_POST['groupid'];
-if (!is_number($GroupID)) { error(404); }
+if (!is_number($GroupID)) {
+    error(404);
+}
 
 if ($_POST['submit'] == 'Remove') {
     $DB->query("DELETE FROM collages_torrents WHERE CollageID='$CollageID' AND GroupID='$GroupID'");
@@ -32,7 +38,9 @@ if ($_POST['submit'] == 'Remove') {
     write_log("Collage ".$CollageID." (".db_string($Name).") was edited by ".$LoggedUser['Username']." - removed torrents $GroupID");
 } else {
     $Sort = $_POST['sort'];
-    if (!is_number($Sort)) { error(404); }
+    if (!is_number($Sort)) {
+        error(404);
+    }
     $DB->query("UPDATE collages_torrents SET Sort='$Sort' WHERE CollageID='$CollageID' AND GroupID='$GroupID'");
 }
 $DB->query("SELECT COUNT(GroupID) AS NumGroups FROM collages_torrents WHERE CollageID='$CollageID'");

@@ -15,7 +15,9 @@ if (!is_number($TagID) || !is_number($GroupID)) {
 
 $DB->query("SELECT Name, TagType FROM tags WHERE ID='$TagID'");
 list($TagName, $TagType) = $DB->next_record();
-if (!$TagName) error(0, true);
+if (!$TagName) {
+    error(0, true);
+}
 
 if (!check_perms('site_delete_tag')) {
     //only need to check this if not already permitted
@@ -27,7 +29,9 @@ if (!check_perms('site_delete_tag')) {
                  WHERE t.GroupID='$GroupID'");
     list($AuthorID,$OwnerID) = $DB->next_record();
     // must be both torrent owner and tag owner to delete
-    if ($AuthorID!=$OwnerID || $AuthorID!=$LoggedUser['ID']) error(403, true);
+    if ($AuthorID!=$OwnerID || $AuthorID!=$LoggedUser['ID']) {
+        error(403, true);
+    }
 }
 
 $DB->query("INSERT INTO group_log (GroupID, UserID, Time, Info)

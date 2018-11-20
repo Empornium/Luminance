@@ -28,7 +28,7 @@
 //   +
 // invitedcount: the number of users this user has directly invited
 
-define('PARANOIA_MSG','This users privacy (paranoia) settings mean you cannot view this page.');
+define('PARANOIA_MSG', 'This users privacy (paranoia) settings mean you cannot view this page.');
 
 /**
  * Return whether currently logged in user can see $Property on a user with $Paranoia, $UserClass and (optionally) $UserID
@@ -58,7 +58,9 @@ function check_paranoia($Property, $Paranoia, $UserClass, $UserID = false)
     }
     if (is_array($Property)) {
         $all = true;
-        foreach ($Property as $P) { $all = $all && check_paranoia($P, $Paranoia, $UserClass, $UserID); }
+        foreach ($Property as $P) {
+            $all = $all && check_paranoia($P, $Paranoia, $UserClass, $UserID);
+        }
 
         return $all;
     } else {
@@ -72,13 +74,17 @@ function check_paranoia($Property, $Paranoia, $UserClass, $UserID = false)
             case 'ratio':
             case 'uploaded':
             case 'lastseen':
-            case 'snatched': case 'snatched+':
+            case 'snatched':
+            case 'snatched+':
                 $May = $May || check_perms('users_mod', $UserClass); // Allows access to the user moderation panels
                 break;
-            case 'uploads': case 'uploads+':
-            case 'leeching': case 'leeching+':
-            case 'seeding' : case 'seeding+':
-                $May = $May || check_perms('users_view_seedleech', $UserClass); // Can view what a user is seeding or leeching.
+            case 'uploads':
+            case 'uploads+':
+            case 'leeching':
+            case 'leeching+':
+            case 'seeding':
+            case 'seeding+':
+                            $May = $May || check_perms('users_view_seedleech', $UserClass); // Can view what a user is seeding or leeching.
                 break;
             case 'invitedcount':
                 $May = $May || check_perms('users_view_invites', $UserClass); // Can view who user has invited.

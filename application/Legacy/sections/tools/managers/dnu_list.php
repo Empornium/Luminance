@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('admin_dnu')) { error(403); }
+if (!check_perms('admin_dnu')) {
+    error(403);
+}
 
 show_header('Manage do not upload list');
 $DB->query("SELECT

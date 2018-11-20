@@ -2,12 +2,18 @@
 set_time_limit(50000);
 
 $Limit = isset($_REQUEST['limit']) ? (int) $_REQUEST['limit'] : 100;
-if ($Limit <= 10) $Limit = 10;
-elseif ($Limit > 100000) $Limit = 100000;
+if ($Limit <= 10) {
+    $Limit = 10;
+} elseif ($Limit > 100000) {
+    $Limit = 100000;
+}
 
 $View = isset($_REQUEST['view']) ? (int) $_REQUEST['view'] : 100;
-if ($View <= 10) $View = 10;
-elseif ($View > 1000) $View = 1000;
+if ($View <= 10) {
+    $View = 10;
+} elseif ($View > 1000) {
+    $View = 1000;
+}
 
 $DB->query("SELECT SQL_CALC_FOUND_ROWS
                    UserID, TorrentID, Count(TorrentID), Max( Time )
@@ -73,16 +79,18 @@ show_header("Fix dupe torrent grabs");
                 </tr>
 <?php
                 $i=0;
-                foreach ($Dupes as $Dupe) {
-                    list($UserID, $TorrentID, $Count, $Time) = $Dupe;
+foreach ($Dupes as $Dupe) {
+    list($UserID, $TorrentID, $Count, $Time) = $Dupe;
 ?>
-                    <tr>
-                        <td><?=$UserID?></td><td><?=$TorrentID?></td><td><?=$Count?></td><td><?=$Time?></td>
-                    </tr>
+<tr>
+<td><?=$UserID?></td><td><?=$TorrentID?></td><td><?=$Count?></td><td><?=$Time?></td>
+</tr>
 <?php
-                    $i++;
-                    if($i>=$View) break;
-                }
+$i++;
+if ($i>=$View) {
+    break;
+}
+}
 ?>
             </table>
         </div>

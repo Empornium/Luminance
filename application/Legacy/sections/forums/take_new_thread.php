@@ -44,14 +44,16 @@ $Body = $_POST['body'];
 $master->repos->restrictions->check_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::POST);
 
 $Text = new Luminance\Legacy\Text;
-$Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
+$Text->validate_bbcode($_POST['body'], get_permissions_advtags($LoggedUser['ID']));
 
 $Title = cut_string(trim($_POST['title']), 150, 1, 0);
 
 
 $ForumID = $_POST['forum'];
 
-if (!isset($Forums[$ForumID])) { error(404); }
+if (!isset($Forums[$ForumID])) {
+    error(404);
+}
 
 if (!check_forumperm($ForumID, 'Write') || !check_forumperm($ForumID, 'Create')) {
     error(403);
@@ -105,7 +107,9 @@ if (empty($_POST['question']) || empty($_POST['answers']) || !check_perms('site_
 
     //This can cause polls to have answer ids of 1 3 4 if the second box is empty
     foreach ($_POST['answers'] as $i => $Answer) {
-        if ($Answer == '') { continue; }
+        if ($Answer == '') {
+            continue;
+        }
         $Answers[$i+1] = $Answer;
         $Votes[$i+1] = 0;
     }
@@ -134,8 +138,8 @@ if ($Forum = $Cache->get_value('forums_'.$ForumID)) {
     }
 
     if ($Stickies > 0) {
-        $Part1 = array_slice($Forum,0,$Stickies,true); //Stikys
-        $Part3 = array_slice($Forum,$Stickies,TOPICS_PER_PAGE-$Stickies-1,true); //Rest of page
+        $Part1 = array_slice($Forum, 0, $Stickies, true); //Stikys
+        $Part3 = array_slice($Forum, $Stickies, TOPICS_PER_PAGE-$Stickies-1, true); //Rest of page
     } else {
         $Part1 = array();
         $Part3 = $Forum;

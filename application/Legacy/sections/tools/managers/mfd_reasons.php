@@ -1,6 +1,8 @@
 <?php
 
-if (!check_perms('torrents_review_manage')) error(403);
+if (!check_perms('torrents_review_manage')) {
+    error(403);
+}
 
 
 show_header('Manage torrents marked for deletion', 'bbcode,marked_reasons,jquery');
@@ -48,7 +50,6 @@ $Text = new Luminance\Legacy\Text;
 // List common responses
 $DB->query("SELECT ID, Sort, Name, Description FROM review_reasons ORDER BY Sort ASC");
 while (list($ID, $Sort, $Name, $Description) = $DB->next_record()) {
-
 ?>
         <div class="messagecontainer" id="container_<?=$ID?>"><div id="ajax_message_<?=$ID?>" class="hidden center messagebar"></div></div>
             <div  id="response_head_<?=$ID?>" class="head"></div>

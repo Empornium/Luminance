@@ -1,5 +1,6 @@
 <?php
 namespace Luminance\Legacy;
+
 /*******************************************************************************
 |~~~~ Gazelle bencode parser											   ~~~~|
 --------------------------------------------------------------------------------
@@ -95,7 +96,6 @@ class Bencode
             $this->Val[$Key] = substr($this->Str, $this->Pos+2, $StrLen);
             $this->Pos+=$StrLen;
             $this->Pos+=2;
-
         } elseif ($Type == 'i') { // Element is an int
             $this->Pos++;
 
@@ -105,17 +105,14 @@ class Bencode
             // Get the integer, and - IMPORTANT - cast it as an int, so we know later that it's an int and not a string
             $this->Val[$Key] = (int) substr($this->Str, $this->Pos, $End-$this->Pos);
             $this->Pos = $End+1;
-
         } elseif ($Type == 'l') { // Element is a list
             $this->Val[$Key] = new BencodeList(substr($this->Str, $this->Pos));
             $this->Pos += $this->Val[$Key]->Pos;
-
         } elseif ($Type == 'd') { // Element is a dictionary
             $this->Val[$Key] = new BencodeDict(substr($this->Str, $this->Pos));
             $this->Pos += $this->Val[$Key]->Pos;
             // Sort by key to respect spec
             ksort($this->Val[$Key]->Val);
-
         } else {
             die('Invalid torrent file');
         }

@@ -2,16 +2,19 @@
 
 // TODO: Redo html
 
-if (!check_perms('admin_manage_permissions'))
+if (!check_perms('admin_manage_permissions')) {
     error(403);
+}
 
-if (!isset($_REQUEST['userid']) || !is_number($_REQUEST['userid']))
+if (!isset($_REQUEST['userid']) || !is_number($_REQUEST['userid'])) {
     error(0);
+}
 
 list($UserID, $Username, $PermissionID) = array_values(user_info($_REQUEST['userid']));
 
-if (empty($UserID))
+if (empty($UserID)) {
     error(404);
+}
 
 include(SERVER_ROOT."/Legacy/classes/permissions_form.php");
 
@@ -29,41 +32,46 @@ $Delta    = array();
 if (isset($_POST['action'])) {
     authorize();
 
-    if (!empty($_POST['maxcollages']) && !is_number($_POST['maxcollages']))
+    if (!empty($_POST['maxcollages']) && !is_number($_POST['maxcollages'])) {
         error("Please enter a valid number of extra personal collages");
+    }
 
-    if ((int) $_POST['maxcollages'] !== 0)
+    if ((int) $_POST['maxcollages'] !== 0) {
         $Delta['MaxCollages'] = $_POST['maxcollages'];
+    }
 
     // Compare custom permissions with defaults
     foreach ($PermissionsArray as $Perm => $Explaination) {
         $Setting = isset($_POST['perm_'.$Perm]) ? 1 : 0;
         $Default = isset($Defaults[$Perm])      ? 1 : 0;
 
-        if ($Setting != $Default)
+        if ($Setting != $Default) {
             $Delta[$Perm] = $Setting;
+        }
     }
 
     // Update custom permissions in DB
     $CustomPermissions = !empty($Delta) ? serialize($Delta) : '';
-    $master->db->raw_query("UPDATE users_main SET CustomPermissions = :CustomPermissions WHERE ID = :UserID",
-                            [':CustomPermissions' => $CustomPermissions, ':UserID' => $UserID]);
+    $master->db->raw_query(
+        "UPDATE users_main SET CustomPermissions = :CustomPermissions WHERE ID = :UserID",
+        [':CustomPermissions' => $CustomPermissions, ':UserID' => $UserID]
+    );
 
     $master->repos->users->uncache($UserID);
-
 } elseif (!empty($Customs)) {
     $Delta = unserialize($Customs);
 }
 
-$Permissions = array_merge($Defaults,$Delta);
+$Permissions = array_merge($Defaults, $Delta);
 $MaxCollages = $Customs['MaxCollages'] + $Delta['MaxCollages'];
 
 function display_perm($Key, $Title, $ToolTip = '')
 {
     global $Defaults, $Permissions;
 
-    if (!$ToolTip)
+    if (!$ToolTip) {
         $ToolTip = $Title;
+    }
 
     $DefaultPermChecked = (isset($Defaults[$Key]) && $Defaults[$Key]) ? 'checked' : '';
     $UserPermChecked    = (isset($Permissions[$Key]) && $Permissions[$Key]) ? 'checked' : '';
@@ -90,7 +98,7 @@ show_header($Username.' &gt; Permissions');
 </script>
 
 <div class="thin">
-    <h2><?= format_username($UserID,$Username) ?> &gt; Permissions</h2>
+    <h2><?= format_username($UserID, $Username) ?> &gt; Permissions</h2>
 
     <div class="linkbox">
         [<a href="#" onclick="reset();return false;">Defaults</a>]
@@ -107,7 +115,9 @@ show_header($Username.' &gt; Permissions');
 
     <div class="permission_head  box shadow center">
         Class Permissions: <?= make_class_string($PermissionID, true); ?>
-        <?php if ($GroupPermName) echo "<br/>Group Permissions: <strong>$GroupPermName</strong>"; ?>
+        <?php if ($GroupPermName) {
+            echo "<br/>Group Permissions: <strong>$GroupPermName</strong>";
+        } ?>
     </div>
 
     <form name="permform" id="permform" method="post">

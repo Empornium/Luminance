@@ -3,7 +3,7 @@ global $DB, $Cache, $Classes;
 
 enforce_login();
 authorize();
-if($Classes[$LoggedUser['PermissionID']]['Level'] < LEVEL_ADMIN) {
+if ($Classes[$LoggedUser['PermissionID']]['Level'] < LEVEL_ADMIN) {
     error(405);
 }
 $Body = db_string($_POST['body']);

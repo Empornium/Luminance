@@ -3,7 +3,8 @@ namespace Luminance\Entities;
 
 use Luminance\Core\Entity;
 
-class ClientScreen extends Entity {
+class ClientScreen extends Entity
+{
 
     public static $table = 'client_screens';
 

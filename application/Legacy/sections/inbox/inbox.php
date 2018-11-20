@@ -1,10 +1,14 @@
 <?php
 $UserID = $LoggedUser['ID'];
 
-if (empty($_GET['action'])) { $Section = 'inbox'; } else {
+if (empty($_GET['action'])) {
+    $Section = 'inbox';
+} else {
     $Section = $_GET['action']; // either 'inbox' or 'sentbox'
 }
-if (!in_array($Section, array('inbox', 'sentbox'))) { error(404); }
+if (!in_array($Section, array('inbox', 'sentbox'))) {
+    error(404);
+}
 
 list($Page,$Limit) = page_limit(MESSAGES_PER_PAGE);
 
@@ -25,7 +29,6 @@ if ($Section == 'inbox') { ?>
 $Sort = empty($_GET['sort']) || $_GET['sort'] != "unread" ? "Date DESC" : "cu.Unread = '1' DESC, DATE DESC";
 
 if ($Section == 'sentbox') {
-
     $sql = "SELECT
           SQL_CALC_FOUND_ROWS
           c.ID,
@@ -44,9 +47,7 @@ if ($Section == 'sentbox') {
           LEFT JOIN pm_conversations_users AS cu2 ON cu2.ConvID=c.ID AND cu2.UserID!='$UserID' AND cu2.ForwardedTo=0
           LEFT JOIN users_main AS um ON um.ID=cu2.UserID
           LEFT JOIN users_info AS ui ON ui.UserID=um.ID";
-
 } else {
-
     $sql = "SELECT
           SQL_CALC_FOUND_ROWS
           c.ID,
@@ -68,21 +69,21 @@ if ($Section == 'sentbox') {
 }
 
 if (!empty($_GET['search']) && $_GET['searchtype'] == "message") {
-    $sql .=	" JOIN pm_messages AS m ON c.ID=m.ConvID";
+    $sql .= " JOIN pm_messages AS m ON c.ID=m.ConvID";
 }
 
 $sql .= " WHERE ";
 if (!empty($_GET['search'])) {
         $Search = db_string($_GET['search']);
-        if ($_GET['searchtype'] == "user") {
-            $sql .= "um.Username LIKE '".$Search."' AND ";
-        } elseif ($_GET['searchtype'] == "subject") {
-            $Words = explode(' ', $Search);
-            $sql .= "c.Subject LIKE '%".implode("%' AND c.Subject LIKE '%", $Words)."%' AND ";
-        } elseif ($_GET['searchtype'] == "message") {
-            $Words = explode(' ', $Search);
-            $sql .= "m.Body LIKE '%".implode("%' AND m.Body LIKE '%", $Words)."%' AND ";
-        }
+    if ($_GET['searchtype'] == "user") {
+        $sql .= "um.Username LIKE '".$Search."' AND ";
+    } elseif ($_GET['searchtype'] == "subject") {
+        $Words = explode(' ', $Search);
+        $sql .= "c.Subject LIKE '%".implode("%' AND c.Subject LIKE '%", $Words)."%' AND ";
+    } elseif ($_GET['searchtype'] == "message") {
+        $Words = explode(' ', $Search);
+        $sql .= "m.Body LIKE '%".implode("%' AND m.Body LIKE '%", $Words)."%' AND ";
+    }
 }
 $sql .= ($Section == 'sentbox')? ' cu.InSentbox' : ' cu.InInbox';
 $sql .="='1'";
@@ -101,7 +102,7 @@ if (empty($CurURL)) {
     $CurURL = "inbox.php?".$CurURL."&";
 }
 
-$Pages=get_pages($Page,$NumResults,MESSAGES_PER_PAGE,9);
+$Pages=get_pages($Page, $NumResults, MESSAGES_PER_PAGE, 9);
 echo $Pages;
 ?>
     </div>
@@ -117,11 +118,11 @@ echo $Pages;
                 <input type="radio" name="searchtype" value="subject" /> Subject
                 <input type="radio" name="searchtype" value="message" /> Message
                 <span style="float: right;">
-<?php 			if (empty($_GET['sort']) || $_GET['sort'] != "unread") { ?>
+<?php           if (empty($_GET['sort']) || $_GET['sort'] != "unread") { ?>
                     <a href="/<?=$CurURL?>sort=unread">List unread first</a>
-<?php 			} else { ?>
+<?php           } else { ?>
                     <a href="/<?=$CurURL?>">List latest first</a>
-<?php 			} ?>
+<?php           } ?>
                 </span>
                 <br />
                 <input type="text" name="search" value="Search <?= ($Section == 'sentbox') ? 'Sentbox' : 'Inbox' ?>" style="width: 98%;"
@@ -142,35 +143,41 @@ echo $Pages;
                 </tr>
 <?php
     $Row = 'a';
-    while (list($ConvID, $Subject, $Unread, $Sticky, $SenderID, $Username, $Donor, $Enabled, $Date, $ClassID, $GroupPermID) = $DB->next_record()) {
-        if ($Unread === '1') {
-            $RowClass = 'unreadpm';
-        } else {
-            $Row = ($Row === 'a') ? 'b' : 'a';
-            $RowClass = 'row'.$Row;
-        }
+while (list($ConvID, $Subject, $Unread, $Sticky, $SenderID, $Username, $Donor, $Enabled, $Date, $ClassID, $GroupPermID) = $DB->next_record()) {
+    if ($Unread === '1') {
+        $RowClass = 'unreadpm';
+    } else {
+        $Row = ($Row === 'a') ? 'b' : 'a';
+        $RowClass = 'row'.$Row;
+    }
 ?>
-                <tr class="<?=$RowClass?>">
-                    <td class="center"><input type="checkbox" name="messages[]" value="<?=$ConvID?>" /></td>
-                    <td>
-<?php 		if ($Unread) { echo '<strong>'; } ?>
-<?php 		if ($Sticky) { echo 'Sticky: '; }
+        <tr class="<?=$RowClass?>">
+            <td class="center"><input type="checkbox" name="messages[]" value="<?=$ConvID?>" /></td>
+            <td>
+<?php       if ($Unread) {
+    echo '<strong>';
+} ?>
+<?php       if ($Sticky) {
+    echo 'Sticky: ';
+}
 ?>
-                        <a href="/inbox.php?action=viewconv&amp;id=<?=$ConvID?>"><?=$Subject?></a>
+                <a href="/inbox.php?action=viewconv&amp;id=<?=$ConvID?>"><?=$Subject?></a>
 <?php
-        if ($Unread) { echo '</strong>';} ?>
+if ($Unread) {
+    echo '</strong>';
+} ?>
                     </td>
                     <td><?=format_username($SenderID, $Username, $Donor, true, $Enabled, $ClassID, false, false, $GroupPermID)?></td>
                     <td><?=time_diff($Date)?></td>
                 </tr>
-<?php 	} ?>
+<?php   } ?>
             </table>
 <?php           if ($Section == 'inbox') {  ?>
             <input type="submit" name="read" value="Mark as read" />&nbsp;
             <input type="submit" name="unread" value="Mark as unread" />&nbsp;
             <input type="submit" name="stick" value="Stick message(s)" />&nbsp;
             <input type="submit" name="unstick" value="Unstick message(s)" />&nbsp;
-<?php 		} ?>
+<?php       } ?>
             <input type="submit" name="delete" value="Delete message(s)" />
         </form>
 <?php  } ?>

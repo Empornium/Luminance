@@ -10,7 +10,8 @@ use Luminance\Responses\Redirect;
 use Luminance\Responses\Response;
 use Luminance\Responses\Rendered;
 
-class AuthenticationPlugin extends Plugin {
+class AuthenticationPlugin extends Plugin
+{
 
     protected static $useServices = [
         'auth'      => 'Auth',
@@ -40,7 +41,8 @@ class AuthenticationPlugin extends Plugin {
         [ 'GET',  'index',               0, 'index'                  ],
     ];
 
-    public static function register(Master $master) {
+    public static function register(Master $master)
+    {
         $master->prependRoute([ '*', '',                   0, 'plugin', 'Authentication', 'index'             ]);
         $master->prependRoute([ '*', 'index.php',          0, 'plugin', 'Authentication', 'index'             ]);
         $master->prependRoute([ '*', 'login',              0, 'plugin', 'Authentication', 'login'             ]);
@@ -51,11 +53,13 @@ class AuthenticationPlugin extends Plugin {
         $master->prependRoute([ '*', 'twofactor/recover',  2, 'plugin', 'Authentication', 'twofactor/recover' ]);
     }
 
-    public function is_it_up() {
+    public function is_it_up()
+    {
         return new Rendered('core/base.html.twig', [], 200, 'header');
     }
 
-    public function index() {
+    public function index()
+    {
         if ($this->request->user) {
             return $this->master->legacy('index');
         } else {
@@ -79,14 +83,16 @@ class AuthenticationPlugin extends Plugin {
         }
     }
 
-    public function login_form() {
+    public function login_form()
+    {
         if ($this->request->user) {
             return new Redirect('/');
         }
         return new Rendered('@Authentication/login.html.twig');
     }
 
-    protected static function parse_cinfo($CInfoString) {
+    protected static function parse_cinfo($CInfoString)
+    {
         $CParts = explode('|', $CInfoString);
 
         if (count($CParts) != 4) {
@@ -100,7 +106,8 @@ class AuthenticationPlugin extends Plugin {
         return $CInfo;
     }
 
-    public function login() {
+    public function login()
+    {
         // If the user's already logged in,
         // redirect them to the index page
         if ($this->request->user) {
@@ -140,7 +147,8 @@ class AuthenticationPlugin extends Plugin {
         }
     }
 
-    public function twofactor_login_form() {
+    public function twofactor_login_form()
+    {
         if ($this->request->session->getFlag(SESSION::TWO_FACTOR)) {
             return new Redirect('/');
         }
@@ -156,7 +164,8 @@ class AuthenticationPlugin extends Plugin {
         return new Rendered('@Authentication/twofactor_login.html.twig', ['user' => $user]);
     }
 
-    public function twofactor_login() {
+    public function twofactor_login()
+    {
         if (!isset($this->request->post['token']) || !isset($this->request->post['code'])) {
             $this->flasher->error("Authentication failure.");
             return new Redirect('/twofactor/login');
@@ -175,7 +184,8 @@ class AuthenticationPlugin extends Plugin {
         return $this->request->back();
     }
 
-    public function twofactor_recover_form() {
+    public function twofactor_recover_form()
+    {
         if ($this->request->session->getFlag(SESSION::TWO_FACTOR)) {
             return new Redirect('/');
         }
@@ -200,25 +210,32 @@ class AuthenticationPlugin extends Plugin {
         );
     }
 
-    public function twofactor_recover() {
+    public function twofactor_recover()
+    {
     }
 
-    public function logout() {
+    public function logout()
+    {
         $token=$this->request->post['token'];
         $this->secretary->checkToken($token, 'users.logout', 600);
         $this->auth->unauthenticate();
         return new Redirect('/');
     }
 
-    public function disabled_form() {
+    public function disabled_form()
+    {
         if ($this->request->user) {
             return new Redirect('/');
         }
         $flash = $this->flasher->grabFlashes();
-        if (!empty($flash)) $flash = $flash[0];
+        if (!empty($flash)) {
+            $flash = $flash[0];
+        }
 
         $nick = '';
-        if (isset($flash->data->username)) $nick = $flash->data->username;
+        if (isset($flash->data->username)) {
+            $nick = $flash->data->username;
+        }
 
         $nick = preg_replace('/[^a-zA-Z0-9\[\]\\`\^\{\}\|_]/', '', $nick);
         if (strlen($nick) == 0) {
@@ -236,7 +253,8 @@ class AuthenticationPlugin extends Plugin {
         );
     }
 
-    public function pwned_form() {
+    public function pwned_form()
+    {
         if ($this->request->user) {
             return new Redirect('/');
         }

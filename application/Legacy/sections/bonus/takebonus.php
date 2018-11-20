@@ -8,15 +8,20 @@ $P=array();
 $P=db_array($_POST);
 
 $ItemID = empty($P['itemid']) ? '' : $P['itemid'];
-if(!is_number($ItemID))  error(0);
+if (!is_number($ItemID)) {
+    error(0);
+}
 $UserID = empty($P['userid']) ? '' : $P['userid'];
-if(!is_number($UserID))  error(0);
-if($UserID != $LoggedUser['ID'])  error(0);
+if (!is_number($UserID)) {
+    error(0);
+}
+if ($UserID != $LoggedUser['ID']) {
+    error(0);
+}
 
 $ShopItem = get_shop_item($ItemID);
 
 if (!empty($ShopItem) && is_array($ShopItem)) {
-
     list($ItemID, $Title, $Description, $Action, $Value, $Cost) = $ShopItem;
 
     $OtherID = true;
@@ -26,11 +31,10 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
     if ($forother!==false) {
         $Othername = empty($P['othername']) ? '' : $P['othername'];
         if ($Othername) {
-
             $DB->query("SELECT ID From users_main WHERE Username='$Othername'");
             if (($DB->record_count()) > 0) {
                 list($OtherID) = $DB->next_record();
-                if(blockedGift($OtherID, $LoggedUser['ID'])) {
+                if (blockedGift($OtherID, $LoggedUser['ID'])) {
                     $ResultMessage = "You cannot donate to this user";
                     header("Location: bonus.php?action=msg&result=" .urlencode($ResultMessage));
                     die();
@@ -50,15 +54,13 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
 
     // again lets not trust the check on the previous page as to whether they can afford it
     if ($OtherID && ($Cost <= $Credits)) {
-
         $UpdateSet = array();
         $UpdateSetOther = array();
 
-        switch($Action) {  // atm hardcoded in db:  givecredits, givegb, gb, slot, title, badge
-            case 'badge' :
-
+        switch ($Action) {  // atm hardcoded in db:  givecredits, givegb, gb, slot, title, badge
+            case 'badge':
                 $UserBadgeIDs = get_user_shop_badges_ids($UserID);
-                if ( in_array($Value, $UserBadgeIDs)) {
+                if (in_array($Value, $UserBadgeIDs)) {
                     $ResultMessage='Something bad happened (duplicate badge insertion)';
                     break;
                 }
@@ -85,11 +87,13 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                 $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought a $Title badge.");
                 $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
 
-                $DB->query( "INSERT INTO users_badges (UserID, BadgeID, Description)
+                $DB->query("INSERT INTO users_badges (UserID, BadgeID, Description)
                                   VALUES ( '$UserID', '$Value', '$Description')");
 
                 $DB->query("SELECT Badge, Rank FROM badges WHERE ID='$Value'");
-                if ($DB->record_count() == 0) error(0);
+                if ($DB->record_count() == 0) {
+                    error(0);
+                }
                 list($Badge, $Rank) = $DB->next_record();
 
                 // remove lower ranked badges of same badge set
@@ -108,19 +112,22 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                 break;
 
             case 'givecredits':
-
-                $Summary = sqltime()." | +".number_format ($Value)." credits | ".ucfirst("you received a gift of ".number_format ($Value)." credits from {$LoggedUser['Username']}");
+                $Summary = sqltime()." | +".number_format($Value)." credits | ".ucfirst("you received a gift of ".number_format($Value)." credits from {$LoggedUser['Username']}");
                 $UpdateSetOther[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
                 $UpdateSetOther[]="m.Credits=(m.Credits+'$Value')";
 
-                $Summary = sqltime()." | -".number_format ($Cost)." credits | ".ucfirst("you gave a gift of ".number_format ($Value)." credits to {$P['othername']}");
+                $Summary = sqltime()." | -".number_format($Cost)." credits | ".ucfirst("you gave a gift of ".number_format($Value)." credits to {$P['othername']}");
                 $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
                 $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
                 $ResultMessage=$Summary;
 
                 $AddMessage = isset($P['message']) && $P['message']?"[br][br]Message from sender:[br][br]{$_POST['message']}":'';
-                send_pm($OtherID, 0, db_string("Bonus Shop - You received a gift of credits"),
-                        db_string("[br]You received a gift of ".number_format ($Value)." credits from [user]{$LoggedUser['ID']}[/user]{$AddMessage}"));
+                send_pm(
+                    $OtherID,
+                    0,
+                    db_string("Bonus Shop - You received a gift of credits"),
+                    db_string("[br]You received a gift of ".number_format($Value)." credits from [user]{$LoggedUser['ID']}[/user]{$AddMessage}")
+                );
 
                 break;
 
@@ -129,16 +136,15 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                 if ($LoggedUser['BytesDownloaded'] <= 0) {
                     $ResultMessage= "You have no download to deduct from!";
                 } else {
-
                     $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought -$Value gb.");
-                    if($LoggedUser['BytesDownloaded'] < $ValueBytes)
+                    if ($LoggedUser['BytesDownloaded'] < $ValueBytes) {
                         $Summary .= " | NOTE: Could only remove ". get_size($LoggedUser['BytesDownloaded']);
+                    }
                     $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
 
                     $UpdateSet[]="m.Downloaded=(m.Downloaded-'$ValueBytes')";
                     $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
                     $ResultMessage=$Summary;
-
                 }
                 break;
 
@@ -153,8 +159,12 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                 $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
 
                 $AddMessage = isset($P['message']) && $P['message']?"[br][br]Message from sender:[br][br]{$_POST['message']}":'';
-                send_pm($OtherID, 0, db_string("Bonus Shop - You received a gift of -gb"),
-                     db_string("[br]You received a gift of -".number_format ($Value)." gb from [user]{$LoggedUser['ID']}[/user]{$AddMessage}"));
+                send_pm(
+                    $OtherID,
+                    0,
+                    db_string("Bonus Shop - You received a gift of -gb"),
+                    db_string("[br]You received a gift of -".number_format($Value)." gb from [user]{$LoggedUser['ID']}[/user]{$AddMessage}")
+                );
 
                 $UpdateSetOther[]="m.Downloaded=(m.Downloaded-'$ValueBytes')";
                 $ResultMessage=$Summary;
@@ -162,7 +172,6 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                 break;
 
             case 'slot':
-
                 $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought $Value slot".($Value>1?'s':'').".");
                 $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
                 $UpdateSet[]="m.FLTokens=(m.FLTokens+'$Value')";
@@ -171,7 +180,6 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                 break;
 
             case 'pfl':
-
                 $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought $Value hour".($Value>1?'s':'')." of personal freeleech.");
                 $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
                 $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
@@ -202,7 +210,7 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                     if ($tlen > 32) {
                         $ResultMessage = "Title was too long ($tlen characters, max=32)";
                     } else {
-                        $NewTitle = db_string( display_str($NewTitle) );
+                        $NewTitle = db_string(display_str($NewTitle));
                         $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought a new custom title ''$NewTitle''.");
                         $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
                         $UpdateSet[]="m.Title='$NewTitle'";
@@ -213,48 +221,40 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                 break;
 
             case 'ufl':
-
                 $GroupID = empty($_POST['torrentid']) ? '' : (int) $_POST['torrentid'];
 
                 if (!$GroupID) {
                     $ResultMessage = "TorrentID was not set";
                 } else {
-
                     $DB->query("SELECT UserID, Name, FreeTorrent, Size FROM torrents AS t JOIN torrents_group AS tg ON t.GroupID=tg.ID WHERE GroupID='$GroupID'");
-                    if ($DB->record_count()==0)
+                    if ($DB->record_count()==0) {
                         $ResultMessage = "Could not find any torrent with ID=$GroupID";
-                    else {
+                    } else {
                         list($OwnerID, $TName, $FreeTorrent, $Sizebytes) = $DB->next_record();
                         if ($OwnerID != $LoggedUser['ID']) {
-
                             $ResultMessage = "You are not the owner of torrent with ID=$GroupID - only the uploader can buy Universal Freeleech for their torrent";
-
                         } elseif ($FreeTorrent == '1') {
-
                             $ResultMessage = "Torrent $TName is already freeleech!";
-
-                        } elseif ($Sizebytes < get_bytes($Value.'gb') ) {
-
+                        } elseif ($Sizebytes < get_bytes($Value.'gb')) {
                             $ResultMessage = "Torrent $TName (" . get_size($Sizebytes, 2). ") is too small for a > $Value gb freeleech!";
-
                         } else {
-
                             // make torrent FL
                             freeleech_groups($GroupID, 1, true);
 
                             $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought a universal freeleech ($Value gb+) for torrent [torrent]{$GroupID}[/torrent]");
                             $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
                             $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
-                            $ResultMessage= sqltime()." | -$Cost credits | ".ucfirst("you bought a universal freeleech ($Value gb+) for torrent $TName"); ;
+                            $ResultMessage= sqltime()." | -$Cost credits | ".ucfirst("you bought a universal freeleech ($Value gb+) for torrent $TName");
+                            ;
                         }
                     }
                 }
                 break;
 
-           default:
-               $Cost = 0;
-               $ResultMessage ='No valid action!';
-               break;
+            default:
+                $Cost = 0;
+                $ResultMessage ='No valid action!';
+                break;
         }
 
         if ($UpdateSetOther) {
@@ -275,8 +275,9 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
 
 // Go back
 $Msg ='';
-if (isset($_REQUEST['retu']) && is_number($_REQUEST['retu']))
+if (isset($_REQUEST['retu']) && is_number($_REQUEST['retu'])) {
     $Msg .= "&retu=".$_REQUEST['retu'];
-elseif (isset($_REQUEST['rett']) && is_number($_REQUEST['rett']))
+} elseif (isset($_REQUEST['rett']) && is_number($_REQUEST['rett'])) {
     $Msg .= "&rett=".$_REQUEST['rett'];
+}
 header("Location: bonus.php?action=msg&". (!empty($ResultMessage) ? "result=" .urlencode($ResultMessage):"").$Msg);

@@ -1,5 +1,6 @@
 <?php
 namespace Luminance\Legacy;
+
 /*******************************************************************************
 |~~~~ Gazelle bencode parser											   ~~~~|
 --------------------------------------------------------------------------------
@@ -101,9 +102,9 @@ class Torrent extends BencodeDict
     public function set_multi_announce($Announces)
     {
         foreach ($Announces as $Announce) {
-            $AnnounceList[] = new BencodeList(array($Announce),true);
+            $AnnounceList[] = new BencodeList(array($Announce), true);
         }
-        $AnnounceList = new BencodeList($AnnounceList,true);
+        $AnnounceList = new BencodeList($AnnounceList, true);
         $this->Val['announce-list'] = $AnnounceList;
     }
 
@@ -129,7 +130,7 @@ class Torrent extends BencodeDict
                 $TotalSize+=$File->Val['length'];
                 $FileSize = $File->Val['length'];
 
-                $FileName = ltrim(implode('/',$File->Val['path']->Val), '/');
+                $FileName = ltrim(implode('/', $File->Val['path']->Val), '/');
 
                 $FileList[] = array($FileSize, $FileName);
                 $FileNames[] = $FileName;

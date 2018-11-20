@@ -124,7 +124,9 @@ list($NumResults) = $DB->next_record();
                 $TorrentTags = array();
                 $numtags=0;
                 foreach ($TagList as $Tag) {
-                    if ($numtags++>=$LoggedUser['MaxTags'])  break;
+                    if ($numtags++>=$LoggedUser['MaxTags']) {
+                        break;
+                    }
                     if (!isset($Tags[$Tag])) {
                         $Tags[$Tag] = array('name' => $Tag, 'count' => 1);
                     } else {
@@ -171,7 +173,7 @@ list($NumResults) = $DB->next_record();
                         <strong><?= $DisplayName ?></strong>
                         <?php  if ($LoggedUser['HideTagsInLists'] !== 1) {
                                 echo $TorrentTags;
-                           } ?>
+} ?>
                     </td>
                     <td class="nobr"><?= get_size($Torrent['Size']) ?></td>
                     <td><?= number_format($Torrent['Snatched']) ?></td>
@@ -180,7 +182,7 @@ list($NumResults) = $DB->next_record();
                 </tr>
             <?php
             $TorrentTable.=ob_get_clean();
-        }
+            }
         ?>
             <!-- I hate that proton is making me do it like this -->
             <table style="margin-top: 8px">
@@ -201,7 +203,7 @@ list($NumResults) = $DB->next_record();
                     <td><!-- expand/collapse --></td>
         <?php  if (!$LoggedUser['HideCollage']) { ?>
                         <td style="padding: 0"><!-- image --></td>
-                <?php  } ?>
+        <?php  } ?>
                     <td width="70%"><strong>Torrents</strong></td>
                     <td>Size</td>
                     <td class="sign"><img src="static/styles/<?= $LoggedUser['StyleName'] ?>/images/snatched.png" alt="Snatches" title="Snatches" /></td>
@@ -210,7 +212,7 @@ list($NumResults) = $DB->next_record();
                 </tr>
         <?= $TorrentTable ?>
             </table>
-    <?php  } // foreach() ?>
+        <?php  } // foreach() ?>
     <?php  }
 ?>
 </div>

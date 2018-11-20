@@ -17,15 +17,15 @@ if ($ConvID = (int) $_GET['convid']) {
         if (!empty($_GET['to'])) {
             $Level = 0;
             switch ($_GET['to']) {
-                case 'staff' :  // in this context 'staff' == Mod Pervs
+                case 'staff':  // in this context 'staff' == Mod Pervs
                     $Level = 500; //  650;
                     $ClassName = 'Mods';
                     break;
-                case 'admin' :  // in this context 'admin' == Admins+
+                case 'admin':  // in this context 'admin' == Admins+
                     $Level = 600; // 700;
                     $ClassName = 'Admins';
                     break;
-                default :
+                default:
                     error(404);
                     break;
             }
@@ -41,7 +41,6 @@ if ($ConvID = (int) $_GET['convid']) {
         // FLS trying to assign non-FLS conversation
         error(403);
     }
-
 } elseif ($ConvID = (int) $_POST['convid']) {
     // Staff (via ajax), get current assign of conversation
     $DB->query("SELECT Level, AssignedToUser FROM staff_pm_conversations WHERE ID=$ConvID");
@@ -70,15 +69,12 @@ if ($ConvID = (int) $_GET['convid']) {
             $DB->query("UPDATE staff_pm_conversations SET Status='Unanswered', AssignedToUser=$NewLevel, Level=$Level WHERE ID=$ConvID");
             $Message = sqltime()." - Assigned to ".$UserInfo['Username']."  by ".$LoggedUser['Username'];
             make_staffpm_note($Message, $ConvID);
-
         }
         echo '1';
-
     } else {
         // Staff member is not allowed to assign conversation
         echo '-1';
     }
-
 } else {
     // No id
     header('Location: staffpm.php?view=open');

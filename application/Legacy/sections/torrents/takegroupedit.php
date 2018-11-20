@@ -20,9 +20,8 @@ if (!$CanEdit) {
     $DB->query("SELECT UserID, Time FROM torrents WHERE GroupID='$GroupID'");
     list($AuthorID, $AddedTime) = $DB->next_record();
     if ($LoggedUser['ID'] == $AuthorID) {
-        if (  check_perms ('site_edit_torrents') &&
-             (check_perms ('site_edit_override_timelock') || time_ago($AddedTime)< TORRENT_EDIT_TIME) ) {
-
+        if (check_perms('site_edit_torrents') &&
+             (check_perms('site_edit_override_timelock') || time_ago($AddedTime)< TORRENT_EDIT_TIME) ) {
             $CanEdit = true;
         } else {
             error("Sorry - you only have ". date('z\d\a\y\s i\m\i\n\s', TORRENT_EDIT_TIME). "  to edit your torrent before it is automatically locked.");
@@ -31,13 +30,15 @@ if (!$CanEdit) {
 }
 
 //check user has permission to edit
-if (!$CanEdit) { error(403); }
+if (!$CanEdit) {
+    error(403);
+}
 
 // Variables for database input - with edit, the variables are passed with POST
 $OldCategoryID = (int) $_POST['oldcategoryid'];
 $CategoryID = (int) $_POST['categoryid'];
 
-$Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']), true, false);
+$Text->validate_bbcode($_POST['body'], get_permissions_advtags($LoggedUser['ID']), true, false);
 
 $whitelist_regex = get_whitelist_regex();
 
@@ -48,7 +49,7 @@ $Validate->SetFields('body', '1', 'desc', 'Description', array('minimages'=>1, '
 $Err = $Validate->ValidateForm($_POST, $Text); // Validate the form
 
 if ($Err) { // Show the upload form, with the data the user entered
-    $HasDescriptionData = TRUE; /// tells editgroup to use $Body and $Image vars instead of requerying them
+    $HasDescriptionData = true; /// tells editgroup to use $Body and $Image vars instead of requerying them
     $_GET['groupid'] = $GroupID;
     $Name = display_str($_POST['name']);
     $AuthorID = display_str($_POST['authorid']);
@@ -103,7 +104,6 @@ if ($OldCategoryID != $CategoryID) {
     $TagID = $DB->inserted_id();
 
     if (empty($LoggedUser['NotVoteUpTags'])) {
-
         $DB->query("INSERT INTO torrents_tags
                     (TagID, GroupID, UserID, PositiveVotes) VALUES
                     ($TagID, $GroupID, $LoggedUser[ID], 9)
@@ -112,11 +112,9 @@ if ($OldCategoryID != $CategoryID) {
         $DB->query("INSERT IGNORE INTO torrents_tags_votes (TagID, GroupID, UserID, Way) VALUES
                                 ($TagID, $GroupID, $LoggedUser[ID], 'up');");
     } else {
-
         $DB->query("INSERT IGNORE INTO torrents_tags
                     (TagID, GroupID, UserID, PositiveVotes) VALUES
                     ($TagID, $GroupID, $LoggedUser[ID], 8); ");
-
     }
 }
 
@@ -185,10 +183,15 @@ if ($Body != $OrigBody) {
     $LogDetails .= "{$Concat}Description";
     $Concat = ', ';
 }
-if($Image != $OrigImage) $LogDetails .= "{$Concat}Image";
+if ($Image != $OrigImage) {
+    $LogDetails .= "{$Concat}Image";
+}
 
-if($_POST['summary'] != '') $Summary = db_string(" ({$_POST['summary']})");
-else $Summary='';
+if ($_POST['summary'] != '') {
+    $Summary = db_string(" ({$_POST['summary']})");
+} else {
+    $Summary='';
+}
 
 write_log("Torrent $TorrentIDs ($OrigName) was edited by ".$LoggedUser['Username']." ($LogDetails)"); //in group $GroupID
 write_group_log($GroupID, $TorrentIDs, $LoggedUser['ID'], "Torrent edited: $LogDetails$Summary", 0);

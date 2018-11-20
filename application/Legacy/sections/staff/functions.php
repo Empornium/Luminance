@@ -109,10 +109,11 @@ function get_user_languages($UserID)
     if ($Userlangs) {
         $Str = '<span class="languages" style="float:right;">';
         foreach ($Userlangs as $langresult) {
-            if ($langresult['cc'])
+            if ($langresult['cc']) {
                 $Str .= '<img style="vertical-align: bottom" alt="['.$langresult['code'].']" title="['.$langresult['code'].'] '.$langresult['language'].'" src="//'. SITE_URL . '/static/common/flags/iso16/'.$langresult['cc'].'.png" />&nbsp;';
-            else
+            } else {
                 $Str .= '<span class="language" title="['.$langresult['code'].'] '.$langresult['language'].'" >['.$langresult['code'].']&nbsp;';
+            }
         }
         $Str .= '</span>';
     }
@@ -145,13 +146,16 @@ function parse_staff_notes($Notes)
 
     # Identification
     foreach ($Notes as $Note) {
-        if (empty($Note)) continue;
+        if (empty($Note)) {
+            continue;
+        }
 
         $Found = false;
         foreach ($Filters as &$Filter) {
             // Init filter count
-            if (!isset($Filter['count']))
+            if (!isset($Filter['count'])) {
                 $Filter['count'] = 0;
+            }
 
             if (preg_match("/^".$DateRegEx.' - '.$Filter['rule']."/i", $Note)) {
                 $ParsedNotes[] = "<span class=\"staffnote-".trim_filter($Filter['name'])."\">$Note</span>";

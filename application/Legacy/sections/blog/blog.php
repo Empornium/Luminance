@@ -3,7 +3,9 @@
 $Text = new Luminance\Legacy\Text;
 
 
-if (!in_array($blogSection,['Blog', 'Contests'])) $blogSection = 'Blog';
+if (!in_array($blogSection, ['Blog', 'Contests'])) {
+    $blogSection = 'Blog';
+}
 
 $blog = getBlogPosts($blogSection);
 
@@ -13,17 +15,21 @@ if ($blog) {
         if ($LoggedUser['LastRead'.$blogSection] != $blog[0]['ID']) {
             // this check is done at top of page but we put it here again to stress how sure
             // we have to be before inserting this var directly into the sql
-            if (!in_array($blogSection,['Blog', 'Contests'])) $blogSection = 'Blog';
-            $master->db->raw_query("UPDATE users_info SET LastRead$blogSection = :blogid WHERE UserID = :userid",
-                                    [':blogid' => $blog[0]['ID'],
-                                     ':userid' => $LoggedUser['ID']]);
+            if (!in_array($blogSection, ['Blog', 'Contests'])) {
+                $blogSection = 'Blog';
+            }
+            $master->db->raw_query(
+                "UPDATE users_info SET LastRead$blogSection = :blogid WHERE UserID = :userid",
+                [':blogid' => $blog[0]['ID'],
+                ':userid' => $LoggedUser['ID']]
+            );
             $LoggedUser['LastRead'.$blogSection] = $blog[0]['ID'];
         }
         $master->repos->users->uncache($LoggedUser['ID']);
     }
 }
 
-show_header($blogSection,'bbcode');
+show_header($blogSection, 'bbcode');
 
 ?>
 <div class="thin">
@@ -43,22 +49,21 @@ if (check_perms('admin_manage_blog')) {
 }
 
 if ($blog) {
-
 ?>
     <div class="thin">
 <?php
-        foreach ($blog as $item) {
+foreach ($blog as $item) {
 ?>
-            <div id="blog<?=$item['ID']?>" class="head">
-                <strong><?=$item['Title']?></strong> - posted <?=time_diff($item['Time']);?> by <?=$item['Username']?>
+<div id="blog<?=$item['ID']?>" class="head">
+<strong><?=$item['Title']?></strong> - posted <?=time_diff($item['Time']);?> by <?=$item['Username']?>
 <?php       if (check_perms('admin_manage_blog')) { ?>
                 - <a href="/<?=$thispage?>?action=editpost&amp;id=<?=$item['ID']?>">[Edit]</a>
                 <a href="/<?=$thispage?>?action=deletepost&amp;id=<?=$item['ID']?>&amp;auth=<?=$LoggedUser['AuthKey']?>">[Delete]</a>
 <?php       }       ?>
-            </div>
-            <div class="box blog">
+</div>
+<div class="box blog">
 <?php
-            if ($item['Image'] ) { ?>
+if ($item['Image']) { ?>
                 <div class="pad center">
                     <img style="max-width: 100%;max-height:1000px;" src="<?=$item['Image']?>" />
                 </div>
@@ -71,12 +76,12 @@ if ($blog) {
 <?php           if (check_perms('admin_manage_blog')) { ?>
                     &nbsp;<a href="/<?=$thispage?>?action=removelink&amp;id=<?=$item['ID']?>&amp;auth=<?=$LoggedUser['AuthKey']?>">[Remove link]</a>
 <?php           }
-            } ?>
-                </div>
-            </div>
-            <br />
+} ?>
+        </div>
+    </div>
+    <br />
 <?php
-        }
+}
 ?>
     </div>
 <?php

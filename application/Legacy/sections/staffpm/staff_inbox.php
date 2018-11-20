@@ -36,23 +36,25 @@ $InternalView = $View;
 
 $WhereCondition .= " WHERE ";
 if (!empty($_GET['search'])) {
-        if(isset($_GET['allfolders']) && $_GET['allfolders'] == '1'){
-            $InternalView = 'allfolders';
-        }
+    if (isset($_GET['allfolders']) && $_GET['allfolders'] == '1') {
+        $InternalView = 'allfolders';
+    }
         $Search = db_string($_GET['search']);
-       if ($_GET['searchtype'] == "subject") {
-            $Words = explode(' ', $Search);
-            $WhereCondition .= "c.Subject LIKE '%".implode("%' AND c.Subject LIKE '%", $Words)."%' AND ";
-        } elseif ($_GET['searchtype'] == "user") {
-            $WhereCondition .= "um.Username LIKE '".$Search."' AND ";
-        } elseif ($_GET['searchtype'] == "message") {
-            $Words = explode(' ', $Search);
-            $WhereCondition .= "m.Message LIKE '%".implode("%' AND m.Message LIKE '%", $Words)."%' AND ";
-        }
+    if ($_GET['searchtype'] == "subject") {
+        $Words = explode(' ', $Search);
+        $WhereCondition .= "c.Subject LIKE '%".implode("%' AND c.Subject LIKE '%", $Words)."%' AND ";
+    } elseif ($_GET['searchtype'] == "user") {
+        $WhereCondition .= "um.Username LIKE '".$Search."' AND ";
+    } elseif ($_GET['searchtype'] == "message") {
+        $Words = explode(' ', $Search);
+        $WhereCondition .= "m.Message LIKE '%".implode("%' AND m.Message LIKE '%", $Words)."%' AND ";
+    }
 }
 
 // Only let people who can stealth resolve view these messages.
-if (($View == 'stealthresolved') && !(check_perms('admin_stealth_resolve'))) $View='error';
+if (($View == 'stealthresolved') && !(check_perms('admin_stealth_resolve'))) {
+    $View='error';
+}
 
 switch ($InternalView) {
     case 'open':
@@ -81,7 +83,7 @@ switch ($InternalView) {
     case 'allfolders':
     default:
         $ViewString = "All folders";
-        if(!check_perms('admin_stealth_resolve')) {
+        if (!check_perms('admin_stealth_resolve')) {
             $WhereCondition .= "(Level <= $UserLevel OR AssignedToUser='".$LoggedUser['ID']."') AND StealthResolved=False";
         } else {
             $WhereCondition .= "(Level <= $UserLevel OR AssignedToUser='".$LoggedUser['ID']."')";
@@ -121,7 +123,7 @@ if (empty($CurURL)) {
 } else {
     $CurURL = "staffpm.php?".$CurURL."&";
 }
-$Pages=get_pages($Page,$NumResults,MESSAGES_PER_PAGE,9);
+$Pages=get_pages($Page, $NumResults, MESSAGES_PER_PAGE, 9);
 
 $Row = 'a';
 
@@ -129,19 +131,19 @@ $Row = 'a';
 ?>
 <div class="thin">
     <div class="linkbox">
-<?php  	if ($IsStaff) {
-            echo view_link($View, 'my',         "<a href='staffpm.php?view=my'>My unanswered". ($NumMy > 0 ? "($NumMy)":"") ."</a>");
-        }
+<?php   if ($IsStaff) {
+            echo view_link($View, 'my', "<a href='staffpm.php?view=my'>My unanswered". ($NumMy > 0 ? "($NumMy)":"") ."</a>");
+}
             echo view_link($View, 'unanswered', "<a href='staffpm.php?view=unanswered'>All unanswered". ($NumUnanswered > 0 ? " ($NumUnanswered)":"") ."</a>");
-            echo view_link($View, 'open',       "<a href='staffpm.php?view=open'>Open" . ($NumOpen > 0 ? " ($NumOpen)":"") ."</a>");
-            echo view_link($View, 'resolved',   "<a href='staffpm.php?view=resolved'>Resolved</a>");
-        if (check_perms('admin_stealth_resolve')) {
-            echo view_link($View, 'stealthresolved', "<a href='staffpm.php?view=stealthresolved'>Stealth Resolved</a>");
-        }
-            echo view_link($Action, 'responses',     "<a href='staffpm.php?action=responses'>Common Answers</a>");
-        if (check_perms('admin_staffpm_stats')) {
-            echo view_link($Action, 'stats',         "<a href='staffpm.php?action=stats'>StaffPM Stats</a>");
-        } ?>
+            echo view_link($View, 'open', "<a href='staffpm.php?view=open'>Open" . ($NumOpen > 0 ? " ($NumOpen)":"") ."</a>");
+            echo view_link($View, 'resolved', "<a href='staffpm.php?view=resolved'>Resolved</a>");
+if (check_perms('admin_stealth_resolve')) {
+    echo view_link($View, 'stealthresolved', "<a href='staffpm.php?view=stealthresolved'>Stealth Resolved</a>");
+}
+            echo view_link($Action, 'responses', "<a href='staffpm.php?action=responses'>Common Answers</a>");
+if (check_perms('admin_staffpm_stats')) {
+    echo view_link($Action, 'stats', "<a href='staffpm.php?action=stats'>StaffPM Stats</a>");
+} ?>
         <br />
         <br />
         <?=$Pages?>
@@ -155,7 +157,6 @@ if ($DB->record_count() == 0) {
 ?>
         <h2>No messages</h2>
 <?php
-
 } else { ?>
         <form action="staffpm.php" method="get" id="searchbox">
             <div>
@@ -165,7 +166,9 @@ if ($DB->record_count() == 0) {
                 <input type="radio" name="searchtype" value="message" /> Message
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <input type="checkbox" name="allfolders" value="1" <?php
-                         if (isset($_GET['allfolders']) && $_GET['allfolders'] )echo' checked="checked"'?>/> All Folders
+                if (isset($_GET['allfolders']) && $_GET['allfolders']) {
+                    echo' checked="checked"';
+                }?>/> All Folders
                 <input type="text" name="search" value="<?=$_GET['search']?>" style="width: 98%;"
                     onfocus="if (this.value == 'Search') this.value='';"
                     onblur="if (this.value == '') this.value='Search';"
@@ -175,118 +178,122 @@ if ($DB->record_count() == 0) {
         </form>
 <?php
     // Messages, draw table
-    if ($ViewString != 'Resolved' && $IsStaff) {
-        // Open multiresolve form
+if ($ViewString != 'Resolved' && $IsStaff) {
+    // Open multiresolve form
 ?>
-        <form method="post" action="staffpm.php" id="messageform" onsubmit="return anyChecks('messageform')">
-            <input type="hidden" name="action" value="multiresolve" />
-            <input type="hidden" name="view" value="<?=strtolower($View)?>" />
+<form method="post" action="staffpm.php" id="messageform" onsubmit="return anyChecks('messageform')">
+    <input type="hidden" name="action" value="multiresolve" />
+    <input type="hidden" name="view" value="<?=strtolower($View)?>" />
 <?php
-    }
+}
 
     // Table head
 ?>
             <table>
                 <tr class="colhead">
-<?php  				if ($ViewString != 'Resolved' && $IsStaff) { ?>
+<?php               if ($ViewString != 'Resolved' && $IsStaff) { ?>
                     <td width="10"><input type="checkbox" onclick="toggleChecks('messageform',this)" /></td>
-<?php  				} ?>
+<?php               } ?>
                     <td><a href="/<?=header_link('Subject') ?>">Subject</td>
                     <td width="14%"><a href="/<?=header_link('UserID') ?>">User</td>
                     <td width="14%"><a href="/<?=header_link('Date') ?>">Date</td>
                     <td width="14%"><a href="/<?=header_link('Level') ?>">Assigned to</td>
-<?php 				if ($ViewString == 'Resolved') { ?>
+<?php               if ($ViewString == 'Resolved') { ?>
                     <td width="14%"><a href="/<?=header_link('ResolverID') ?>">Resolved by</td>
-<?php 				} else { ?>
+<?php               } else { ?>
                     <td width="14%"><a href="/<?=header_link('Status') ?>">Status</td>
-<?php 				}  ?>
+<?php               }  ?>
                 </tr>
 <?php
 
     // List messages
-    while (list($ID, $Subject, $UserID, $Status, $Level, $AssignedToUser, $Date, $Unread, $ResolverID, $Urgent) = $DB->next_record()) {
+while (list($ID, $Subject, $UserID, $Status, $Level, $AssignedToUser, $Date, $Unread, $ResolverID, $Urgent) = $DB->next_record()) {
+    if (empty($Urgent)) {
+        $Urgent = 'No';
+    }
+    $Row = ($Row === 'a') ? 'b' : 'a';
+    $RowClass = ($Unread==1 ? 'unreadpm' : 'row'.$Row);
 
-        if (empty($Urgent)) $Urgent = 'No';
-        $Row = ($Row === 'a') ? 'b' : 'a';
-        $RowClass = ($Unread==1 ? 'unreadpm' : 'row'.$Row);
+    $UserInfo = user_info($UserID);
+    $UserStr = format_username($UserID, $UserInfo['Username'], $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
 
-        $UserInfo = user_info($UserID);
-        $UserStr = format_username($UserID, $UserInfo['Username'], $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
+    // Unused and triggers a PHP Warning
+    //$AssignedStr = format_username();
 
-        // Unused and triggers a PHP Warning
-        //$AssignedStr = format_username();
-
-        // Get assigned
-        if ($AssignedToUser == '') {
-            // Assigned to class
-            $Assigned = ($Level == 0) ? '<span class="rank" style="color:#49A5FF">First Line Support</span>' : make_class_string($ClassLevels[$Level]['ID'], TRUE);
-            // No + on Sysops
-            if ($Level != 1000) { $Assigned .= "+"; }
-
-        } else {
-            // Assigned to user
-            $UserInfo = user_info($AssignedToUser);
-            $Assigned = format_username($AssignedToUser, $UserInfo['Username'], $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
-
+    // Get assigned
+    if ($AssignedToUser == '') {
+        // Assigned to class
+        $Assigned = ($Level == 0) ? '<span class="rank" style="color:#49A5FF">First Line Support</span>' : make_class_string($ClassLevels[$Level]['ID'], true);
+        // No + on Sysops
+        if ($Level != 1000) {
+            $Assigned .= "+";
         }
+    } else {
+        // Assigned to user
+        $UserInfo = user_info($AssignedToUser);
+        $Assigned = format_username($AssignedToUser, $UserInfo['Username'], $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
+    }
 
-        switch ($Status) {
-            case 'Open':
-                $StatusStr = '<span style="color:green">Open</span>';
-                break;
-            case 'Unanswered':
-                $StatusStr = '<span style="color:red">Unanswered</span>';
-                break;
-            case 'User Resolved':
-                $StatusStr = '<span style="color:blue">User Resolved</span>';
-                break;
-            case 'Resolved':
-                $StatusStr = '<span style="color:green">Resolved</span>';
-                break;
-            default:
-                $StatusStr = '<span style="color:red; font-weight:bold">Error</span>';
-                break;
+    switch ($Status) {
+        case 'Open':
+            $StatusStr = '<span style="color:green">Open</span>';
+            break;
+        case 'Unanswered':
+            $StatusStr = '<span style="color:red">Unanswered</span>';
+            break;
+        case 'User Resolved':
+            $StatusStr = '<span style="color:blue">User Resolved</span>';
+            break;
+        case 'Resolved':
+            $StatusStr = '<span style="color:green">Resolved</span>';
+            break;
+        default:
+            $StatusStr = '<span style="color:red; font-weight:bold">Error</span>';
+            break;
+    }
+    // Get resolver
+    if ($ViewString == 'Resolved') {
+        $UserInfo = user_info($ResolverID);
+        $StatusStr = format_username($ResolverID, $UserInfo['Username'], $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
+        if ($Urgent !='No') {
+            $UserStr .= '<br/><span style="color:red; font-weight:bold;">(User must '.$Urgent.')</span>';
         }
-        // Get resolver
-        if ($ViewString == 'Resolved') {
-            $UserInfo = user_info($ResolverID);
-            $StatusStr = format_username($ResolverID, $UserInfo['Username'], $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
-            if ($Urgent !='No') $UserStr .= '<br/><span style="color:red; font-weight:bold;">(User must '.$Urgent.')</span>';
-        } else {
-            if ($Urgent !='No') $StatusStr .= '<br/><span style="color:red; font-weight:bold;">(User must '.$Urgent.')</span>';
+    } else {
+        if ($Urgent !='No') {
+            $StatusStr .= '<br/><span style="color:red; font-weight:bold;">(User must '.$Urgent.')</span>';
         }
+    }
 
 
 
-        // Table row
+    // Table row
 ?>
-                <tr class="<?=$RowClass?>">
-<?php  				if ($ViewString != 'Resolved' && $IsStaff) { ?>
+        <tr class="<?=$RowClass?>">
+<?php               if ($ViewString != 'Resolved' && $IsStaff) { ?>
                     <td class="center"><input type="checkbox" name="id[]" value="<?=$ID?>" /></td>
-<?php  				} ?>
-                    <td><a href="/staffpm.php?action=viewconv&amp;id=<?=$ID?>"><?=display_str($Subject)?></a></td>
-                    <td><?=$UserStr?></td>
-                    <td><?=time_diff($Date, 2, true)?></td>
-                    <td><?=$Assigned?></td>
-                    <td><?=$StatusStr?></td>
-                </tr>
+<?php               } ?>
+            <td><a href="/staffpm.php?action=viewconv&amp;id=<?=$ID?>"><?=display_str($Subject)?></a></td>
+            <td><?=$UserStr?></td>
+            <td><?=time_diff($Date, 2, true)?></td>
+            <td><?=$Assigned?></td>
+            <td><?=$StatusStr?></td>
+        </tr>
 <?php
 
-        $DB->set_query_id($StaffPMs);
-    }
+$DB->set_query_id($StaffPMs);
+}
 
     // Close table and multiresolve form
 ?>
             </table>
-<?php  		if ($ViewString != 'Resolved' && $IsStaff) { ?>
+<?php       if ($ViewString != 'Resolved' && $IsStaff) { ?>
             <input type="submit" name="MultiResolve" value="Resolve Selected" />
-<?php 		} ?>
+<?php       } ?>
 <?php           if (check_perms('admin_stealth_resolve')) { ?>
             <input type="submit" name="StealthResolve" value="Stealth Resolve Selected" />
 <?php           } ?>
         </form>
 <?php
-
 }
 
 ?>

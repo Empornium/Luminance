@@ -13,10 +13,8 @@ if ($LoggedUser['Class']>=STAFF_LEVEL) { // only interested in staff classes
 
 if (isset($_REQUEST['topic'])) {
     include(SERVER_ROOT.'/Legacy/sections/articles/article.php');
-
 } elseif (isset($_REQUEST['searchtext'])) {
     include(SERVER_ROOT.'/Legacy/sections/articles/results.php');
-
 } else {
     error(0);
 }

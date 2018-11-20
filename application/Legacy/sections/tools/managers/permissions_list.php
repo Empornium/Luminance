@@ -46,10 +46,9 @@ if ($DB->record_count()) {
             <td width="10%" class="center">User Count</td>
             <td width="18%" class="center">Actions</td>
         </tr>
-<?php 	while (list($ID, $Name, $Level, $DisplayStaff, $MaxSigLength, $MaxAvatarWidth,
+<?php   while (list($ID, $Name, $Level, $DisplayStaff, $MaxSigLength, $MaxAvatarWidth,
                     $MaxAvatarHeight, $Color, $IsAutoPromote, $reqWeeks, $reqUploaded,
                     $reqTorrents, $reqForumPosts, $reqRatio, $UserCount)=$DB->next_record()) {
-
 ?>
         <tr <?=$IsAutoPromote=='0'&&$DisplayStaff!='1'? 'title="AutoPromote must be turned ON to see requirements"' : ''; ?>  >
             <td class="center"><span style="font-weight:bold;color: #<?=display_str($Color)?>"><?=display_str($Name); ?></span></td>
@@ -67,7 +66,7 @@ if ($DB->record_count()) {
             <td class="center"><a href="/user.php?action=search&amp;class=<?=$ID ?>"><?=number_format($UserCount); ?></a></td>
             <td class="center">[<a href="/tools.php?action=permissions&amp;id=<?=$ID ?>">Edit</a> | <a href="#" onclick="return confirmDelete(<?=$ID?>)">Remove</a>]</td>
         </tr>
-<?php 	} ?>
+<?php   } ?>
     </table>
 <?php  } else { ?>
     <h3 align="center">There are no permission classes.</h3>
@@ -96,7 +95,7 @@ if ($DB->record_count()) {
             <td width="8%" class="center">Color</td>
             <td width="20%" class="center">Actions</td>
         </tr>
-<?php 	while (list($ID,$Name,$Description,$IsUserClass,$Color,$UserCount)=$DB->next_record()) {  ?>
+<?php   while (list($ID,$Name,$Description,$IsUserClass,$Color,$UserCount)=$DB->next_record()) {  ?>
         <tr>
             <td><?=display_str($Name); ?></td>
             <td><?=display_str($Description); ?></td>
@@ -104,7 +103,7 @@ if ($DB->record_count()) {
             <td class="center"><span style="font-weight:bold;display:block;width:100%;height:100%;color:white;background-color: #<?=display_str($Color)?>">#<?=$Color?></span></td>
             <td class="center">[<a href="/tools.php?action=permissions&amp;id=<?=$ID ?>">Edit</a> | <a href="#" onclick="return confirmDelete(<?=$ID?>)">Remove</a>]</td>
         </tr>
-<?php 	} ?>
+<?php   } ?>
     </table>
 <?php  } else { ?>
     <h3 align="center">There are no group permissions.</h3>

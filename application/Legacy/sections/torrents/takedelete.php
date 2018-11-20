@@ -2,7 +2,9 @@
 authorize();
 
 $TorrentID = $_POST['torrentid'];
-if (!$TorrentID || !is_number($TorrentID)) { error(404); }
+if (!$TorrentID || !is_number($TorrentID)) {
+    error(404);
+}
 
 $DB->query("SELECT
     t.UserID,

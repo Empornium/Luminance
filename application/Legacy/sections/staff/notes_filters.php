@@ -19,15 +19,13 @@ return [
                 'Warned ',
                 '[\w ]+ (changed|modified) ',
                 'Disabled '
-            ]
-        )
+            ])
     ],
     [
         'name'  => 'User actions',
         'rule' => implode('|', [
                 'Someone requested'
-            ]
-        )
+            ])
     ],
     [
         'name'  => 'Credits & bounty',
@@ -39,14 +37,12 @@ return [
                 'Bounty of ',
                 'Added +',
                 'Removed -'
-            ]
-        )
+            ])
     ],
     [
         'name'  => 'Badges',
         'rule' => implode('|', [
                 'Badge '
-            ]
-        )
+            ])
     ]
 ];

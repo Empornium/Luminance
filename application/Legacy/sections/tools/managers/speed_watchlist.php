@@ -17,7 +17,7 @@ if (empty($_GET['order_by']) || !in_array($_GET['order_by'], array('Username', '
     $OrderBy = $_GET['order_by'];
 }
 
-show_header('Watchlist','watchlist');
+show_header('Watchlist', 'watchlist');
 
 ?>
 <div class="thin">
@@ -48,13 +48,13 @@ show_header('Watchlist','watchlist');
     $DB->query("SELECT FOUND_ROWS()");
     list($NumResults) = $DB->next_record();
 
-    $Pages=get_pages($Page,$NumResults,50,9);
+    $Pages=get_pages($Page, $NumResults, 50, 9);
 
 ?>
     <div class="linkbox"><?=$Pages?></div>
 <?php
 
-    print_user_list($Watchlist,'watchlist',"User watch list ($NumResults users)",'watchedred', 'Users in the watch list will have their records retained until they are manually deleted. You can use this information to help detect ratio cheaters.<br/>
+    print_user_list($Watchlist, 'watchlist', "User watch list ($NumResults users)", 'watchedred', 'Users in the watch list will have their records retained until they are manually deleted. You can use this information to help detect ratio cheaters.<br/>
                     note: use the list sparingly - this can quickly fill the database with a huge number of records.');
 
 ?>

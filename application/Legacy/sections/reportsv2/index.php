@@ -14,7 +14,6 @@ include 'array.php';
 
 if (isset($_REQUEST['action'])) {
     switch ($_REQUEST['action']) {
-
         case 'report':
             include 'report.php';
             break;
@@ -65,7 +64,9 @@ if (isset($_REQUEST['action'])) {
     if ($_POST['sendmessage'] == 'Send message to selected user') {
         authorize();
 
-            if(empty($_POST['reportid']) || !is_number($_POST['reportid'])) error(0);
+        if (empty($_POST['reportid']) || !is_number($_POST['reportid'])) {
+            error(0);
+        }
 
             $ReportID = (int) $_POST['reportid'];
             $ConvID = startStaffConversation($_POST['toid'], $_POST['subject'], $_POST['message']);
@@ -76,7 +77,6 @@ if (isset($_REQUEST['action'])) {
                              VALUES ('$ReportID', '$ConvID') ");
 
             header("Location: reportsv2.php?view=report&id=$ReportID");
-
     } elseif (isset($_GET['view'])) {
         include(SERVER_ROOT.'/Legacy/sections/reportsv2/static.php');
     } else {

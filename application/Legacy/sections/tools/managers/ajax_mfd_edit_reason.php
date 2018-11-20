@@ -1,17 +1,18 @@
 <?php
 enforce_login();
-if (!check_perms('torrents_review_manage')) error(403);
+if (!check_perms('torrents_review_manage')) {
+    error(403);
+}
 
-$IsAjax = isset($_POST['submit']) && $_POST['submit'] == 'Save'? FALSE : TRUE;
+$IsAjax = isset($_POST['submit']) && $_POST['submit'] == 'Save'? false : true;
 
 $Sort = isset($_POST['sort'])? trim($_POST['sort']):false;
 $Name = isset($_POST['name'])? trim($_POST['name']):false;
 $Description = isset($_POST['description'])? $_POST['description']:false;
 
 if ($Sort && $Name && $Description && ($Sort != "") && ($Name != "") && (trim($Description) != "")) {
-
     $Text = new Luminance\Legacy\Text;
-    if (!$Text->validate_bbcode($Description,  get_permissions_advtags($LoggedUser['ID']), !$IsAjax)) {
+    if (!$Text->validate_bbcode($Description, get_permissions_advtags($LoggedUser['ID']), !$IsAjax)) {
         echo "There are errors in your bbcode (unclosed tags)";
         die();
     }
@@ -28,8 +29,9 @@ if ($Sort && $Name && $Description && ($Sort != "") && ($Name != "") && (trim($D
             if (!$IsAjax) {
                 $InsertedID = $DB->inserted_id();
                 header("Location: tools.php?action=marked_for_deletion_reasons&added=$InsertedID");
-            } else
+            } else {
                 echo '1';
+            }
         } else {
             $DB->query("SELECT * FROM review_reasons WHERE ID=$ID");
             if ($DB->record_count() != 0) {
@@ -43,23 +45,24 @@ if ($Sort && $Name && $Description && ($Sort != "") && ($Name != "") && (trim($D
                 if (!$IsAjax) {
                     $InsertedID = $DB->inserted_id();
                     header("Location: tools.php?action=marked_for_deletion_reasons&added=$InsertedID");
-                } else
+                } else {
                     echo '1';
+                }
             }
         }
     } else {
         // No id
         if (!$IsAjax) {
             header("Location: tools.php?action=marked_for_deletion_reasons&added=-2");
-        } else
+        } else {
             echo '-2';
+        }
     }
-
 } else {
     // No message/name
     if (!$IsAjax) {
         header("Location: tools.php?action=marked_for_deletion_reasons&added=-1");
-    } else
+    } else {
         echo '-1';
+    }
 }
-

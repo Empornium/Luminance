@@ -3,7 +3,8 @@ if (!extension_loaded('date')) {
     error('Date Extension not loaded.');
 }
 
-function get_timestamp($TimeStamp) {
+function get_timestamp($TimeStamp)
+{
     if ($TimeStamp instanceof \DateTime) {
         $TimeStamp = $TimeStamp->format('Y-m-d H:i:s');
     } elseif (is_int($TimeStamp)) {
@@ -28,7 +29,7 @@ function time_ago($TimeStamp)
     return time() - $TimeStamp;
 }
 
-function time_diff($TimeStamp, $Levels=2, $Span=true, $Lowercase=false, $ForceFormat=-1)
+function time_diff($TimeStamp, $Levels = 2, $Span = true, $Lowercase = false, $ForceFormat = -1)
 {
     global $LoggedUser;
     $TimeNow = get_timestamp($TimeStamp);
@@ -215,28 +216,34 @@ function sqltime($timestamp = false)
 function validDate($DateString)
 {
     $DateTime = explode(" ", $DateString);
-    if (count($DateTime) != 2)
+    if (count($DateTime) != 2) {
         return false;
+    }
     list($Date, $Time) = $DateTime;
     $SplitTime = explode(":", $Time);
-    if (count($SplitTime) != 3)
+    if (count($SplitTime) != 3) {
         return false;
+    }
     list($H, $M, $S) = $SplitTime;
-    if ($H != 0 && !(is_number($H) && $H < 24 && $H >= 0))
+    if ($H != 0 && !(is_number($H) && $H < 24 && $H >= 0)) {
         return false;
-    if ($M != 0 && !(is_number($M) && $M < 60 && $M >= 0))
+    }
+    if ($M != 0 && !(is_number($M) && $M < 60 && $M >= 0)) {
         return false;
-    if ($S != 0 && !(is_number($S) && $S < 60 && $S >= 0))
+    }
+    if ($S != 0 && !(is_number($S) && $S < 60 && $S >= 0)) {
         return false;
+    }
     $SplitDate = explode("-", $Date);
-    if (count($SplitDate) != 3)
+    if (count($SplitDate) != 3) {
         return false;
+    }
     list($Y, $M, $D) = $SplitDate;
 
     return checkDate($M, $D, $Y);
 }
 
-function time_span($TimeStamp, $Levels=2, $Lowercase=false)
+function time_span($TimeStamp, $Levels = 2, $Lowercase = false)
 {
     $TimeStamp = time_ago($TimeStamp);
     if ($TimeStamp === false) {

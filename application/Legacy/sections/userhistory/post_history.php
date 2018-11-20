@@ -28,7 +28,7 @@ list( ,$Username, $PermissionID, $Paranoia, $Donor, $Avatar, $Enabled, $Title) =
 $UserPermissions = get_permissions($PermissionID);
 $UserClass = $UserPermissions['Class'];
 
-show_header('Post history for '.$Username,'jquery,subscriptions,comments,bbcode');
+show_header('Post history for '.$Username, 'jquery,subscriptions,comments,bbcode');
 
 if ($LoggedUser['CustomForums']) {
     unset($LoggedUser['CustomForums']['']);
@@ -98,7 +98,7 @@ if ($ShowGrouped) {
             JOIN forums_topics AS t ON t.ID = p.TopicID
             JOIN forums AS f ON f.ID = t.ForumID
             LEFT JOIN forums_last_read_topics AS l ON l.UserID = '.$UserID.' AND l.TopicID = t.ID
-            WHERE p.ID IN ('.implode(',',$PostIDs).')
+            WHERE p.ID IN ('.implode(',', $PostIDs).')
             ORDER BY p.ID DESC';
         $Posts = $DB->query($sql);
     }
@@ -166,22 +166,22 @@ if ($ShowGrouped) {
 <div class="thin">
     <h2>
 <?php
-    if ($ShowGrouped) {
-        echo "Grouped ".($ShowUnread?"unread ":"")."post history for <a href=\"user.php?id=$UserID\">$Username</a>";
-    } elseif ($ShowUnread) {
-        echo "Unread post history for <a href=\"user.php?id=$UserID\">$Username</a>";
-    } else {
-        echo "Post history for <a href=\"user.php?id=$UserID\">$Username</a>";
-    }
+if ($ShowGrouped) {
+    echo "Grouped ".($ShowUnread?"unread ":"")."post history for <a href=\"user.php?id=$UserID\">$Username</a>";
+} elseif ($ShowUnread) {
+    echo "Unread post history for <a href=\"user.php?id=$UserID\">$Username</a>";
+} else {
+    echo "Post history for <a href=\"user.php?id=$UserID\">$Username</a>";
+}
 ?>
     </h2>
 
     <div class="linkbox">
 <?php
-if (($UserSubscriptions = $Cache->get_value('subscriptions_user_'.$LoggedUser['ID'])) === FALSE) {
+if (($UserSubscriptions = $Cache->get_value('subscriptions_user_'.$LoggedUser['ID'])) === false) {
     $DB->query("SELECT TopicID FROM users_subscriptions WHERE UserID = '$LoggedUser[ID]'");
     $UserSubscriptions = $DB->collect(0);
-    $Cache->cache_value('subscriptions_user_'.$LoggedUser['ID'],$UserSubscriptions,0);
+    $Cache->cache_value('subscriptions_user_'.$LoggedUser['ID'], $UserSubscriptions, 0);
     $DB->set_query_id($Posts);
 }
 
@@ -194,15 +194,15 @@ if ($ViewingOwn) {
             <a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=0&amp;group=1">Show all posts (grouped)</a>&nbsp;&nbsp;&nbsp;
         <?php  } ?>
         <a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=1&amp;group=1">Only display posts with unread replies (grouped)</a>&nbsp;&nbsp;&nbsp;
-<?php 	} else { ?>
+    <?php   } else { ?>
         <br /><br />
         <a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=0&amp;group=0">Show all posts</a>&nbsp;&nbsp;&nbsp;
 <?php
-        if (!$ShowGrouped) {
-            ?><a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=1&amp;group=1">Only display posts with unread replies (grouped)</a>&nbsp;&nbsp;&nbsp;<?php
-        } else {
-            ?><a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=1&amp;group=0">Only display posts with unread replies</a>&nbsp;&nbsp;&nbsp;<?php
-        }
+if (!$ShowGrouped) {
+    ?><a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=1&amp;group=1">Only display posts with unread replies (grouped)</a>&nbsp;&nbsp;&nbsp;<?php
+} else {
+    ?><a href="/userhistory.php?action=posts&amp;userid=<?=$UserID?>&amp;showunread=1&amp;group=0">Only display posts with unread replies</a>&nbsp;&nbsp;&nbsp;<?php
+}
     }
 ?>
             <a href="/userhistory.php?action=subscriptions">Go to forum subscriptions</a>&nbsp;&nbsp;&nbsp;
@@ -227,39 +227,39 @@ if (empty($Results)) {
 ?>
     <div class="linkbox">
 <?php
-    $Pages=get_pages($Page,$Results,$PerPage, 11);
+    $Pages=get_pages($Page, $Results, $PerPage, 11);
     echo $Pages;
 ?>
     </div>
 <?php
     $Key = 0;
     $results = $DB->to_array();
-    foreach($results as $result) {
-        list($PostID, $AddedTime, $Body, $EditedUserID, $EditedTime, $EditedUsername, $TopicID, $ForumID, $ThreadTitle, $LastPostID, $LastRead, $Locked, $Sticky) = $result;
+foreach ($results as $result) {
+    list($PostID, $AddedTime, $Body, $EditedUserID, $EditedTime, $EditedUsername, $TopicID, $ForumID, $ThreadTitle, $LastPostID, $LastRead, $Locked, $Sticky) = $result;
 ?>
-    <table class='forum_post vertical_margin<?=$HeavyInfo['DisableAvatars'] ? ' noavatar' : ''?>' id='post<?=$PostID ?>'>
-        <tr class='smallhead'>
-            <td  colspan="2">
-                <span style="float:left;">
-                    <?=time_diff($AddedTime) ?>
-                    in <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>" title="<?=display_str($ThreadTitle)?>"><?=cut_string($ThreadTitle, 75)?></a>
-                </span>
+<table class='forum_post vertical_margin<?=$HeavyInfo['DisableAvatars'] ? ' noavatar' : ''?>' id='post<?=$PostID ?>'>
+<tr class='smallhead'>
+    <td  colspan="2">
+        <span style="float:left;">
+            <?=time_diff($AddedTime) ?>
+            in <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>" title="<?=display_str($ThreadTitle)?>"><?=cut_string($ThreadTitle, 75)?></a>
+        </span>
 <?php
-        if ($ViewingOwn) {
-            if ((!$Locked  || $Sticky) && (!$LastRead || $LastRead < $LastPostID)) { ?>
+if ($ViewingOwn) {
+    if ((!$Locked  || $Sticky) && (!$LastRead || $LastRead < $LastPostID)) { ?>
                     <span class="newstatus">(New!)</span>
 <?php
-            }
-            if (!empty($LastRead)) { ?>
+    }
+    if (!empty($LastRead)) { ?>
                 <span style="float:left;" class="last_read" title="Jump to last read">
                     <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$LastRead?>#post<?=$LastRead?>"></a>
                 </span>
-<?php       } else { ?>
+    <?php       } else { ?>
                 <span style="float:left;" class="last_read" title="Jump to last read">
                     <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>"></a>
                 </span>
-<?php       }
-        } else { ?>
+    <?php       }
+} else { ?>
             <span style="float:left;" class="last_read" title="Jump to last read">
                 <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>&amp;postid=<?=$PostID?>#post<?=$PostID?>"></a>
             </span>
@@ -269,73 +269,73 @@ if (empty($Results)) {
 ?>
          <a href="#post<?=$PostID?>" onclick="Edit_Form('forums','<?=$PostID?>','<?=$Key++?>');">[Edit]</a>
 <?php   }
-        if ($ForumID != TRASH_FORUM_ID && check_perms('site_moderate_forums') && !$ShowGrouped) {
+if ($ForumID != TRASH_FORUM_ID && check_perms('site_moderate_forums') && !$ShowGrouped) {
 ?>
-         - <a href="#post<?=$PostID?>" onclick="Trash('<?=$TopicID?>','<?=$PostID?>');" title="moves this post to the trash forum">[Trash]</a>
+- <a href="#post<?=$PostID?>" onclick="Trash('<?=$TopicID?>','<?=$PostID?>');" title="moves this post to the trash forum">[Trash]</a>
 <?php   }
-        if (check_perms('site_admin_forums') && !$ShowGrouped) {
+if (check_perms('site_admin_forums') && !$ShowGrouped) {
 ?>
-        - <a href="#post<?=$PostID?>" onclick="Delete('<?=$PostID?>');" title="permenantly delete this post">[Delete]</a>
+- <a href="#post<?=$PostID?>" onclick="Delete('<?=$PostID?>');" title="permenantly delete this post">[Delete]</a>
 <?php   } ?>
-                </span>
+        </span>
 
-                <span id="bar<?=$PostID?>" style="float:right;">
+        <span id="bar<?=$PostID?>" style="float:right;">
 <?php
-        if (!$ShowGrouped) {
+if (!$ShowGrouped) {
 ?>
-                    <a href="/reports.php?action=report&amp;type=posthistory&amp;id=<?=$PostID?>">[Report]</a> -
+        <a href="/reports.php?action=report&amp;type=posthistory&amp;id=<?=$PostID?>">[Report]</a> -
 <?php   } ?>
-                    <a href="#" onclick="Subscribe(<?=$TopicID?>);return false;" class="subscribelink<?=$TopicID?>">[<?=(in_array($TopicID, $UserSubscriptions) ? 'Unsubscribe' : 'Subscribe')?>]</a>
-                    &nbsp;
-                    <a href="#">&uarr;</a>
-                </span>
-            </td>
-        </tr>
+            <a href="#" onclick="Subscribe(<?=$TopicID?>);return false;" class="subscribelink<?=$TopicID?>">[<?=(in_array($TopicID, $UserSubscriptions) ? 'Unsubscribe' : 'Subscribe')?>]</a>
+            &nbsp;
+            <a href="#">&uarr;</a>
+        </span>
+    </td>
+</tr>
 <?php
-        if (!$ShowGrouped) {
+if (!$ShowGrouped) {
 ?>
-        <tr>
+<tr>
 <?php
-            if (empty($HeavyInfo['DisableAvatars'])) {
+if (empty($HeavyInfo['DisableAvatars'])) {
 ?>
-            <td class='avatar' valign="top">
+<td class='avatar' valign="top">
 
-    <?php  if ($Avatar) {   ?>
+<?php  if ($Avatar) {   ?>
             <img src="<?=$Avatar?>" class="avatar" style="<?=get_avatar_css($UserPermissions['MaxAvatarWidth'], $UserPermissions['MaxAvatarHeight'])?>" alt="<?=$Username ?>'s avatar" />
-    <?php  } else { ?>
+<?php  } else { ?>
             <img src="<?=STATIC_SERVER?>common/avatars/default.png" class="avatar" style="<?=get_avatar_css(100, 120)?>" alt="Default avatar" />
     <?php
-         }
-    ?>
-            </td>
-<?php
-            }
+}
 ?>
-            <td class='postbody' valign="top">
-                <div id="content<?=$PostID?>" class="post_container">
-                    <div class="post_content">
-                        <?=$Text->full_format($Body, isset($PermissionsInfo['site_advanced_tags']) &&  $PermissionsInfo['site_advanced_tags'] );?>
-<?php 			if ($EditedUserID) { ?>
+</td>
+<?php
+}
+?>
+<td class='postbody' valign="top">
+    <div id="content<?=$PostID?>" class="post_container">
+        <div class="post_content">
+            <?=$Text->full_format($Body, isset($PermissionsInfo['site_advanced_tags']) &&  $PermissionsInfo['site_advanced_tags']);?>
+<?php           if ($EditedUserID) { ?>
                             <br />
                             <br />
                     </div>
                     <div class="post_footer">
-<?php 				if (check_perms('site_moderate_forums')) { ?>
+<?php               if (check_perms('site_moderate_forums')) { ?>
                             <a href="#content<?=$PostID?>" onclick="LoadEdit('forums', <?=$PostID?>, 1)">&laquo;</a>
-<?php  				} ?>
+<?php               } ?>
                             <span class="editedby">Last edited by
-                                <?=format_username($EditedUserID, $EditedUsername) ?> <?=time_diff($EditedTime,2,true,true)?>
+                                <?=format_username($EditedUserID, $EditedUsername) ?> <?=time_diff($EditedTime, 2, true, true)?>
                             </span>
-<?php 			} ?>
-                    </div>
-                </div>
-            </td>
-        </tr>
+<?php           } ?>
+        </div>
+    </div>
+</td>
+</tr>
 <?php
-        }
+}
 ?>
-    </table>
-<?php  	} ?>
+</table>
+<?php   } ?>
     <div class="linkbox">
 <?=$Pages?>
     </div>

@@ -106,7 +106,7 @@ show_header('Manage invites');
     <div class="thin">
         <h2>Manage invites</h2>
 
-        <?php if(!empty($Results)): ?>
+        <?php if (!empty($Results)) : ?>
             <div class="head">Results</div>
             <div class="box pad">
                 <?= display_str($Results) ?>
@@ -130,7 +130,7 @@ show_header('Manage invites');
                     <div style="display:inline-block;margin-right:20px;vertical-align: top;">
                         <h3>Min class</h3>
                         <select name="min-level">
-                            <?php foreach ($Classes as $Class): ?>
+                            <?php foreach ($Classes as $Class) : ?>
                             <option value="<?= $Class->Level ?>"><?= $Class->Name ?></option>
                             <?php endforeach; ?>
                         </select>
@@ -138,7 +138,7 @@ show_header('Manage invites');
                     <div style="display:inline-block;margin-right:20px;vertical-align: top;">
                         <h3>Max class</h3>
                         <select name="max-level">
-                            <?php foreach ($Classes as $Class): ?>
+                            <?php foreach ($Classes as $Class) : ?>
                                 <option value="<?= $Class->Level ?>"><?= $Class->Name ?></option>
                             <?php endforeach; ?>
                         </select>

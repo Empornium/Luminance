@@ -1,16 +1,22 @@
 <?php
 authorize();
 
-if (!check_perms('users_give_donor'))  error(403);
+if (!check_perms('users_give_donor')) {
+    error(403);
+}
 
-if (!is_numeric($_REQUEST['userid'])) error(0); //  || !is_numeric($_REQUEST['donateid'])
-if (!is_numeric($_REQUEST['amount'])) error(0);
+if (!is_numeric($_REQUEST['userid'])) {
+    error(0); //  || !is_numeric($_REQUEST['donateid'])
+}
+if (!is_numeric($_REQUEST['amount'])) {
+    error(0);
+}
 
 $UserID = (int) $_REQUEST['userid'];
 $amount = round($_REQUEST['amount'], 2);
 
 $public = '';
-for ($i=0;$i<10;$i++) {
+for ($i=0; $i<10; $i++) {
     $try = 'DO_NOT_USE_'. make_secret(30);
     // strictly speaking we should check this 50 char random string is unique...
     $DB->query("SELECT ID FROM bitcoin_donations WHERE public='$try'");
@@ -20,7 +26,9 @@ for ($i=0;$i<10;$i++) {
     }
 }
 // either there is a bug or the laws of probability have stopped working if its not unique after 10 tries
-if ($public=='') error("Could not create a unique dummy address.... something is fubar! (harass a coder immediately)");
+if ($public=='') {
+    error("Could not create a unique dummy address.... something is fubar! (harass a coder immediately)");
+}
 
 $time = sqltime();
 $comment = "(manual payment) donated for ";
@@ -51,8 +59,9 @@ if ($_REQUEST['donategb']) {
     list($downloaded_bytes) = $DB->next_record();
 
     $Summary = sqltime() . ' - ' . "[url=/donate.php?action=my_donations&amp;userid=$UserID]Donated: &euro;$amount.[/url] Download removed: " . get_size($deduct_bytes);
-    if ($downloaded_bytes < $deduct_bytes)
+    if ($downloaded_bytes < $deduct_bytes) {
         $Summary .= " | NOTE: Could only remove " . get_size($downloaded_bytes);
+    }
     $summary .= ", by donation system";
 
     $DB->query("UPDATE users_info as i JOIN users_main as m ON i.UserID=m.ID
@@ -61,13 +70,12 @@ if ($_REQUEST['donategb']) {
                              WHERE m.ID='$UserID'");
 
     $Summary = get_size($deduct_bytes) . " has been deducted from your download.";
-    if ($downloaded_bytes < $deduct_bytes)
+    if ($downloaded_bytes < $deduct_bytes) {
         $Summary .= " | NOTE: Could only remove " . get_size($downloaded_bytes);
+    }
 
     send_pm($UserID, 0, db_string("Thank-you for your donation"), db_string("[br]We have received your donation of &euro;$amount [br][br]:thankyou:[br][br]$Summary"));
-
 } else {
-
     send_pm($UserID, 0, db_string("Thank-you for your donation"), db_string("[br]We have received your donation of &euro;$amount [br][br]:thankyou:[br][br]It's thanks to members like you that this site can carry on :gjob:"));
 
     $Summary = "[url=/donate.php?action=my_donations&amp;userid=$UserID]Donated: &euro;$amount.[/url]";

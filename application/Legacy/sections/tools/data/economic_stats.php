@@ -26,7 +26,9 @@ Tools necessary for economic management
     a. number of users changed by ratio being changed
     b. project effects with intelligent mathematical analysis of a 24, 48 or 72 hour freeleech
 */
-if (!check_perms('site_view_flow')) { error(403); }
+if (!check_perms('site_view_flow')) {
+    error(403);
+}
 show_header('Economy');
 
 if (!$EconomicStats = $Cache->get_value('new_economic_stats')) {
@@ -54,11 +56,14 @@ if (!$EconomicStats = $Cache->get_value('new_economic_stats')) {
     $TotalPeers = $TotalLeechers + $TotalSeeders;
     $DB->query("SELECT COUNT(ID) FROM users_main WHERE(SELECT COUNT(uid) FROM xbt_files_users WHERE uid=users_main.ID)>0");
     list($TotalPeerUsers) = $DB->next_record();
-    $Cache->cache_value('new_economic_stats',
-                array($TotalUpload,$TotalDownload,$NumUsers,$TotalBounty,
+    $Cache->cache_value(
+        'new_economic_stats',
+        array($TotalUpload,$TotalDownload,$NumUsers,$TotalBounty,
                     $AvailableBounty,$TotalSnatches,$TotalTorrents,
                     $TotalOverallSnatches,$TotalSeeders,$TotalPeers,
-                    $TotalPeerUsers), 3600);
+        $TotalPeerUsers),
+        3600
+    );
 } else {
     list($TotalUpload,$TotalDownload,$NumUsers,$TotalBounty,$AvailableBounty,
         $TotalSnatches,$TotalTorrents,$TotalOverallSnatches,$TotalSeeders,
@@ -77,7 +82,7 @@ $TotalLeechers = $TotalPeers - $TotalSeeders;
                 <li><strong>Total download: </strong><?=get_size($TotalDownload)?></li>
                 <li><strong>Total buffer: </strong><?=get_size($TotalUpload-$TotalDownload)?></li>
                 <br />
-                <li><strong>Mean ratio: </strong><?=ratio($TotalUpload,$TotalDownload)?></li>
+                <li><strong>Mean ratio: </strong><?=ratio($TotalUpload, $TotalDownload)?></li>
                 <li><strong>Mean upload: </strong><?=get_size($TotalUpload/$NumUsers)?></li>
                 <li><strong>Mean download: </strong><?=get_size($TotalDownload/$NumUsers)?></li>
                 <li><strong>Mean buffer: </strong><?=get_size(($TotalUpload-$TotalDownload)/$NumUsers)?></li>
@@ -96,8 +101,8 @@ $TotalLeechers = $TotalPeers - $TotalSeeders;
                 <li><strong>Total leechers: </strong><?=number_format($TotalLeechers)?></li>
                 <li><strong>Total peers: </strong><?=number_format($TotalSeeders+$TotalLeechers)?></li>
                 <li><strong>Total snatches: </strong><?=number_format($TotalOverallSnatches)?></li>
-                <li><strong>Seeder/leecher ratio: </strong><?=ratio($TotalSeeders,$TotalLeechers)?></li>
-                <li><strong>Seeder/snatch ratio: </strong><?=ratio($TotalSeeders,$TotalOverallSnatches)?></li>
+                <li><strong>Seeder/leecher ratio: </strong><?=ratio($TotalSeeders, $TotalLeechers)?></li>
+                <li><strong>Seeder/snatch ratio: </strong><?=ratio($TotalSeeders, $TotalOverallSnatches)?></li>
                 <br />
                 <li><strong>Mean seeders per torrent: </strong><?=number_format($TotalSeeders/$TotalTorrents, 2)?></li>
                 <li><strong>Mean leechers per torrent: </strong><?=number_format($TotalLeechers/$TotalTorrents, 2)?></li>

@@ -1,7 +1,7 @@
 <?php
 // error out on invalid requests (before caching)
 if (isset($_GET['details'])) {
-    if (in_array($_GET['details'],array('ul','dl','numul','uls','dls','rat'))) {
+    if (in_array($_GET['details'], array('ul','dl','numul','uls','dls','rat'))) {
         $Details = $_GET['details'];
     } else {
         error(404);
@@ -41,74 +41,74 @@ $BaseQuery = "SELECT
     WHERE u.Enabled='1'
     AND (Paranoia IS NULL OR (Paranoia NOT LIKE '%\"uploaded\"%' AND Paranoia NOT LIKE '%\"downloaded\"%')) ";
 
-    if ($Details=='all' || $Details=='ul') {
-        if (!$TopUserUploads = $Cache->get_value('topuser_ul_'.$Limit)) {
-            $Query = $BaseQuery ."
+if ($Details=='all' || $Details=='ul') {
+    if (!$TopUserUploads = $Cache->get_value('topuser_ul_'.$Limit)) {
+        $Query = $BaseQuery ."
                 AND Uploaded>'". 1024*1024*1024 ."'
                 GROUP BY u.ID";
-            $DB->query("$Query ORDER BY u.Uploaded DESC LIMIT $Limit;");
-            $TopUserUploads = $DB->to_array();
-            $Cache->cache_value('topuser_ul_'.$Limit,$TopUserUploads,3600*12);
-        }
-        generate_user_table('Uploaders', 'ul', $TopUserUploads, $Limit);
+        $DB->query("$Query ORDER BY u.Uploaded DESC LIMIT $Limit;");
+        $TopUserUploads = $DB->to_array();
+        $Cache->cache_value('topuser_ul_'.$Limit, $TopUserUploads, 3600*12);
     }
+    generate_user_table('Uploaders', 'ul', $TopUserUploads, $Limit);
+}
 
-    if ($Details=='all' || $Details=='dl') {
-        if (!$TopUserDownloads = $Cache->get_value('topuser_dl_'.$Limit)) {
-            $Query = $BaseQuery ."
+if ($Details=='all' || $Details=='dl') {
+    if (!$TopUserDownloads = $Cache->get_value('topuser_dl_'.$Limit)) {
+        $Query = $BaseQuery ."
                 AND Uploaded>'524288000'
                 AND Downloaded>'". 1024*1024*1024 ."'
                 GROUP BY u.ID";
-            $DB->query("$Query ORDER BY u.Downloaded DESC LIMIT $Limit;");
-            $TopUserDownloads = $DB->to_array();
-            $Cache->cache_value('topuser_dl_'.$Limit,$TopUserDownloads,3600*12);
-        }
-        generate_user_table('Downloaders', 'dl', $TopUserDownloads, $Limit);
+        $DB->query("$Query ORDER BY u.Downloaded DESC LIMIT $Limit;");
+        $TopUserDownloads = $DB->to_array();
+        $Cache->cache_value('topuser_dl_'.$Limit, $TopUserDownloads, 3600*12);
     }
+    generate_user_table('Downloaders', 'dl', $TopUserDownloads, $Limit);
+}
 
     $Query = $BaseQuery ."
                 AND Uploaded>'524288000'
                 GROUP BY u.ID";
 
-    if ($Details=='all' || $Details=='numul') {
-        if (!$TopUserNumUploads = $Cache->get_value('topuser_numul_'.$Limit)) {
-            $DB->query("$Query ORDER BY NumUploads DESC LIMIT $Limit;");
-            $TopUserNumUploads = $DB->to_array();
-            $Cache->cache_value('topuser_numul_'.$Limit,$TopUserNumUploads,3600*12);
-        }
-        generate_user_table('Torrents Uploaded', 'numul', $TopUserNumUploads, $Limit);
+if ($Details=='all' || $Details=='numul') {
+    if (!$TopUserNumUploads = $Cache->get_value('topuser_numul_'.$Limit)) {
+        $DB->query("$Query ORDER BY NumUploads DESC LIMIT $Limit;");
+        $TopUserNumUploads = $DB->to_array();
+        $Cache->cache_value('topuser_numul_'.$Limit, $TopUserNumUploads, 3600*12);
     }
+    generate_user_table('Torrents Uploaded', 'numul', $TopUserNumUploads, $Limit);
+}
 
-    if ($Details=='all' || $Details=='uls') {
-        if (!$TopUserUploadSpeed = $Cache->get_value('topuser_ulspeed_'.$Limit)) {
-            $DB->query("$Query ORDER BY UpSpeed DESC LIMIT $Limit;");
-            $TopUserUploadSpeed = $DB->to_array();
-            $Cache->cache_value('topuser_ulspeed_'.$Limit,$TopUserUploadSpeed,3600*12);
-        }
-        generate_user_table('Fastest Uploaders', 'uls', $TopUserUploadSpeed, $Limit);
+if ($Details=='all' || $Details=='uls') {
+    if (!$TopUserUploadSpeed = $Cache->get_value('topuser_ulspeed_'.$Limit)) {
+        $DB->query("$Query ORDER BY UpSpeed DESC LIMIT $Limit;");
+        $TopUserUploadSpeed = $DB->to_array();
+        $Cache->cache_value('topuser_ulspeed_'.$Limit, $TopUserUploadSpeed, 3600*12);
     }
+    generate_user_table('Fastest Uploaders', 'uls', $TopUserUploadSpeed, $Limit);
+}
 
-    if ($Details=='all' || $Details=='dls') {
-        if (!$TopUserDownloadSpeed = $Cache->get_value('topuser_dlspeed_'.$Limit)) {
-            $DB->query("$Query ORDER BY DownSpeed DESC LIMIT $Limit;");
-            $TopUserDownloadSpeed = $DB->to_array();
-            $Cache->cache_value('topuser_dlspeed_'.$Limit,$TopUserDownloadSpeed,3600*12);
-        }
-        generate_user_table('Fastest Downloaders', 'dls', $TopUserDownloadSpeed, $Limit);
+if ($Details=='all' || $Details=='dls') {
+    if (!$TopUserDownloadSpeed = $Cache->get_value('topuser_dlspeed_'.$Limit)) {
+        $DB->query("$Query ORDER BY DownSpeed DESC LIMIT $Limit;");
+        $TopUserDownloadSpeed = $DB->to_array();
+        $Cache->cache_value('topuser_dlspeed_'.$Limit, $TopUserDownloadSpeed, 3600*12);
     }
+    generate_user_table('Fastest Downloaders', 'dls', $TopUserDownloadSpeed, $Limit);
+}
 
-    if ($Details=='all' || $Details=='rat') {
-        if (!$TopUserRatio = $Cache->get_value('topuser_ratio_'.$Limit)) {
-            $Query = $BaseQuery ."
+if ($Details=='all' || $Details=='rat') {
+    if (!$TopUserRatio = $Cache->get_value('topuser_ratio_'.$Limit)) {
+        $Query = $BaseQuery ."
                 AND Uploaded>'". 1024*1024*1024 ."'
                 AND Downloaded>'". 1024*1024*1024 ."'
                 GROUP BY u.ID";
-            $DB->query("$Query ORDER BY Uploaded/Downloaded DESC LIMIT $Limit;");
-            $TopUserRatio = $DB->to_array();
-            $Cache->cache_value('topuser_ratio_'.$Limit,$TopUserRatio,3600*12);
-        }
-        generate_user_table('Best Ratio', 'rat', $TopUserRatio, $Limit);
+        $DB->query("$Query ORDER BY Uploaded/Downloaded DESC LIMIT $Limit;");
+        $TopUserRatio = $DB->to_array();
+        $Cache->cache_value('topuser_ratio_'.$Limit, $TopUserRatio, 3600*12);
     }
+    generate_user_table('Best Ratio', 'rat', $TopUserRatio, $Limit);
+}
 
 echo '</div>';
 show_footer();
@@ -140,8 +140,8 @@ function generate_user_table($Caption, $Tag, $Details, $Limit)
     </tr>
 <?php
     // in the unlikely event that query finds 0 rows...
-    if (empty($Details)) {
-        echo '
+if (empty($Details)) {
+    echo '
         <tr class="rowb">
             <td colspan="9" class="center">
                 Found no users matching the criteria
@@ -149,26 +149,26 @@ function generate_user_table($Caption, $Tag, $Details, $Limit)
         </tr>
         </table><br />';
 
-        return;
-    }
+    return;
+}
     $Rank = 0;
-    foreach ($Details as $Detail) {
-        $Rank++;
-        $Highlight = ($Rank%2 ? 'b' : 'a');
+foreach ($Details as $Detail) {
+    $Rank++;
+    $Highlight = ($Rank%2 ? 'b' : 'a');
 ?>
-    <tr class="row<?=$Highlight?>">
-        <td class="center"><?=$Rank?></td>
-        <td><?=format_username($Detail['ID'],$Detail['Username'])?></td>
-        <td style="text-align:right"><?=get_size($Detail['Uploaded'])?></td>
-        <td style="text-align:right"><?=get_size($Detail['UpSpeed'])?>/s</td>
-        <td style="text-align:right"><?=get_size($Detail['Downloaded'])?></td>
-        <td style="text-align:right"><?=get_size($Detail['DownSpeed'])?>/s</td>
-        <td style="text-align:right"><?=number_format($Detail['NumUploads'])?></td>
-        <td style="text-align:right"><?=ratio($Detail['Uploaded'], $Detail['Downloaded'])?></td>
-        <td style="text-align:right"><?=time_diff($Detail['JoinDate'])?></td>
-    </tr>
+<tr class="row<?=$Highlight?>">
+<td class="center"><?=$Rank?></td>
+<td><?=format_username($Detail['ID'], $Detail['Username'])?></td>
+<td style="text-align:right"><?=get_size($Detail['Uploaded'])?></td>
+<td style="text-align:right"><?=get_size($Detail['UpSpeed'])?>/s</td>
+<td style="text-align:right"><?=get_size($Detail['Downloaded'])?></td>
+<td style="text-align:right"><?=get_size($Detail['DownSpeed'])?>/s</td>
+<td style="text-align:right"><?=number_format($Detail['NumUploads'])?></td>
+<td style="text-align:right"><?=ratio($Detail['Uploaded'], $Detail['Downloaded'])?></td>
+<td style="text-align:right"><?=time_diff($Detail['JoinDate'])?></td>
+</tr>
 <?php
-    }
+}
 ?>
 </table><br />
 <?php

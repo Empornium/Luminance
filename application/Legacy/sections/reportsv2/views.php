@@ -169,7 +169,7 @@ $Results = $DB->to_array();
             </tr>
 
     <?php
-        foreach ($Staff as $Array) {	?>
+    foreach ($Staff as $Array) {    ?>
             <tr>
                 <td>
                     <a href="/reportsv2.php?view=staff&amp;id=<?=$Array['ResolverID']?>"><?=display_str($Array['Username'])?>'s reports</a>
@@ -177,7 +177,7 @@ $Results = $DB->to_array();
                 <td><?=$Array['Count']?></td>
             </tr>
     <?php
-        }
+    }
     ?>
         </table>
         <br />
@@ -197,22 +197,22 @@ $Results = $DB->to_array();
                 <td class="colhead">Current Count</td>
             </tr>
 <?php
-        foreach ($Current as $Array) {
-            //Ugliness
-                if (!empty($Types[$Array['Type']])) {
-                    $Title = $Types[$Array['Type']]['title'];
-                }
+foreach ($Current as $Array) {
+    //Ugliness
+    if (!empty($Types[$Array['Type']])) {
+        $Title = $Types[$Array['Type']]['title'];
+    }
 ?>
-            <tr>
-                <td>
-                    <a href="/reportsv2.php?view=type&amp;id=<?=display_str($Array['Type'])?>"><?=display_str($Title)?></a>
-                </td>
-                <td>
-                    <?=$Array['Count']?>
-                </td>
-            </tr>
+<tr>
+<td>
+    <a href="/reportsv2.php?view=type&amp;id=<?=display_str($Array['Type'])?>"><?=display_str($Title)?></a>
+</td>
+<td>
+    <?=$Array['Count']?>
+</td>
+</tr>
 <?php
-        }
+}
     }
 ?>
         </table>

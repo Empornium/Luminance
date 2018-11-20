@@ -1,27 +1,37 @@
 <?php
 authorize();
 
-if (!is_numeric($_REQUEST['userid']) || !is_numeric($_REQUEST['donateid'])) error(0);
+if (!is_numeric($_REQUEST['userid']) || !is_numeric($_REQUEST['donateid'])) {
+    error(0);
+}
 
 $UserID = (int) $_REQUEST['userid'];
-if ($UserID != $LoggedUser['ID'] && !check_perms('admin_donor_log'))  error(403);
+if ($UserID != $LoggedUser['ID'] && !check_perms('admin_donor_log')) {
+    error(403);
+}
 
 $DonateID = (int) $_REQUEST['donateid'];
 
 $DB->query("SELECT public FROM bitcoin_donations
                          WHERE state='unused' AND ID='$DonateID' AND userid='$UserID'");
-if ($DB->record_count() == 0) error("Could not find address with ID='$DonateID', please contact an admin.");
+if ($DB->record_count() == 0) {
+    error("Could not find address with ID='$DonateID', please contact an admin.");
+}
 list($public) = $DB->next_record();
 
 $balance = check_bitcoin_balance($public, 6);
-if ($balance == 0)  error("Balance==0 - we cannot detect any balance at that address, if you think this is in error please contact an admin.");
+if ($balance == 0) {
+    error("Balance==0 - we cannot detect any balance at that address, if you think this is in error please contact an admin.");
+}
 // for the moment we will just use rate right now...
 // but we could lookup the rate when it was donated if this becomes an issue
 // $activetime = check_bitcoin_activation($public); // time that address first appeared on BC network
 // and we would have to record daily rates as we advertise them and then look them up
 
 $eur_rate = get_current_btc_rate();
-if ($eur_rate == 0)  error("There was an error getting the bitcoin exchange rate, please contact an admin.");
+if ($eur_rate == 0) {
+    error("There was an error getting the bitcoin exchange rate, please contact an admin.");
+}
 
 $amount = round($balance * $eur_rate, 2);
 $time = sqltime();
@@ -50,13 +60,13 @@ $DB->query("UPDATE bitcoin_donations SET state='submitted',
                                                  WHERE ID='$DonateID' ");
 
 if ($_REQUEST['donategb']) {
-
     $DB->query("SELECT Downloaded FROM users_main WHERE ID='$UserID'");
     list($downloaded_bytes) = $DB->next_record();
 
     $Summary = sqltime() . ' - ' . "[url=/donate.php?action=my_donations&amp;userid=$UserID]Donated: &euro;$amount.[/url] Download removed: " . get_size($deduct_bytes);
-    if ($downloaded_bytes < $deduct_bytes)
+    if ($downloaded_bytes < $deduct_bytes) {
         $Summary .= " | NOTE: Could only remove " . get_size($downloaded_bytes);
+    }
     $summary .= ", by donation system";
 
     $DB->query("UPDATE users_info as i JOIN users_main as m ON i.UserID=m.ID
@@ -65,13 +75,12 @@ if ($_REQUEST['donategb']) {
                              WHERE m.ID='$UserID'");
 
     $Summary = get_size($deduct_bytes) . " has been deducted from your download.";
-    if ($downloaded_bytes < $deduct_bytes)
+    if ($downloaded_bytes < $deduct_bytes) {
         $Summary .= " | NOTE: Could only remove " . get_size($downloaded_bytes);
+    }
 
     send_pm($UserID, 0, db_string("Thank-you for your donation"), db_string("[br]We have received your donation of &euro;$amount [br][br]:thankyou:[br][br]$Summary"));
-
 } else {
-
     send_pm($UserID, 0, db_string("Thank-you for your donation"), db_string("[br]We have received your donation of &euro;$amount [br][br]:thankyou:[br][br]It's thanks to members like you that this site can carry on :gjob:"));
 
     $Summary = "[url=/donate.php?action=my_donations&amp;userid=$UserID]Donated: &euro;$amount.[/url]";

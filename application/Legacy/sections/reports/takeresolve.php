@@ -26,7 +26,9 @@ if (!check_perms('admin_reports')) {
 }
 
 $Comment = sqltime()." - Resolved by {$LoggedUser['Username']}";
-if (isset($_POST['comment'])) $Comment .= " - {$_POST['comment']}";
+if (isset($_POST['comment'])) {
+    $Comment .= " - {$_POST['comment']}";
+}
 $Comment=db_string($Comment);
 
 $DB->query("UPDATE reports

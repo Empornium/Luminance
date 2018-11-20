@@ -1,7 +1,7 @@
 <?php
 // error out on invalid requests (before caching)
 if (isset($_GET['details'])) {
-    if (in_array($_GET['details'],array('tagother','tagown','voteother','voteown'))) {
+    if (in_array($_GET['details'], array('tagother','tagown','voteother','voteown'))) {
         $Details = $_GET['details'];
     } else {
         error(404);
@@ -43,7 +43,7 @@ if ($Details=='all' || $Details=='tagother') {
                     LIMIT $Limit");
 
         $TopTaggers = $DB->to_array();
-        $Cache->cache_value('toptaggers_'.$Limit,$TopTaggers,3600*12);
+        $Cache->cache_value('toptaggers_'.$Limit, $TopTaggers, 3600*12);
     }
 
     generate_tagger_table('Taggers (others torrents)', 'tagother', $TopTaggers, $Limit);
@@ -124,7 +124,7 @@ show_footer();
 exit;
 
 // generate a table based on data from most recent query to $DB
-function generate_tagger_table($Caption, $Tag, $Details, $Limit, $IsVotes=false)
+function generate_tagger_table($Caption, $Tag, $Details, $Limit, $IsVotes = false)
 {
 ?>
     <div class="head top10_tags">Top <?=$Limit.' '.$Caption?>
@@ -142,8 +142,8 @@ function generate_tagger_table($Caption, $Tag, $Details, $Limit, $IsVotes=false)
     </tr>
 <?php
     // in the unlikely event that query finds 0 rows...
-    if (empty($Details)) {
-        echo '
+if (empty($Details)) {
+    echo '
         <tr class="rowb">
             <td colspan="3" class="center">
                 Found no taggers matching the criteria
@@ -151,22 +151,22 @@ function generate_tagger_table($Caption, $Tag, $Details, $Limit, $IsVotes=false)
         </tr>
         </table><br />';
 
-        return;
-    }
+    return;
+}
     $Rank = 0;
-    foreach ($Details as $Detail) {
-        $Rank++;
-        $Highlight = ($Rank%2 ? 'b' : 'a');
+foreach ($Details as $Detail) {
+    $Rank++;
+    $Highlight = ($Rank%2 ? 'b' : 'a');
 
-        // print row
+    // print row
 ?>
-    <tr class="row<?=$Highlight?>">
-        <td class="tags_rank"><?=$Rank?></td>
-        <td class="tags_rank"><?=format_username($Detail['ID'],$Detail['Username'])?></td>
-        <td class="tags_uses"><?=$Detail['NumTags']?></td>
+<tr class="row<?=$Highlight?>">
+<td class="tags_rank"><?=$Rank?></td>
+<td class="tags_rank"><?=format_username($Detail['ID'], $Detail['Username'])?></td>
+<td class="tags_uses"><?=$Detail['NumTags']?></td>
 
-    </tr>
+</tr>
 <?php
-    }
+}
     echo '</table><br />';
 }

@@ -4,7 +4,9 @@ authorize();
 include(SERVER_ROOT . '/Legacy/sections/torrents/functions.php');
 
 $CollageID = $_POST['collageid'];
-if (!is_number($CollageID)) { error(0); }
+if (!is_number($CollageID)) {
+    error(0);
+}
 
 $DB->query("SELECT Name, Description, TagList, UserID, CategoryID FROM collages WHERE ID='$CollageID'");
 list($Name, $Description, $TagList, $UserID, $CategoryID) = $DB->next_record();
@@ -21,28 +23,28 @@ if ($DB->record_count()) {
     } else {
         $Err = "A collage with that name already exists: <a href=\"/collages.php?id=$ID\">$ID</a>.";
     }
-      if ($Err) error($Err);
+    if ($Err) {
+        error($Err);
+    }
 }
 
-$NewTagList = explode(' ',$_POST['tags']);
+$NewTagList = explode(' ', $_POST['tags']);
 $NewTags = array();
-foreach ($NewTagList as $ID=>$Tag) {
+foreach ($NewTagList as $ID => $Tag) {
         $Tag = trim(trim($Tag, '.')); // trim whitespace & dots from the beginning and end
         $Tag = get_tag_synonym($Tag);
-        if (!in_array($Tag, $NewTags) && is_valid_tag($Tag)) {
-            $NewTags[] = $Tag;
-        }
+    if (!in_array($Tag, $NewTags) && is_valid_tag($Tag)) {
+        $NewTags[] = $Tag;
+    }
 }
-$NewTagList = implode(' ',$NewTags);
+$NewTagList = implode(' ', $NewTags);
 
 $Update = array();
 
 if ($Name != $_POST['name']) {
-    if ( check_perms('site_collages_manage') ) {
-
+    if (check_perms('site_collages_manage')) {
         $Update[] = "Name='".db_string($_POST['name'])."'";
-    } elseif ( $CategoryID == 0 && $UserID == $LoggedUser['ID'] && check_perms('site_collages_renamepersonal' ) ) {
-
+    } elseif ($CategoryID == 0 && $UserID == $LoggedUser['ID'] && check_perms('site_collages_renamepersonal')) {
         if (!stristr($_POST['name'], $LoggedUser['Username'])) {
                 error("Your personal collage's title must include your username.");
         }
@@ -51,7 +53,7 @@ if ($Name != $_POST['name']) {
 }
 
 $Text = new Luminance\Legacy\Text;
-$Text->validate_bbcode($_POST['description'],  get_permissions_advtags($LoggedUser['ID']));
+$Text->validate_bbcode($_POST['description'], get_permissions_advtags($LoggedUser['ID']));
 
 if ($Description != $_POST['description']) {
     $Update[] = "Description='".db_string($_POST['description'])."'";

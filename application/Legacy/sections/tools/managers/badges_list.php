@@ -1,11 +1,13 @@
 <?php
-if (!check_perms('admin_manage_badges')) { error(403); }
+if (!check_perms('admin_manage_badges')) {
+    error(403);
+}
 
 // get all images in badges directory for drop down
 $imagefiles = scandir($master->public_path.'/static/common/badges');
 $imagefiles= array_diff($imagefiles, array('.','..'));
 
-function print_select_image($ElementID, $CurrentImage='')
+function print_select_image($ElementID, $CurrentImage = '')
 {
     global $imagefiles;
 ?>
@@ -17,7 +19,7 @@ function print_select_image($ElementID, $CurrentImage='')
 <?php
 }
 
-show_header('Badges','badges');
+show_header('Badges', 'badges');
 
 ?>
 <div class="thin">
@@ -48,7 +50,9 @@ show_header('Badges','badges');
             <?php
 
             $numAdds = isset($_REQUEST['numadd'])?(int) $_REQUEST['numadd']:5;
-            if ($numAdds<1 || $numAdds > 20) $numAdds = 1;
+            if ($numAdds<1 || $numAdds > 20) {
+                $numAdds = 1;
+            }
 
             foreach ($BadgeTypes as $valtype) {
                 $badge_select_html .= '<option value="'.$valtype.'">'.$valtype.'&nbsp;&nbsp;</option>';
@@ -102,7 +106,7 @@ show_header('Badges','badges');
                 <tr class="rowa">
                     <td colspan="10" class="noborder"></td>
                 </tr>
-<?php           }       ?>
+            <?php           }       ?>
                 <tr class="rowb">
                     <td colspan="6" style="text-align: right;">
                         <input type="hidden" id="totalnum" value="<?=$numAdds?>" />
@@ -231,7 +235,7 @@ show_header('Badges','badges');
                 <tr class="rowa">
                     <td colspan="10" class="noborder"></td>
                 </tr>
-<?php           }   ?>
+            <?php           }   ?>
                 <tr class="rowb">
                     <td colspan="6" style="text-align: right;">
                         <input type="submit" name="saveall" value="Save changes" title="Save changes for all badges selected for editing" />

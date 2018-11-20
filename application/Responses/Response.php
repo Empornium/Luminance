@@ -2,12 +2,14 @@
 
 namespace Luminance\Responses;
 
-class Response {
+class Response
+{
 
     public $content;
     public $status;
 
-    public function __construct($content, $status = 200) {
+    public function __construct($content, $status = 200)
+    {
         $this->content = $content;
         $this->status = $status;
     }

@@ -12,21 +12,29 @@ if (!check_perms('users_edit_badges')) {
 }
 
 $GroupID = (int) $_POST['groupid'];
-if (!$GroupID) error(0);
+if (!$GroupID) {
+    error(0);
+}
 //$AddBadges = $_POST['addbadge'];
 //if (!is_array($AddBadges)) error(0);
 
 $BadgeID = (int) $_POST['addbadge'];
-if (!$BadgeID) error(0);
+if (!$BadgeID) {
+    error(0);
+}
 
 $DB->query("SELECT Name, Comment FROM groups WHERE ID=$GroupID");
-if ($DB->record_count() == 0) error(0);
+if ($DB->record_count() == 0) {
+    error(0);
+}
 list($GName, $GDescription) = $DB->next_record();
 
 $DB->query("SELECT Badge, Rank, Title, Image
               FROM badges
              WHERE ID=$BadgeID");
-if ($DB->record_count() == 0) error(0);
+if ($DB->record_count() == 0) {
+    error(0);
+}
 list($Badge, $Rank, $Name, $Image) = $DB->next_record();
 
 $DB->query("SELECT UserID FROM users_groups
@@ -41,9 +49,8 @@ $UserIDs = $DB->collect('UserID');
 $CountUsers = count($UserIDs);
 
 if ($CountUsers > 0) {
-
     $Description = db_string(display_str($_POST['addbadge' . $BadgeID]));
-    $SQL_IN = implode(',',$UserIDs);
+    $SQL_IN = implode(',', $UserIDs);
     $DB->query("UPDATE users_info SET AdminComment = CONCAT('".sqltime()." - Received Award ". db_string($Name)." ". db_string($Description).db_string(" Given to all members of [url=/groups.php?groupid=$GroupID]$GName group[/url]") ."\n', AdminComment) WHERE UserID IN ($SQL_IN)");
 
     $Values = "('".implode("', '".$BadgeID."', '".db_string($Description)."'), ('", $UserIDs)."', '".$BadgeID."', '".db_string($Description)."')";
@@ -57,8 +64,12 @@ if ($CountUsers > 0) {
                        AND b.Badge='$Badge' AND b.Rank<$Rank");
 
     foreach ($UserIDs as $UserID) {
-        send_pm($UserID, 0, "Congratulations you have been awarded the $Name",
-                            "[center][br][br][img]/static/common/badges/{$Image}[/img][br][br][size=5][color=white][bg=#0261a3][br]{$Description}[br][br][/bg][/color][/size][/center]");
+        send_pm(
+            $UserID,
+            0,
+            "Congratulations you have been awarded the $Name",
+            "[center][br][br][img]/static/common/badges/{$Image}[/img][br][br][size=5][color=white][bg=#0261a3][br]{$Description}[br][br][/bg][/color][/size][/center]"
+        );
 
         $Cache->delete_value('user_badges_'.$UserID);
         $Cache->delete_value('user_badges_'.$UserID.'_limit');

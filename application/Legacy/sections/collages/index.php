@@ -1,7 +1,9 @@
 <?php
 enforce_login();
 
-if (empty($_REQUEST['action'])) { $_REQUEST['action']=''; }
+if (empty($_REQUEST['action'])) {
+    $_REQUEST['action']='';
+}
 
 switch ($_REQUEST['action']) {
     case 'ajax_get_edit':
@@ -9,11 +11,15 @@ switch ($_REQUEST['action']) {
         require(SERVER_ROOT.'/common/ajax_get_edit.php');
         break;
     case 'new':
-        if (!check_perms('site_collages_create')) { error(403); }
+        if (!check_perms('site_collages_create')) {
+            error(403);
+        }
         require(SERVER_ROOT.'/Legacy/sections/collages/new.php');
         break;
     case 'new_handle':
-        if (!check_perms('site_collages_create')) { error(403); }
+        if (!check_perms('site_collages_create')) {
+            error(403);
+        }
         require(SERVER_ROOT.'/Legacy/sections/collages/new_handle.php');
         break;
     case 'add_torrent':
@@ -36,18 +42,26 @@ switch ($_REQUEST['action']) {
             authorize();
 
             $CollageID = $_POST['collageid'];
-            if(!is_number($CollageID))  error(0);
+        if (!is_number($CollageID)) {
+            error(0);
+        }
 
-            if (!check_perms('site_collages_manage')) {
-                $DB->query("SELECT UserID FROM collages WHERE ID='$CollageID'");
-                list($UserID) = $DB->next_record();
-                if ($UserID != $LoggedUser['ID']) error(403);
+        if (!check_perms('site_collages_manage')) {
+            $DB->query("SELECT UserID FROM collages WHERE ID='$CollageID'");
+            list($UserID) = $DB->next_record();
+            if ($UserID != $LoggedUser['ID']) {
+                error(403);
             }
+        }
 
             $Permissions = $_POST['permission'];
-            if(!is_number($Permissions)) error(0);
+        if (!is_number($Permissions)) {
+            error(0);
+        }
             $Permissions=(int) $Permissions;
-            if ($Permissions !=0 && !array_key_exists($Permissions, $ClassLevels)) error(0);
+        if ($Permissions !=0 && !array_key_exists($Permissions, $ClassLevels)) {
+            error(0);
+        }
 
             $DB->query("UPDATE collages SET Permissions=$Permissions WHERE ID='$CollageID'");
 

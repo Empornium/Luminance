@@ -2,7 +2,9 @@
 
 include(SERVER_ROOT . '/common/functions.php');
 
-if (!check_perms('admin_login_watch')) { error(403); }
+if (!check_perms('admin_login_watch')) {
+    error(403);
+}
 
 if (isset($_POST['submit'], $_POST['id']) && $_POST['submit'] == 'Unban') {
     authorize();
@@ -54,7 +56,8 @@ if (isset($_GET['last_ip'])) {
 }
 
 list($Page,$Limit) = page_limit(50);
-$RequestFloods = $master->db->raw_query("SELECT SQL_CALC_FOUND_ROWS
+$RequestFloods = $master->db->raw_query(
+    "SELECT SQL_CALC_FOUND_ROWS
                     flood.ID,
                     INET6_NTOA(ip.StartAddress) AS IP,
                     flood.UserID,
@@ -77,11 +80,12 @@ $RequestFloods = $master->db->raw_query("SELECT SQL_CALC_FOUND_ROWS
                     $ExtraWhere
            ORDER BY $OrderBy $OrderWay
               LIMIT $Limit",
-                    $params)->fetchAll(\PDO::FETCH_ASSOC);
+    $params
+)->fetchAll(\PDO::FETCH_ASSOC);
 
 $NumResults = $master->db->raw_query("SELECT FOUND_ROWS()")->fetchColumn();
 
-$Pages=get_pages($Page,$NumResults,50,9);
+$Pages=get_pages($Page, $NumResults, 50, 9);
 
 show_header('Login Watch');
 
@@ -132,18 +136,21 @@ show_header('Login Watch');
 
 <div class="head">
 <?php
-    if (!empty($_GET['searchips'])) echo "$NumResults Search Results for ".display_str($_GET['searchips']);
-    else echo "$NumResults entries in Login Watch";
+if (!empty($_GET['searchips'])) {
+    echo "$NumResults Search Results for ".display_str($_GET['searchips']);
+} else {
+    echo "$NumResults entries in Login Watch";
+}
 ?>
 </div>
     <div class="box">
 <table class="border" width="100%" cellspacing="1" cellpadding="6" border="0">
     <tr class="colhead">
         <td><a href="/<?=header_link('IP') ?>">IP</a></td>
-        <?php if (isset($_GET['first_ip'])): ?>
+        <?php if (isset($_GET['first_ip'])) : ?>
             <td><a href="/<?=header_link('FirstIP') ?>">First IP</a></td>
         <?php endif; ?>
-        <?php if (isset($_GET['last_ip'])): ?>
+        <?php if (isset($_GET['last_ip'])) : ?>
             <td><a href="/<?=header_link('LastIP') ?>">Last IP</a></td>
         <?php endif; ?>
         <td><a href="/<?=header_link('Username') ?>">User</a></td>
@@ -163,14 +170,16 @@ foreach ($RequestFloods as $Flood) {
             <td>
                 <?=display_ip((string) $ip = $master->repos->ips->get_or_new($Flood['IP']), geoip((string) $ip))?>
             </td>
-            <?php if (isset($_GET['first_ip'])): ?>
+            <?php if (isset($_GET['first_ip'])) : ?>
                 <td><?= $Flood['FirstIP'] ? display_ip((string) $ip = $master->repos->ips->get_or_new($Flood['FirstIP']), geoip((string) $ip)) : '' ?></td>
             <?php endif; ?>
-            <?php if (isset($_GET['last_ip'])): ?>
+            <?php if (isset($_GET['last_ip'])) : ?>
                 <td><?= $Flood['LastIP'] ? display_ip((string) $ip = $master->repos->ips->get_or_new($Flood['LastIP']), geoip((string) $ip)) : '' ?></td>
             <?php endif; ?>
             <td>
-                <?php  if ($Flood['UserID'] != 0) { echo format_username($Flood['UserID'], $Flood['Username'], $Flood['Donor'], true, $Flood['Enabled'], $Flood['PermissionID']); } ?>
+                <?php  if ($Flood['UserID'] != 0) {
+                    echo format_username($Flood['UserID'], $Flood['Username'], $Flood['Donor'], true, $Flood['Enabled'], $Flood['PermissionID']);
+} ?>
             </td>
             <td>
                 <?=$Flood['Requests']?>

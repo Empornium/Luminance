@@ -5,7 +5,7 @@ function get_donate_deduction($amount_euros)
     global $DonateLevels;
     $deduct_bytes = 0;
     $DonateLevelsR = array_reverse($DonateLevels, true);
-    foreach ($DonateLevelsR as $level=>$rate) {
+    foreach ($DonateLevelsR as $level => $rate) {
         if ($amount_euros >= $level) {
             $deduct_bytes = floor($amount_euros) * $rate * 1024 * 1024 * 1024; // rate per gb
             break;
@@ -20,7 +20,7 @@ function get_donate_credits($amount_euros)
     global $DonateLevels;
     $add_credits = 0;
     $DonateLevelsR = array_reverse($DonateLevels, true);
-    foreach ($DonateLevelsR as $level=>$rate) {
+    foreach ($DonateLevelsR as $level => $rate) {
         if ($amount_euros >= $level) {
             $add_credits = floor($amount_euros) * $rate * 1000; // rate per gb
             break;
@@ -41,7 +41,7 @@ function print_btc_query_now($ID, $eur_rate, $address)
 <?php
 }
 
-function print_btc_query_button($eur_rate, $address, $numtransactions=6)
+function print_btc_query_button($eur_rate, $address, $numtransactions = 6)
 {
     static $bID = 0;
     ++$bID;
@@ -61,7 +61,7 @@ function validate_btc_address($address)
     //  // starts with a 1 or a 3
     //uppercase letter "O", uppercase letter "I",
     //lowercase letter "l", and the number "0" are never used to prevent visual ambiguity.
-    if ( preg_match( BTC_ADDRESS_REGEX , $address) ) {
+    if (preg_match(BTC_ADDRESS_REGEX, $address)) {
         // could/should do a hash check here to validate the internal checksum but.... meh.
         return true;
     } else {
@@ -102,7 +102,7 @@ function get_btc_addresses($UserID)
         } else {
             $DB->query("SELECT COUNT(ID) FROM bitcoin_addresses");
             list($AddressesLeft) = $DB->next_record();
-            if($AddressesLeft == 20) {
+            if ($AddressesLeft == 20) {
                 send_staff_pm(db_string("Donation pool low"), db_string("The donation pool is low on addresses, you need to top it up."), LEVEL_SYSOP);
             }
         }
@@ -119,7 +119,7 @@ function get_btc_addresses($UserID)
     return array($Err, $user_addresses);
 }
 
-function check_bitcoin_balance($address, $numtransactions=6)
+function check_bitcoin_balance($address, $numtransactions = 6)
 {
     if (BTC_LOCAL) {
         $bitcoin  = new Luminance\Legacy\Bitcoin(BTC_USER, BTC_PASS);
@@ -166,65 +166,67 @@ function get_current_btc_rate()
     return $rate;
 }
 
-function query_eur_rate($testing=false)
+function query_eur_rate($testing = false)
 {
     return get_eur_bitcoinaverage($testing);
 }
 
-function get_eur_bitstamp($testing=false)
+function get_eur_bitstamp($testing = false)
 {
         $bitstampjson = file_get_contents("https://www.bitstamp.net/api/ticker/");
 
-        if($testing) return $bitstampjson;
+    if ($testing) {
+        return $bitstampjson;
+    }
 
         // Decode from an object to array
-        if ($bitstampjson) {
-
-            $output_bitstamp = json_decode($bitstampjson, true);
-            // something's wrong
-            if (!$output_bitstamp) {
-                return false;
-            }
-
-            $currencyRate = $output_bitstamp['low'];
-
-            return (double)str_replace(',', '', $currencyRate);
+    if ($bitstampjson) {
+        $output_bitstamp = json_decode($bitstampjson, true);
+        // something's wrong
+        if (!$output_bitstamp) {
+            return false;
         }
 
-        return false;
+        $currencyRate = $output_bitstamp['low'];
 
+        return (double)str_replace(',', '', $currencyRate);
+    }
+
+        return false;
 }
 
-function get_eur_coindesk($testing=flase)
+function get_eur_coindesk($testing = flase)
 {
         $coindeskjson = file_get_contents("https://api.coindesk.com/v1/bpi/currentprice/EUR.json");
 
-        if($testing) return $coindeskjson;
+    if ($testing) {
+        return $coindeskjson;
+    }
 
         // Decode from an object to array
-        if ($coindeskjson) {
+    if ($coindeskjson) {
+        $output_coindesk = json_decode($coindeskjson, true);
 
-            $output_coindesk = json_decode($coindeskjson, true);
-
-            // something's wrong
-            if (!$output_coindesk OR !isset($output_coindesk['bpi'])) {
-                return false;
-            }
-
-            $currencyRate = $output_coindesk['bpi']['EUR']['rate'];
-
-            return (double)str_replace(',', '', $currencyRate);
+        // something's wrong
+        if (!$output_coindesk or !isset($output_coindesk['bpi'])) {
+            return false;
         }
 
-        return false;
+        $currencyRate = $output_coindesk['bpi']['EUR']['rate'];
 
+        return (double)str_replace(',', '', $currencyRate);
+    }
+
+        return false;
 }
 
-function get_eur_bitcoinaverage($testing=false)
+function get_eur_bitcoinaverage($testing = false)
 {
         $currencyRate = json_decode(file_get_contents("https://apiv2.bitcoinaverage.com/indices/global/ticker/BTCEUR"))->averages->day;
 
-        if($testing || $currencyRate) return (double)str_replace(',', '', $currencyRate);
+    if ($testing || $currencyRate) {
+        return (double)str_replace(',', '', $currencyRate);
+    }
 
         return false;
 }

@@ -2,16 +2,20 @@
 $GroupID = $_GET['groupid'];
 $TorrentID = $_GET['torrentid'];
 
-if (!is_number($GroupID) || !is_number($TorrentID)) { error(0); }
+if (!is_number($GroupID) || !is_number($TorrentID)) {
+    error(0);
+}
 
 // select info about the torrent and uploader
-$Info = $master->db->raw_query("SELECT tg.Name, t.LastReseedRequest, t.UserID AS UploaderID, t.Time AS UploadedTime, SUM(xu.active) AS UploaderIsPeer, t.Seeders, t.Snatched, t.last_action
+$Info = $master->db->raw_query(
+    "SELECT tg.Name, t.LastReseedRequest, t.UserID AS UploaderID, t.Time AS UploadedTime, SUM(xu.active) AS UploaderIsPeer, t.Seeders, t.Snatched, t.last_action
                                   FROM torrents AS t
                                   JOIN torrents_group AS tg ON t.GroupID=tg.ID
                              LEFT JOIN xbt_files_users AS xu ON t.ID=xu.fid AND t.UserID=xu.uid
                                  WHERE t.ID=:torrentid
                               GROUP BY UploaderID",
-                                       [':torrentid' => $TorrentID])->fetch(\PDO::FETCH_ASSOC);
+    [':torrentid' => $TorrentID]
+)->fetch(\PDO::FETCH_ASSOC);
 
 // Check if the torrent really needs a reseed
 // Those permissions are taken from torrents/details.php
@@ -28,22 +32,28 @@ if (!$NeedReseed) {
     error(-1);
 }
 
-if (time()-strtotime($Info['LastReseedRequest'])<259200 && !check_perms('site_debug')) { error("There was already a re-seed request for this torrent within the past 3 days."); }
+if (time()-strtotime($Info['LastReseedRequest'])<259200 && !check_perms('site_debug')) {
+    error("There was already a re-seed request for this torrent within the past 3 days.");
+}
 
 $master->cache->delete_value('torrents_details_'.$GroupID);
 
 // select everyone who has snatched the torrent who isn't currently an active peer
-$Users = $master->db->raw_query("SELECT xs.uid AS UserID, Max(xs.tstamp) AS LastSnatchedTime
+$Users = $master->db->raw_query(
+    "SELECT xs.uid AS UserID, Max(xs.tstamp) AS LastSnatchedTime
                                   FROM xbt_snatched AS xs
                              LEFT JOIN xbt_files_users AS xu ON xs.fid=xu.fid AND xs.uid=xu.uid
                                  WHERE (xu.uid IS NULL OR xu.active = '0') AND xs.fid=:torrentid AND xs.uid != :userid
                               GROUP BY UserID
                               ORDER BY LastSnatchedTime DESC
                                  LIMIT 40",
-                                       [':userid'    =>  $Info['UploaderID'],
-                                        ':torrentid' => $TorrentID])->fetchAll(\PDO::FETCH_ASSOC);
+    [':userid'    =>  $Info['UploaderID'],
+    ':torrentid' => $TorrentID]
+)->fetchAll(\PDO::FETCH_ASSOC);
 
-if (!$Info['UploaderIsPeer']) $Users[] = ['UserID' => $Info['UploaderID'], 'LastSnatchedTime' => strtotime($Info['UploadedTime'])];
+if (!$Info['UploaderIsPeer']) {
+    $Users[] = ['UserID' => $Info['UploaderID'], 'LastSnatchedTime' => strtotime($Info['UploadedTime'])];
+}
 
 foreach ($Users as $User) {
     // send a pm to each user
@@ -59,9 +69,11 @@ foreach ($Users as $User) {
 $NumUsers = count($Users);
 
 if ($NumUsers>0) {
-    $master->db->raw_query("UPDATE torrents SET LastReseedRequest=:sqltime WHERE ID=:torrentid",
-                            [':sqltime'   => sqltime(),
-                             ':torrentid' => $TorrentID]);
+    $master->db->raw_query(
+        "UPDATE torrents SET LastReseedRequest=:sqltime WHERE ID=:torrentid",
+        [':sqltime'   => sqltime(),
+        ':torrentid' => $TorrentID]
+    );
 }
 
 show_header();

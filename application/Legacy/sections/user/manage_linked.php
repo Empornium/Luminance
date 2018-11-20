@@ -6,7 +6,9 @@ if (!check_perms('users_mod')) {
     error(403);
 }
 
-if (!$UserID || !is_number($UserID)) error(0);
+if (!$UserID || !is_number($UserID)) {
+    error(0);
+}
 
 $UserID = (int)$_REQUEST['userid'];
 
@@ -24,7 +26,6 @@ switch ($_REQUEST['dupeaction']) {
 
     case 'update':
         if (isset($_REQUEST['submitlink'])) {
-
             if ($_REQUEST['target']) {
                 $Target = $_REQUEST['target'];
                 $DB->query("SELECT ID FROM users_main WHERE Username LIKE '" . db_string($Target) . "'");
@@ -37,7 +38,6 @@ switch ($_REQUEST['dupeaction']) {
         }
 
         if (isset($_REQUEST['submitcomment'])) {
-
             $DB->query("SELECT GroupID FROM users_dupes WHERE UserID = '$UserID'");
             list($GroupID) = $DB->next_record();
 

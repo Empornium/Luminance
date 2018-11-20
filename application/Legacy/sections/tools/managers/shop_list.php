@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('admin_manage_shop')) { error(403); }
+if (!check_perms('admin_manage_shop')) {
+    error(403);
+}
 
 show_header('Manage Shop');
 

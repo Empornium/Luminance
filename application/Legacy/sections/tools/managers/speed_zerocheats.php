@@ -6,7 +6,9 @@ function history_span($value)
     return '<span style="color:'.($value=='false'?'red':'lightgrey').'">'.$value.'</span>';
 }
 
-if (!check_perms('users_manage_cheats')) { error(403); }
+if (!check_perms('users_manage_cheats')) {
+    error(403);
+}
 
 $Action = 'speed_zerocheats';
 
@@ -38,7 +40,7 @@ if (isset($_GET['viewbanned']) && $_GET['viewbanned']) {
     $ViewInfo .= ' (enabled only)';
 }
 
-show_header('Zero Stat Cheats','watchlist');
+show_header('Zero Stat Cheats', 'watchlist');
 
 ?>
 <div class="thin">
@@ -59,7 +61,9 @@ show_header('Zero Stat Cheats','watchlist');
                 <td class="center">
                             <label for="viewbanned" title="Keep Speed">show disabled users </label>
                         <input type="checkbox" value="1" onchange="change_zero_view()"
-                               id="viewbanned" name="viewbanned" <?php  if (isset($_GET['viewbanned']) && $_GET['viewbanned'])echo' checked="checked"'?> />
+                               id="viewbanned" name="viewbanned" <?php  if (isset($_GET['viewbanned']) && $_GET['viewbanned']) {
+                                    echo' checked="checked"';
+                                                                 }?> />
                 </td>
                 <td class="center">
 
@@ -113,7 +117,7 @@ $Records = $DB->to_array();
 $DB->query("SELECT FOUND_ROWS()");
 list($NumResults) = $DB->next_record();
 
-$Pages=get_pages($Page,$NumResults,50,9);
+$Pages=get_pages($Page, $NumResults, 50, 9);
 
 ?>
 
@@ -135,22 +139,22 @@ $Pages=get_pages($Page,$NumResults,50,9);
             </tr>
 <?php
             $row = 'a';
-            if ($NumResults==0) {
+if ($NumResults==0) {
 ?>
-                    <tr class="rowb">
-                        <td class="center" colspan="10">no zero stat peers</td>
-                    </tr>
+<tr class="rowb">
+<td class="center" colspan="10">no zero stat peers</td>
+</tr>
 <?php
-            } else {
-                foreach ($Records as $Record) {
-                    list( $UserID, $Username, $CountRecords, $Grabbed, $MaxUpSpeed, $LastTime, $JoinDate,  $PeerIDs, $IPs,
-                            $IsDonor, $Enabled, $ClassID, $OnWatchlist, $OnExcludelist, $HasSeedHistory) = $Record;
-                    $row = ($row === 'a' ? 'b' : 'a');
+} else {
+    foreach ($Records as $Record) {
+        list( $UserID, $Username, $CountRecords, $Grabbed, $MaxUpSpeed, $LastTime, $JoinDate,  $PeerIDs, $IPs,
+                $IsDonor, $Enabled, $ClassID, $OnWatchlist, $OnExcludelist, $HasSeedHistory) = $Record;
+        $row = ($row === 'a' ? 'b' : 'a');
 
-                    $PeerIDs = explode('|', $PeerIDs);
-                    $IPs = explode('|', $IPs);
+        $PeerIDs = explode('|', $PeerIDs);
+        $IPs = explode('|', $IPs);
 
-    $DB->query(" (SELECT e.UserID AS UserID, um.IP, 'account', 'history' FROM users_main AS um JOIN users_history_ips AS e ON um.IP=e.IP
+        $DB->query(" (SELECT e.UserID AS UserID, um.IP, 'account', 'history' FROM users_main AS um JOIN users_history_ips AS e ON um.IP=e.IP
                  WHERE um.IP != '127.0.0.1' AND um.IP !='' AND e.UserID!= $UserID AND um.ID = $UserID)
                 UNION
                  (SELECT e.ID AS UserID, um.IP, 'account', 'account' FROM users_main AS um JOIN users_main AS e ON um.IP=e.IP
@@ -163,96 +167,96 @@ $Pages=get_pages($Page,$NumResults,50,9);
                  WHERE um.IP != '127.0.0.1' AND um.IP !='' AND e.UserID = $UserID AND um.UserID != $UserID)
                 ORDER BY  UserID, IP
                 LIMIT 20");
-                    $IPDupeCount = $DB->record_count();
-                    $IPDupes = $DB->to_array();
+        $IPDupeCount = $DB->record_count();
+        $IPDupes = $DB->to_array();
 
 ?>
-                    <tr class="row<?=$row?>">
-                        <td>
+        <tr class="row<?=$row?>">
+            <td>
 <?php
-                            if ($Enabled=='1') {  ?>
+if ($Enabled=='1') {  ?>
                                 <a href="/tools.php?action=ban_zero_cheat&banuser=1&userid=<?=$UserID?>" title="ban this user for being a big fat zero stat cheat"><img src="static/common/symbols/ban2.png" alt="ban" /></a>
 <?php                           }
-                           ?>
+                ?>
                         </td>
                         <td class="center">
 <?php                           echo format_username($UserID, $Username, $IsDonor, true, $Enabled, $ClassID, false, false);
 
-                            if ($IPDupeCount>0) { ?>
+if ($IPDupeCount>0) { ?>
 
                             <span style="float:right;">
                                 <a href="#" title="view matching ip's for this user" onclick="$('#linkeddiv<?=$UserID?>').toggle();this.innerHTML=this.innerHTML=='(hide)'?'(view)':'(hide)';return false;">(view)</a>
                             </span>
 <?php
-                            }
+}
 ?>
+            </td>
+            <td class="center"><?=$CountRecords?></td>
+            <td class="center"><?=$Grabbed?></td>
+            <td class="center"><?=history_span($HasSeedHistory)?></td>
+            <td class="center"><?php
+            foreach ($PeerIDs as $PeerID) {
+                    ?>  <span style="color:#555"><?=substr($PeerID, 0, 8)  ?></span> <br/>
+            <?php   } ?>
                         </td>
-                        <td class="center"><?=$CountRecords?></td>
-                        <td class="center"><?=$Grabbed?></td>
-                        <td class="center"><?=history_span($HasSeedHistory)?></td>
                         <td class="center"><?php
-                            foreach ($PeerIDs as $PeerID) {
-                        ?>  <span style="color:#555"><?=substr($PeerID,0,8)  ?></span> <br/>
-                        <?php   } ?>
-                        </td>
-                        <td class="center"><?php
-                            foreach ($IPs as $IP) {
-                                $ipcc = geoip($IP);
-                                echo display_ip($IP, $ipcc)."<br/>";
-                            }
+                        foreach ($IPs as $IP) {
+                            $ipcc = geoip($IP);
+                            echo display_ip($IP, $ipcc)."<br/>";
+                        }
                         ?>
                         </td>
                         <td class="center"><?=time_diff($LastTime, 2, true, false, 1)?></td>
                         <td class="center"><?=time_diff($JoinDate, 2, true, false, 0)?></td>
                     </tr>
 <?php
-            if ($IPDupeCount>0) {
+if ($IPDupeCount>0) {
 ?>
-                    <tr id="linkeddiv<?=$UserID?>" style="font-size:0.9em;" class="hidden row<?=$row?>">
-                        <td colspan="10">
-            <table width="100%" class="border">
+        <tr id="linkeddiv<?=$UserID?>" style="font-size:0.9em;" class="hidden row<?=$row?>">
+            <td colspan="10">
+<table width="100%" class="border">
 <?php
-            $i = 0;
-            foreach ($IPDupes AS $IPDupe) {
-                list($EUserID, $IP, $EType1, $EType2) = $IPDupe;
-                $i++;
-                $DupeInfo = user_info($EUserID);
+$i = 0;
+foreach ($IPDupes as $IPDupe) {
+    list($EUserID, $IP, $EType1, $EType2) = $IPDupe;
+    $i++;
+    $DupeInfo = user_info($EUserID);
 ?>
-            <tr>
+<tr>
 
-                <td align="center">
-                    <?=format_username($EUserID, $DupeInfo['Username'], $DupeInfo['Donor'], $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
-                </td>
-                <td align="center">
-                    <?=display_ip($IP, $DupeInfo['ipcc'])?>
-                </td>
-                <td align="left">
-                    <?="$Username's $EType1 <-> $DupeInfo[Username]'s $EType2"?>
-                </td>
-                <td>
+    <td align="center">
+        <?=format_username($EUserID, $DupeInfo['Username'], $DupeInfo['Donor'], $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
+    </td>
+    <td align="center">
+        <?=display_ip($IP, $DupeInfo['ipcc'])?>
+    </td>
+    <td align="left">
+        <?="$Username's $EType1 <-> $DupeInfo[Username]'s $EType2"?>
+    </td>
+    <td>
 <?php
-                    if ( !array_key_exists($EUserID, $Dupes) ) {
+if (!array_key_exists($EUserID, $Dupes)) {
 ?>
-                        [<a href="/user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>" title="link this user to <?=$Username?>">link</a>]
+[<a href="/user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>" title="link this user to <?=$Username?>">link</a>]
 <?php
-                    }
+}
 ?>
-                </td>
-            </tr>
+    </td>
+</tr>
 <?php
-            }
+}
 ?>
-            </table>
+</table>
 
-                        </td>
-                    </tr>
+            </td>
+        </tr>
 <?php
-            }
+}
 ?>
 
 <?php
-                }
-            }
+    }
+}
             ?>
         </table>
     <div class="linkbox"><?=$Pages?></div>

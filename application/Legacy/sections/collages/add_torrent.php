@@ -42,11 +42,13 @@ function AddTorrent($CollageID, $GroupID)
         while (list($CacheUserID) = $DB->next_record()) {
             $Cache->delete_value('collage_subs_user_new_'.$CacheUserID);
         }
-      }
+    }
 }
 
 $CollageID = $_POST['collageid'];
-if (!is_number($CollageID)) { error(404); }
+if (!is_number($CollageID)) {
+    error(404);
+}
 $DB->query("SELECT UserID, Name, CategoryID, Locked, NumTorrents, MaxGroups, MaxGroupsPerUser, Permissions FROM collages WHERE ID='$CollageID'");
 list($UserID, $CategoryID, $Name, $Locked, $NumTorrents, $MaxGroups, $MaxGroupsPerUser, $CPermissions) = $DB->next_record();
 //if ($CategoryID == 0 && $UserID!=$LoggedUser['ID'] && !check_perms('site_collages_delete')) { error(403); }
@@ -59,11 +61,17 @@ if (!check_perms('site_collages_manage')) {
     } else {
           $CanEdit=false; // can be overridden by permissions
     }
-    if (!$CanEdit) { error(403); }
+    if (!$CanEdit) {
+        error(403);
+    }
 }
 
-if ($Locked) { error(403); }
-if ($MaxGroups>0 && $NumTorrents>=$MaxGroups) { error(403); }
+if ($Locked) {
+    error(403);
+}
+if ($MaxGroups>0 && $NumTorrents>=$MaxGroups) {
+    error(403);
+}
 if ($MaxGroupsPerUser>0) {
     $DB->query("SELECT COUNT(ID) FROM collages_torrents WHERE CollageID='$CollageID' AND UserID='$LoggedUser[ID]'");
     if ($DB->record_count()>=$MaxGroupsPerUser) {
@@ -73,7 +81,7 @@ if ($MaxGroupsPerUser>0) {
 
 $URLRegex = '/'.TORRENT_REGEX.'/i';
 if ($_REQUEST['action'] == 'add_torrent') {
-    $Val->SetFields('url', '1','regex','The URL must be a link to a torrent on the site.',array('regex'=>'/'.TORRENT_REGEX.'/i'));
+    $Val->SetFields('url', '1', 'regex', 'The URL must be a link to a torrent on the site.', array('regex'=>'/'.TORRENT_REGEX.'/i'));
     $Err = $Val->ValidateForm($_POST);
 
     if ($Err) {
@@ -85,7 +93,9 @@ if ($_REQUEST['action'] == 'add_torrent') {
     // Get torrent ID
     preg_match($URLRegex, $URL, $Matches);
     $TorrentID=$Matches[2];
-    if (!$TorrentID || (int) $TorrentID == 0) { error(404); }
+    if (!$TorrentID || (int) $TorrentID == 0) {
+        error(404);
+    }
 
     $DB->query("SELECT ID FROM torrents_group WHERE ID='$TorrentID'");
     list($GroupID) = $DB->next_record();
@@ -96,14 +106,15 @@ if ($_REQUEST['action'] == 'add_torrent') {
     AddTorrent($CollageID, $GroupID);
       write_log("Collage ".$CollageID." (".db_string($Name).") was edited by ".$LoggedUser['Username']." - added torrents $GroupID");
 } else {
-    
-    $URLs = explode("\n",$_REQUEST['urls']);
+    $URLs = explode("\n", $_REQUEST['urls']);
     $GroupIDs = array();
     $Err = '';
 
     foreach ($URLs as $URL) {
         $URL = trim($URL);
-        if ($URL == '') { continue; }
+        if ($URL == '') {
+            continue;
+        }
 
         $Matches = array();
         if (preg_match($URLRegex, $URL, $Matches)) {

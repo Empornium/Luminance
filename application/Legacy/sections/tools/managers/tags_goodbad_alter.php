@@ -6,7 +6,9 @@ if (!check_perms('admin_convert_tags')) {
     error(403);
 }
 $tagtype = $_POST['tagtype'];
-if (!in_array($tagtype, ['bad','good'])) error(0);
+if (!in_array($tagtype, ['bad','good'])) {
+    error(0);
+}
 
 $returnmessage = '';
 $result = 0;
@@ -15,8 +17,10 @@ if (isset($_POST["old{$tagtype}tags"])) {
 
     if (is_array($oldIDs) && count($oldIDs)>0) {
         // check we really have an array of numbers
-        foreach ($oldIDs AS $tagID) {
-            if (!is_number($tagID)) error(403);
+        foreach ($oldIDs as $tagID) {
+            if (!is_number($tagID)) {
+                error(403);
+            }
         }
         // gets named param string in form ':id0,:id1', $params are returned in form [':id0'=>$val0, ':id1'=>$val1]
         $namedparams = $master->db->bindParamArray("id", $oldIDs, $params);
@@ -44,14 +48,16 @@ if (isset($_POST["new{$tagtype}tag"])) {
     $tags=[];
     // process array of tags
     foreach ($rawtags as $tag) {
-        $tag = trim($tag,'.'); // trim dots from the beginning and end
+        $tag = trim($tag, '.'); // trim dots from the beginning and end
         $tag = strtolower(trim($tag));
         $tag = preg_replace('/[^a-z0-9.-]/', '', $tag);
 
         if ($tag) {
-            $master->db->raw_query("INSERT IGNORE INTO tags_goodbad (Tag, TagType) VALUES (:tag, :tagtype)",
-                                                       [':tag'     => $tag,
-                                                        ':tagtype' => $tagtype]);
+            $master->db->raw_query(
+                "INSERT IGNORE INTO tags_goodbad (Tag, TagType) VALUES (:tag, :tagtype)",
+                [':tag'     => $tag,
+                ':tagtype' => $tagtype]
+            );
             $tags[] = $tag;
         }
     }
@@ -62,7 +68,6 @@ if (isset($_POST["new{$tagtype}tag"])) {
         $result = 1;
         $master->cache->delete_value("{$tagtype}_tags");
     }
-
 }
 
 

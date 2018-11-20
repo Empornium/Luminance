@@ -2,7 +2,9 @@
 enforce_login();
 authorize();
 
-if (!check_perms('admin_convert_tags'))  error(403);
+if (!check_perms('admin_convert_tags')) {
+    error(403);
+}
 
 include(SERVER_ROOT . '/Legacy/sections/torrents/functions.php');
 
@@ -11,7 +13,6 @@ $Message = '';
 // ==============================  super delete ========================
 
 if (isset($_POST['deletetagperm'])) {
-
     $Result = 0;
     $TagID = (int) $_POST['permdeletetagid'];
 
@@ -58,7 +59,9 @@ if (isset($_POST['deletetagperm'])) {
 
         $Message .= "Permanently deleted tag $TagName.";
         $count=count($GroupIDs);
-        if ($count > 0) $Message .= " $count torrent taglists updated. ";
+        if ($count > 0) {
+            $Message .= " $count torrent taglists updated. ";
+        }
 
         //  log action
         $AllGroupIDs = implode(',', $GroupIDs);
@@ -68,7 +71,6 @@ if (isset($_POST['deletetagperm'])) {
 }
 
 if (isset($_POST['recountall'])) {
-
     // this may take a while...
 
     // delete any orphaned torrent-tag links where the torrent no longer exists
@@ -97,7 +99,6 @@ if (isset($_POST['recountall'])) {
     $numt =$DB->affected_rows();
     $Result = $numtt >= 0 || $numtv >= 0 || $numt >= 0? 1 :0; // just check no sql errors returned - 0 results are not errors
     $Message .= "Recounted total uses for $numt tags. Removed orphans: $numtt tor-tag links, $numtv tag-votes" ;
-
 }
 
 if ($Message != '') {

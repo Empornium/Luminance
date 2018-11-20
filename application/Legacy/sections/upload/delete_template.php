@@ -1,5 +1,5 @@
 <?php
-if (!is_number($_POST['template']) || !check_perms('site_use_templates') ) {
+if (!is_number($_POST['template']) || !check_perms('site_use_templates')) {
     echo json_encode(array(0, "You do not have permission to use templates", get_templatelist_html($LoggedUser['ID'])));
     die();
 }
@@ -8,7 +8,7 @@ if (!is_number($_POST['template']) || !check_perms('site_use_templates') ) {
 $TemplateID = (int) $_POST['template'];
 $Template = $Cache->get_value('template_' . $TemplateID);
 
-if ($Template === FALSE) { //it should really be cached from upload page
+if ($Template === false) { //it should really be cached from upload page
             $DB->query("SELECT
                                         t.ID,
                                         t.UserID,
@@ -22,23 +22,24 @@ if ($Template === FALSE) { //it should really be cached from upload page
 $candelete=true;
 
 if (!check_perms('site_delete_any_templates')) {
-        if ($Template['Public'] == 1) {
-
-            $Result = array(0, "You cannot delete public templates");
-            $candelete=false;
-
-        } elseif ($Template['UserID'] != $LoggedUser['ID']) {  // naughty
-            $Result = array(0, "You do not have permission to delete that template");
-            $candelete=false;
-        }
+    if ($Template['Public'] == 1) {
+        $Result = array(0, "You cannot delete public templates");
+        $candelete=false;
+    } elseif ($Template['UserID'] != $LoggedUser['ID']) {  // naughty
+        $Result = array(0, "You do not have permission to delete that template");
+        $candelete=false;
+    }
 }
 
 if ($candelete) {
         $DB->query("DELETE FROM upload_templates WHERE ID='$TemplateID'");
         $Cache->delete_value('template_' . $TemplateID);
 
-        if ($Template['Public']) $Cache->delete_value('templates_public');
-        else $Cache->delete_value('templates_ids_' . $LoggedUser['ID']);
+    if ($Template['Public']) {
+        $Cache->delete_value('templates_public');
+    } else {
+        $Cache->delete_value('templates_ids_' . $LoggedUser['ID']);
+    }
 
         $Result = array(1, "Deleted '$Template[Name]' template");
 }

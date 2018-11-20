@@ -5,19 +5,21 @@ include(SERVER_ROOT.'/Legacy/sections/torrents/functions.php');
 authorize();
 
 // Quick SQL injection check
-if(empty($_REQUEST['groupid']) || !is_number($_REQUEST['groupid'])) {
-  error(404);
+if (empty($_REQUEST['groupid']) || !is_number($_REQUEST['groupid'])) {
+    error(404);
 }
 // Quick SQL injection check
-if(!$_REQUEST['eventid'] || !is_number($_REQUEST['eventid'])) {
-  error(404);
+if (!$_REQUEST['eventid'] || !is_number($_REQUEST['eventid'])) {
+    error(404);
 }
 // End injection check
 $GroupID = (int)$_REQUEST['groupid'];
 $EventID = (int)$_REQUEST['eventid'];
 
 //check user has permission to edit
-if(!check_perms('torrents_review')) error(403);
+if (!check_perms('torrents_review')) {
+    error(403);
+}
 
 // User PFL
 $DB->query("SELECT UserID FROM torrents	WHERE ID = $GroupID");
@@ -46,7 +48,6 @@ $UpdateSet = [];
 
 $MaxPFL = (60*60*24*7*4); // 4 weeks
 if ($Event['PFL'] != 0) {
-
     if ($user->legacy['personal_freeleech'] < sqltime()) {
         $current = 0;
         $before = 'none';
@@ -63,7 +64,7 @@ if ($Event['PFL'] != 0) {
             $PFL = $current + $Event['PFL']*(60*60);
             // Don't stack above max PFL.
             if ($PFL > $MaxPFL) {
-              $PFL = $MaxPFL;
+                $PFL = $MaxPFL;
             }
             // Convert to date
             $PFL = time_plus($PFL);
@@ -81,9 +82,9 @@ if ($Event['PFL'] != 0) {
 
 $MaxTokens = 12;
 if ($Event['Tokens'] != 0) {
-    if($user->legacy['FLTokens'] < $MaxTokens) {
+    if ($user->legacy['FLTokens'] < $MaxTokens) {
         $Tokens = $user->legacy['FLTokens'] + $Event['Tokens'];
-        if($Tokens > $MaxTokens) {
+        if ($Tokens > $MaxTokens) {
             $Tokens = $MaxTokens;
         }
 
@@ -125,7 +126,7 @@ if (!empty($EditSummary)) {
 $DB->query("SELECT personal_freeleech, torrent_pass FROM users_main WHERE ID=$UserID");
 list($PFL, $Pass) = $DB->next_record();
 
-if($Event['UFL'] == 1) {
+if ($Event['UFL'] == 1) {
     freeleech_groups($GroupID, 1);
 }
 

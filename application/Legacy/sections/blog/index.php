@@ -4,15 +4,19 @@ enforce_login();
 require(SERVER_ROOT.'/Legacy/sections/blog/functions.php');
 
 // we also use this code for the contests section
-if (!in_array($blogSection,['Blog', 'Contests'])) $blogSection = 'Blog';
+if (!in_array($blogSection, ['Blog', 'Contests'])) {
+    $blogSection = 'Blog';
+}
 
 $thispage = lcfirst($blogSection).'.php';
 
 if (!empty($_REQUEST['action'])) {
-    if (!check_perms('admin_manage_blog')) error(403);
+    if (!check_perms('admin_manage_blog')) {
+        error(403);
+    }
 
     switch ($_REQUEST['action']) {
-        case 'removelink' :
+        case 'removelink':
             authorize();
             if (is_number($_GET['id'])) {
                 $master->db->raw_query("UPDATE blog SET ThreadID=NULL WHERE ID=:blogid", [':blogid' => $_GET['id']]);

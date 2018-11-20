@@ -1,21 +1,29 @@
 <?php
 $TorrentID = $_GET['torrentid'];
-if (!$TorrentID || !is_number($TorrentID)) error(404);
+if (!$TorrentID || !is_number($TorrentID)) {
+    error(404);
+}
 
-$torrent = $master->db->raw_query("SELECT t.UserID,
+$torrent = $master->db->raw_query(
+    "SELECT t.UserID,
                                           t.Time,
                                           COUNT(x.uid) As Snatches
                                      FROM torrents AS t LEFT JOIN xbt_snatched AS x ON x.fid=t.ID
                                     WHERE t.ID= :torrentid
                                  GROUP BY t.UserID",
-                                          [':torrentid' => $TorrentID])->fetch(\PDO::FETCH_ASSOC);
+    [':torrentid' => $TorrentID]
+)->fetch(\PDO::FETCH_ASSOC);
 
-if (!$torrent) error('Torrent already deleted.');
+if (!$torrent) {
+    error('Torrent already deleted.');
+}
 
 if ($LoggedUser['ID']!=$torrent['UserID'] && !check_perms('torrents_delete')) {
     error(403);
 }
-if($master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::UPLOAD) || !check_perms('site_upload')) error('You can no longer delete this torrent as your upload rights have been disabled');
+if ($master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::UPLOAD) || !check_perms('site_upload')) {
+    error('You can no longer delete this torrent as your upload rights have been disabled');
+}
 
 if (isset($_SESSION['logged_user']['multi_delete']) && $_SESSION['logged_user']['multi_delete']>=3 && !check_perms('torrents_delete_fast')) {
     error('You have recently deleted 3 torrents, please contact a staff member if you need to delete more.');
@@ -68,7 +76,8 @@ if (check_perms('admin_reports')) {
     require(SERVER_ROOT.'/Legacy/sections/reportsv2/array.php');
     $Text = new Luminance\Legacy\Text;
     $ReportID = 0;
-    $torrentgroup = $master->db->raw_query("SELECT
+    $torrentgroup = $master->db->raw_query(
+        "SELECT
                                                 tg.Name,
                                                 tg.ID,
                                                 t.Time,
@@ -79,20 +88,26 @@ if (check_perms('admin_reports')) {
                                       LEFT JOIN torrents_group AS tg ON tg.ID=t.GroupID
                                       LEFT JOIN users_main AS u ON u.ID=t.UserID
                                           WHERE t.ID=:torrentid",
-                                                [':torrentid' => $TorrentID])->fetch(\PDO::FETCH_ASSOC);
+        [':torrentid' => $TorrentID]
+    )->fetch(\PDO::FETCH_ASSOC);
 
-    if (!$torrentgroup) error("Could not find torrent group");
+if (!$torrentgroup) {
+    error("Could not find torrent group");
+}
 
-    if (isset($_GET['type']) ) $Type = $_GET['type'];
-    else $Type = 'other';
+if (isset($_GET['type'])) {
+    $Type = $_GET['type'];
+} else {
+    $Type = 'other';
+}
 
-    if (array_key_exists($Type, $Types)) {
-        $ReportType = $Types[$Type];
-    } else {
-        //There was a type but it wasn't an option!
-        $Type = 'other';
-        $ReportType = $Types['other'];
-    }
+if (array_key_exists($Type, $Types)) {
+    $ReportType = $Types[$Type];
+} else {
+    //There was a type but it wasn't an option!
+    $Type = 'other';
+    $ReportType = $Types['other'];
+}
 
     $RawName = display_str($torrentgroup['Name'])." (". get_size($torrentgroup['Size']).")" ;
     $LinkName = "<a href='torrents.php?id={$torrentgroup['ID']}'>".display_str($torrentgroup['Name'])."</a> (". get_size($torrentgroup['Size']).")" ;
@@ -124,84 +139,93 @@ if (check_perms('admin_reports')) {
                     <td class="label">Torrent:</td>
                     <td colspan="3">
 <?php
-        if (!$torrentgroup['ID']) { ?>
+if (!$torrentgroup['ID']) { ?>
                         <a href="/log.php?search=Torrent+<?=$TorrentID?>"><?=$TorrentID?></a> (Deleted)
 <?php
-        } else {
+} else {
 ?>
-                        <?=$LinkName?>
-                        <a href="/torrents.php?action=download&amp;id=<?=$TorrentID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
-                        uploaded by <a href="/user.php?id=<?=$torrentgroup['UploaderID']?>"><?=$torrentgroup['Uploader']?></a> <?=time_diff($torrentgroup['Time'])?>
-                        <br />
+        <?=$LinkName?>
+        <a href="/torrents.php?action=download&amp;id=<?=$TorrentID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
+        uploaded by <a href="/user.php?id=<?=$torrentgroup['UploaderID']?>"><?=$torrentgroup['Uploader']?></a> <?=time_diff($torrentgroup['Time'])?>
+        <br />
 <?php
 
-            $GroupOthers = $master->db->raw_query("SELECT Count(r.ID)
+$GroupOthers = $master->db->raw_query(
+    "SELECT Count(r.ID)
                                                      FROM reportsv2 AS r
                                                 LEFT JOIN torrents AS t ON t.ID=r.TorrentID
                                                     WHERE r.Status != 'Resolved'
                                                       AND t.GroupID=:groupid",
-                                                          [':groupid' => $torrentgroup['ID']])->fetchColumn();
+    [':groupid' => $torrentgroup['ID']]
+)->fetchColumn();
 
-            if ($GroupOthers > 0) {
+if ($GroupOthers > 0) {
 ?>
-                        <div style="text-align: right;">
-                            <a href="/reportsv2.php?view=group&amp;id=<?=$torrentgroup['ID']?>">There <?=(($GroupOthers > 1) ? "are $GroupOthers reports" : "is 1 other report")?> for torrent(s) in this group</a>
-                        </div>
+    <div style="text-align: right;">
+        <a href="/reportsv2.php?view=group&amp;id=<?=$torrentgroup['ID']?>">There <?=(($GroupOthers > 1) ? "are $GroupOthers reports" : "is 1 other report")?> for torrent(s) in this group</a>
+    </div>
 <?php
-            }
+}
 
-            $UploaderOthers = $master->db->raw_query("SELECT Count(t.UserID)
+$UploaderOthers = $master->db->raw_query(
+    "SELECT Count(t.UserID)
                                                         FROM reportsv2 AS r
                                                    LEFT JOIN torrents AS t ON t.ID=r.TorrentID
                                                        WHERE r.Status != 'Resolved'
                                                          AND t.UserID=:userid",
-                                                             [':userid' => $torrentgroup['UploaderID']])->fetchColumn();
+    [':userid' => $torrentgroup['UploaderID']]
+    )->fetchColumn();
 
-            if ($UploaderOthers > 0) {
+    if ($UploaderOthers > 0) {
 ?>
-                        <div style="text-align: right;">
-                            <a href="/reportsv2.php?view=uploader&amp;id=<?=$torrentgroup['UploaderID']?>">There <?=(($UploaderOthers > 1) ? "are $UploaderOthers reports" : "is 1 other report")?> for torrent(s) uploaded by this user</a>
-                        </div>
+                <div style="text-align: right;">
+                    <a href="/reportsv2.php?view=uploader&amp;id=<?=$torrentgroup['UploaderID']?>">There <?=(($UploaderOthers > 1) ? "are $UploaderOthers reports" : "is 1 other report")?> for torrent(s) uploaded by this user</a>
+                </div>
 <?php
-            }
+    }
 
-            $requests = $master->db->raw_query("SELECT DISTINCT req.ID,
+    $requests = $master->db->raw_query(
+        "SELECT DISTINCT req.ID,
                                                                 req.FillerID,
                                                                 um.Username,
                                                                 req.TimeFilled
                                                            FROM requests AS req
                                                            JOIN users_main AS um ON um.ID=req.FillerID
                                                             AND req.TorrentID=:torrentid",
-                                                             [':torrentid' => $TorrentID])->fetchAll(\PDO::FETCH_ASSOC);
+        [':torrentid' => $TorrentID]
+    )->fetchAll(\PDO::FETCH_ASSOC);
 
-            if (count($requests) > 0) {
-                foreach ($requests as $request) {
+    if (count($requests) > 0) {
+        foreach ($requests as $request) {
 ?>
-                    <div style="text-align: right;">
-                        <a href="/user.php?id=<?=$request['FillerID']?>"><?=$request['Username']?></a> used this torrent to fill <a href="/requests.php?action=viewrequest&amp;id=<?=$request['ID']?>">this request</a> <?=time_diff($request['TimeFilled'])?>
-                    </div>
+            <div style="text-align: right;">
+                <a href="/user.php?id=<?=$request['FillerID']?>"><?=$request['Username']?></a> used this torrent to fill <a href="/requests.php?action=viewrequest&amp;id=<?=$request['ID']?>">this request</a> <?=time_diff($request['TimeFilled'])?>
+            </div>
 <?php
-                }
-            }
+        }
+    }
 
-            $ExtraIDs = $_GET['extraIDs'];
-            $SiteLog = '';
+    $ExtraIDs = $_GET['extraIDs'];
+    $SiteLog = '';
 
-            if ($ExtraIDs) {
+    if ($ExtraIDs) {
 ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="label">Relevant Other Torrents:</td>
-                        <td colspan="3">
-                            <input class="hidden" name="extras_id" value="<?=display_str($ExtraIDs)?>" />
+                </td>
+            </tr>
+            <tr>
+                <td class="label">Relevant Other Torrents:</td>
+                <td colspan="3">
+                    <input class="hidden" name="extras_id" value="<?=display_str($ExtraIDs)?>" />
 <?php
-                    $First = true;
-                    $Extras = explode(" ", $ExtraIDs);
-                    foreach ($Extras as $ExtraID) {
-                        if(!is_number($ExtraID)) continue;
+            $First = true;
+            $Extras = explode(" ", $ExtraIDs);
+foreach ($Extras as $ExtraID) {
+    if (!is_number($ExtraID)) {
+        continue;
+    }
 
-                        $extra = $master->db->raw_query("SELECT
+    $extra = $master->db->raw_query(
+        "SELECT
                                         tg.Name,
                                         tg.ID AS GroupID,
                                         t.Time,
@@ -214,33 +238,34 @@ if (check_perms('admin_reports')) {
                                         LEFT JOIN users_main AS u ON u.ID=t.UserID
                                         WHERE t.ID=:torrentid
                                         GROUP BY tg.ID",
-                                            [':torrentid' => $ExtraID])->fetch(\PDO::FETCH_ASSOC);
+        [':torrentid' => $ExtraID]
+    )->fetch(\PDO::FETCH_ASSOC);
 
-                        if ($extra['Name']) {
-                            $ExtraLinkName = '<a href="/torrents.php?id='.$extra[GroupID].'">'.display_str($extra['Name']).'</a> ('. get_size($extra['Size']).")";
+    if ($extra['Name']) {
+        $ExtraLinkName = '<a href="/torrents.php?id='.$extra[GroupID].'">'.display_str($extra['Name']).'</a> ('. get_size($extra['Size']).")";
 
-                            $ExtraPeerInfo = get_peers($ExtraID);
-                            echo ($First ? "" : "<br />");
-                            echo $ExtraLinkName;            ?>
-                                    <a href="/torrents.php?action=download&amp;id=<?=$ExtraID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
-                                    uploaded by <a href="/user.php?id=<?=$extra['UploaderID']?>"><?=display_str($extra['Uploader'])?></a>  <?=time_diff($extra['Time'])?> &nbsp;(<?=str_plural('file',$extra['FileCount'])?>)&nbsp;
-                                    [ <span title="Seeders"><?=$ExtraPeerInfo['Seeders']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="seeders" title="seeders" /></span> | <span title="Leechers"><?=$ExtraPeerInfo['Leechers']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="leechers" title="leechers" /></span> ]
-                                    &nbsp;[<a href="/torrents.php?action=dupe_check&amp;id=<?=$ExtraID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
+        $ExtraPeerInfo = get_peers($ExtraID);
+        echo ($First ? "" : "<br />");
+        echo $ExtraLinkName;            ?>
+                            <a href="/torrents.php?action=download&amp;id=<?=$ExtraID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
+                            uploaded by <a href="/user.php?id=<?=$extra['UploaderID']?>"><?=display_str($extra['Uploader'])?></a>  <?=time_diff($extra['Time'])?> &nbsp;(<?=str_plural('file', $extra['FileCount'])?>)&nbsp;
+                            [ <span title="Seeders"><?=$ExtraPeerInfo['Seeders']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="seeders" title="seeders" /></span> | <span title="Leechers"><?=$ExtraPeerInfo['Leechers']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="leechers" title="leechers" /></span> ]
+                            &nbsp;[<a href="/torrents.php?action=dupe_check&amp;id=<?=$ExtraID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
 
+    <?php
+    if (!$First) {
+        $SiteLog .= ' ';
+    }
+    $SiteLog .= "/torrents.php?id={$extra[GroupID]}";
+    $First = false;
+    } else {
+    ?>
+    <a href="/torrents.php?id=<?=$ExtraID?>">(deleted torrent) #<?=$ExtraID?></a>
 <?php
-                            if (!$First) $SiteLog .= ' ';
-                            $SiteLog .= "/torrents.php?id={$extra[GroupID]}";
-                            $First = false;
-                        } else {
-?>
-                                <a href="/torrents.php?id=<?=$ExtraID?>">(deleted torrent) #<?=$ExtraID?></a>
-<?php
-                        }
-                    }
-
-            }
-
-        }
+    }
+}
+    }
+}
 ?>
                     </td>
                 </tr>

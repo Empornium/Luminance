@@ -1,7 +1,9 @@
 <?php
-if (!check_perms('admin_manage_awards')) { error(403); }
+if (!check_perms('admin_manage_awards')) {
+    error(403);
+}
 
-show_header('Automatic Awards schedule','badges');
+show_header('Automatic Awards schedule', 'badges');
 
 $DB->query("SELECT ID, Title
               FROM badges WHERE Type='Single' ORDER BY Sort");
@@ -11,7 +13,7 @@ $DB->query("SELECT ID, Name
               FROM categories ORDER BY Name");
 $CatsArray = $DB->to_array();
 
-function print_badges_select($ElementID, $CurrentBadgeID=-1)
+function print_badges_select($ElementID, $CurrentBadgeID = -1)
 {
     global $BadgesArray;
 ?>
@@ -23,7 +25,7 @@ function print_badges_select($ElementID, $CurrentBadgeID=-1)
     </select>
 <?php
 }
-function print_categories($ElementID, $SelectedCat=-1)
+function print_categories($ElementID, $SelectedCat = -1)
 {
     global $CatsArray;
 ?>
@@ -62,55 +64,57 @@ function print_categories($ElementID, $SelectedCat=-1)
             </tr>
 <?php
             $numAdds = isset($_REQUEST['numadd'])?(int) $_REQUEST['numadd']:5;
-            if ($numAdds<1 || $numAdds > 20) $numAdds = 1;
+if ($numAdds<1 || $numAdds > 20) {
+    $numAdds = 1;
+}
 
-            for ($i = 0; $i < $numAdds; $i++) {
-                $ID = "new$i";
+for ($i = 0; $i < $numAdds; $i++) {
+    $ID = "new$i";
 ?>
-                <tr class="rowb">
-                    <td rowspan="2" style="vertical-align: top">
-                        <input type="checkbox" id="id_<?=$ID?>" name="id[<?=$ID?>]" value="<?=$ID?>" title="If checked edits to this badge will be saved when you click on 'Save changes'" />
-                    </td>
-                    <td class="center" rowspan="2">
-                        <div class="badge">
-                            <span id="image<?=$ID?>">
-                            </span>
-                        </div>
-                    </td>
-                    <td>
+<tr class="rowb">
+<td rowspan="2" style="vertical-align: top">
+<input type="checkbox" id="id_<?=$ID?>" name="id[<?=$ID?>]" value="<?=$ID?>" title="If checked edits to this badge will be saved when you click on 'Save changes'" />
+</td>
+<td class="center" rowspan="2">
+<div class="badge">
+    <span id="image<?=$ID?>">
+    </span>
+</div>
+</td>
+<td>
 <?php                       print_badges_select($ID); ?>
-                    </td>
-                    <td>
-                        <select name="type[<?=$ID?>]" id="type<?=$ID?>" onchange="Set_Edit('<?=$ID?>')" >
+</td>
+<td>
+<select name="type[<?=$ID?>]" id="type<?=$ID?>" onchange="Set_Edit('<?=$ID?>')" >
 <?php                           foreach ($AutoAwardTypes as $Act) {   ?>
                                 <option value="<?=$Act?>"><?=$Act?>&nbsp;&nbsp;&nbsp;&nbsp;</option>
 <?php                           } ?>
-                    </select>
-                    </td>
-                    <td>
-                          <input class="medium"  type="text" name="value[<?=$ID?>]" id="value<?=$ID?>" onchange="Set_Edit('<?=$ID?>')" />
-                    </td>
-                    <td>
-                        <?php  print_categories($ID) ?>
-                    </td>
-                    <td class="center">
-                          <input class="medium"  type="checkbox" name="sendpm[<?=$ID?>]" id="sendpm<?=$ID?>" value="1" checked="checked" onchange="Set_Edit('<?=$ID?>')" title="If checked then the user is sent a PM telling them when they receive this award" />
-                    </td>
-                    <td class="center">
-                          <input class="medium"  type="checkbox" name="active[<?=$ID?>]" id="active<?=$ID?>" value="1" checked="checked" onchange="Set_Edit('<?=$ID?>')" title="If checked this award will be automatically distributed to users who meet the specified requirements" />
-                    </td>
-                    <td rowspan="2">
-                        <a href="#" onclick="Fill_From(<?=$i?>,['badgeid','catid','image','type','value','sendpm','active','descr'])" title="fill other add forms with this forms values">fill</a>
-                    </td>
-                </tr>
-                <tr class="rowb">
-                    <td colspan="6">
-                        <span id="descr<?=$ID?>"></span>
-                    </td>
-                </tr>
-                <tr class="rowa">
-                    <td colspan="9"></td>
-                </tr>
+</select>
+</td>
+<td>
+  <input class="medium"  type="text" name="value[<?=$ID?>]" id="value<?=$ID?>" onchange="Set_Edit('<?=$ID?>')" />
+</td>
+<td>
+<?php  print_categories($ID) ?>
+</td>
+<td class="center">
+  <input class="medium"  type="checkbox" name="sendpm[<?=$ID?>]" id="sendpm<?=$ID?>" value="1" checked="checked" onchange="Set_Edit('<?=$ID?>')" title="If checked then the user is sent a PM telling them when they receive this award" />
+</td>
+<td class="center">
+  <input class="medium"  type="checkbox" name="active[<?=$ID?>]" id="active<?=$ID?>" value="1" checked="checked" onchange="Set_Edit('<?=$ID?>')" title="If checked this award will be automatically distributed to users who meet the specified requirements" />
+</td>
+<td rowspan="2">
+<a href="#" onclick="Fill_From(<?=$i?>,['badgeid','catid','image','type','value','sendpm','active','descr'])" title="fill other add forms with this forms values">fill</a>
+</td>
+</tr>
+<tr class="rowb">
+<td colspan="6">
+<span id="descr<?=$ID?>"></span>
+</td>
+</tr>
+<tr class="rowa">
+<td colspan="9"></td>
+</tr>
 
 <?php           }    ?>
 
@@ -223,7 +227,7 @@ function print_categories($ElementID, $SelectedCat=-1)
                     <td colspan="9">
                     </td>
                 </tr>
-<?php           }  ?>
+            <?php           }  ?>
             <tr class="rowb">
                 <td colspan="5" style="text-align: right;">
                     <input type="submit" name="saveall" value="Save changes" title="Save changes for all selected automatic awards schedules" />

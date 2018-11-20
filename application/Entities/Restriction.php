@@ -3,7 +3,8 @@ namespace Luminance\Entities;
 
 use Luminance\Core\Entity;
 
-class Restriction extends Entity {
+class Restriction extends Entity
+{
 
     public static $table = 'restrictions';
 
@@ -56,15 +57,18 @@ class Restriction extends Entity {
         self::TORRENTSIGNATURE  => ['name' => 'torrent signature',  'perms' => ['users_disable_any']  ],
     ];
 
-    public function is_warning() {
+    public function is_warning()
+    {
         return ($this->Flags & self::WARNED) != 0;
     }
 
-    public function get_restrictions() {
+    public function get_restrictions()
+    {
         $decoded = [];
         foreach (self::$decode as $key => $restrict) {
-            if (($this->Flags & $key) != 0)
+            if (($this->Flags & $key) != 0) {
                 $decoded[] = $restrict['name'];
+            }
         }
         return $decoded;
     }

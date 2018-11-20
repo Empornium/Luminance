@@ -18,25 +18,27 @@ show_header();
 <?php
     $text = '';
     $title = '';
-    if ($_POST['simulate']=='1') {
-        // do the schedule
-        $results = award_ducky_pending();
-        $title = "Ran the schedule: ".count($results)." awards made";
-        $text = print_r($results, true);
-    } else {
-        // preview
-        $minSnatched=1;
-        // get all the users who have a pending torrent ducky award - torrents that have been okayed that now have Snatched>1
-        $pending = $master->db->raw_query("SELECT t.ID, t.UserID
+if ($_POST['simulate']=='1') {
+    // do the schedule
+    $results = award_ducky_pending();
+    $title = "Ran the schedule: ".count($results)." awards made";
+    $text = print_r($results, true);
+} else {
+    // preview
+    $minSnatched=1;
+    // get all the users who have a pending torrent ducky award - torrents that have been okayed that now have Snatched>1
+    $pending = $master->db->raw_query(
+        "SELECT t.ID, t.UserID
                                              FROM torrents AS t
                                              JOIN torrents_awards AS ta ON ta.TorrentID=t.ID
                                             WHERE ta.Ducky = '0'
                                               AND t.Snatched >= :minsnatched",
-                                                  [':minsnatched' => $minSnatched])->fetchAll(\PDO::FETCH_ASSOC);
+        [':minsnatched' => $minSnatched]
+    )->fetchAll(\PDO::FETCH_ASSOC);
 
-        $title = "Preview of ".count($pending)." awards that will be made when the schedule runs";
-        $text = print_r($pending, true);
-    }
+    $title = "Preview of ".count($pending)." awards that will be made when the schedule runs";
+    $text = print_r($pending, true);
+}
 
 
 ?>

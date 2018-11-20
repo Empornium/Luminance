@@ -114,7 +114,7 @@ show_header('Disabled logs');
                     <td><strong>Date</strong></td>
                     <td><strong>Action</strong></td>
                 </tr>
-                <?php foreach ($Logs as $Log): ?>
+                <?php foreach ($Logs as $Log) : ?>
                     <tr>
                         <td><?php echo $master->render->username($Log['UserID'], $options); ?></td>
                         <td><?php echo display_ip((string) $ip = $master->repos->ips->load($Log['IPID']), $ip->geoip) ?></td>

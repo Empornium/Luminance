@@ -1,7 +1,9 @@
 <?php
 enforce_login();
 
-if (!isset($_REQUEST['action'])) $_REQUEST['action'] = '';
+if (!isset($_REQUEST['action'])) {
+    $_REQUEST['action'] = '';
+}
 
 // get vars from LoggedUser
 $SupportFor = $LoggedUser['SupportFor'];
@@ -12,15 +14,18 @@ $IsStaff = ($DisplayStaff == 1);
 $IsFLS = ($SupportFor != '' || $IsStaff);
 
 switch ($_REQUEST['action']) {
-
     case 'takenewpost': // == start a staff conversation
         authorize();
-        if (!$IsStaff) error(403);
+        if (!$IsStaff) {
+            error(403);
+        }
 
         if (empty($_POST['toid']) || !is_number($_POST['toid'])) {
             $DB->query("SELECT ID FROM users_main WHERE Username='".db_string($_POST['user'])."'");
             list($ToID) = $DB->next_record();
-        } else $ToID = $_POST['toid'];
+        } else {
+            $ToID = $_POST['toid'];
+        }
 
         $ConvID = startStaffConversation($ToID, $_POST['subject'], $_POST['message']);
 
@@ -29,7 +34,9 @@ switch ($_REQUEST['action']) {
         break;
 
     case 'compose':
-        if (!$IsStaff) error(403);
+        if (!$IsStaff) {
+            error(403);
+        }
         require 'compose.php';
         break;
     case 'viewconv':

@@ -139,18 +139,17 @@ foreach ($AutoActions as $AutoAction) {
         $CountUsers = count($UserIDs);
 
         if ($CountUsers > 0) {
-
             $logmsg = "Awarding $Name ($Badge/$Rank) to $CountUsers users...\n";
             echo $logmsg;   // for debug output
 
             //FOR DEBUG ONLY
             //write_log($logmsg." (starting...)");
 
-            $SQL_IN = implode(', ',$UserIDs);
+            $SQL_IN = implode(', ', $UserIDs);
 
             $DB->query("UPDATE users_info SET AdminComment = CONCAT('".sqltime()." - Badge ". db_string($Name)." ". db_string($Description)." by Scheduler\n', AdminComment) WHERE UserID IN ($SQL_IN)");
 
-        $Values = "('".implode("', '".$BadgeID."', '".db_string($Description)."'), ('", $UserIDs)."', '".$BadgeID."', '".db_string($Description)."')";
+            $Values = "('".implode("', '".$BadgeID."', '".db_string($Description)."'), ('", $UserIDs)."', '".$BadgeID."', '".db_string($Description)."')";
             $DB->query("INSERT INTO users_badges (UserID, BadgeID, Description) VALUES $Values");
 
             // remove lower ranked badges of same badge set
@@ -161,8 +160,12 @@ foreach ($AutoActions as $AutoAction) {
                            AND b.Badge='$Badge' AND b.Rank<$Rank");
 
             if ($SendPM) {
-                send_pm($UserIDs, 0, "Congratulations you have been awarded the $Name",
-                            "[center][br][br][img]/static/common/badges/{$Image}[/img][br][br][size=5][color=white][bg=#0261a3][br]{$Description}[br][br][/bg][/color][/size][/center]");
+                send_pm(
+                    $UserIDs,
+                    0,
+                    "Congratulations you have been awarded the $Name",
+                    "[center][br][br][img]/static/common/badges/{$Image}[/img][br][br][size=5][color=white][bg=#0261a3][br]{$Description}[br][br][/bg][/color][/size][/center]"
+                );
             }
 
             foreach ($UserIDs as $UserID) {
@@ -173,5 +176,4 @@ foreach ($AutoActions as $AutoAction) {
             write_log($logmsg." ($SQL_IN)");
         }
     }
-
 }  // end foreach auto actions

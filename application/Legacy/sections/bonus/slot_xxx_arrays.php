@@ -84,7 +84,7 @@ function print_payout_table($BetAmount)
             <img src="<?= STATIC_SERVER ?>common/casino/icon<?= $Pic ?>.png" />
         </div>
     <?php }
-    foreach ($Payout as $Pic => $P) { ?>
+foreach ($Payout as $Pic => $P) { ?>
         <div>
             <span class="payout"><?= number_format($BetAmount * $P[1]) ?></span>
             <img src="<?= STATIC_SERVER ?>common/casino/icon<?= $Pic ?>.png" />
@@ -93,5 +93,5 @@ function print_payout_table($BetAmount)
             <img src="<?= STATIC_SERVER ?>common/casino/icon<?= $Pic ?>.png" />
         </div>
     <?php
-    }
+}
 }

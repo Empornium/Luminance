@@ -1,6 +1,8 @@
 <?php
 $GroupID = $_GET['groupid'];
-if (!is_number($GroupID)) { error(404); }
+if (!is_number($GroupID)) {
+    error(404);
+}
 
 $Text = new Luminance\Legacy\Text;
 
@@ -30,8 +32,9 @@ if (!empty($Groups['matches'][$GroupID])) {
             <td>Info</td>
         </tr>
 <?php
-    if (!$LoggedUser['DisplayStaff']=='1' && !$LoggedUser['SupportFor']!='')
-        $XTRAWHERE = "AND Hidden='0'";
+if (!$LoggedUser['DisplayStaff']=='1' && !$LoggedUser['SupportFor']!='') {
+    $XTRAWHERE = "AND Hidden='0'";
+}
 
     $Log = $DB->query("SELECT TorrentID, t.Name, g.UserID, Username, Info, g.Time
                          FROM group_log AS g
@@ -47,11 +50,11 @@ if (!empty($Groups['matches'][$GroupID])) {
             <td><?=$Name?></td>
 
 <?php
-            if ($AuthorID == $UserID) {
-                $TorrentUsername = torrent_username($UserID, $Username, $IsAnon);
-            } else {
-                $TorrentUsername = format_username($UserID, $Username);
-            }
+if ($AuthorID == $UserID) {
+    $TorrentUsername = torrent_username($UserID, $Username, $IsAnon);
+} else {
+    $TorrentUsername = format_username($UserID, $Username);
+}
 ?>
             <td><?=$TorrentUsername?></td>
             <td><?=$Text->full_format($Info)?></td>

@@ -5,22 +5,26 @@ $Body=get_article('connchecker');
 
 
 if (!isset($_GET['checkip'])) {
-    $ipinfo = $master->db->raw_query("SELECT INET6_NTOA(ipv4) AS ipv4, port, active
+    $ipinfo = $master->db->raw_query(
+        "SELECT INET6_NTOA(ipv4) AS ipv4, port, active
                                         FROM xbt_files_users
                                        WHERE uid = :userid
                                     ORDER BY active DESC, mtime DESC LIMIT 1",
-                                            [':userid' => $LoggedUser[ID]])->fetch(\PDO::FETCH_ASSOC);
+        [':userid' => $LoggedUser[ID]]
+    )->fetch(\PDO::FETCH_ASSOC);
     if (is_array($ipinfo)) {
         $_GET['checkip']   = $ipinfo['ipv4'];
         $_GET['checkport'] = $ipinfo['port'];
         $active            = $ipinfo['active'];
-        if ($active!='1') $_GET['checkport'] = '';
+        if ($active!='1') {
+            $_GET['checkport'] = '';
+        }
     } else {
         $_GET['checkip']   = $_SERVER['REMOTE_ADDR'];
     }
 }
 
-if (isset($_GET['checkuser']) && is_number($_GET['checkuser']) && $_GET['checkuser'] > 0 && check_perms('users_mod') ) {
+if (isset($_GET['checkuser']) && is_number($_GET['checkuser']) && $_GET['checkuser'] > 0 && check_perms('users_mod')) {
     $UserID = $_GET['checkuser'];
     $Username = $master->db->raw_query("SELECT Username FROM users_main WHERE ID=:userid", [':userid' => $UserID])->fetchColumn();
     if (!$Username) {
@@ -34,7 +38,7 @@ if (isset($_GET['checkuser']) && is_number($_GET['checkuser']) && $_GET['checkus
 
 
 
-show_header('Connectability Checker','bbcode');
+show_header('Connectability Checker', 'bbcode');
 ?>
 <div class="thin">
     <h2><a href="/user.php?id=<?=$LoggedUser['ID']?>"><?=$LoggedUser['Username']?></a> &gt; Connectability Checker</h2>

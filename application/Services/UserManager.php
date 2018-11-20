@@ -28,7 +28,8 @@ class UserManager extends Service
      *
      * @throws InternalError if the user cannot be loaded
      */
-    public function canInvite($user) {
+    public function canInvite($user)
+    {
         if (!$user instanceof User) {
             if (!$user = $this->users->load($user)) {
                 throw new InternalError("Unable to render user.");

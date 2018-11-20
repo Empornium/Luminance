@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('admin_donor_log')) error(403,true);
+if (!check_perms('admin_donor_log')) {
+    error(403, true);
+}
 
 include(SERVER_ROOT.'/Legacy/sections/donate/functions.php');
 

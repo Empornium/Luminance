@@ -1,6 +1,6 @@
 <?php
 $Text = new Luminance\Legacy\Text;
-show_header('Create a collage','bbcode,jquery');
+show_header('Create a collage', 'bbcode,jquery');
 
 if (!check_perms('site_collages_renamepersonal')) {
     $ChangeJS = "OnChange=\"if (this.options[this.selectedIndex].value == '0') { $('#namebox').hide(); $('#personal').show(); } else { $('#namebox').show(); $('#personal').hide(); }\"";
@@ -25,8 +25,8 @@ if (!empty($Error)) { ?>
 <?php }
     /* -------  Draw a box with imagehost whitelist  ------- */
     $Whitelist = $Cache->get_value('imagehost_whitelist');
-    if ($Whitelist === FALSE) {
-        $DB->query("SELECT
+if ($Whitelist === false) {
+    $DB->query("SELECT
                     Imagehost,
                     Link,
                     Comment,
@@ -35,16 +35,17 @@ if (!empty($Error)) { ?>
                     FROM imagehost_whitelist
                     WHERE Hidden='0'
                     ORDER BY Time DESC");
-        $Whitelist = $DB->to_array();
-        $Cache->cache_value('imagehost_whitelist', $Whitelist);
-    }
+    $Whitelist = $DB->to_array();
+    $Cache->cache_value('imagehost_whitelist', $Whitelist);
+}
     $DB->query("SELECT MAX(iw.Time), IF(MAX(t.Time) < MAX(iw.Time) OR MAX(t.Time) IS NULL,1,0)
                   FROM imagehost_whitelist as iw
              LEFT JOIN torrents AS t ON t.UserID = '$LoggedUser[ID]' ");
     list($Updated, $NewWL) = $DB->next_record();
 // test $HideWL first as it may have been passed from upload_handle
-    if (!$HideWL)
+    if (!$HideWL) {
         $HideWL = check_perms('torrents_hide_imagehosts') || !$NewWL;
+    }
     ?>
     <div class="head">Approved Imagehosts</div>
     <div class="box pad">
@@ -74,7 +75,7 @@ foreach ($Whitelist as $ImageHost) {
                     </td>
                     <td><?=$Text->full_format($Comment)?></td>
                 </tr>
-    <?php  } ?>
+<?php  } ?>
         </table>
     </div>
         <div class="head">New collage</div>
@@ -96,7 +97,7 @@ foreach ($Whitelist as $ImageHost) {
 <?php
 array_shift($CollageCats);
 
-foreach ($CollageCats as $CatID=>$CatName) { ?>
+foreach ($CollageCats as $CatID => $CatName) { ?>
                         <option value="<?=$CatID+1?>"<?=(($CatID+1 == $Category)?' selected':'')?>><?=$CatName?></option>
 <?php }
 $DB->query("SELECT COUNT(ID) FROM collages WHERE UserID='$LoggedUser[ID]' AND CategoryID='0' AND Deleted='0'");
@@ -112,7 +113,7 @@ if (($CollageCount < $LoggedUser['Permissions']['MaxCollages']) && check_perms('
                         <li><strong>Studio</strong> - A collage with content from a specific studio</li>
                         <li><strong>Staff picks</strong> - A list of recommendations picked by the staff on special occasions</li>
 <?php
-   if (($CollageCount < $LoggedUser['Permissions']['MaxCollages']) && check_perms('site_collages_personal')) { ?>
+if (($CollageCount < $LoggedUser['Permissions']['MaxCollages']) && check_perms('site_collages_personal')) { ?>
                         <li><strong>Personal</strong> - You can put whatever your want here.  It's your personal collage.</li>
 <?php } ?>
                     </ul>
@@ -126,12 +127,18 @@ if (($CollageCount < $LoggedUser['Permissions']['MaxCollages']) && check_perms('
 <?php
                                 $MinUserLevel = $master->auth->permissions->getMinUserLevel();
                                 $MinStaffLevel = $master->auth->permissions->getMinStaffLevel();
-                                foreach ($ClassLevels as $CurClass) {
-                                    if ($CurClass['Level']>=$MinStaffLevel) break;      // dont display  staff levels (and exit loop)
-                                    if ($CurClass['Level']<$MinUserLevel) continue;     // dont display gimp like levels
-                                    if ($CurClass['IsUserClass']==0) continue;          // dont display non ranks (ie. FLS/group permissions)
+foreach ($ClassLevels as $CurClass) {
+    if ($CurClass['Level']>=$MinStaffLevel) {
+        break;      // dont display  staff levels (and exit loop)
+    }
+    if ($CurClass['Level']<$MinUserLevel) {
+        continue;     // dont display gimp like levels
+    }
+    if ($CurClass['IsUserClass']==0) {
+        continue;          // dont display non ranks (ie. FLS/group permissions)
+    }
 ?>
-                                    <option value="<?=$CurClass['Level']?>"<?=($CurClass['Level']==$MinUserLevel?' selected="selected"':'')?>><?=$CurClass['Name'];?></option>
+<option value="<?=$CurClass['Level']?>"<?=($CurClass['Level']==$MinUserLevel?' selected="selected"':'')?>><?=$CurClass['Name'];?></option>
 <?php                           } ?>
 
                                 <option value="0">Only Creator</option>

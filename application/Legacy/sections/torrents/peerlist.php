@@ -1,5 +1,7 @@
 <?php
-if(!check_perms('site_view_torrent_peerlist')) error(403,true);
+if (!check_perms('site_view_torrent_peerlist')) {
+    error(403, true);
+}
 
 if (!isset($_GET['torrentid']) || !is_number($_GET['torrentid'])) {
     error(404, true);
@@ -49,7 +51,7 @@ $DB->set_query_id($Result);
 
 <?php  if ($NumResults > 100) { ?>
     <div class="linkbox"><?= js_pages('show_peers', $_GET['torrentid'], $NumResults, $Page) ?></div>
-    <?php  } ?>
+<?php  } ?>
 <table>
     <?php
     if ($NumResults==0) {
@@ -62,7 +64,6 @@ $DB->set_query_id($Result);
     $LastIsSeeder = -1;
     while (list($PeerUserID, $Size, $Username, $Active, $Connectable, $Uploaded, $Remaining, $UserAgent,
             $IsSeeder, $Timespent, $UpSpeed, $DownSpeed, $IP, $Port) = $DB->next_record()) {
-
         if ($IsSeeder != $LastIsSeeder) {
             ?>
 
@@ -89,21 +90,29 @@ $DB->set_query_id($Result);
         }
         ?>
         <tr>
-            <td><?= torrent_username($PeerUserID, $Username, $IsAnon && $PeerUserID == $AuthorID ) ?></td>
+            <td><?= torrent_username($PeerUserID, $Username, $IsAnon && $PeerUserID == $AuthorID) ?></td>
             <td><?= ($Active) ? '<span style="color:green">Yes</span>' : '<span style="color:red">No</span>' ?></td>
 
             <td><?php
-                if ($Active && $Port && (check_perms('users_mod') || $PeerUserID==$LoggedUser['ID'] ) ) {
-                    $link = 'user.php?action=connchecker&checkuser='.$PeerUserID.'&checkip='.$IP.'&checkport='.$Port;
-                    if ($Connectable=='yes') echo '<a href="/'.$link.'" style="color:green">Yes</a>' ;
-                    elseif ($Connectable=='no') echo'<a href="/'.$link.'" style="color:red">No</a>';
-                    else echo'<a href="/'.$link.'" style="color:darkgrey">?</a>';
+            if ($Active && $Port && (check_perms('users_mod') || $PeerUserID==$LoggedUser['ID'] )) {
+                $link = 'user.php?action=connchecker&checkuser='.$PeerUserID.'&checkip='.$IP.'&checkport='.$Port;
+                if ($Connectable=='yes') {
+                    echo '<a href="/'.$link.'" style="color:green">Yes</a>' ;
+                } elseif ($Connectable=='no') {
+                    echo'<a href="/'.$link.'" style="color:red">No</a>';
                 } else {
-                    if ($Connectable=='yes') echo '<span style="color:green">Yes</span>' ;
-                    elseif ($Connectable=='no') echo'<span style="color:red">No</span>';
-                    else echo'<span style="color:darkgrey">?</span>';
+                    echo'<a href="/'.$link.'" style="color:darkgrey">?</a>';
                 }
-                   ?></td>
+            } else {
+                if ($Connectable=='yes') {
+                    echo '<span style="color:green">Yes</span>' ;
+                } elseif ($Connectable=='no') {
+                    echo'<span style="color:red">No</span>';
+                } else {
+                    echo'<span style="color:darkgrey">?</span>';
+                }
+            }
+                    ?></td>
 
             <td><?= get_size($Uploaded) ?></td>
             <td><?= get_size($UpSpeed, 2)?>/s</td>

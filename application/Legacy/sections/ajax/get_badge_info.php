@@ -4,7 +4,6 @@ header("Content-type: text/xml");
 
 $BadgeID = (int) $_REQUEST['badgeid'];
 if ($BadgeID>0) {
-
     $DB->query("SELECT Title, Description, Image
                   FROM badges WHERE ID=$BadgeID");
     if ($DB->record_count()>0) {

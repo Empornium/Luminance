@@ -3,7 +3,8 @@ namespace Luminance\Entities;
 
 use Luminance\Core\Entity;
 
-class Email extends Entity {
+class Email extends Entity
+{
 
     public static $table = 'emails';
 
@@ -36,28 +37,34 @@ class Email extends Entity {
     const IS_DEFAULT = 1 << 2;
     const ENCRYPTED  = 1 << 3;
 
-    public function ready_to_resend() {
+    public function ready_to_resend()
+    {
         $treshold = new \DateTime('-1 hour');
         return ($this->Changed < $treshold);
     }
 
-    public function is_default() {
+    public function is_default()
+    {
         return $this->getFlag(self::IS_DEFAULT);
     }
 
-    public function is_encrypted() {
+    public function is_encrypted()
+    {
         return $this->getFlag(self::ENCRYPTED);
     }
 
-    public function is_confirmed() {
+    public function is_confirmed()
+    {
         return $this->getFlag(self::VALIDATED);
     }
 
-    public function is_cancelled() {
+    public function is_cancelled()
+    {
         return $this->getFlag(self::CANCELLED);
     }
 
-    public function send_email($subject, $template, $variables) {
+    public function send_email($subject, $template, $variables)
+    {
         $headerVariables = [
             'to'          => $this->Address,
             'from'        => 'noreply',

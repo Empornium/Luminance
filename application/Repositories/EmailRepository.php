@@ -6,16 +6,19 @@ use Luminance\Entities\Email;
 
 use Luminance\Errors\InputError;
 
-class EmailRepository extends Repository {
+class EmailRepository extends Repository
+{
 
     protected $entityName = 'Email';
 
-    public function get_by_address($Address) {
+    public function get_by_address($Address)
+    {
         $email = $this->get('`Address` = ?', [$Address]);
         return $email;
     }
 
-    public function isAvailable($address) {
+    public function isAvailable($address)
+    {
         // reduce fannies around with the domain. :(
         //$address = $this->reduceEmail($address);
         $email = $this->get_by_address($address);
@@ -25,12 +28,15 @@ class EmailRepository extends Repository {
         return true;
     }
 
-    public function checkAvailable($address) {
-        if (!$this->isAvailable($address))
+    public function checkAvailable($address)
+    {
+        if (!$this->isAvailable($address)) {
             throw new InputError("That email address is not available.");
+        }
     }
 
-    protected function get_emailblacklist_regex() {
+    protected function get_emailblacklist_regex()
+    {
         $pattern = $this->cache->get_value('emailblacklist_regex');
         if ($pattern==false) {
             $emails = $this->db->raw_query("SELECT Email as address FROM email_blacklist")->fetchAll(\PDO::FETCH_ASSOC);
@@ -50,13 +56,16 @@ class EmailRepository extends Repository {
         return $pattern;
     }
 
-    public function isBlacklisted($address) {
+    public function isBlacklisted($address)
+    {
         return preg_match($this->get_emailblacklist_regex(), $address);
     }
 
-    public function checkBlacklisted($address) {
-        if ($this->isBlacklisted($address))
+    public function checkBlacklisted($address)
+    {
+        if ($this->isBlacklisted($address)) {
             throw new InputError("That email address is blacklisted.");
+        }
     }
 
     /**
@@ -65,7 +74,8 @@ class EmailRepository extends Repository {
      * @param string $address
      * @return bool
      */
-    public function isValid($address) {
+    public function isValid($address)
+    {
         return filter_var($address, FILTER_VALIDATE_EMAIL) !== false;
     }
 
@@ -77,7 +87,8 @@ class EmailRepository extends Repository {
      *
      * @throws InputError if the e-mail is invalid
      */
-    public function checkFormat($address) {
+    public function checkFormat($address)
+    {
         if (!$this->isValid($address)) {
             throw new InputError("Invalid e-mail format.");
         }

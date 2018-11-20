@@ -1,5 +1,6 @@
 <?php
 namespace Luminance\Legacy;
+
 /*************************************************************************|
 |--------------- Cookie class --------------------------------------------|
 |*************************************************************************|
@@ -11,7 +12,8 @@ $Cookie->get(); is user provided and untrustworthy
 |*************************************************************************/
 
 
-class cookie /*implements COOKIE_INTERFACE*/ {
+class cookie /*implements COOKIE_INTERFACE*/
+{
     const LIMIT_ACCESS = true; //If true, blocks JS cookie API access by default (can be overridden case by case)
     const PREFIX = ''; //In some cases you may desire to prefix your cookies
 
@@ -25,14 +27,14 @@ class cookie /*implements COOKIE_INTERFACE*/ {
     }
 
     //Pass the 4th optional param as false to allow JS access to the cookie
-    public function set($Key,$Value,$Seconds = 86400,$LimitAccess = SELF::LIMIT_ACCESS)
+    public function set($Key, $Value, $Seconds = 86400, $LimitAccess = SELF::LIMIT_ACCESS)
     {
-        setcookie(SELF::PREFIX.$Key,$Value,time()+$Seconds,'/',SITE_URL,$_SERVER['SERVER_PORT'] === '443',$LimitAccess,false);
+        setcookie(SELF::PREFIX.$Key, $Value, time()+$Seconds, '/', SITE_URL, $_SERVER['SERVER_PORT'] === '443', $LimitAccess, false);
     }
 
     public function del($Key)
     {
-        setcookie(SELF::PREFIX.$Key,'',time()-24*3600); //3600 vs 1 second to account for potential clock desyncs
+        setcookie(SELF::PREFIX.$Key, '', time()-24*3600); //3600 vs 1 second to account for potential clock desyncs
     }
 
     public function flush()

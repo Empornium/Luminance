@@ -2,11 +2,15 @@
 header('Content-Type: application/json; charset=utf-8');
 
 // Make sure they are moderators
-if (!check_perms('site_moderate_forums')) { error(403,true); }
+if (!check_perms('site_moderate_forums')) {
+    error(403, true);
+}
 authorize();
 
 // Quick SQL injection check
-if (!is_number($_POST['threadid'])) { error(404,true); }
+if (!is_number($_POST['threadid'])) {
+    error(404, true);
+}
 // End injection check
 
 // Variables for database input
@@ -25,10 +29,14 @@ $DB->query("SELECT
     LEFT JOIN forums AS f ON f.ID=.t.ForumID
     WHERE t.ID='$TopicID'
     GROUP BY p.TopicID");
-if ($DB->record_count()==0) error("Error: Could not find thread with id=$TopicID",true);
+if ($DB->record_count()==0) {
+    error("Error: Could not find thread with id=$TopicID", true);
+}
 list($OldForumID, $OldTitle, $MinClassWrite, $Posts, $OldLastPostID, $OldStickyPostID) = $DB->next_record();
 
-if ( !check_forumperm($OldForumID, 'Write') ) { error(403,true); }
+if (!check_forumperm($OldForumID, 'Write')) {
+    error(403, true);
+}
 
 // If we're moving
 $Cache->delete_value('forums_'.$OldForumID);
@@ -39,12 +47,18 @@ $ForumID = TRASH_FORUM_ID;
 
 $PostID = $_POST['postid'];
 
-if (!is_number($PostID)) error("No post selected to trash",true);
+if (!is_number($PostID)) {
+    error("No post selected to trash", true);
+}
 
 $NumSplitPosts=1;
-if ( $NumSplitPosts>=$Posts) error("You cannot split ALL the posts from a thread",true);
+if ($NumSplitPosts>=$Posts) {
+    error("You cannot split ALL the posts from a thread", true);
+}
 
-if ($OldStickyPostID == $PostID) $OldStickyPostID=0;
+if ($OldStickyPostID == $PostID) {
+    $OldStickyPostID=0;
+}
 
 
 $DB->query("SELECT AuthorID, AddedTime FROM forums_posts WHERE ID='$PostID'");
@@ -68,7 +82,6 @@ $DB->query("INSERT INTO forums_posts (TopicID, AuthorID, AddedTime, Body)
 $PrePostID = $DB->inserted_id();
 
 if ($OldLastPostID == $PostID) {
-
     $DB->query("SELECT MAX(ID) FROM forums_posts WHERE ID!='$PostID' AND TopicID='$TopicID'");
     list($LastID) = $DB->next_record();
 
@@ -93,7 +106,7 @@ update_forum_info($ForumID, $numtopics, false);
 
 if ($OldForumID!=$ForumID) {    // If we're moving posts into a new forum, change the new forum stats
 
-    update_forum_info($OldForumID, 0,false);
+    update_forum_info($OldForumID, 0, false);
     $Cache->delete_value('forums_'.$OldForumID);
 }
 
@@ -102,7 +115,7 @@ $Cache->delete_value('thread_'.$TopicID.'_info');
 $Cache->delete_value('thread_'.$SplitTopicID.'_info');
 
 $CatalogueID = floor($Posts/THREAD_CATALOGUE);
-for ($i=0;$i<=$CatalogueID;$i++) {
+for ($i=0; $i<=$CatalogueID; $i++) {
     $Cache->delete_value('thread_'.$TopicID.'_catalogue_'.$i);
     $Cache->delete_value('thread_'.$SplitTopicID.'_catalogue_'.$i);
 }

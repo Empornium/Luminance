@@ -6,7 +6,7 @@ if (!check_perms('admin_convert_tags')) {
 $goodtags = getGoodTags();
 $badtags = getBadTags();
 
-show_header('Good & Bad Tags Manager','tagmanager');
+show_header('Good & Bad Tags Manager', 'tagmanager');
 
 printRstMessage();
 ?>
@@ -31,7 +31,9 @@ function printTagTable($taglist, $tagtype, $desc)
     global $LoggedUser;
 
     $tagtype = strtolower($tagtype);
-    if (!in_array($tagtype, ['bad','good'])) $tagtype = 'bad';
+    if (!in_array($tagtype, ['bad','good'])) {
+        $tagtype = 'bad';
+    }
 ?>
     <br/>
     <h2><?=ucfirst($tagtype)?> Tags</h2>
@@ -55,36 +57,36 @@ function printTagTable($taglist, $tagtype, $desc)
                         <td>Remove</td><td>Tag</td>
                     </tr>
 <?php
-                $x = 0; $y =0;
-                foreach($taglist as $tag) {
-
-                    if ($x==0) { ?>
+                $x = 0;
+$y =0;
+foreach ($taglist as $tag) {
+    if ($x==0) { ?>
                         <tr class="<?= (($y % 2) ? 'rowa' : 'rowb') ?>">
-<?php               }            ?>
+    <?php               }            ?>
                     <td><input type="checkbox" name="old<?=$tagtype?>tags[]" value="<?= $tag['ID'] ?>" /></td>
                     <td><?= $tag['Tag'] ?></td>
 <?php               if ($x<3) { ?>
                         <td>&nbsp;</td>
 <?php               }
-                    $x++;
-                    if ($x==4) {
-                        $x=0;
-                        $y++;
-                    }
-                    if ($x==0) { ?>
-                        </tr>
+$x++;
+if ($x==4) {
+    $x=0;
+    $y++;
+}
+if ($x==0) { ?>
+        </tr>
 <?php               }
-                }
-                if ($x>0) {
-                    for ( ;$x<4;$x++ ) {   ?>
+}
+if ($x>0) {
+    for (; $x<4; $x++) {   ?>
                         <td>&nbsp;</td><td>&nbsp;</td>
 <?php                   if ($x<3) {  ?>
                         <td>&nbsp;</td>
 <?php                   }
-                    }
-                    $y++;
+    }
+    $y++;
 ?>
-                    </tr>
+</tr>
 <?php           }
 ?>
                     <tr class="<?= (($y % 2) ? 'rowa' : 'rowb') ?>">

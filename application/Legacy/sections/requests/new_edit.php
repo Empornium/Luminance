@@ -8,7 +8,9 @@
 
 $Text = new Luminance\Legacy\Text;
 
-if(!check_perms('site_submit_requests')) error(403);
+if (!check_perms('site_submit_requests')) {
+    error(403);
+}
 
 $NewRequest   = ($_GET['action'] == "new" ? true : false);
 
@@ -25,7 +27,6 @@ if ($NewRequest && ($LoggedUser['BytesUploaded'] < 250*1024*1024 || !check_perms
 
 if (!$NewRequest) {
     if (empty($ReturnEdit)) {
-
         $Request = get_requests(array($RequestID));
         $Request = $Request['matches'][$RequestID];
         if (empty($Request)) {
@@ -106,8 +107,9 @@ foreach ($OpenCategories as $cat) {
         }
     }
 <?php
-if (!empty($Properties))
+if (!empty($Properties)) {
     echo "addDOMLoadEvent(SynchInterface);";
+}
 ?>
 //]]></script>
 
@@ -117,16 +119,16 @@ if (!empty($Properties))
     <div class="linkbox">
             <a href="/requests.php">[Search requests]</a>
             <a href="/requests.php?type=created">[My requests]</a>
-<?php 	 if (check_perms('site_vote')) { ?>
+<?php    if (check_perms('site_vote')) { ?>
             <a href="/requests.php?type=voted">[Requests I've voted on]</a>
-<?php 		}  ?>
+<?php       }  ?>
 
     </div>
 <?php
     /* -------  Draw a box with imagehost whitelist  ------- */
     $Whitelist = $Cache->get_value('imagehost_whitelist');
-    if ($Whitelist === FALSE) {
-        $DB->query("SELECT
+if ($Whitelist === false) {
+    $DB->query("SELECT
                     Imagehost,
                     Link,
                     Comment,
@@ -135,16 +137,17 @@ if (!empty($Properties))
                     FROM imagehost_whitelist
                     WHERE Hidden='0'
                     ORDER BY Time DESC");
-        $Whitelist = $DB->to_array();
-        $Cache->cache_value('imagehost_whitelist', $Whitelist);
-    }
+    $Whitelist = $DB->to_array();
+    $Cache->cache_value('imagehost_whitelist', $Whitelist);
+}
     $DB->query("SELECT MAX(iw.Time), IF(MAX(t.Time) < MAX(iw.Time) OR MAX(t.Time) IS NULL,1,0)
                   FROM imagehost_whitelist as iw
              LEFT JOIN torrents AS t ON t.UserID = '$LoggedUser[ID]' ");
     list($Updated, $NewWL) = $DB->next_record();
 // test $HideWL first as it may have been passed from upload_handle
-    if (!$HideWL)
+    if (!$HideWL) {
         $HideWL = check_perms('torrents_hide_imagehosts') || !$NewWL;
+    }
     ?>
     <div class="head">Approved Imagehosts</div>
     <div class="box pad">
@@ -174,7 +177,7 @@ foreach ($Whitelist as $ImageHost) {
                     </td>
                     <td><?=$Text->full_format($Comment)?></td>
                 </tr>
-    <?php  } ?>
+<?php  } ?>
         </table>
     </div>
       <div class="head"><?=($NewRequest ? "Create New Request" : "Edit Request")?></div>
@@ -190,7 +193,7 @@ foreach ($Whitelist as $ImageHost) {
                 <tr>
                     <td colspan="2" class="center">Please make sure your request follows <a href="/articles.php?topic=requests">the request rules!</a></td>
                 </tr>
-<?php 	if ($NewRequest || $CanEdit) { ?>
+<?php   if ($NewRequest || $CanEdit) { ?>
                 <tr class="pad">
                     <td colspan="2" class="center">
                         <strong class="important_text">NOTE: Requests automatically expire after 90 days. At this time if the bounty has not been filled all outstanding bounties are returned to those who placed them</strong>
@@ -205,9 +208,9 @@ foreach ($Whitelist as $ImageHost) {
                                         <option value="0">---</option>
                                     <?php  foreach ($OpenCategories as $category) { ?>
                                         <option value="<?=$category['id']?>"<?php
-                                            if (isset($CategoryID) && $CategoryID==$category['id']) {
-                                                echo ' selected="selected"';
-                                            }   ?>><?=$category['name']?></option>
+                                        if (isset($CategoryID) && $CategoryID==$category['id']) {
+                                            echo ' selected="selected"';
+                                        }   ?>><?=$category['name']?></option>
                                     <?php  } ?>
                         </select>
                     </td>
@@ -225,24 +228,24 @@ foreach ($Whitelist as $ImageHost) {
                                  <input type="text" id="image" class="long" name="image" value="<?=(!empty($Image) ? display_str($Image) : '')?>" />
                             </td>
                 </tr>
-<?php 	} ?>
+<?php   } ?>
                 <tr>
                     <td class="label">Tags</td>
                     <td>
                     <div id="tagtext"></div>
 <?php
     $GenreTags = $Cache->get_value('genre_tags');
-    if (!$GenreTags) {
-        $DB->query('SELECT Name FROM tags WHERE TagType=\'genre\' ORDER BY Name');
-        $GenreTags =  $DB->collect('Name');
-        $Cache->cache_value('genre_tags', $GenreTags, 3600*6);
-    }
+if (!$GenreTags) {
+    $DB->query('SELECT Name FROM tags WHERE TagType=\'genre\' ORDER BY Name');
+    $GenreTags =  $DB->collect('Name');
+    $Cache->cache_value('genre_tags', $GenreTags, 3600*6);
+}
 ?>
                         <select id="genre_tags" name="genre_tags" onchange="add_tag();return false;" >
                             <option>---</option>
-<?php 	foreach (display_array($GenreTags) as $Genre) { ?>
+<?php   foreach (display_array($GenreTags) as $Genre) { ?>
                             <option value="<?=$Genre ?>"><?=$Genre ?></option>
-<?php 	} ?>
+<?php   } ?>
                         </select>
 
                         <div style="vertical-align:middle;display:inline-block;" title="Toggle Autocomplete mode on/off (when off you can access browser form history)">
@@ -264,22 +267,24 @@ foreach ($Whitelist as $ImageHost) {
                         <br />
                     <?php
                                       $taginfo = get_article('tagrulesinline');
-                                      if($taginfo) echo $Text->full_format($taginfo, true);
-                              ?>
+                    if ($taginfo) {
+                        echo $Text->full_format($taginfo, true);
+                    }
+                                ?>
                     </td>
                 </tr>
                 <tr>
                     <td class="label">Description</td>
                     <td>  <div id="preview" class="box pad hidden"></div>
                                     <div  id="editor">
-                                         <?php  $Text->display_bbcode_assistant("quickcomment", get_permissions_advtags($LoggedUser['ID'], $LoggedUser['CustomPermissions'])); ?>
+                                            <?php  $Text->display_bbcode_assistant("quickcomment", get_permissions_advtags($LoggedUser['ID'], $LoggedUser['CustomPermissions'])); ?>
                                         <textarea  id="quickcomment" name="description" class="long" rows="7"><?=(!empty($Description) ? $Description : '')?></textarea>
                                     </div>
                                     <input type="button" id="previewbtn" value="Preview" style="margin-right: 40px;" onclick="Preview_Request();" />
                               </td>
                 </tr>
 
-<?php 	if ($NewRequest) { ?>
+<?php   if ($NewRequest) { ?>
                 <tr id="voting">
                     <td class="label" id="bounty">Bounty</td>
                     <td>
@@ -300,7 +305,7 @@ foreach ($Whitelist as $ImageHost) {
                         <input type="hidden" id="current_downloaded" value="<?=$LoggedUser['BytesDownloaded']?>" />
                         If you add the entered <strong><span id="new_bounty"><?=get_size($master->options->MinCreateBounty);?></span></strong> of bounty, your new stats will be: <br/>
                         Uploaded: <span id="new_uploaded"><?=get_size($LoggedUser['BytesUploaded'])?></span><br/>
-                        Ratio: <span id="new_ratio"><?=ratio($LoggedUser['BytesUploaded'],$LoggedUser['BytesDownloaded'])?></span>
+                        Ratio: <span id="new_ratio"><?=ratio($LoggedUser['BytesUploaded'], $LoggedUser['BytesDownloaded'])?></span>
                     </td>
                 </tr>
                 <tr>
@@ -308,13 +313,13 @@ foreach ($Whitelist as $ImageHost) {
                         <input type="submit" id="button_vote" value="Create request" />
                     </td>
                 </tr>
-<?php 	} else { ?>
+<?php   } else { ?>
                 <tr>
                     <td colspan="2" class="center">
                         <input type="submit" id="button_vote" value="Edit request" />
                     </td>
                 </tr>
-<?php 	} ?>
+<?php   } ?>
             </table>
         </form>
     </div>

@@ -12,7 +12,7 @@ function get_warning_time()
 }
 
 // message is in two parts so we can grab the bits around the reason for display etc.
-function get_warning_message($FirstPart = true, $LastPart = false, $GroupID=0, $TorrentName='', $Reason = null, $KillTime = '', $Rejected = false, $ExtraMsg = '')
+function get_warning_message($FirstPart = true, $LastPart = false, $GroupID = 0, $TorrentName = '', $Reason = null, $KillTime = '', $Rejected = false, $ExtraMsg = '')
 {
     $Message = '';
     if ($FirstPart) {
@@ -24,7 +24,7 @@ function get_warning_message($FirstPart = true, $LastPart = false, $GroupID=0, $
         $Message .= "This message regards your upload [torrent]{$GroupID}[/torrent][br]";
         $Message .= "Thank you for your upload to Empornium![br]";
         $Message .= "Unfortunately, it does not yet meet all of our requirements for uploads and therefore has been marked for deletion.[br][br]";
-        $Message .= "[size=3][b]It will be automatically deleted if you do not fix your upload in the next [i]".time_diff($KillTime, 1, false,false,0)." &nbsp;(".date('M d Y, H:i', ($KillTime))."[/i].[/b][/size][br][br]";
+        $Message .= "[size=3][b]It will be automatically deleted if you do not fix your upload in the next [i]".time_diff($KillTime, 1, false, false, 0)." &nbsp;(".date('M d Y, H:i', ($KillTime))."[/i].[/b][/size][br][br]";
 
       //  if ($Reason = 'description')
       //      $Message .= "To learn more about description requirements please read our [article=descrules][b]description rules[/b][/article].[br]";
@@ -32,8 +32,12 @@ function get_warning_message($FirstPart = true, $LastPart = false, $GroupID=0, $
       //  if ($Reason = 'screenshot')
       //      $Message .= "To learn more about screenshot requirements please read our [article=screenrules][b]screenshot rules[/b][/article].[br]";
     }
-    if ($Reason) $Message.= "[b]Reason: [/b][color=red][b]{$Reason}[/b][/color][br]";
-    if ($ExtraMsg) $Message.= "[quote=Manual message from moderator]{$ExtraMsg}[/quote][br]";
+    if ($Reason) {
+        $Message.= "[b]Reason: [/b][color=red][b]{$Reason}[/b][/color][br]";
+    }
+    if ($ExtraMsg) {
+        $Message.= "[quote=Manual message from moderator]{$ExtraMsg}[/quote][br]";
+    }
     if ($LastPart) {
         $Message .= '[br][b]Once you have fixed your upload be sure to click the green "Submit fix" button at the top of the torrent page to send the staff a message telling them you have done so.[/b][br][br]';
         $Message .= "Please make sure you read the [article=upload]Upload Rules[/article][br]You will find useful guides in the [article=uploadchecklist]Upload Guides[/article] and [article=tutorials]Tutorials section[/article][br]If you need further help please post in the [url=/forums.php?action=viewforum&forumid=6]Help & Support Forum[/url][br][br]";
@@ -51,12 +55,18 @@ function send_message_reply($ConvID, $ToID, $FromID, $Message, $SetStatus = fals
     $DB->query("INSERT INTO staff_pm_messages (UserID, SentDate, Message, ConvID)
                        VALUES ($FromID, '".sqltime()."', '".db_string($Message)."', $ConvID)");
 
-    if ($SetStatus !== FALSE) {
+    if ($SetStatus !== false) {
         // Update conversation (if from user
-        if ($SetStatus == 'Resolved') $SQL_insert = "Status='Resolved', ResolverID=$FromID";
-        elseif ($SetStatus == 'Open') $SQL_insert = "Status='Open'";
-        else $SQL_insert = "Status='Unanswered'";
-        if ($NewSubject) $SQL_insert .= ", Subject='".db_string($NewSubject)."' ";
+        if ($SetStatus == 'Resolved') {
+            $SQL_insert = "Status='Resolved', ResolverID=$FromID";
+        } elseif ($SetStatus == 'Open') {
+            $SQL_insert = "Status='Open'";
+        } else {
+            $SQL_insert = "Status='Unanswered'";
+        }
+        if ($NewSubject) {
+            $SQL_insert .= ", Subject='".db_string($NewSubject)."' ";
+        }
         $DB->query("UPDATE staff_pm_conversations SET Date='".sqltime()."', Unread=$SetUnread, $SQL_insert WHERE ID=$ConvID");
     }
 
@@ -66,9 +76,9 @@ function send_message_reply($ConvID, $ToID, $FromID, $Message, $SetStatus = fals
             $Cache->delete_value('num_staff_pms_open_'.$FromID);
             $Cache->delete_value('num_staff_pms_my_'.$FromID);
         }
-    } elseif($ToID>0)  // Clear cache for user
+    } elseif ($ToID>0) {  // Clear cache for user
         $Cache->delete_value('staff_pm_new_'.$ToID);
-
+    }
 }
 
 // the message the user sends to staff to tell them its fixed
@@ -77,7 +87,7 @@ function get_user_okay_message($GroupID, $TorrentName, $KillTime, $Reason)
 
     $Message = "[br]I have fixed my upload [torrent]{$GroupID}[/torrent].";
     $Message .= "[br][br][b]Reason it needed fixing:[/b]&nbsp;$Reason";
-    $Message .= "[br][b]Time left: [/b]&nbsp; ". time_diff($KillTime, 2, false, false,0)." &nbsp;(".date('M d Y, H:i', strtotime($KillTime)).")";
+    $Message .= "[br][b]Time left: [/b]&nbsp; ". time_diff($KillTime, 2, false, false, 0)." &nbsp;(".date('M d Y, H:i', strtotime($KillTime)).")";
 
     return $Message;
 }
@@ -166,26 +176,28 @@ function get_torrents_under_review($ViewStatus = 'warned', $ReturnOverdueOnly = 
                LEFT JOIN torrents_reviews AS tr ON tr.GroupID=t.GroupID
                    WHERE tr.GroupID IS NULL AND t.Time > '2013-01-01 00:00:00'");
 
-    $Torrents = $DB->to_array();
+        $Torrents = $DB->to_array();
 
-      return $Torrents;
+        return $Torrents;
     } else {
-          switch ($ViewStatus) {
-              case 'pending':
-                  $WHERE= "tr.Status = 'Pending' ";
-                  break;
-              case 'both':
-                  $WHERE= "(tr.Status = 'Warned' OR tr.Status = 'Pending') ";
-                  break;
-              case 'warned':
-              default:
-                  $WHERE= "tr.Status = 'Warned' ";
-                  break;
-          }
-          if ($ReturnOverdueOnly) $WHERE .=  "AND tr.KillTime < '".sqltime()."' ";
+        switch ($ViewStatus) {
+            case 'pending':
+                $WHERE= "tr.Status = 'Pending' ";
+                break;
+            case 'both':
+                $WHERE= "(tr.Status = 'Warned' OR tr.Status = 'Pending') ";
+                break;
+            case 'warned':
+            default:
+                $WHERE= "tr.Status = 'Warned' ";
+                break;
+        }
+        if ($ReturnOverdueOnly) {
+            $WHERE .=  "AND tr.KillTime < '".sqltime()."' ";
+        }
 
 
-      $DB->query("SELECT t.ID,
+        $DB->query("SELECT t.ID,
                          t.GroupID,
                          tg.Name,
                          tr.Status,
@@ -205,7 +217,7 @@ function get_torrents_under_review($ViewStatus = 'warned', $ReturnOverdueOnly = 
                                          WHERE torrents_reviews.GroupID=t.GroupID)
                 ORDER BY KillTime");
 
-    $Torrents = $DB->to_array();
+        $Torrents = $DB->to_array();
     }
       return $Torrents;
 }
@@ -234,9 +246,9 @@ function delete_torrents_list($Torrents)
 
     $sqltime=sqltime();
     if (count($LogEntries) > 0) {
-        $Values = "('".implode("', '".$sqltime."'), ('",$LogEntries)."', '".$sqltime."')";
+        $Values = "('".implode("', '".$sqltime."'), ('", $LogEntries)."', '".$sqltime."')";
         $DB->query('INSERT INTO log (Message, Time) VALUES '.$Values);
     }
 
-  return $i;
+    return $i;
 }

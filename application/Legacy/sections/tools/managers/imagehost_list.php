@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('admin_imagehosts')) { error(403); }
+if (!check_perms('admin_imagehosts')) {
+    error(403);
+}
 
 show_header('Manage imagehost whitelist');
 $DB->query("SELECT
@@ -93,7 +95,9 @@ while (list($ID, $Host, $Link, $Comment, $UserID, $Username, $WLTime, $Hide) = $
                 <input class="long"  type="text" name="comment" value="<?=display_str($Comment)?>" />
             </td>
         <td>
-            <input type="checkbox" name="show" value="1" <?php  if(!$Hide)echo ' checked="checked"';?> />
+            <input type="checkbox" name="show" value="1" <?php  if (!$Hide) {
+                echo ' checked="checked"';
+                                                         }?> />
         </td>
             <td>
                 <?=format_username($UserID, $Username)?><br />

@@ -10,7 +10,8 @@ use Luminance\Services\DB\LegacyWrapper;
 use PhpMyAdmin\SqlParser\Parser;
 use PhpMyAdmin\SqlParser\Statements\CreateStatement;
 
-class ORM extends Service {
+class ORM extends Service
+{
 
     protected $db;
 
@@ -18,7 +19,8 @@ class ORM extends Service {
         'db' => 'DB',
     ];
 
-    public function load($entity_class, $ID) {
+    public function load($entity_class, $ID)
+    {
         $cls = "Luminance\\Entities\\{$entity_class}";
         $table = $cls::$table;
         $pkey_column = $cls::get_pkey_property();
@@ -33,7 +35,8 @@ class ORM extends Service {
         }
     }
 
-    public function get($entity_class, $where, $params = null) {
+    public function get($entity_class, $where, $params = null)
+    {
         $cls = "Luminance\\Entities\\{$entity_class}";
         $table = $cls::$table;
         $where_clause = $this->get_where_clause($where);
@@ -48,7 +51,8 @@ class ORM extends Service {
         }
     }
 
-    public function find($entity_class, $where = null, $params = null) {
+    public function find($entity_class, $where = null, $params = null)
+    {
         $cls = "Luminance\\Entities\\{$entity_class}";
         $table = $cls::$table;
         $where_clause = $this->get_where_clause($where);
@@ -63,7 +67,8 @@ class ORM extends Service {
         return $objects;
     }
 
-    public function find_count($entity_class, $where = null, $params = null) {
+    public function find_count($entity_class, $where = null, $params = null)
+    {
         $cls = "Luminance\\Entities\\{$entity_class}";
         $table = $cls::$table;
         $where_clause = $this->get_where_clause($where);
@@ -80,12 +85,14 @@ class ORM extends Service {
         return $result;
     }
 
-    protected function get_where_clause($where = null) {
+    protected function get_where_clause($where = null)
+    {
         $where_clause = ($where) ? "WHERE {$where}" : '';
         return $where_clause;
     }
 
-    public function save(Entity $entity) {
+    public function save(Entity $entity)
+    {
         if ($entity->exists_in_db()) {
             $entity = $this->update($entity);
         } else {
@@ -98,7 +105,8 @@ class ORM extends Service {
         return $entity;
     }
 
-    public function insert(Entity $entity) {
+    public function insert(Entity $entity)
+    {
         $table = $entity->get_table();
         $values = $entity->get_unsaved_values();
 
@@ -124,7 +132,8 @@ class ORM extends Service {
         return $entity;
     }
 
-    public function update(Entity $entity) {
+    public function update(Entity $entity)
+    {
         $table = $entity->get_table();
         $values = $entity->get_unsaved_values();
         $pkey_value = $entity->get_pkey_value();
@@ -150,7 +159,8 @@ class ORM extends Service {
         return $entity;
     }
 
-    public function delete(Entity $entity) {
+    public function delete(Entity $entity)
+    {
         $table = $entity->get_table();
         $pkey_value = $entity->get_pkey_value();
         $pkey_column = $entity->get_pkey_property();
@@ -162,7 +172,8 @@ class ORM extends Service {
     # Various rarely used DDL functions below:
 
 
-    public function get_tables() {
+    public function get_tables()
+    {
         $table_info = $this->db->raw_query("SHOW TABLES;")->fetchAll(\PDO::FETCH_NUM);
         $tables = [];
         foreach ($table_info as $t) {
@@ -171,7 +182,8 @@ class ORM extends Service {
         return $tables;
     }
 
-    protected function get_entity_classes() {
+    protected function get_entity_classes()
+    {
         # We have to work around the autoloader to ensure all Entity classes are actually loaded
         $entity_dir = $this->master->application_path.'/Entities';
         $entity_files = scandir($entity_dir);
@@ -190,7 +202,8 @@ class ORM extends Service {
         return $entity_classes;
     }
 
-    public function update_tables($sql = null) {
+    public function update_tables($sql = null)
+    {
         $entity_classes = $this->get_entity_classes();
         $tables = $this->get_tables();
         $this->db->raw_query('SET FOREIGN_KEY_CHECKS=0');
@@ -218,7 +231,8 @@ class ORM extends Service {
         }
     }
 
-    public function drop_tables() {
+    public function drop_tables()
+    {
         $this->db->raw_query('SET FOREIGN_KEY_CHECKS=0');
         $tables = $this->get_tables();
         foreach ($tables as $table) {
@@ -226,12 +240,14 @@ class ORM extends Service {
         }
     }
 
-    protected function get_table_specification($table) {
+    protected function get_table_specification($table)
+    {
         $tableSpec = $this->db->raw_query("SHOW CREATE TABLE {$table}")->fetch(\PDO::FETCH_ASSOC);
         return $this->parse_sql($tableSpec['Create Table']);
     }
 
-    protected function get_index_parameters($indexes) {
+    protected function get_index_parameters($indexes)
+    {
         $return_indexes = [];
         foreach ($indexes as $index) {
             if (is_array($index)) {
@@ -247,7 +263,8 @@ class ORM extends Service {
         return $return_indexes;
     }
 
-    protected function parse_sql($sql) {
+    protected function parse_sql($sql)
+    {
         # We use the phpMyAdmin library and the raw SQL to create an ORM
         # entity definition on the fly, it's cleaner this way I think.
         $parser = new Parser($sql);
@@ -363,7 +380,8 @@ class ORM extends Service {
         return $vars;
     }
 
-    protected function get_column_sql($name, $options) {
+    protected function get_column_sql($name, $options)
+    {
         $nullable       = (array_key_exists('nullable', $options)) ? $options['nullable'] : true;
         $auto_increment = (array_key_exists('auto_increment', $options)) ? $options['auto_increment'] : false;
         $unsigned       = (array_key_exists('unsigned', $options)) ? $options['unsigned'] : false;
@@ -415,7 +433,8 @@ class ORM extends Service {
         return $col_sql;
     }
 
-    protected function get_index_sql($name, $options) {
+    protected function get_index_sql($name, $options)
+    {
         $column_strings = [];
         foreach ($options['columns'] as $column) {
             if (is_array($column)) {
@@ -457,7 +476,8 @@ class ORM extends Service {
         return $index_sql;
     }
 
-    protected function get_storage_engines() {
+    protected function get_storage_engines()
+    {
         $indexed_engines = $this->db->raw_query("SHOW ENGINES")->fetchAll();
         $indexed_engines = array_column($indexed_engines, 'Engine');
         foreach ($indexed_engines as $index => $engine) {
@@ -466,7 +486,8 @@ class ORM extends Service {
         return $engines;
     }
 
-    protected function get_attribute_sql($name, $option) {
+    protected function get_attribute_sql($name, $option)
+    {
         switch ($name) {
             case 'engine':
                 $engines = $this->get_storage_engines();
@@ -476,7 +497,8 @@ class ORM extends Service {
         }
     }
 
-    protected function get_table_columns($table) {
+    protected function get_table_columns($table)
+    {
         $column_info = $this->master->db->raw_query("SHOW COLUMNS FROM `{$table}`")->fetchAll(\PDO::FETCH_NUM);
         $columns = [];
         foreach ($column_info as $c) {
@@ -485,11 +507,14 @@ class ORM extends Service {
         return $columns;
     }
 
-    protected function get_table_indexes($table) {
+    protected function get_table_indexes($table)
+    {
         $index_info = $this->get_table_specification($table);
         $indexes = [];
         foreach ($index_info['indexes'] as $name => $i) {
-            if (@$i['type'] == 'primary') continue;
+            if (@$i['type'] == 'primary') {
+                continue;
+            }
             if (!in_array($name, $indexes)) {
                 $indexes[] = $name;
             }
@@ -497,7 +522,8 @@ class ORM extends Service {
         return $indexes;
     }
 
-    protected function get_primary_index($table) {
+    protected function get_primary_index($table)
+    {
         $index_info = $this->get_table_specification($table);
         $indexes = [];
         foreach ($index_info['indexes'] as $name => $i) {
@@ -508,7 +534,8 @@ class ORM extends Service {
         return false;
     }
 
-    protected function create_table($vars) {
+    protected function create_table($vars)
+    {
         print("Creating table {$vars['table']}\n");
         $sql = "CREATE TABLE `{$vars['table']}` (\n";
         $parts = [];
@@ -538,7 +565,8 @@ class ORM extends Service {
         $this->db->raw_query($sql);
     }
 
-    protected function update_table($vars) {
+    protected function update_table($vars)
+    {
         # TODO: Detect unneeded columns (deleting automatically is too risky)
         # TODO: Detect storage engine change
         $columns   = $this->get_table_columns($vars['table']);
@@ -623,7 +651,9 @@ class ORM extends Service {
         # Add new index
         foreach ($vars['indexes'] as $index => $options) {
             if (!in_array($index, $indexes)) {
-                if (@$options['type'] == 'primary') continue;
+                if (@$options['type'] == 'primary') {
+                    continue;
+                }
                 $index_sql = $this->get_index_sql($index, $options);
                 $sql[] = "ADD {$index_sql}";
             } else {
@@ -664,7 +694,8 @@ class ORM extends Service {
         }
     }
 
-    protected function drop_table($table) {
+    protected function drop_table($table)
+    {
         print("Deleting table {$table}\n");
         $this->db->raw_query("DROP TABLE {$table}");
     }

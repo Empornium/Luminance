@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('users_view_invites')) { error(403); }
+if (!check_perms('users_view_invites')) {
+    error(403);
+}
 show_header('Invite Pool');
 define('INVITES_PER_PAGE', 50);
 list($Page,$Limit) = page_limit(INVITES_PER_PAGE);
@@ -61,7 +63,7 @@ $DB->set_query_id($RS);
     </div>
     <div class="linkbox">
 <?php
-    $Pages=get_pages($Page,$Results,INVITES_PER_PAGE,11) ;
+    $Pages=get_pages($Page, $Results, INVITES_PER_PAGE, 11) ;
     echo $Pages;
 ?>
     </div>
@@ -77,14 +79,14 @@ $DB->set_query_id($RS);
         </tr>
 <?php
     $Row = 'b';
-    while (list($UserID, $Username, $PermissionID, $Enabled, $Donor, $InviteKey, $Expires, $Email)=$DB->next_record()) {
+while (list($UserID, $Username, $PermissionID, $Enabled, $Donor, $InviteKey, $Expires, $Email)=$DB->next_record()) {
     $Row = ($Row == 'b') ? 'a' : 'b';
 ?>
-        <tr class="row<?=$Row?>">
-            <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?></td>
-            <td><?=display_str($Email)?></td>
-            <td><?=display_str($InviteKey)?></td>
-            <td><?=time_diff($Expires)?></td>
+<tr class="row<?=$Row?>">
+    <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?></td>
+    <td><?=display_str($Email)?></td>
+    <td><?=display_str($InviteKey)?></td>
+    <td><?=time_diff($Expires)?></td>
 <?php  if (check_perms('users_edit_invites')) { ?>
             <td>
                 <form action="" method="post">
@@ -95,8 +97,8 @@ $DB->set_query_id($RS);
                 </form>
             </td>
 <?php  } ?>
-        </tr>
-<?php 	} ?>
+</tr>
+<?php   } ?>
     </table>
     <div class="linkbox">
 <?=$Pages; ?>

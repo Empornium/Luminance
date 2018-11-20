@@ -9,7 +9,9 @@ include_once(SERVER_ROOT.'/Legacy/sections/inbox/functions.php');
 include_once(SERVER_ROOT.'/Legacy/sections/staff/functions.php');
 include_once(SERVER_ROOT.'/Legacy/sections/user/linkedfunctions.php');
 
-if (empty($_REQUEST['id']) || !is_numeric($_REQUEST['id'])) { error(0); }
+if (empty($_REQUEST['id']) || !is_numeric($_REQUEST['id'])) {
+    error(0);
+}
 $UserID = $_REQUEST['id'];
 
 $OwnProfile = $UserID == $LoggedUser['ID'];
@@ -37,7 +39,7 @@ $user->ip = $master->repos->ips->load($user->IPID);
 $user->floods = $master->repos->floods->find('`UserID` = ?', [$user->ID]);
 $user->restrictions = $master->repos->restrictions->find('`UserID` = ?', [$user->ID]);
 
-foreach($user->floods AS $flood) {
+foreach ($user->floods as $flood) {
     $flood->ip = $master->repos->ips->load($flood->IPID);
 }
 
@@ -48,7 +50,8 @@ $user->extra = $master->db->raw_query(
        FROM users_info AS i
   LEFT JOIN torrents_awards AS ta ON ta.UserID = i.UserID
       WHERE i.UserID = ?",
-    [$user->ID])->fetch(\PDO::FETCH_ASSOC);
+    [$user->ID]
+)->fetch(\PDO::FETCH_ASSOC);
 
 $user->availableBadges = $master->db->raw_query(
     "SELECT b.ID AS `badgeID`,
@@ -75,7 +78,8 @@ $user->availableBadges = $master->db->raw_query(
       WHERE b.Type != 'Shop'
         AND ba.ID IS NULL
    ORDER BY b.Sort",
-    [$user->ID])->fetchAll(\PDO::FETCH_ASSOC);
+    [$user->ID]
+)->fetchAll(\PDO::FETCH_ASSOC);
 
 $user->connectable = $master->db->raw_query(
     "SELECT ucs.Status AS `status`,
@@ -87,26 +91,30 @@ $user->connectable = $master->db->raw_query(
       WHERE UserID = ?
    GROUP BY ucs.IP
    ORDER BY Max(ucs.Time) DESC LIMIT 100",
-    [$user->ID])->fetchAll(\PDO::FETCH_ASSOC);
+    [$user->ID]
+)->fetchAll(\PDO::FETCH_ASSOC);
 
 $user->friendStatus = $master->db->raw_query(
     "SELECT Type
        FROM friends
       WHERE UserID = ?
         AND FriendID = ?",
-    [$LoggedUser['ID'], $user->ID])->fetchColumn();
+    [$LoggedUser['ID'], $user->ID]
+)->fetchColumn();
 
 $user->watchlisted = $master->db->raw_query(
     "SELECT UserID
        FROM users_watch_list
       WHERE UserID = ?",
-    [$user->ID])->fetchColumn();
+    [$user->ID]
+)->fetchColumn();
 
 $user->whitelisted = $master->db->raw_query(
     "SELECT UserID
        FROM users_not_cheats
       WHERE UserID = ?",
-    [$user->ID])->fetchColumn();
+    [$user->ID]
+)->fetchColumn();
 
 $user->requests = $master->db->raw_query(
     "SELECT COUNT(DISTINCT r.ID) AS `count`,
@@ -115,57 +123,66 @@ $user->requests = $master->db->raw_query(
   LEFT JOIN requests_votes AS rv ON r.ID=rv.RequestID
       WHERE r.FillerID = ?
    ORDER BY r.TimeAdded DESC",
-    [$user->ID])->fetch(\PDO::FETCH_ASSOC);
+    [$user->ID]
+)->fetch(\PDO::FETCH_ASSOC);
 
 $user->requestsVotes = $master->db->raw_query(
     "SELECT COUNT(rv.RequestID) AS `count`,
             SUM(rv.Bounty) AS `bounty`
        FROM requests_votes AS rv
       WHERE rv.UserID = ?",
-    [$user->ID])->fetch(\PDO::FETCH_ASSOC);
+    [$user->ID]
+)->fetch(\PDO::FETCH_ASSOC);
 
 $user->uploads = $master->db->raw_query(
     "SELECT COUNT(ID) AS `count`, SUM(Size) as `totalSize`
        FROM torrents
       WHERE UserID = ?",
-    [$user->ID])->fetch(\PDO::FETCH_ASSOC);
+    [$user->ID]
+)->fetch(\PDO::FETCH_ASSOC);
 
 $user->passwordChanges = $master->db->raw_query(
     "SELECT COUNT(*)
        FROM users_history_passwords
       WHERE UserID = ?",
-    [$user->ID])->fetchColumn();
+    [$user->ID]
+)->fetchColumn();
 
 $user->passkeyChanges = $master->db->raw_query(
     "SELECT COUNT(*)
        FROM users_history_passkeys
       WHERE UserID = ?",
-    [$user->ID])->fetchColumn();
+    [$user->ID]
+)->fetchColumn();
 
 $user->IPChanges = $master->db->raw_query(
     "SELECT COUNT(DISTINCT IP)
        FROM users_history_ips
       WHERE UserID = ?",
-    [$user->ID])->fetchColumn();
+    [$user->ID]
+)->fetchColumn();
 
 $user->trackerIPs = $master->db->raw_query(
     "SELECT COUNT(DISTINCT ipv4)
        FROM xbt_snatched
       WHERE uid = ?
         AND ipv4 != ''",
-    [$user->ID])->fetchColumn();
+    [$user->ID]
+)->fetchColumn();
 
 $user->emailChanges = $master->db->raw_query(
     "SELECT COUNT(*)
        FROM emails
       WHERE UserID = ?",
-    [$user->ID])->fetchColumn();
+    [$user->ID]
+)->fetchColumn();
 
 $user->invitesPending = $master->db->raw_query(
     "SELECT count(InviterID)
        FROM invites
       WHERE InviterID = ?",
-    [$user->ID])->fetchColumn();
+    [$user->ID]
+)->fetchColumn();
 
 $user->snatched = $master->db->raw_query(
     "SELECT COUNT(x.uid) AS `total`,
@@ -173,19 +190,22 @@ $user->snatched = $master->db->raw_query(
        FROM xbt_snatched AS x
  INNER JOIN torrents AS t ON t.ID=x.fid
       WHERE x.uid = ?",
-    [$user->ID])->fetch(\PDO::FETCH_ASSOC);
+    [$user->ID]
+)->fetch(\PDO::FETCH_ASSOC);
 
 $user->comments = $master->db->raw_query(
     "SELECT COUNT(ID)
        FROM torrents_comments
       WHERE AuthorID = ?",
-    [$user->ID])->fetchColumn();
+    [$user->ID]
+)->fetchColumn();
 
 $user->forumPosts = $master->db->raw_query(
     "SELECT COUNT(ID)
        FROM forums_posts
       WHERE AuthorID = ?",
-    [$user->ID])->fetchColumn();
+    [$user->ID]
+)->fetchColumn();
 
 $collages = $master->db->raw_query(
     "SELECT ID,
@@ -195,7 +215,8 @@ $collages = $master->db->raw_query(
       WHERE Deleted='0'
         AND UserID = ?
    ORDER BY Featured DESC, Name ASC",
-    [$user->ID])->fetchAll(\PDO::FETCH_ASSOC);
+    [$user->ID]
+)->fetchAll(\PDO::FETCH_ASSOC);
 
 foreach ($collages as $index => $collage) {
     // Get collages torrents
@@ -207,13 +228,15 @@ foreach ($collages as $index => $collage) {
            JOIN torrents_group AS tg ON tg.ID=ct.GroupID
           WHERE ct.CollageID = ?
        ORDER BY ct.Sort LIMIT 5",
-        [$collage['ID']])->fetchAll(\PDO::FETCH_ASSOC);
+        [$collage['ID']]
+    )->fetchAll(\PDO::FETCH_ASSOC);
     // Get last added torrent date
     $collages[$index]['LastUpdate'] = $master->db->raw_query(
         'SELECT MAX(AddedOn)
          FROM collages_torrents
          WHERE CollageID = ?',
-        [$collage['ID']])->fetchColumn();
+        [$collage['ID']]
+    )->fetchColumn();
     // Get total torrents size
     $collages[$index]['TotalSize'] = $master->db->raw_query("SELECT SUM(t.Size) AS Size
               FROM collages_torrents AS ct
@@ -229,7 +252,8 @@ $user->collageTorrents = $master->db->raw_query(
        JOIN collages ON CollageID = ID
       WHERE Deleted='0'
         AND ct.UserID = ?",
-    [$user->ID])->fetchColumn();
+    [$user->ID]
+)->fetchColumn();
 
 $user->grabbed = $master->db->raw_query(
     "SELECT COUNT(ud.TorrentID) AS `total`,
@@ -237,14 +261,16 @@ $user->grabbed = $master->db->raw_query(
        FROM users_downloads AS ud
  INNER JOIN torrents AS t ON t.ID=ud.TorrentID
       WHERE ud.UserID = ?",
-    [$user->ID])->fetch(\PDO::FETCH_ASSOC);
+    [$user->ID]
+)->fetch(\PDO::FETCH_ASSOC);
 
 $user->unusedDonationAddresses = $master->db->raw_query(
     "SELECT COUNT(ID)
        FROM bitcoin_donations
       WHERE state='unused'
         AND userID = ?",
-    [$user->ID])->fetchColumn();
+    [$user->ID]
+)->fetchColumn();
 
 $user->donations = $master->db->raw_query(
     "SELECT COUNT(ID) AS `count`,
@@ -252,13 +278,15 @@ $user->donations = $master->db->raw_query(
        FROM bitcoin_donations
       WHERE state!='unused'
         AND userID = ?",
-    [$user->ID])->fetch(\PDO::FETCH_ASSOC);
+    [$user->ID]
+)->fetch(\PDO::FETCH_ASSOC);
 
 $user->invitedUsers = $master->db->raw_query(
     "SELECT COUNT(UserID)
        FROM users_info
       WHERE Inviter = ?",
-    [$user->ID])->fetchColumn();
+    [$user->ID]
+)->fetchColumn();
 
 $user->torrentClients = $master->db->raw_query(
     "SELECT useragent,
@@ -266,7 +294,8 @@ $user->torrentClients = $master->db->raw_query(
             LEFT(peer_id, 8) AS `clientid`
        FROM xbt_files_users WHERE uid = ?
    GROUP BY useragent, ipv4",
-    [$user->ID])->fetchAll(\PDO::FETCH_ASSOC);
+    [$user->ID]
+)->fetchAll(\PDO::FETCH_ASSOC);
 
 if (($user->tags = $Cache->get_value('user_tag_count_'.$user->ID)) === false) {
     $user->tags = new \stdClass;
@@ -275,13 +304,15 @@ if (($user->tags = $Cache->get_value('user_tag_count_'.$user->ID)) === false) {
            JOIN torrents AS t ON t.GroupID=tt.GroupID
           WHERE tt.UserID = ?
             AND t.UserID = ?",
-        [$user->ID, $user->ID])->fetchColumn();
+        [$user->ID, $user->ID]
+    )->fetchColumn();
 
     $user->tags->totalTags = $master->db->raw_query(
         "SELECT COUNT(tt.TagID)
            FROM torrents_tags AS tt
           WHERE tt.UserID = ?",
-        [$user->ID])->fetchColumn();
+        [$user->ID]
+    )->fetchColumn();
 
     $user->tags->ownTagVotes = $master->db->raw_query(
         "SELECT COUNT(ttv.TagID)
@@ -289,19 +320,21 @@ if (($user->tags = $Cache->get_value('user_tag_count_'.$user->ID)) === false) {
            JOIN torrents AS t ON t.GroupID=ttv.GroupID
           WHERE ttv.UserID = ?
             AND t.UserID = ?",
-        [$user->ID, $user->ID])->fetchColumn();
+        [$user->ID, $user->ID]
+    )->fetchColumn();
 
     $user->tags->totalTagVotes = $master->db->raw_query(
         "SELECT COUNT(ttv.TagID)
            FROM torrents_tags_votes AS ttv
           WHERE ttv.UserID = ?",
-        [$user->ID])->fetchColumn();
+        [$user->ID]
+    )->fetchColumn();
 
     # != is expensive on large DB tables
     $user->tags->otherTags = $user->tags->totalTags - $user->tags->ownTags;
     $user->tags->otherTagVotes = $user->tags->totalTagVotes - $user->tags->ownTagVotes;
 
-    $Cache->cache_value('user_tag_count_'.$user->ID , $user->tags, 3600 );
+    $Cache->cache_value('user_tag_count_'.$user->ID, $user->tags, 3600);
 }
 
 if (($user->slotResults = $Cache->get_value('_sm_sum_history_'.$user->ID)) === false) {
@@ -311,7 +344,8 @@ if (($user->slotResults = $Cache->get_value('_sm_sum_history_'.$user->ID)) === f
                 Bet AS `bet`,
                 (Won/Bet) AS `return`
            FROM sm_results WHERE UserID = ?",
-        [$user->ID])->fetch(\PDO::FETCH_ASSOC);
+        [$user->ID]
+    )->fetch(\PDO::FETCH_ASSOC);
     $Cache->cache_value('_sm_sum_history_'.$user->ID, $user->slotResults, 86400);
 }
 
@@ -324,7 +358,8 @@ if (($user->languages = $Cache->get_value('user_langs_' .$user->ID)) === false) 
            FROM users_languages AS ul
            JOIN languages AS l ON l.ID=ul.LangID
           WHERE UserID = ?",
-       [$user->ID])->fetchAll(\PDO::FETCH_ASSOC);
+        [$user->ID]
+    )->fetchAll(\PDO::FETCH_ASSOC);
     $Cache->cache_value('user_langs_'.$user->ID, $user->languages);
 }
 
@@ -341,7 +376,8 @@ if (($user->recentSnatches = $Cache->get_value('recent_snatches_'.$user->ID)) ==
        GROUP BY g.ID
        ORDER BY s.tstamp DESC
           LIMIT 5",
-        [$user->ID])->fetchAll(\PDO::FETCH_ASSOC);
+        [$user->ID]
+    )->fetchAll(\PDO::FETCH_ASSOC);
     $Cache->cache_value('recent_snatches_'.$user->ID, $user->recentSnatches, 0); //inf cache
 }
 
@@ -357,7 +393,8 @@ if (($user->recentUploads = $Cache->get_value('recent_uploads_'.$user->ID)) === 
        GROUP BY g.ID
        ORDER BY t.Time DESC
           LIMIT 5",
-        [$user->ID])->fetchAll(\PDO::FETCH_ASSOC);
+        [$user->ID]
+    )->fetchAll(\PDO::FETCH_ASSOC);
     $Cache->cache_value('recent_uploads_'.$user->ID, $user->recentUploads, 0); //inf cache
 }
 
@@ -375,7 +412,8 @@ if (($user->recentRequests = $Cache->get_value('recent_requests_'.$user->ID)) ==
             AND r.TorrentID = 0
        GROUP BY r.ID
        ORDER BY Votes DESC",
-        [$user->ID])->fetchAll(\PDO::FETCH_ASSOC);
+        [$user->ID]
+    )->fetchAll(\PDO::FETCH_ASSOC);
     $Cache->cache_value('recent_requests_'.$user->ID, $user->recentRequests, 0); //inf cache
 }
 
@@ -393,7 +431,8 @@ $user->staffPMs = $master->db->raw_query(
       WHERE spc.UserID = ? AND (spc.Level <= ? OR spc.AssignedToUser=?)
    GROUP BY spc.ID
    ORDER BY Date DESC",
-   [$user->ID, $LoggedUser['Class'], $LoggedUser['ID']])->fetchAll(\PDO::FETCH_ASSOC);
+    [$user->ID, $LoggedUser['Class'], $LoggedUser['ID']]
+)->fetchAll(\PDO::FETCH_ASSOC);
 
 $user->reports = $master->db->raw_query(
     "SELECT r.ID,
@@ -411,7 +450,8 @@ $user->reports = $master->db->raw_query(
   LEFT JOIN torrents_group as tg ON tg.ID=r.TorrentID
       WHERE ReporterID = ?
    ORDER BY ReportedTime DESC",
-   [$user->ID])->fetchAll(\PDO::FETCH_ASSOC);
+    [$user->ID]
+)->fetchAll(\PDO::FETCH_ASSOC);
 
 $user->peers = user_peers($user->ID);
 
@@ -447,16 +487,19 @@ foreach ($user->legacy['Paranoia'] as $P) {
 function check_paranoia_here($Preview, $Setting)
 {
     global $user;
-    if ($Preview)
+    if ($Preview) {
         return check_paranoia($Setting, $user->legacy['Paranoia'], 99999999, false);
-    else
+    } else {
         return check_paranoia($Setting, $user->legacy['Paranoia'], $user->perm->Level, $user->ID);
+    }
 }
 
 $Badges=($user->legacy['Donor']) ? '<a href="/donate.php"><img src="'.STATIC_SERVER.'common/symbols/donor.png" alt="Donor" /></a>' : '';
 
 if ($master->repos->restrictions->is_warned($user)) {
-    if (check_perms('users_mod')) $Badges.= ' Warned for '.time_diff($master->repos->restrictions->get_expiry($user, 1)).' ';
+    if (check_perms('users_mod')) {
+        $Badges.= ' Warned for '.time_diff($master->repos->restrictions->get_expiry($user, 1)).' ';
+    }
     $Badges.= '<img src="'.STATIC_SERVER.'common/symbols/warned.png" alt="Warned" />';
 }
 $Badges.=($user->legacy['Enabled'] == '1' || $user->legacy['Enabled'] == '0' || !$user->legacy['Enabled']) ? '': '<img src="'.STATIC_SERVER.'common/symbols/disabled.png" alt="Banned" />';
@@ -523,7 +566,7 @@ $CookieItems[] = 'session';
 
 $user->cookieItems = $CookieItems;
 
-show_header($user->Username,'overlib,jquery,jquery.cookie,user,bbcode,requests,watchlist,bonus,tracker_history');
+show_header($user->Username, 'overlib,jquery,jquery.cookie,user,bbcode,requests,watchlist,bonus,tracker_history');
 echo $master->render->render('@Users/userpage.html.twig', ['user' => $user, 'classes' => $Classes, 'preview' => $Preview, 'ownProfile' => $OwnProfile]);
 
 if ($LoggedUser['HideUserTorrents']==0 && check_paranoia_here($Preview, 'uploads') && check_force_anon($user->ID)) {

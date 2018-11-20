@@ -8,10 +8,10 @@ $P = array();
 $P = db_array($_POST);
 
 $Text = new Luminance\Legacy\Text;
-$Text->validate_bbcode($_POST['description'],  get_permissions_advtags($LoggedUser['ID']));
+$Text->validate_bbcode($_POST['description'], get_permissions_advtags($LoggedUser['ID']));
 
 if ($P['category'] > 0 || check_perms('site_collages_renamepersonal')) {
-    $Val->SetFields('name', '1','string','The name must be between 3 and 100 characters',array('maxlength'=>100, 'minlength'=>3));
+    $Val->SetFields('name', '1', 'string', 'The name must be between 3 and 100 characters', array('maxlength'=>100, 'minlength'=>3));
 } else {
     // Get a collage name and make sure it's unique
     $name = $LoggedUser['Username']."'s personal collage";
@@ -24,7 +24,7 @@ if ($P['category'] > 0 || check_perms('site_collages_renamepersonal')) {
         $i++;
     }
 }
-$Val->SetFields('description', '1','string','The description must be at least 10 characters',array('maxlength'=>65535, 'minlength'=>10));
+$Val->SetFields('description', '1', 'string', 'The description must be at least 10 characters', array('maxlength'=>65535, 'minlength'=>10));
 
 $Err = $Val->ValidateForm($_POST);
 
@@ -66,19 +66,23 @@ if ($Err) {
     die();
 }
 
-$TagList = explode(' ',$_POST['tags']);
+$TagList = explode(' ', $_POST['tags']);
 $NewTags = array();
-foreach ($TagList as $ID=>$Tag) {
+foreach ($TagList as $ID => $Tag) {
         $Tag = trim($Tag, '.'); // trim dots from the beginning and end
         $Tag = get_tag_synonym($Tag);
-        if (!in_array($Tag, $NewTags) && is_valid_tag($Tag)) {
-            $NewTags[] = $Tag;
-        }
+    if (!in_array($Tag, $NewTags) && is_valid_tag($Tag)) {
+        $NewTags[] = $Tag;
+    }
 }
-$TagList = implode(' ',$NewTags);
+$TagList = implode(' ', $NewTags);
 
-if(!is_number($P['permission'])) error(404);
-if ($P['permission'] !=0 && !array_key_exists($P['permission'], $ClassLevels)) error(0);
+if (!is_number($P['permission'])) {
+    error(404);
+}
+if ($P['permission'] !=0 && !array_key_exists($P['permission'], $ClassLevels)) {
+    error(0);
+}
 
 $DB->query("INSERT INTO collages
     (Name, Description, UserID, TagList, CategoryID, Permissions)

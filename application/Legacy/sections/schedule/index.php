@@ -33,14 +33,14 @@ function next_biweek()
 
 function next_day()
 {
-    $Tomorrow = time(0,0,0,date('m'),date('d')+1,date('Y'));
+    $Tomorrow = time(0, 0, 0, date('m'), date('d')+1, date('Y'));
 
     return date('d', $Tomorrow);
 }
 
 function next_hour()
 {
-    $Hour = time(date('H')+1,0,0,date('m'),date('d'),date('Y'));
+    $Hour = time(date('H')+1, 0, 0, date('m'), date('d'), date('Y'));
 
     return date('H', $Hour);
 }
@@ -85,7 +85,7 @@ if ($Quarter == 1 || $_GET['runhour'] || isset($argv[2])) {
     print("Find bounties to return\n");
     $DB->query("SELECT r.ID, r.Title, v.UserID, v.Bounty, r.UserID as OwnerID, r.Description, r.CategoryID, r.Image
                   FROM requests as r JOIN requests_votes as v ON v.RequestID=r.ID
-                 WHERE TorrentID='0' AND TimeAdded < '".time_minus(3600*24*91)."'" );
+                 WHERE TorrentID='0' AND TimeAdded < '".time_minus(3600*24*91)."'");
 
     $RemoveBounties = $DB->to_array();
     $RemoveRequestIDs = array();
@@ -96,7 +96,9 @@ if ($Quarter == 1 || $_GET['runhour'] || isset($argv[2])) {
         include_once SERVER_ROOT.'/Legacy/sections/requests/functions.php';
         list($RequestID, $Title, $UserID, $Bounty) = $BountyInfo;
         // collect unique request ID's the old fashioned way
-        if (!in_array($RequestID, $RemoveRequestIDs)) $RemoveRequestIDs[] = $RequestID;
+        if (!in_array($RequestID, $RemoveRequestIDs)) {
+            $RemoveRequestIDs[] = $RequestID;
+        }
         // return bounty and log in staff notes
         $Title = db_string($Title);
         $DB->query("UPDATE users_info AS ui JOIN users_main AS um ON um.ID = ui.UserID
@@ -113,7 +115,7 @@ if ($Quarter == 1 || $_GET['runhour'] || isset($argv[2])) {
         $DB->query("SELECT r.ID, r.Title, Count(v.UserID) AS NumUsers, SUM( v.Bounty) AS Bounty, r.GroupID, r.Description, r.UserID
                       FROM requests as r JOIN requests_votes as v ON v.RequestID=r.ID
                      WHERE r.ID IN(".implode(",", $RemoveRequestIDs).")
-                     GROUP BY r.ID" );
+                     GROUP BY r.ID");
 
         $RemoveRequests = $DB->to_array();
 
@@ -138,7 +140,6 @@ if ($Quarter == 1 || $_GET['runhour'] || isset($argv[2])) {
                 $Cache->delete_value('requests_group_'.$Request['GroupID']);
             }
             update_sphinx_requests($Request['ID']);
-
         }
     }
 
@@ -167,7 +168,7 @@ if ($Quarter == 1 || $_GET['runhour'] || isset($argv[2])) {
     if ($Hour%2 == 0) {
         $DB->query("SELECT COUNT(uid) AS Snatches FROM xbt_snatched");
         list($SnatchStats) = $DB->next_record();
-        $Cache->cache_value('stats_snatches',$SnatchStats,0);
+        $Cache->cache_value('stats_snatches', $SnatchStats, 0);
     }
 
 
@@ -176,7 +177,7 @@ if ($Quarter == 1 || $_GET['runhour'] || isset($argv[2])) {
     $PeerCount = $DB->to_array(0, MYSQLI_NUM, false);
     $SeederCount = isset($PeerCount['Seeding'][1]) ? $PeerCount['Seeding'][1] : 0;
     $LeecherCount = isset($PeerCount['Leeching'][1]) ? $PeerCount['Leeching'][1] : 0;
-    $Cache->cache_value('stats_peers',array($LeecherCount,$SeederCount),0);
+    $Cache->cache_value('stats_peers', array($LeecherCount,$SeederCount), 0);
 
     if ($Hour%6 == 0) { // 4 times a day record site history
 
@@ -191,7 +192,7 @@ if ($Quarter == 1 || $_GET['runhour'] || isset($argv[2])) {
             $DB->query("INSERT INTO site_stats_history ( TimeAdded, Users, Torrents, Seeders, Leechers )
                                  VALUES ('".sqltime()."','$UserCount','$TorrentCount','$SeederCount','$LeecherCount')");
             $Cache->delete_value('site_stats');
-      }
+    }
 
     print("Update front page user stats\n");
     $DB->query("SELECT COUNT(ID) FROM users_main WHERE Enabled='1' AND LastAccess>'".time_minus(3600*24)."'");
@@ -203,7 +204,7 @@ if ($Quarter == 1 || $_GET['runhour'] || isset($argv[2])) {
     $DB->query("SELECT COUNT(ID) FROM users_main WHERE Enabled='1' AND LastAccess>'".time_minus(3600*24*30)."'");
     list($UserStats['Month']) = $DB->next_record();
 
-    $Cache->cache_value('stats_users',$UserStats,0);
+    $Cache->cache_value('stats_users', $UserStats, 0);
 
     //------------- Record who's seeding how much, used for ratio watch
 /*
@@ -259,7 +260,7 @@ if ($Quarter == 1 || $_GET['runhour'] || isset($argv[2])) {
                       ORDER BY Level
                         ) AS b ON a.rn = b.rn-1");
 
-    $Criteria = $DB->to_array(false,MYSQLI_ASSOC);
+    $Criteria = $DB->to_array(false, MYSQLI_ASSOC);
 
     print("Grab stats for promotions\n");
     // This god aweful SQL means that only old unreviewed or new reviewed torrents are counted in the promotion
@@ -298,7 +299,7 @@ if ($Quarter == 1 || $_GET['runhour'] || isset($argv[2])) {
                 $Class=$L['To'];
                 $DB->query("UPDATE users_info SET AdminComment = CONCAT('".sqltime()." - Class changed to [b][color=".str_replace(" ", "", $Classes[$Class]['Name'])."]" .make_class_string($Class)."[/color][/b] by System\n', AdminComment) WHERE UserID = ".$UserID);
             }
-            $DB->query("UPDATE users_main SET PermissionID=".$L['To']." WHERE ID IN(".implode(',',$UserIDs).")");
+            $DB->query("UPDATE users_main SET PermissionID=".$L['To']." WHERE ID IN(".implode(',', $UserIDs).")");
             echo "Promoted $NumPromotions user".($NumPromotions>1?'s':'')." to ".make_class_string($L['To'])."\n";
         }
     }
@@ -371,7 +372,7 @@ if ($Quarter == 1 || $_GET['runhour'] || isset($argv[2])) {
     print("Various login/warning stats things\n");
     print("Lower request floods\n");
     //------------- Lower Request Floods ------------------------------------//
-    if($Hour % 2 == 0){
+    if ($Hour % 2 == 0) {
         $floods = $master->repos->floods->find('Requests > ?', [0]);
         foreach ($floods as $flood) {
             $flood->Requests--;
@@ -408,7 +409,7 @@ if ($Quarter == 3 || $_GET['runhour'] || isset($argv[2])) {
             m.can_leech='0',
             i.AdminComment=CONCAT('$sqltime - Leeching ability disabled by ratio watch system for downloading more than 10 gigs on ratio watch - required ratio: ', m.RequiredRatio,'
 '			, i.AdminComment)
-            WHERE m.ID IN(".implode(',',$UserIDs).")");
+            WHERE m.ID IN(".implode(',', $UserIDs).")");
     }
 
     foreach ($UserIDs as $UserID) {
@@ -611,31 +612,31 @@ if ($Quarter == 3 || $_GET['runhour'] || isset($argv[2])) {
     }
 
   // Take users off ratio watch
-  $UserQuery = $DB->query("SELECT m.ID, torrent_pass FROM users_info AS i JOIN users_main AS m ON m.ID=i.UserID
+    $UserQuery = $DB->query("SELECT m.ID, torrent_pass FROM users_info AS i JOIN users_main AS m ON m.ID=i.UserID
           WHERE ( m.Downloaded=0 OR m.Uploaded/m.Downloaded >= m.RequiredRatio )
           AND i.RatioWatchEnds!='0000-00-00 00:00:00'
           AND m.Enabled='1'");
-  $OffRatioWatch = $DB->collect('ID');
-  if (count($OffRatioWatch)>0) {
+    $OffRatioWatch = $DB->collect('ID');
+    if (count($OffRatioWatch)>0) {
           $DB->query("UPDATE users_info AS ui
                   JOIN users_main AS um ON um.ID = ui.UserID
                   SET ui.RatioWatchEnds='0000-00-00 00:00:00',
                   ui.RatioWatchDownload='0',
                   um.can_leech='1'
                   WHERE ui.UserID IN(".implode(",", $OffRatioWatch).")");
-  }
+    }
 
-  foreach ($OffRatioWatch as $UserID) {
+    foreach ($OffRatioWatch as $UserID) {
           $master->repos->users->uncache($UserID);
           send_pm($UserID, 0, db_string("You have been taken off Ratio Watch"), db_string("Congratulations! Feel free to begin downloading again.\n To ensure that you do not get put on ratio watch again, please read the rules located [url=/articles.php?topic=ratio]here[/url].\n"), '');
           echo "Ratio watch off: $UserID\n";
-  }
-  $DB->set_query_id($UserQuery);
-  $Passkeys = $DB->collect('torrent_pass');
-  foreach ($Passkeys as $Passkey) {
+    }
+    $DB->set_query_id($UserQuery);
+    $Passkeys = $DB->collect('torrent_pass');
+    foreach ($Passkeys as $Passkey) {
           //update_tracker('update_user', array('passkey' => $Passkey, 'can_leech' => '1'));
           $master->tracker->updateUser($Passkey, 1);
-  }
+    }
 
     // Put user on ratio watch if he doesn't meet the standards
     sleep(10);
@@ -711,7 +712,7 @@ if ($Day != next_day() || $_GET['runday']) {
             i.AdminComment=CONCAT('$sqltime - Leeching ability disabled by ratio watch system - required ratio: ', m.RequiredRatio,'
 
 '			, i.AdminComment)
-            WHERE m.ID IN(".implode(',',$UserIDs).")");
+            WHERE m.ID IN(".implode(',', $UserIDs).")");
     }
 
     foreach ($UserIDs as $UserID) {
@@ -744,7 +745,7 @@ if ($Day != next_day() || $_GET['runday']) {
             AND LastAccess!='0000-00-00 00:00:00'
             AND Enabled!='2')"
     )->fetchAll(\PDO::FETCH_NUM);
-    foreach($userIDs as $userID) {
+    foreach ($userIDs as $userID) {
         $user = $master->repos->users->load($userID);
         if (is_null($user)) {
             continue;
@@ -791,7 +792,7 @@ if ($Day != next_day() || $_GET['runday']) {
         AND ui.JoinDate<'".time_minus(60*60*24*7)."'
         AND um.Enabled!='2'
         ");
-    $Cache->decrement('stats_user_count',$DB->affected_rows());
+    $Cache->decrement('stats_user_count', $DB->affected_rows());
 
 
 
@@ -803,7 +804,7 @@ if ($Day != next_day() || $_GET['runday']) {
 
     $Users = $DB->to_array();
     echo "demoted 1\n";
-    foreach($Users as $User) {
+    foreach ($Users as $User) {
         $master->repos->users->uncache($User['ID']);
         $Class=PERV;
         $DB->query("UPDATE users_info SET AdminComment = CONCAT('".sqltime()." - Class changed to [b][color=".str_replace(" ", "", $Classes[$Class]['Name'])."]" .make_class_string($Class)."[/color][/b] by System\n', AdminComment) WHERE UserID = ".$User['ID']);
@@ -814,7 +815,7 @@ if ($Day != next_day() || $_GET['runday']) {
     $DB->query('SELECT ID FROM users_main WHERE PermissionID IN('.PERV.', '.GOOD_PERV.', '.GREAT_PERV.', '.SEXTREME_PERV.', '.SMUT_PEDDLER.') AND Uploaded/Downloaded < 0.5');
     $Users = $DB->to_array();
     echo "demoted 3\n";
-    foreach($Users as $User) {
+    foreach ($Users as $User) {
         $master->repos->users->uncache($User['ID']);
         $Class=APPRENTICE;
         $DB->query("UPDATE users_info SET AdminComment = CONCAT('".sqltime()." - Class changed to [b][color=".str_replace(" ", "", $Classes[$Class]['Name'])."]" .make_class_string($Class)."[/color][/b] by System\n', AdminComment) WHERE UserID = ".$User['ID']);
@@ -842,8 +843,8 @@ if ($Day != next_day() || $_GET['runday']) {
             $Cache->begin_transaction('thread_'.$ID.'_info');
             $Cache->update_row(false, array('IsLocked'=>'1'));
             $Cache->commit_transaction(3600*24*30);
-            $Cache->expire_value('thread_'.$TopicID.'_catalogue_0',3600*24*30);
-            $Cache->expire_value('thread_'.$TopicID.'_info',3600*24*30);
+            $Cache->expire_value('thread_'.$TopicID.'_catalogue_0', 3600*24*30);
+            $Cache->expire_value('thread_'.$TopicID.'_info', 3600*24*30);
         }
     }
     echo "Old threads locked\n";
@@ -888,8 +889,9 @@ if ($Day != next_day() || $_GET['runday']) {
         delete_torrent($ID, $GroupID);
         $LogEntries[] = "Torrent ".$ID." (".$Name.") was deleted for inactivity (unseeded)";
 
-        if (!array_key_exists($UserID, $DeleteNotes))
+        if (!array_key_exists($UserID, $DeleteNotes)) {
                 $DeleteNotes[$UserID] = array('Count' => 0, 'Msg' => '');
+        }
 
         $DeleteNotes[$UserID]['Msg'] .= "\n$Name";
         $DeleteNotes[$UserID]['Count']++;
@@ -903,12 +905,12 @@ if ($Day != next_day() || $_GET['runday']) {
 
     foreach ($DeleteNotes as $UserID => $MessageInfo) {
         $Singular = ($MessageInfo['Count'] == 1) ? true : false;
-        send_pm($UserID,0,db_string($MessageInfo['Count'].' of your torrents '.($Singular?'has':'have').' been deleted for inactivity'), db_string(($Singular?'One':'Some').' of your uploads '.($Singular?'has':'have').' been deleted for being unseeded.  Since '.($Singular?'it':'they').' didn\'t break any rules (we hope), please feel free to re-upload '.($Singular?'it':'them').".\nThe following torrent".($Singular?' was':'s were').' deleted:'.$MessageInfo['Msg']));
+        send_pm($UserID, 0, db_string($MessageInfo['Count'].' of your torrents '.($Singular?'has':'have').' been deleted for inactivity'), db_string(($Singular?'One':'Some').' of your uploads '.($Singular?'has':'have').' been deleted for being unseeded.  Since '.($Singular?'it':'they').' didn\'t break any rules (we hope), please feel free to re-upload '.($Singular?'it':'them').".\nThe following torrent".($Singular?' was':'s were').' deleted:'.$MessageInfo['Msg']));
     }
     unset($DeleteNotes);
 
     if (count($LogEntries) > 0) {
-        $Values = "('".implode("', '$sqltime'), ('",$LogEntries)."', '$sqltime')";
+        $Values = "('".implode("', '$sqltime'), ('", $LogEntries)."', '$sqltime')";
         $DB->query('INSERT INTO log (Message, Time) VALUES '.$Values);
         echo "\nDeleted $i torrents for inactivity\n";
     }
@@ -1025,8 +1027,9 @@ if ($Day != next_day() || $_GET['runday']) {
                 continue;
             }
 
-            if (!array_key_exists($UserID, $TorrentAlerts))
+            if (!array_key_exists($UserID, $TorrentAlerts)) {
                 $TorrentAlerts[$UserID] = array('Count' => 0, 'Msg' => '');
+            }
                 $TorrentAlerts[$UserID]['Msg'] .= "\n[url=/details.php?id=$ID]".$Name."[/url]";
                 $TorrentAlerts[$UserID]['Count']++;
         }
@@ -1059,8 +1062,7 @@ if ($Day != next_day() || $_GET['runday']) {
                        "A request which was filled with one of your torrents has been unfilled|".
                        "A request you created has been unfilled|".
                        "Bonus Shop - You received a gift|".
-                       "Security Alert'"
-              );
+                       "Security Alert'");
 
     print("Deleted ".$DB->affected_rows()." old system PMs\n");
 
@@ -1078,7 +1080,6 @@ if ($Day != next_day() || $_GET['runday']) {
     // Correct Tag uses columns
     $DB->query("UPDATE tags JOIN (SELECT COUNT(*) AS Uses, TagID FROM torrents_tags GROUP BY TagID) AS tt ON tt.TagID=tags.ID SET tags.Uses=tt.Uses;");
     print("Updated ".$DB->affected_rows()." tag usage counts\n");
-
 }
 
 /*************************************************************************\
@@ -1104,8 +1105,7 @@ if ($BiWeek != next_biweek() || $_GET['runbiweek']) {
                     )
                 )
             )
-        );"
-    );
+        );");
 
     //------------- Cleanup bookmarks ---------------------------------------//
     sleep(5);
@@ -1134,7 +1134,6 @@ if ($BiWeek != next_biweek() || $_GET['runbiweek']) {
     $GiveOutInvites = false;
 
     if ($GiveOutInvites) {
-
         $DB->query("SELECT ID
                     FROM users_main AS um
                     JOIN users_info AS ui on ui.UserID=um.ID
@@ -1150,7 +1149,7 @@ if ($BiWeek != next_biweek() || $_GET['runbiweek']) {
                 }
                 $master->repos->users->uncache($UserID);
             }
-            $DB->query("UPDATE users_main SET Invites=Invites+1 WHERE ID IN (".implode(',',$UserIDs).")");
+            $DB->query("UPDATE users_main SET Invites=Invites+1 WHERE ID IN (".implode(',', $UserIDs).")");
         }
 
         $BonusReqs = array(
@@ -1184,10 +1183,9 @@ if ($BiWeek != next_biweek() || $_GET['runbiweek']) {
                     }
                     $master->repos->users->uncache($UserID);
                 }
-                $DB->query("UPDATE users_main SET Invites=Invites+1 WHERE ID IN (".implode(',',$UserIDs).")");
+                $DB->query("UPDATE users_main SET Invites=Invites+1 WHERE ID IN (".implode(',', $UserIDs).")");
             }
         }
-
     } // end give out invites
 
     if ($BiWeek == 8) {
@@ -1298,7 +1296,7 @@ if ($master->options->MFDAutoDelete) {
 
 //-- Ban passkey leakers --//
 $UserIDs = $master->db->raw_query(
-         "SELECT um.ID
+    "SELECT um.ID
             FROM xbt_files_users AS xfu
             JOIN users_main AS um ON um.ID=xfu.uid
            WHERE um.Enabled='1'
@@ -1306,13 +1304,14 @@ $UserIDs = $master->db->raw_query(
           HAVING COUNT(DISTINCT xfu.useragent) >= :clients
              AND COUNT(DISTINCT xfu.ipv4) >= :ips",
     [':clients' => $master->options->LeakingClients,
-     ':ips'     => $master->options->LeakingIPs])->fetchColumn();
+    ':ips'     => $master->options->LeakingIPs]
+)->fetchColumn();
 
-if($UserIDs && count($UserIDs) > 0) {
+if ($UserIDs && count($UserIDs) > 0) {
         disable_users($UserIDs, "Disabled for suspected passkey leak.", 2);
-        foreach($UserIDs as $UserID) {
-                echo "Passkey leaking user disabled : $UserID\n";
-        }
+    foreach ($UserIDs as $UserID) {
+        echo "Passkey leaking user disabled : $UserID\n";
+    }
 }
 
 
@@ -1321,13 +1320,13 @@ if($UserIDs && count($UserIDs) > 0) {
 $CLEAN_SPEED_RECORDS=true;
 // run each time, once a day (00:30) recreate the table
 if ($CLEAN_SPEED_RECORDS && !($Hour == 0 && $Quarter == 2)) {
-print("Delete old speed records\n");
-$master->db->raw_query("DROP TABLE IF EXISTS temp_copy"); // jsut in case!
+    print("Delete old speed records\n");
+    $master->db->raw_query("DROP TABLE IF EXISTS temp_copy"); // jsut in case!
 
 // On hourly run a delete quick, once a day we'll do a
 // recreate to try to preserve performance here.
-$DeletedRecords = $master->db->raw_query(
-    "DELETE x FROM xbt_peers_history AS x
+    $DeletedRecords = $master->db->raw_query(
+        "DELETE x FROM xbt_peers_history AS x
   LEFT JOIN users_watch_list AS uw ON uw.UserID=x.uid
   LEFT JOIN torrents_watch_list AS tw ON tw.TorrentID=x.fid
       WHERE uw.UserID IS NULL
@@ -1335,21 +1334,22 @@ $DeletedRecords = $master->db->raw_query(
         AND x.upspeed <  :keepSpeed
         AND x.mtime   <= :keepTime",
         [':keepSpeed' => $master->options->KeepSpeed,
-         ':keepTime' => (time() - ( $master->options->DeleteRecordsMins * 60))])->rowCount();
+        ':keepTime' => (time() - ( $master->options->DeleteRecordsMins * 60))]
+    )->rowCount();
 
-print("Deleted ".$DeletedRecords." speed records\n");
-
+    print("Deleted ".$DeletedRecords." speed records\n");
 } elseif ($CLEAN_SPEED_RECORDS) {
 // as we are deleting way way more than keeping, and to avoid exceeding lockrow size in innoDB we do it another way:
-print("Rotate Speed Record Table\n");
-$master->db->raw_query("DROP TABLE IF EXISTS temp_copy"); // jsut in case!
-$master->db->raw_query("CREATE TABLE `temp_copy` LIKE `xbt_peers_history`");
-$master->db->raw_query("ALTER TABLE `temp_copy` DISABLE KEYS");
+    print("Rotate Speed Record Table\n");
+    $master->db->raw_query("DROP TABLE IF EXISTS temp_copy"); // jsut in case!
+    $master->db->raw_query("CREATE TABLE `temp_copy` LIKE `xbt_peers_history`");
+    $master->db->raw_query("ALTER TABLE `temp_copy` DISABLE KEYS");
 
-$RecordsBefore = $master->db->raw_query("SELECT COUNT(*) FROM xbt_peers_history")->fetchColumn();
+    $RecordsBefore = $master->db->raw_query("SELECT COUNT(*) FROM xbt_peers_history")->fetchColumn();
 
 // insert the records we want to keep into the temp table
-$master->db->raw_query("INSERT INTO temp_copy (
+    $master->db->raw_query(
+        "INSERT INTO temp_copy (
                              SELECT x.*
                                FROM xbt_peers_history AS x
                           LEFT JOIN users_watch_list AS uw ON uw.UserID=x.uid
@@ -1358,19 +1358,20 @@ $master->db->raw_query("INSERT INTO temp_copy (
                                  OR tw.TorrentID IS NOT NULL
                                  OR x.upspeed >= :keepSpeed
                                  OR x.mtime   >  :keepTime)",
-                                 [':keepSpeed' => $master->options->KeepSpeed,
-                                  ':keepTime' => (time() - ( $master->options->DeleteRecordsMins * 60))]);
+        [':keepSpeed' => $master->options->KeepSpeed,
+        ':keepTime' => (time() - ( $master->options->DeleteRecordsMins * 60))]
+    );
 // Enable keys after data insertion
-$master->db->raw_query("ALTER TABLE `temp_copy` ENABLE KEYS");
+    $master->db->raw_query("ALTER TABLE `temp_copy` ENABLE KEYS");
 
 //Use RENAME TABLE to atomically move the original table out of the way and rename the copy to the original name:
-$master->db->raw_query("RENAME TABLE xbt_peers_history TO temp_old, temp_copy TO xbt_peers_history");
+    $master->db->raw_query("RENAME TABLE xbt_peers_history TO temp_old, temp_copy TO xbt_peers_history");
 //Drop the original table:
-$master->db->raw_query("DROP TABLE temp_old");
+    $master->db->raw_query("DROP TABLE temp_old");
 
-$RecordsAfter = $master->db->raw_query("SELECT COUNT(*) FROM xbt_peers_history")->fetchColumn();
-print("$RecordsBefore speed records before delete\n");
-print("$RecordsAfter speed records after delete\n");
+    $RecordsAfter = $master->db->raw_query("SELECT COUNT(*) FROM xbt_peers_history")->fetchColumn();
+    print("$RecordsBefore speed records before delete\n");
+    print("$RecordsAfter speed records after delete\n");
 }
 
 echo "-------------------------\n\n";

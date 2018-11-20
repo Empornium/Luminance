@@ -1,4 +1,6 @@
 <?php
 namespace Luminance\Errors;
 
-class ConfigurationError extends AdminError{}
+class ConfigurationError extends AdminError
+{
+}

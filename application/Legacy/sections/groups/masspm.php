@@ -1,11 +1,13 @@
 <?php
-if (empty($_REQUEST['groupid']) || !is_number($_REQUEST['groupid']) ) {
+if (empty($_REQUEST['groupid']) || !is_number($_REQUEST['groupid'])) {
      error(0);
 }
 $GroupID = (int) $_REQUEST['groupid'];
 
 $DB->query("SELECT Name, Comment from groups WHERE ID=$GroupID");
-if ($DB->record_count()==0) error(0);
+if ($DB->record_count()==0) {
+    error(0);
+}
 list($Name, $Description) = $DB->next_record();
 
 $DB->query("SELECT
@@ -15,9 +17,11 @@ $DB->query("SELECT
             JOIN users_main as um ON um.ID = ug.UserID
             WHERE GroupID=$GroupID");
 
-$Users = $DB->to_array(false,MYSQLI_BOTH);
+$Users = $DB->to_array(false, MYSQLI_BOTH);
 
-if (!$Users) { error("Cannot send a mass PM as there are no users in this group"); }
+if (!$Users) {
+    error("Cannot send a mass PM as there are no users in this group");
+}
 
 show_header('Send Mass PM', 'upload,bbcode,inbox');
 
@@ -30,8 +34,8 @@ $Text = new Luminance\Legacy\Text;
     <div class="head">Send list<span style="float:right;"><a href="#" onclick="$('#ulist').toggle(); this.innerHTML=(this.innerHTML=='(Hide)'?'(View)':'(Hide)'); return false;">(View)</a></span></div>
       <div id="ulist" class="box pad hidden">
 <?php
-           foreach ($Users as $User) {
-               list($UserID,$Username) = $User; ?>
+foreach ($Users as $User) {
+    list($UserID,$Username) = $User; ?>
                 <a href="/user.php?id=<?=$UserID?>"><?=$Username?></a><br/>
 <?php            }      ?>
       </div>

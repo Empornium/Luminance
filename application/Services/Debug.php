@@ -9,7 +9,8 @@ define('MAX_ERRORS', 0); //Maxmimum errors, warnings, notices we will allow in a
 define('MAX_MEMORY', 80*1024*1024); //Maximum memory used per pageload
 define('MAX_QUERIES', 30); //Maxmimum queries
 
-class Debug extends Service {
+class Debug extends Service
+{
 
     protected static $useServices = [
         'auth'     => 'Auth',
@@ -23,16 +24,19 @@ class Debug extends Service {
     public $StartTime = 0;
     private $LoggedVars = array();
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
         $this->request = $master->request;
     }
 
-    public function start() {
+    public function start()
+    {
         $this->StartTime = microtime(true);
     }
 
-    public function profile($Automatic = '') {
+    public function profile($Automatic = '')
+    {
         $Reason = array();
 
         if (!empty($Automatic)) {
@@ -72,7 +76,8 @@ class Debug extends Service {
         return false;
     }
 
-    public function analysis($Message, $Report = '', $Time = 43200) {
+    public function analysis($Message, $Report = '', $Time = 43200)
+    {
         if (empty($Report)) {
             $Report = $Message;
         }
@@ -94,7 +99,8 @@ class Debug extends Service {
         send_irc('PRIVMSG '.LAB_CHAN.' :'.$Message.'  http://'.SITE_URL.'/tools.php?action=analysis&case='.$Identifier.' http://'.SITE_URL.$_SERVER['REQUEST_URI']);
     }
 
-    public function log_var($Var, $VarName = false) {
+    public function log_var($Var, $VarName = false)
+    {
         $BackTrace = debug_backtrace();
         $ID = uniqid();
         if (!$VarName) {
@@ -104,19 +110,22 @@ class Debug extends Service {
         $this->LoggedVars[$ID] = array($VarName => array('bt' => $File, 'data' => $Var));
     }
 
-    public function set_flag($Event) {
+    public function set_flag($Event)
+    {
         $this->Flags[] = array($Event,(microtime(true)-$this->StartTime)*1000,memory_get_usage(true));
     }
 
     //This isn't in the constructor because $this is not available, and the function cannot be made static
-    public function handle_errors() {
+    public function handle_errors()
+    {
         //error_reporting(E_ALL ^ E_STRICT | E_WARNING | E_DEPRECATED | E_ERROR | E_PARSE); //E_STRICT disabled
         error_reporting(E_WARNING | E_ERROR | E_PARSE);
         // This is very slow and fucks shit up!
         //set_error_handler(array($this, 'php_error_handler'));
     }
 
-    protected function format_args($Array) {
+    protected function format_args($Array)
+    {
         $LastKey = -1;
         $Return = array();
         foreach ($Array as $Key => $Val) {
@@ -143,7 +152,8 @@ class Debug extends Service {
         return implode(', ', $Return);
     }
 
-    public function php_error_handler($Level, $Error, $File, $Line) {
+    public function php_error_handler($Level, $Error, $File, $Line)
+    {
         //Who added this, it's still something to pay attention to...
         if (stripos('Undefined index', $Error) !== false) {
             //return true;
@@ -209,7 +219,8 @@ class Debug extends Service {
 
     /* Data wrappers */
 
-    public function get_errors($Light = false) {
+    public function get_errors($Light = false)
+    {
         //Because the cache can't take some of these variables
         if ($Light) {
             foreach ($this->Errors as $Key => $Value) {
@@ -220,11 +231,13 @@ class Debug extends Service {
         return $this->Errors;
     }
 
-    public function get_constants() {
+    public function get_constants()
+    {
         return get_defined_constants(true);
     }
 
-    public function get_classes() {
+    public function get_classes()
+    {
         foreach (get_declared_classes() as $Class) {
             $Classes[$Class]['Vars'] = get_class_vars($Class);
             $Classes[$Class]['Functions'] = get_class_methods($Class);
@@ -233,7 +246,8 @@ class Debug extends Service {
         return $Classes;
     }
 
-    public function get_extensions() {
+    public function get_extensions()
+    {
         foreach (get_loaded_extensions() as $Extension) {
             $Extensions[$Extension]['Functions'] = get_extension_funcs($Extension);
         }
@@ -241,13 +255,15 @@ class Debug extends Service {
         return $Extensions;
     }
 
-    public function get_includes() {
+    public function get_includes()
+    {
         return get_included_files();
     }
 
     /* Output Formatting */
 
-    public function include_table($Includes = false) {
+    public function include_table($Includes = false)
+    {
         if (!is_array($Includes)) {
             $Includes = $this->get_includes();
         }
@@ -271,7 +287,8 @@ class Debug extends Service {
         <?php
     }
 
-    public function class_table($Classes = false) {
+    public function class_table($Classes = false)
+    {
         if (!is_array($Classes)) {
             $Classes = $this->get_classes();
         }
@@ -291,7 +308,8 @@ class Debug extends Service {
         <?php
     }
 
-    public function extension_table() {
+    public function extension_table()
+    {
         ?>
     <table class="debug_table_head" width="100%">
         <tr>
@@ -309,7 +327,8 @@ class Debug extends Service {
     }
 
     // Borrowed from git source code
-    protected function unpack_git_pack_header($buf, &$type, &$size) {
+    protected function unpack_git_pack_header($buf, &$type, &$size)
+    {
         $used = 0;
 
         $c = $buf[1+$used++];
@@ -329,11 +348,14 @@ class Debug extends Service {
         return $used;
     }
 
-    public function git_commit() {
+    public function git_commit()
+    {
         // Read the HEAD file, it should look like
         // ref: <reference path>
         $HEAD=@file_get_contents("../.git/HEAD");
-        if ($HEAD === false) return;
+        if ($HEAD === false) {
+            return;
+        }
         $HEAD = trim(explode(' ', $HEAD)[1]);
 
         // Fetch the commit hash from the reference and
@@ -394,12 +416,16 @@ class Debug extends Service {
                 $dataStart = $this->unpack_git_pack_header($HEAD, $type, $size);
 
                 // Sanity Check
-                if ($type !== 1) return;
+                if ($type !== 1) {
+                    return;
+                }
                 $RAW_COMMIT = substr($RAW_PACK, $OFFSET+$dataStart, $size);
             }
 
             $RAW_COMMIT = @gzuncompress($RAW_COMMIT);
-            if ($RAW_COMMIT === false) return;
+            if ($RAW_COMMIT === false) {
+                return;
+            }
 
             // Prepare the commit data so we can display it
             // in a pretty way
@@ -429,7 +455,8 @@ class Debug extends Service {
         <?php
     }
 
-    public function flag_table($Flags = false) {
+    public function flag_table($Flags = false)
+    {
         if (!is_array($Flags)) {
             $Flags = $this->Flags;
         }
@@ -459,7 +486,8 @@ class Debug extends Service {
         <?php
     }
 
-    public function permission_table($Permissions = false) {
+    public function permission_table($Permissions = false)
+    {
         if (!is_array($Permissions)) {
             $Permissions = $this->auth->usedPermissions;
         }
@@ -487,7 +515,8 @@ class Debug extends Service {
         <?php
     }
 
-    public function constant_table($Constants = false) {
+    public function constant_table($Constants = false)
+    {
         if (!is_array($Constants)) {
             $Constants = $this->get_constants();
         }
@@ -507,7 +536,8 @@ class Debug extends Service {
         <?php
     }
 
-    public function cache_table($CacheKeys = false) {
+    public function cache_table($CacheKeys = false)
+    {
         $Header = 'Cache Keys';
         if (!is_array($CacheKeys)) {
             $CacheKeys  = array_keys($this->cache->CacheHits);
@@ -542,7 +572,8 @@ class Debug extends Service {
         <?php
     }
 
-    public function error_table($Errors = false) {
+    public function error_table($Errors = false)
+    {
         if (!is_array($Errors)) {
             $Errors = $this->get_errors();
         }
@@ -572,7 +603,8 @@ class Debug extends Service {
         <?php
     }
 
-    public function query_table($Queries = false) {
+    public function query_table($Queries = false)
+    {
         $Header = 'Queries';
         if (!is_array($Queries)) {
             $Queries = $this->db->Queries;
@@ -604,7 +636,8 @@ class Debug extends Service {
         <?php
     }
 
-    public function sphinx_table($Queries = false) {
+    public function sphinx_table($Queries = false)
+    {
         $Header = 'Searches';
         if (!is_array($Queries)) {
             $Queries = $this->search->Queries;
@@ -636,7 +669,8 @@ class Debug extends Service {
         <?php
     }
 
-    public function vars_table($Vars = false) {
+    public function vars_table($Vars = false)
+    {
         $Header = 'Logged Variables';
         if (empty($Vars)) {
             if (empty($this->LoggedVars)) {

@@ -1,5 +1,6 @@
 <?php
 namespace Luminance\Legacy;
+
 class google_charts
 {
     protected $URL = 'http://chart.apis.google.com/chart';
@@ -31,12 +32,12 @@ class google_charts
         $this->URL .= '&amp;chco='.$Colors;
     }
 
-    public function lines($Thickness, $Solid=1, $Blank=0)
+    public function lines($Thickness, $Solid = 1, $Blank = 0)
     {
         $this->URL .= '&amp;chls='.$Thickness.','.$Solid.','.$Blank;
     }
 
-    public function title($Title, $Color='', $Size='')
+    public function title($Title, $Color = '', $Size = '')
     {
         $this->URL .= '&amp;chtt='.str_replace(array(' ',"\n"), array('+','|'), $Title);
         if (!empty($Color)) {
@@ -47,7 +48,7 @@ class google_charts
         }
     }
 
-    public function legend($Items, $Placement='')
+    public function legend($Items, $Placement = '')
     {
         $this->URL .= '&amp;chdl='.str_replace(' ', '+', implode('|', $Items));
         if (!empty($Placement)) {
@@ -66,7 +67,7 @@ class google_charts
         $this->Data[] = $Data;
     }
 
-    public function grid_lines($SpacingX=0, $SpacingY=-1, $Solid=1, $Blank=1)
+    public function grid_lines($SpacingX = 0, $SpacingY = -1, $Solid = 1, $Blank = 1)
     {
         //Can take 2 more parameters for offset, but we're not bothering with that right now
         $this->URL .= '&amp;chg='.$SpacingX.','.$SpacingY.','.$Solid.','.$Blank.'';

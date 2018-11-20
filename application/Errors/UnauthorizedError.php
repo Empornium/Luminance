@@ -1,7 +1,8 @@
 <?php
 namespace Luminance\Errors;
 
-class UnauthorizedError extends UserError {
+class UnauthorizedError extends UserError
+{
 
     public $http_status = 401;
     public $public_message = "Unauthorized";

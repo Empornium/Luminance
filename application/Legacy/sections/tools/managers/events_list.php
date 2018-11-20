@@ -1,5 +1,7 @@
 <?php
-if(!check_perms('admin_manage_events')) { error(403); }
+if (!check_perms('admin_manage_events')) {
+    error(403);
+}
 
 
 show_header('Manage Upload Events');
@@ -90,7 +92,7 @@ $DB->query("SELECT ID,
 $Row = 'b';
 
 $Events = $DB->to_array(MYSQLI_ASSOC);
-foreach($Events as $Event) {
+foreach ($Events as $Event) {
     list($ID, $Title, $Comment, $UFL, $PFL, $Tokens, $Credits, $StartTime, $EndTime) = $Event;
     $DB->query("SELECT COUNT(*) FROM torrents_events WHERE EventID=$ID");
     list($Uploads)=$DB->next_record();
@@ -113,9 +115,9 @@ foreach($Events as $Event) {
     </td>
     <td>
       <select name="pfl">
-          <option value="0"   <?php selected('PFL', '0',   'selected', $Event) ?>>None</option>
-          <option value="24"  <?php selected('PFL', '24',  'selected', $Event) ?>>24 hours</option>
-          <option value="48"  <?php selected('PFL', '48',  'selected', $Event) ?>>48 hours</option>
+          <option value="0"   <?php selected('PFL', '0', 'selected', $Event) ?>>None</option>
+          <option value="24"  <?php selected('PFL', '24', 'selected', $Event) ?>>24 hours</option>
+          <option value="48"  <?php selected('PFL', '48', 'selected', $Event) ?>>48 hours</option>
           <option value="168" <?php selected('PFL', '168', 'selected', $Event) ?>>1 week</option>
           <option value="672" <?php selected('PFL', '672', 'selected', $Event) ?>>2 weeks</option>
       </select>

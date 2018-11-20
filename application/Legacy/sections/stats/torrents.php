@@ -1,16 +1,18 @@
 <?php
 
-if (!check_perms('site_stats_advanced')) error(403);
+if (!check_perms('site_stats_advanced')) {
+    error(403);
+}
 
 $DB->query("SELECT tg.NewCategoryID, COUNT(t.ID) AS Torrents
               FROM torrents AS t JOIN torrents_group AS tg ON tg.ID=t.GroupID
           GROUP BY tg.NewCategoryID ORDER BY Torrents DESC");
 $Groups = $DB->to_array();
-$Pie = new Luminance\Legacy\PieChart(750,400,array('Other'=>0.2,'Percentage'=>1));
+$Pie = new Luminance\Legacy\PieChart(750, 400, array('Other'=>0.2,'Percentage'=>1));
 foreach ($Groups as $Group) {
     list($NewCategoryID, $Torrents) = $Group;
     //$CategoryName = $NewCategories[$NewCategoryID]['name'];
-    $Pie->add($NewCategories[$NewCategoryID]['name'],$Torrents);
+    $Pie->add($NewCategories[$NewCategoryID]['name'], $Torrents);
 }
 $Pie->transparent();
 $Pie->color('FF33CC');
@@ -20,18 +22,27 @@ $TorrentCategories = $Pie->url();
 //==========================================================
 
 if (isset($_POST['view']) && check_perms('site_stats_advanced')) {
-
-    $start = date('Y-m-d H:i:s', strtotime( "$_POST[year1]-$_POST[month1]-$_POST[day1]" )  );
-    $end = date('Y-m-d H:i:s', strtotime( "$_POST[year2]-$_POST[month2]-$_POST[day2]" )  );
+    $start = date('Y-m-d H:i:s', strtotime("$_POST[year1]-$_POST[month1]-$_POST[day1]"));
+    $end = date('Y-m-d H:i:s', strtotime("$_POST[year2]-$_POST[month2]-$_POST[day2]"));
    // error("$start --> $end");
-    if($start===false) error("Error in start time input");
-    if($end===false) error("Error in end time input");
+    if ($start===false) {
+        error("Error in start time input");
+    }
+    if ($end===false) {
+        error("Error in end time input");
+    }
     if (strtotime($start)<strtotime("2011-02-01")) {
         $start = "2011-02-01 00:00:00";
-        $_POST['year1']=2011; $_POST['month1']=02; $_POST['day1']=01;
+        $_POST['year1']=2011;
+        $_POST['month1']=02;
+        $_POST['day1']=01;
     }
-    if (strtotime($end)>time()) $end = sqltime();
-    if ($start>=$end) error("Start date ($start) cannot be after end date ($end)");
+    if (strtotime($end)>time()) {
+        $end = sqltime();
+    }
+    if ($start>=$end) {
+        error("Start date ($start) cannot be after end date ($end)");
+    }
 
     $DB->query("SELECT DATE_FORMAT(Time, '%d %b %y') AS Label, Count(ID) As Torrents
                 FROM torrents
@@ -59,7 +70,7 @@ if ($TorrentStats === false) {
     $title = "last 365 days";
     $TorrentStats = $DB->to_array();
     $TorrentStats = array_reverse($TorrentStats);
-    $Cache->cache_value('torrents_byday',$TorrentStats, 3600*24 );
+    $Cache->cache_value('torrents_byday', $TorrentStats, 3600*24);
 }
 
 $startrow=0;
@@ -83,7 +94,7 @@ if (count($TorrentStats)>0) {
 
 //=================================================================
 
-show_header('Torrent statistics','charts,jquery');
+show_header('Torrent statistics', 'charts,jquery');
 ?>
 
 <div class="thin">
@@ -99,7 +110,7 @@ show_header('Torrent statistics','charts,jquery');
     <table class="">
         <tr><td class="box pad center">
 <?php
-    if ($data) { ?>
+if ($data) { ?>
         <h1>Uploads daily</h1>
         <span style="position:relative;left:0px;"><?=$title?></span>
         <div id="chart_div"></div>
@@ -121,7 +132,7 @@ show_header('Torrent statistics','charts,jquery');
         </script>
 
 <?php
-        if (check_perms('site_debug')) {  ?>
+if (check_perms('site_debug')) {  ?>
             <span style="float:left">
                 <a href="#debuginfo" onclick="$('#databox').toggle(); this.innerHTML=(this.innerHTML=='DEBUG: (Hide chart data)'?'DEBUG: (View chart data)':'DEBUG: (Hide chart data)'); return false;">DEBUG: (View chart data)</a>
             </span>&nbsp;
@@ -131,38 +142,38 @@ show_header('Torrent statistics','charts,jquery');
             </div>
 <?php       }  ?>
 <?php
-    } else { ?>
+} else { ?>
         <p>No torrent data found</p>
 <?php   }  ?>
         </td></tr>
 
 <?php
-    if (check_perms('site_stats_advanced')) {
-        if (isset($_POST['year1'])) {
-            $start = array ($_POST['year1'],$_POST['month1'],$_POST['day1']);
-            $end = array ($_POST['year2'],$_POST['month2'],$_POST['day2']);
-        } else {
-            //$start = array (2011,02,01);
-            $start =  date('Y-m-d', time() - (3600*24*365));
-            $start = explode('-', $start);
-            $end =  date('Y-m-d');
-            $end = explode('-', $end);
-        }
+if (check_perms('site_stats_advanced')) {
+    if (isset($_POST['year1'])) {
+        $start = array ($_POST['year1'],$_POST['month1'],$_POST['day1']);
+        $end = array ($_POST['year2'],$_POST['month2'],$_POST['day2']);
+    } else {
+        //$start = array (2011,02,01);
+        $start =  date('Y-m-d', time() - (3600*24*365));
+        $start = explode('-', $start);
+        $end =  date('Y-m-d');
+        $end = explode('-', $end);
+    }
 ?>
-        <tr><td class="colhead">view options</td></tr>
-        <tr><td class="box pad center">
-            <form method="post" action="">
-                <input type="text" style="width:30px" title="day" name="day1" value="<?=$start[2]?>" />
-                <input type="text" style="width:30px" title="month" name="month1"  value="<?=$start[1]?>" />
-                <input type="text" style="width:50px" title="year" name="year1"  value="<?=$start[0]?>" />
-                &nbsp;&nbsp;To&nbsp;&nbsp;
-                <input type="text" style="width:30px" title="day" name="day2"  value="<?=$end[2]?>" />
-                <input type="text" style="width:30px" title="month" name="month2"  value="<?=$end[1]?>" />
-                <input type="text" style="width:50px" title="year" name="year2"  value="<?=$end[0]?>" />
-                &nbsp;&nbsp;&nbsp;&nbsp;
-                <input type="submit" name="view" value="View history" />
-            </form>
-        </td></tr>
+<tr><td class="colhead">view options</td></tr>
+<tr><td class="box pad center">
+    <form method="post" action="">
+        <input type="text" style="width:30px" title="day" name="day1" value="<?=$start[2]?>" />
+        <input type="text" style="width:30px" title="month" name="month1"  value="<?=$start[1]?>" />
+        <input type="text" style="width:50px" title="year" name="year1"  value="<?=$start[0]?>" />
+        &nbsp;&nbsp;To&nbsp;&nbsp;
+        <input type="text" style="width:30px" title="day" name="day2"  value="<?=$end[2]?>" />
+        <input type="text" style="width:30px" title="month" name="month2"  value="<?=$end[1]?>" />
+        <input type="text" style="width:50px" title="year" name="year2"  value="<?=$end[0]?>" />
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <input type="submit" name="view" value="View history" />
+    </form>
+</td></tr>
 <?php   }  ?>
 
     </table>

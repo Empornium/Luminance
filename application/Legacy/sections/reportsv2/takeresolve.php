@@ -141,7 +141,9 @@ if ($Report) {
 //See if it we managed to resolve
 if ($DB->affected_rows() > 0 || !$Report) {
     //We did, lets do all our shit
-    if ($Report) { $Cache->decrement('num_torrent_reportsv2'); }
+    if ($Report) {
+        $Cache->decrement('num_torrent_reportsv2');
+    }
 
     if (isset($Escaped['upload'])) {
         $Upload = true;
@@ -194,7 +196,9 @@ if ($DB->affected_rows() > 0 || !$Report) {
             //------ if deleting a dupe pm peers with the duped torrents id
             $ExtraIDs = explode(" ", $Escaped['extras_id']);
             foreach ($ExtraIDs as $ExtraID) {
-                if(!is_number($ExtraID)) error(0);
+                if (!is_number($ExtraID)) {
+                    error(0);
+                }
             }
             $ExtraIDs = implode(',', $ExtraIDs);
 
@@ -212,12 +216,11 @@ if ($DB->affected_rows() > 0 || !$Report) {
                              WHERE tg.ID IN ($ExtraIDs)
                              ORDER BY t.Time DESC");
                 while (list($xID, $xName, $xTime, $xSize, $xUserID, $xUsername) = $DB->next_record()) {
-                    $Message .= "[br][url=/torrents.php?id=$xID]{$xName}[/url] (". get_size($xSize).") uploaded by [url=/user.php?id=$xUserID]{$xUsername}[/url] " .time_diff($xTime,2,false,false);
+                    $Message .= "[br][url=/torrents.php?id=$xID]{$xName}[/url] (". get_size($xSize).") uploaded by [url=/user.php?id=$xUserID]{$xUsername}[/url] " .time_diff($xTime, 2, false, false);
                 }
                 $Message .= "[br][br]You should be able to join the torrent already here by grabbing its torrent file and doing a force recheck in your torrent client.[br][br]See the [url=/articles.php?topic=unseeded]Reseed a torrent[/url] article for details.";
                 send_pm($Peers, 0, db_string('A torrent you were a peer on was deleted'), db_string($Message));
             }
-
         }
 
         delete_torrent($TorrentID, $GroupID, $UploaderID, isset($Escaped['refundufl']));
@@ -242,7 +245,6 @@ if ($DB->affected_rows() > 0 || !$Report) {
     if ($Bounty && $ReporterID) {
         $Bounty = (int) $ResolveType['resolve_options']['bounty'];
         if ($Bounty>0) {
-
               $SET = "m.Credits=(m.Credits+$Bounty)";
               $Summary = sqltime()." - User received a bounty payment of $Bounty credits.";
               $SET .=",i.AdminComment=CONCAT_WS( '\n', '".db_string($Summary)."', i.AdminComment)";
@@ -299,15 +301,24 @@ if ($DB->affected_rows() > 0 || !$Report) {
     // write to the uploaders staff notes/warn
     $StaffNote = "Uploader of torrent [url=/torrents.php?id=".$TorrentID."]".$RawName."[/url] which was reported (ID: ".$ReportID.") as ".$ResolveType['title'].".";
     $XtraNote = '';
-    if (isset($Escaped['delete'])) $XtraNote .= "\nTorrent deleted by ".$LoggedUser['Username'];
+    if (isset($Escaped['delete'])) {
+        $XtraNote .= "\nTorrent deleted by ".$LoggedUser['Username'];
+    }
 
-    if ($Upload) $XtraNote .= "\nUpload privileges Disabled by ".$LoggedUser['Username'];
+    if ($Upload) {
+        $XtraNote .= "\nUpload privileges Disabled by ".$LoggedUser['Username'];
+    }
 
-    if ($SendPM) $XtraNote .= "\nSystem PM sent to user";
+    if ($SendPM) {
+        $XtraNote .= "\nSystem PM sent to user";
+    }
 
     if ($Escaped['admin_message']) {
-        if ($XtraNote) $XtraNote .= "\nNotes: ".$Escaped['admin_message'];
-        else $XtraNote = "\nNotes added by ".$LoggedUser['Username'].": ".$Escaped['admin_message'];
+        if ($XtraNote) {
+            $XtraNote .= "\nNotes: ".$Escaped['admin_message'];
+        } else {
+            $XtraNote = "\nNotes added by ".$LoggedUser['Username'].": ".$Escaped['admin_message'];
+        }
     }
     $StaffNote .= $XtraNote;
 

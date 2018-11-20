@@ -1,19 +1,17 @@
 <?php
-if (isset($_REQUEST['ip']) && isset($_REQUEST['port']) && isset($_REQUEST['userid']) ) {
-
+if (isset($_REQUEST['ip']) && isset($_REQUEST['port']) && isset($_REQUEST['userid'])) {
     if (!is_number($_REQUEST['userid'])) {
         echo json_encode(array(false, 'UserID is not a number'));
         die();
     }
 
-    if (!check_perms('users_mod') && $_REQUEST['userid']!=$LoggedUser['ID'] ) {
+    if (!check_perms('users_mod') && $_REQUEST['userid']!=$LoggedUser['ID']) {
         echo json_encode(array(false, 'You do not have permission to access this page!'));
         die();
     }
 
     $Octets = explode(".", $_REQUEST['ip']);
-    if(
-        empty($_REQUEST['ip']) ||
+    if (empty($_REQUEST['ip']) ||
         !preg_match('/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/', $_REQUEST['ip']) ||
         $Octets[0] < 0 ||
         $Octets[0] > 255 ||
@@ -52,7 +50,6 @@ if (isset($_REQUEST['ip']) && isset($_REQUEST['port']) && isset($_REQUEST['useri
     } else {
         echo json_encode(array(false, "Port $_REQUEST[port] on $_REQUEST[ip] failed to connect"));
     }
-
 } else {
     // didnt get ip and port info
     echo json_encode(array(false, 'Parameters not specified'));

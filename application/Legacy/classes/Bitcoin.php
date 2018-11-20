@@ -1,5 +1,6 @@
 <?php
 namespace Luminance\Legacy;
+
 /*
 EasyBitcoin-PHP
 
@@ -64,7 +65,8 @@ echo $bitcoin->status;
 
 */
 
-class Bitcoin {
+class Bitcoin
+{
     // Configuration options
     private $username;
     private $password;
@@ -90,7 +92,8 @@ class Bitcoin {
      * @param string $proto
      * @param string $url
      */
-    function __construct($username, $password, $host = 'localhost', $port = 8332, $url = null) {
+    function __construct($username, $password, $host = 'localhost', $port = 8332, $url = null)
+    {
         $this->username      = $username;
         $this->password      = $password;
         $this->host          = $host;
@@ -105,12 +108,14 @@ class Bitcoin {
     /**
      * @param string|null $certificate
      */
-    function setSSL($certificate = null) {
+    function setSSL($certificate = null)
+    {
         $this->proto         = 'https'; // force HTTPS
         $this->CACertificate = $certificate;
     }
 
-    function __call($method, $params) {
+    function __call($method, $params)
+    {
         $this->status       = null;
         $this->error        = null;
         $this->raw_response = null;
@@ -134,11 +139,11 @@ class Bitcoin {
         $options = array(
             CURLOPT_HTTPAUTH       => CURLAUTH_BASIC,
             CURLOPT_USERPWD        => $this->username . ':' . $this->password,
-            CURLOPT_RETURNTRANSFER => TRUE,
-            CURLOPT_FOLLOWLOCATION => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS      => 10,
             CURLOPT_HTTPHEADER     => array('Content-type: application/json'),
-            CURLOPT_POST           => TRUE,
+            CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => $request
         );
 
@@ -153,10 +158,9 @@ class Bitcoin {
             if ($this->CACertificate != null) {
                 $options[CURLOPT_CAINFO] = $this->CACertificate;
                 $options[CURLOPT_CAPATH] = DIRNAME($this->CACertificate);
-            }
-            else {
+            } else {
                 // If not we need to assume the SSL cannot be verified so we set this flag to FALSE to allow the connection
-                $options[CURLOPT_SSL_VERIFYPEER] = FALSE;
+                $options[CURLOPT_SSL_VERIFYPEER] = false;
             }
         }
 
@@ -164,7 +168,7 @@ class Bitcoin {
 
         // Execute the request and decode to an array
         $this->raw_response = curl_exec($curl);
-        $this->response     = json_decode($this->raw_response, TRUE);
+        $this->response     = json_decode($this->raw_response, true);
 
         // If the status is not 200, something is wrong
         $this->status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -181,8 +185,7 @@ class Bitcoin {
         if ($this->response['error']) {
             // If bitcoind returned an error, put that in $this->error
             $this->error = $this->response['error']['message'];
-        }
-        elseif ($this->status != 200) {
+        } elseif ($this->status != 200) {
             // If bitcoind didn't return a nice error message, we need to make our own
             switch ($this->status) {
                 case 400:
@@ -201,7 +204,7 @@ class Bitcoin {
         }
 
         if ($this->error) {
-            return FALSE;
+            return false;
         }
 
         return $this->response['result'];

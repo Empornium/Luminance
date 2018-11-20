@@ -5,7 +5,7 @@ if (!check_perms('admin_manage_tags')) {
 
 $UseMultiInterface= true;
 
-show_header('Official Tags Manager','tagmanager');
+show_header('Official Tags Manager', 'tagmanager');
 
 printRstMessage();
 ?>

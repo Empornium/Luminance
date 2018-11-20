@@ -4,17 +4,21 @@ $Text = new Luminance\Legacy\Text;
 // Number of users per page
 define('USERS_PER_PAGE', '50');
 
-if (isset($_REQUEST['userid']) && $_REQUEST['userid'] >0) $SelectUserID = (int) $_REQUEST['userid'];
+if (isset($_REQUEST['userid']) && $_REQUEST['userid'] >0) {
+    $SelectUserID = (int) $_REQUEST['userid'];
+}
 
 $GroupID = (int) $_REQUEST['groupid'];
 
 $DB->query("SELECT Name, Comment, Log
             FROM groups
             WHERE ID=$GroupID");
-if ($DB->record_count()==0) error(0);
+if ($DB->record_count()==0) {
+    error(0);
+}
 list($Name, $Comment, $Log) = $DB->next_record();
 
-show_header("User Group : $Name",'jquery,bbcode,groups');
+show_header("User Group : $Name", 'jquery,bbcode,groups');
 
 list($Page,$Limit) = page_limit(USERS_PER_PAGE);
 
@@ -72,7 +76,7 @@ list($Results) = $DB->next_record();
                 </tr>
                 <tr id="gcomment" class="pad">
                       <td valign="top">
-                          <div id="showcomment" ><?=$Text->full_format($Comment,true)?></div>
+                          <div id="showcomment" ><?=$Text->full_format($Comment, true)?></div>
                           <textarea id="comment"  class="hidden long" name="comment" rows="4"><?=$Comment?></textarea>
                       </td>
                       <td class="left" valign="top" width="110px" >
@@ -88,7 +92,7 @@ list($Results) = $DB->next_record();
                 <tr id="grouplog" class="hidden pad">
                       <td valign="top" colspan="2" >
                           <div id="bonuslog" class="box pad">
-                                <?=(!$Log ? 'no group history' :$Text->full_format($Log,true))?>
+                                <?=(!$Log ? 'no group history' :$Text->full_format($Log, true))?>
                           </div>
                       </td>
                 </tr>
@@ -120,7 +124,9 @@ list($Results) = $DB->next_record();
                       </td>
                       <td width="250px" valign="top" class="noborder ">
                             <input type="submit" name="action" value="group award" <?php
-                                if (!check_perms('users_edit_badges'))echo 'disabled="disabled" ';
+                            if (!check_perms('users_edit_badges')) {
+                                echo 'disabled="disabled" ';
+                            }
                                 ?>title="Give Award to all members of this group" />
                       </td>
                       <td width="300px" valign="top" class="noborder ">
@@ -157,10 +163,10 @@ list($Results) = $DB->next_record();
     <div class="linkbox">
 <?php
             // Pagination
-            $Pages=get_pages($Page,$Results,USERS_PER_PAGE,9);
+            $Pages=get_pages($Page, $Results, USERS_PER_PAGE, 9);
             echo $Pages;
 
-            if ($Results > 0) { ?>
+if ($Results > 0) { ?>
                 <span style="float:right;">&nbsp;&nbsp;[<a href="#" onclick="Toggle_All(false);">hide all</a>]</span>&nbsp;
                 <span style="float:right;">&nbsp;&nbsp;[<a href="#" onclick="Toggle_All(true);">show all</a>]</span>&nbsp;
 <?php           }   ?>
@@ -183,34 +189,34 @@ if ($Results == 0) {
                 <tr>
                       <td class="colhead" colspan="3">
                             <span style="float:left;"><?=format_username($UserID, $Username, $Donor, true, $Enabled, $Class, $Title, true, $GroupPermID, true)?>
-    <?php 	if (check_paranoia('ratio', $Paranoia, $Level, $UserID)) { ?>
+    <?php   if (check_paranoia('ratio', $Paranoia, $Level, $UserID)) { ?>
                             &nbsp;Ratio: <strong><?=ratio($Uploaded, $Downloaded)?></strong>
-    <?php 	} ?>
-    <?php 	if (check_paranoia('uploaded', $Paranoia, $Level, $UserID)) { ?>
+    <?php   } ?>
+    <?php   if (check_paranoia('uploaded', $Paranoia, $Level, $UserID)) { ?>
                             &nbsp;Up: <strong><?=get_size($Uploaded)?></strong>
-    <?php 	} ?>
-    <?php 	if (check_paranoia('downloaded', $Paranoia, $Level, $UserID)) { ?>
+    <?php   } ?>
+    <?php   if (check_paranoia('downloaded', $Paranoia, $Level, $UserID)) { ?>
                             &nbsp;Down: <strong><?=get_size($Downloaded)?></strong>
-    <?php 	} ?>
+    <?php   } ?>
                             </span>
 
                             <span style="float:right;">&nbsp;&nbsp;<a href="#" class="togglelink" onclick="$('#friend<?=$UserID?>').toggle(); this.innerHTML=(this.innerHTML=='(Hide)'?'(View)':'(Hide)'); return false;"><?=($SelectUserID==$UserID?'(Hide)':'(View)')?></a></span>&nbsp;
 
-    <?php 	if (check_paranoia('lastseen', $Paranoia, $Level, $UserID)) { ?>
+    <?php   if (check_paranoia('lastseen', $Paranoia, $Level, $UserID)) { ?>
                             <span style="float:right;"><?=time_diff($LastAccess)?></span>
-    <?php 	} ?>
+    <?php   } ?>
                       </td>
                 </tr>
                 <tr id="friend<?=$UserID?>" class="<?=$SelectUserID==$UserID?'':'hidden '?>friendinfo">
                       <td width="50px" valign="top">
     <?php
-          if (empty($HeavyInfo['DisableAvatars'])) {
-                if (!empty($Avatar)) { ?>
+    if (empty($HeavyInfo['DisableAvatars'])) {
+        if (!empty($Avatar)) { ?>
                             <img src="<?=$Avatar?>" alt="<?=$Username?>'s avatar" width="50px" />
-          <?php 	} else { ?>
+        <?php     } else { ?>
                             <img src="<?=STATIC_SERVER?>common/avatars/default.png" width="50px" alt="Default avatar" />
-          <?php 	}
-          } ?>
+        <?php     }
+    } ?>
                       </td>
                       <td valign="top">
                                   <textarea name="comment" rows="4" class="long"><?=$Comment?></textarea>

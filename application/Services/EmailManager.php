@@ -14,7 +14,8 @@ use Luminance\Errors\ForbiddenError;
 use Luminance\Errors\UnauthorizedError;
 use Luminance\Entities\Email;
 
-class EmailManager extends Service {
+class EmailManager extends Service
+{
 
     protected static $useRepositories = [
         'emails' => 'EmailRepository',
@@ -32,7 +33,8 @@ class EmailManager extends Service {
         'render'    => 'Render',
     ];
 
-    public function reduceEmail($address) {
+    public function reduceEmail($address)
+    {
         $parts = explode('@', $address);
         if (count($parts) != 2) {
             throw new InternalError("Passed invalid e-mail address to reduceEmail()");
@@ -54,9 +56,12 @@ class EmailManager extends Service {
         return "{$user}@{$domain}";
     }
 
-    public function validateAddress($address) {
+    public function validateAddress($address)
+    {
         $email = $this->emails->get('Address=:address', [':address' => $address]);
-        if (!$email) throw new UserError("Unknown email.");
+        if (!$email) {
+            throw new UserError("Unknown email.");
+        }
         $email->setFlags(Email::VALIDATED);
         $default = $this->emails->get(
             'UserID=:userID AND Flags & :default != 0',
@@ -71,7 +76,8 @@ class EmailManager extends Service {
         $this->emails->save($email);
     }
 
-    public function newEmail($userID, $address) {
+    public function newEmail($userID, $address)
+    {
 
         $this->validate($address);
 
@@ -93,7 +99,8 @@ class EmailManager extends Service {
         return $email;
     }
 
-    public function send_confirmation($emailID) {
+    public function send_confirmation($emailID)
+    {
         $email = $this->emails->load($emailID);
         $token = $this->secretary->getExternalToken($email->Address, 'users.email.confirm');
         $token = $this->crypto->encrypt(['email' => $email->Address, 'token' => $token], 'default', true);
@@ -122,7 +129,8 @@ class EmailManager extends Service {
      * @param string $body
      * @return void
      */
-    public function send_email($email, $subject, $body) {
+    public function send_email($email, $subject, $body)
+    {
         if ($email instanceof Email) {
             $email = $email->Address;
         }
@@ -145,7 +153,8 @@ class EmailManager extends Service {
      * @param string $username Inviter's username
      * @return void
      */
-    public function sendInviteEmail(Invite $invite, $email, $username, $anon = false) {
+    public function sendInviteEmail(Invite $invite, $email, $username, $anon = false)
+    {
         $token = $this->crypto->encrypt(['email' => $email, 'inviteID' => $invite->ID, 'token' => $invite->InviteKey], 'default', true);
 
         $subject = 'You have been invited to '.$this->settings->main->site_name;
@@ -173,7 +182,8 @@ class EmailManager extends Service {
      * @param string $email
      * @return void
      */
-    public function validate($email) {
+    public function validate($email)
+    {
         $this->emails->checkFormat($email);
         $this->emails->checkAvailable($email);
         $this->emails->checkBlacklisted($email);

@@ -98,22 +98,30 @@ if ($DB->record_count() < 1) {
 }
 
 if ($Type=='dupe') {
-    if(!$ExtraIDs) error("You must include a link to a duped torrent!");
+    if (!$ExtraIDs) {
+        error("You must include a link to a duped torrent!");
+    }
     foreach ($ExtraIDs as $DupeID) {
-        if(!is_number($DupeID)) error("Cannot parse your links for duped torrents!"); // should be weeded out by regex above but keep here in case of changes etc
+        if (!is_number($DupeID)) {
+            error("Cannot parse your links for duped torrents!"); // should be weeded out by regex above but keep here in case of changes etc
+        }
         $DB->query("SELECT Time FROM torrents WHERE ID=".$DupeID);
-        if($DB->record_count() < 1) error("The duped torrent with ID=$DupeID doesn't exist!");
+        if ($DB->record_count() < 1) {
+            error("The duped torrent with ID=$DupeID doesn't exist!");
+        }
         list($TimeStamp) = $DB->next_record();
         if (time_ago($TimeStamp) > 24*3600*EXCLUDE_DUPES_AFTER_DAYS) {
             $PeerInfo = get_peers($DupeID);
             if ($PeerInfo['Seeders']< EXCLUDE_DUPES_SEEDS) {
                 error($Text->full_format("Because the duped torrent [torrent]{$DupeID}[/torrent] has less than ".EXCLUDE_DUPES_SEEDS." seeders and is over "
-                . time_diff(time()+ (EXCLUDE_DUPES_AFTER_DAYS*24*3600),1,false,false,0)." old it is okay to dupe it![br]Thanks for the thought though :smile1:"));
+                . time_diff(time()+ (EXCLUDE_DUPES_AFTER_DAYS*24*3600), 1, false, false, 0)." old it is okay to dupe it![br]Thanks for the thought though :smile1:"));
             }
         }
     }
 }
-if($ExtraIDs) $ExtraIDs = implode(' ', $ExtraIDs);
+if ($ExtraIDs) {
+    $ExtraIDs = implode(' ', $ExtraIDs);
+}
 
 if (!empty($Err)) {
     error($Err);

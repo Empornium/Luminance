@@ -10,7 +10,7 @@ if ($TotalCredits != $LoggedUser['TotalCredits']) {
 }
 
 enforce_login();
-show_header('Bonus Shop','bonus,bbcode');
+show_header('Bonus Shop', 'bonus,bbcode');
 
 $ShopItems = get_shop_items($LoggedUser['ID']);
 ?>
@@ -19,7 +19,9 @@ $ShopItems = get_shop_items($LoggedUser['ID']);
             <div class="box pad shadow">
 <?php
                 $creditinfo = get_article('creditsinline');
-                if($creditinfo) echo $Text->full_format($creditinfo, true);
+if ($creditinfo) {
+    echo $Text->full_format($creditinfo, true);
+}
 ?>
             </div>
 <?php       if (!empty($_REQUEST['result'])) {  ?>
@@ -37,7 +39,7 @@ $BonusCredits = $LoggedUser['TotalCredits'];
         </div>
         <div class="box">
             <div class="pad" id="bonusdiv">
-                <h4 class="center">Credits: <?=(!$BonusCredits ? '0.00' : number_format($BonusCredits,2))?></h4>
+                <h4 class="center">Credits: <?=(!$BonusCredits ? '0.00' : number_format($BonusCredits, 2))?></h4>
                 <span style="float:right;"><a href="#" onclick="$('#bonuslogdiv').toggle(); this.innerHTML=(this.innerHTML=='(Show Log)'?'(Hide Log)':'(Show Log)'); return false;">(Show Log)</a></span>&nbsp;
 
                 <div class="hidden" id="bonuslogdiv" style="padding-top: 10px;">
@@ -46,21 +48,20 @@ $BonusCredits = $LoggedUser['TotalCredits'];
                     </div>
 <?php
                     $UserResults = $Cache->get_value('sm_sum_history_'.$UserID);
-                    if ($UserResults === false) {
-                        $DB->query("SELECT Spins, Won, Bet, (Won/Bet)
+if ($UserResults === false) {
+    $DB->query("SELECT Spins, Won, Bet, (Won/Bet)
                                   FROM sm_results WHERE UserID = $UserID");
-                        $UserResults = $DB->next_record();
-                        $Cache->cache_value('sm_sum_history_'.$UserID, $UserResults, 86400);
-                    }
-                    if (is_array($UserResults) && $UserResults[0] > 0) {
-
-                        list($NumSpins, $TotalWon, $TotalBet, $TotalReturn) = $UserResults;
+    $UserResults = $DB->next_record();
+    $Cache->cache_value('sm_sum_history_'.$UserID, $UserResults, 86400);
+}
+if (is_array($UserResults) && $UserResults[0] > 0) {
+    list($NumSpins, $TotalWon, $TotalBet, $TotalReturn) = $UserResults;
 ?>
-                        <div class="box pad" title="<?="spins: $NumSpins | -$TotalBet | +$TotalWon | return: $TotalReturn"?>">
-                            <strong>Slot Machine:</strong> <?= ($TotalWon-$TotalBet)?> credits
-                        </div>
+<div class="box pad" title="<?="spins: $NumSpins | -$TotalBet | +$TotalWon | return: $TotalReturn"?>">
+<strong>Slot Machine:</strong> <?= ($TotalWon-$TotalBet)?> credits
+</div>
 <?php
-                    }
+}
 ?>
                 </div>
            </div>
@@ -78,72 +79,79 @@ $BonusCredits = $LoggedUser['TotalCredits'];
 <?php
     $Row = 'a';
       $UserBadgeIDs = get_user_shop_badges_ids($LoggedUser['ID']);
-    foreach ($ShopItems as $BonusItem) {
-        list($ItemID, $Title, $Description, $Action, $Value, $Cost, $Image, $Badge, $Rank, $UserRank) = $BonusItem;
-            $IsBadge = $Action=='badge';
-            $IsBuyGB = $Action=='gb';
-            $DescExtra='';
-            // if user already has badge item dont allow buy
-            if ($IsBadge && in_array($Value, $UserBadgeIDs)) {
+foreach ($ShopItems as $BonusItem) {
+    list($ItemID, $Title, $Description, $Action, $Value, $Cost, $Image, $Badge, $Rank, $UserRank) = $BonusItem;
+    $IsBadge = $Action=='badge';
+    $IsBuyGB = $Action=='gb';
+    $DescExtra='';
+    // if user already has badge item dont allow buy
+    if ($IsBadge && in_array($Value, $UserBadgeIDs)) {
+        $CanBuy = false;
+        $BGClass= ' itemduplicate';
+    } elseif ($IsBuyGB && $LoggedUser['BytesDownloaded'] <=0) {
+        $CanBuy = false;
+        $BGClass= ' itemnotbuy';
+    } else { //
+        $CanBuy = is_float((float) $LoggedUser['TotalCredits']) ? $LoggedUser['TotalCredits'] >= $Cost: false;
+        $BGClass= ($CanBuy?' itembuy' :' itemnotbuy');
+        if ($IsBuyGB && $LoggedUser['BytesDownloaded'] < get_bytes($Value.'gb')) {
+            $DescExtra = "<br/>(WARNING: will only remove ".get_size($LoggedUser['BytesDownloaded']) .")";
+        }
+        if ($IsBadge) {
+            if ($LastBadge==$Badge) {
                 $CanBuy = false;
-                $BGClass= ' itemduplicate';
-            } elseif ($IsBuyGB && $LoggedUser['BytesDownloaded'] <=0) {
+                $BGClass = ' itemnotbuy';
+            } elseif ($Rank < $UserRank) {
                 $CanBuy = false;
-                $BGClass= ' itemnotbuy';
-            } else { //
-                $CanBuy = is_float((float) $LoggedUser['TotalCredits']) ? $LoggedUser['TotalCredits'] >= $Cost: false;
-                $BGClass= ($CanBuy?' itembuy' :' itemnotbuy');
-                if ($IsBuyGB && $LoggedUser['BytesDownloaded'] < get_bytes($Value.'gb') ) {
-                    $DescExtra = "<br/>(WARNING: will only remove ".get_size($LoggedUser['BytesDownloaded']) .")";
-                }
-                if ($IsBadge) {
-                    if ($LastBadge==$Badge) {
-                        $CanBuy = false;
-                        $BGClass = ' itemnotbuy';
-                    } elseif ($Rank < $UserRank) {
-                        $CanBuy = false;
-                        $BGClass = ' itemduplicate';
-                    } else
-                        $LastBadge=$Badge;
-                }
+                $BGClass = ' itemduplicate';
+            } else {
+                $LastBadge=$Badge;
             }
-        $Row = ($Row == 'a') ? 'b' : 'a';
+        }
+    }
+    $Row = ($Row == 'a') ? 'b' : 'a';
 ?>
-            <tr class="row<?=$Row.$BGClass?>">
-                <td width="160px"><strong><?=display_str($Title) ?></strong></td>
-                <td style="border-right:none;" <?php if (!$Image) { echo 'colspan="2"'; } ?>><?=display_str($Description).$DescExtra?></td>
-                    <?php if ($Image) {  ?>
+    <tr class="row<?=$Row.$BGClass?>">
+        <td width="160px"><strong><?=display_str($Title) ?></strong></td>
+        <td style="border-right:none;" <?php if (!$Image) {
+            echo 'colspan="2"';
+} ?>><?=display_str($Description).$DescExtra?></td>
+            <?php if ($Image) {  ?>
                         <td style="border-left:none;width:160px;text-align:center;">
                             <div class="badge">
                                 <img src="<?=STATIC_SERVER.'common/badges/'.$Image?>" title="<?=$Title?>" alt="<?=$Title?>" />
                             </div>
                         </td>
-                   <?php   }
+            <?php   }
 
-                        if (strpos($Action, 'give') !== false) {
-                            $OnSubmit = 'onsubmit="return SetNameAndMessage(\'othername'.$ItemID.'\',\'message'.$ItemID.'\');"';
-                        } elseif ($Action == 'title') {
-                            $OnSubmit = 'onsubmit="return SetTitle(\'title'.$ItemID.'\'); "';
-                        } elseif ($Action == 'ufl') {
-                            $OnSubmit = 'onsubmit="return SetTorrent(\'torrentid'.$ItemID.'\'); "';
-                        } else {
-                            $OnSubmit = '';
-                        }
-                   ?>
+if (strpos($Action, 'give') !== false) {
+    $OnSubmit = 'onsubmit="return SetNameAndMessage(\'othername'.$ItemID.'\',\'message'.$ItemID.'\');"';
+} elseif ($Action == 'title') {
+    $OnSubmit = 'onsubmit="return SetTitle(\'title'.$ItemID.'\'); "';
+} elseif ($Action == 'ufl') {
+    $OnSubmit = 'onsubmit="return SetTorrent(\'torrentid'.$ItemID.'\'); "';
+} else {
+    $OnSubmit = '';
+}
+                ?>
                 <td width="60px" style="text-align: center;"><strong><?=number_format($Cost) ?>c</strong></td>
                 <td width="60px" style="text-align: center;">
-                            <form method="post" action="" <?=$OnSubmit?>>
-                                <input type="hidden" name="action" value="buy" />
-                                <input type="hidden" id="othername<?=$ItemID?>" name="othername" value="" />
-                                <input type="hidden" id="message<?=$ItemID?>" name="message" value="" />
-                                <input type="hidden" name="shopaction" value="<?=$Action?>" />
-                                <input type="hidden" name="userid" value="<?=$LoggedUser['ID']?>" />
-                                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-                                <input type="hidden" name="itemid" value="<?=$ItemID?>" />
-                                <input class="shopbutton<?=($CanBuy ? ' itembuy' : ' itemnotbuy')?>" name="submit" value="<?=($CanBuy?'Buy':'x')?>" type="submit"<?=($CanBuy ? '' : ' disabled="disabled"')?> />
-                                <?php if($Action == 'title') echo '<input type="hidden" id="title'.$ItemID.'" name="title" value="" />'; ?>
-                                <?php if($Action == 'ufl') echo '<input type="hidden" id="torrentid'.$ItemID.'" name="torrentid" value="" />'; ?>
-                            </form>
+                    <form method="post" action="" <?=$OnSubmit?>>
+                        <input type="hidden" name="action" value="buy" />
+                        <input type="hidden" id="othername<?=$ItemID?>" name="othername" value="" />
+                        <input type="hidden" id="message<?=$ItemID?>" name="message" value="" />
+                        <input type="hidden" name="shopaction" value="<?=$Action?>" />
+                        <input type="hidden" name="userid" value="<?=$LoggedUser['ID']?>" />
+                        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                        <input type="hidden" name="itemid" value="<?=$ItemID?>" />
+                        <input class="shopbutton<?=($CanBuy ? ' itembuy' : ' itemnotbuy')?>" name="submit" value="<?=($CanBuy?'Buy':'x')?>" type="submit"<?=($CanBuy ? '' : ' disabled="disabled"')?> />
+                        <?php if ($Action == 'title') {
+                            echo '<input type="hidden" id="title'.$ItemID.'" name="title" value="" />';
+} ?>
+                        <?php if ($Action == 'ufl') {
+                            echo '<input type="hidden" id="torrentid'.$ItemID.'" name="torrentid" value="" />';
+} ?>
+                    </form>
                 </td>
             </tr>
 <?php	} ?>

@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('users_view_ips')) { error(403); }
+if (!check_perms('users_view_ips')) {
+    error(403);
+}
 show_header('Dupe IPs');
 ?>
 <div class="thin">
@@ -33,7 +35,7 @@ if ($DB->record_count()) {
 ?>
     <div class="linkbox">
 <?php
-    $Pages=get_pages($Page,$Results,USERS_PER_PAGE, 11) ;
+    $Pages=get_pages($Page, $Results, USERS_PER_PAGE, 11) ;
     echo $Pages;
 ?>
     </div>
@@ -45,16 +47,16 @@ if ($DB->record_count()) {
             <td>Registered</td>
         </tr>
 <?php
-    while (list($UserID, $IP, $Username, $PermissionID, $Enabled, $Donor, $Joined, $Uses)=$DB->next_record()) {
+while (list($UserID, $IP, $Username, $PermissionID, $Enabled, $Donor, $Joined, $Uses)=$DB->next_record()) {
     $Row = ($Row == 'b') ? 'a' : 'b';
 ?>
-        <tr class="row<?=$Row?>">
-            <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?></td>
-            <td><span style="float:left;"><?=get_host($IP)." ($IP)"?></span><span style="float:right;">[<a href="/userhistory.php?action=ips&amp;userid=<?=$UserID?>" title="History">H</a>|<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="Search">S</a>]</span></td>
-            <td><?=display_str($Uses)?></td>
-            <td><?=time_diff($Joined)?></td>
-        </tr>
-<?php 	} ?>
+<tr class="row<?=$Row?>">
+    <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?></td>
+    <td><span style="float:left;"><?=get_host($IP)." ($IP)"?></span><span style="float:right;">[<a href="/userhistory.php?action=ips&amp;userid=<?=$UserID?>" title="History">H</a>|<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="Search">S</a>]</span></td>
+    <td><?=display_str($Uses)?></td>
+    <td><?=time_diff($Joined)?></td>
+</tr>
+<?php   } ?>
     </table>
     <div class="linkbox">
 <?php  echo $Pages; ?>

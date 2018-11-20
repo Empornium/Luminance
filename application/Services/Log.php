@@ -11,7 +11,8 @@ use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Formatter\LineFormatter;
 
-class Log extends Service {
+class Log extends Service
+{
 
     public $ShortFormat = "%datetime% %message% %context% %extra%\n";
     public $LongFormat = "%datetime% %channel%.%level_name% %message% %context% %extra%\n'";
@@ -19,14 +20,16 @@ class Log extends Service {
 
     protected $PageLogger;
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
         $this->ShortFormatter = new LineFormatter($this->ShortFormat, $this->TimeFormat, false, true);
         $this->LongFormatter = new LineFormatter($this->LongFormat, $this->LongFormat, false, true);
         $this->init_loggers($this->master->settings->logs);
     }
 
-    protected function init_loggers($LogSettings) {
+    protected function init_loggers($LogSettings)
+    {
         $this->PageLogger = new Logger('page');
         if (isset($LogSettings->page_file)) {
             $Stream = new StreamHandler($LogSettings->page_file, $LogSettings->page_level);
@@ -37,7 +40,8 @@ class Log extends Service {
         $this->PageLogger->pushHandler($Stream);
     }
 
-    public function get_message_prefix($request) {
+    public function get_message_prefix($request)
+    {
         $ip = $this->master->server['REMOTE_ADDR'];
         if ($request->user) {
             $prefix = "{$request->reference} {$request->ip} {$request->user->ID}/{$request->user->Username}";
@@ -47,14 +51,16 @@ class Log extends Service {
         return $prefix;
     }
 
-    public function log_request($request) {
+    public function log_request($request)
+    {
         if ($request->method !== 'CLI') {
             $prefix = $this->get_message_prefix($request);
             $this->PageLogger->addInfo("{$prefix} {$request->method} {$request->uri}");
         }
     }
 
-    public function log_event($request, $message) {
+    public function log_event($request, $message)
+    {
         if ($request->method !== 'CLI') {
             $prefix = $this->get_message_prefix($request);
             $this->PageLogger->addInfo("{$prefix} $message");

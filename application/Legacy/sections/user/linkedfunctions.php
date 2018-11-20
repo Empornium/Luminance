@@ -75,7 +75,7 @@ function unlink_user($UserID)
         error(403);
     }
     $UserInfo = user_info($UserID);
-    if ($UserInfo === FALSE) {
+    if ($UserInfo === false) {
         return;
     }
     $AdminComment = sqltime()." - Linked accounts updated: [user]".$UserInfo['ID']."[/user] unlinked by ".$LoggedUser['Username'];
@@ -109,8 +109,12 @@ function dupe_comments($GroupID, $Comments)
     global $DB, $Text, $LoggedUser;
 
     authorize();
-    if (!check_perms('users_mod')) error(403);
-    if (!is_number($GroupID)) error(0);
+    if (!check_perms('users_mod')) {
+        error(403);
+    }
+    if (!is_number($GroupID)) {
+        error(0);
+    }
 
     $DB->query("SELECT Comments, SHA1(Comments) AS CommentHash FROM dupe_groups WHERE ID = '$GroupID'");
     list($OldComment, $OldCommentHash) = $DB->next_record();
@@ -192,35 +196,35 @@ function user_dupes_table($UserID, $Username)
         <div class="box">
             <table width="100%" id="iplinkeddiv" class="shadow">
 <?php
-            foreach ($IPDupes AS $IPDupe) {
-                list($EUserID, $IP, $Email) = $IPDupe;
-                $DupeInfo = user_info($EUserID);
+foreach ($IPDupes as $IPDupe) {
+    list($EUserID, $IP, $Email) = $IPDupe;
+    $DupeInfo = user_info($EUserID);
 
-            $Row = ($Row == 'a') ? 'b' : 'a';
+    $Row = ($Row == 'a') ? 'b' : 'a';
 ?>
-            <tr class="row<?=$Row?>">
-                <td align="left">
-                    <?=format_username($EUserID, $DupeInfo['Username'], $DupeInfo['Donor'], true, $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
-                </td>
-                <td align="left">
-                    <?=display_str($Email)?>
-                </td>
-                <td align="left">
-                    <?=display_ip($IP, $DupeInfo['ipcc'])?>
-                </td>
-                <td>
+<tr class="row<?=$Row?>">
+<td align="left">
+<?=format_username($EUserID, $DupeInfo['Username'], $DupeInfo['Donor'], true, $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
+</td>
+<td align="left">
+<?=display_str($Email)?>
+</td>
+<td align="left">
+<?=display_ip($IP, $DupeInfo['ipcc'])?>
+</td>
+<td>
 <?php
-                    if ( !array_key_exists($EUserID, $Dupes) ) {
+if (!array_key_exists($EUserID, $Dupes)) {
 ?>
-                        [<a href="/user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>">link</a>]
+[<a href="/user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>">link</a>]
 <?php
-                    }
+}
 ?>
-                    [<a href="/tools.php?action=compare_users&usera=<?=$UserID?>&userb=<?=$EUserID?>">compare</a>]
-                </td>
-            </tr>
+[<a href="/tools.php?action=compare_users&usera=<?=$UserID?>&userb=<?=$EUserID?>">compare</a>]
+</td>
+</tr>
 <?php
-            }
+}
 ?>
             </table>
         </div>
@@ -243,40 +247,40 @@ function user_dupes_table($UserID, $Username)
                     <?=($DupeCount?'<tr >':'')?>
 <?php
     $i = 0;
-    foreach ($Dupes as $Dupe) {
-        $i++;
-        list($DupeID) = $Dupe;
-        $DupeInfo = user_info($DupeID);
-        $Row = ($Row == 'b') ? 'a' : 'b';
+foreach ($Dupes as $Dupe) {
+    $i++;
+    list($DupeID) = $Dupe;
+    $DupeInfo = user_info($DupeID);
+    $Row = ($Row == 'b') ? 'a' : 'b';
 ?>
-                    <td class="row<?=$Row?>" align="left"><?=format_username($DupeID, $DupeInfo['Username'], $DupeInfo['Donor'], true, $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
-                        [<a href="/user.php?action=dupes&dupeaction=remove&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&removeid=<?=$DupeID?>" onClick="return confirm('Are you sure you wish to remove <?=$DupeInfo['Username']?> from this group?');">x</a>]</td>
+            <td class="row<?=$Row?>" align="left"><?=format_username($DupeID, $DupeInfo['Username'], $DupeInfo['Donor'], true, $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
+                [<a href="/user.php?action=dupes&dupeaction=remove&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&removeid=<?=$DupeID?>" onClick="return confirm('Are you sure you wish to remove <?=$DupeInfo['Username']?> from this group?');">x</a>]</td>
 <?php
-        if ($i == 4) {
-            $i = 0;
-            echo '</tr><tr>';
-        }
+if ($i == 4) {
+    $i = 0;
+    echo '</tr><tr>';
+}
+}
+if ($DupeCount) {
+    for ($j = $i; $j < 4; $j++) {
+        echo '<td>&nbsp;</td>';
     }
-    if ($DupeCount) {
-        for ($j = $i; $j < 4; $j++) {
-            echo '<td>&nbsp;</td>';
-        }
 ?>
-                    </tr>
-                    <tr class="rowa">
-                        <td colspan="5" align="left"><strong>Comments:</strong></td>
-                    </tr>
-                    <tr class="rowa">
-                        <td colspan="5" align="left">
-                            <div id="dupecomments" class="<?=($DupeCount?'':'hidden')?>"><?=$Text->full_format($Comments);?></div>
-                            <div id="editdupecomments" class="<?=$DupeCount?'hidden':''?>">
-                                <textarea id="dupecommentsbox" name="dupecomments" onkeyup="resize('dupecommentsbox');" cols="65" rows="5" style="width:98%;"><?=display_str($Comments)?></textarea>
-                                                <input type="submit" name="submitcomment" value="Save" />
-                            </div>
-                            <span style="float:right;"><a href="#" onClick="$('#dupecomments').toggle(); $('#editdupecomments').toggle(); resize('dupecommentsbox');return false;">(Edit comments)</a>
-                        </td>
-                    </tr>
-<?php 	}	?>
+            </tr>
+            <tr class="rowa">
+                <td colspan="5" align="left"><strong>Comments:</strong></td>
+            </tr>
+            <tr class="rowa">
+                <td colspan="5" align="left">
+                    <div id="dupecomments" class="<?=($DupeCount?'':'hidden')?>"><?=$Text->full_format($Comments);?></div>
+                    <div id="editdupecomments" class="<?=$DupeCount?'hidden':''?>">
+                        <textarea id="dupecommentsbox" name="dupecomments" onkeyup="resize('dupecommentsbox');" cols="65" rows="5" style="width:98%;"><?=display_str($Comments)?></textarea>
+                                        <input type="submit" name="submitcomment" value="Save" />
+                    </div>
+                    <span style="float:right;"><a href="#" onClick="$('#dupecomments').toggle(); $('#editdupecomments').toggle(); resize('dupecommentsbox');return false;">(Edit comments)</a>
+                </td>
+            </tr>
+<?php   }   ?>
                     <tr>
                         <td colspan="5" align="left">
                                         <label for="target">Link this user with: </label>

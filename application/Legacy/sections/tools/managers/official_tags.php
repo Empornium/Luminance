@@ -5,7 +5,7 @@ if (!check_perms('admin_manage_tags')) {
 
 $UseMultiInterface= true;
 
-show_header('Official Tags Manager','tagmanager');
+show_header('Official Tags Manager', 'tagmanager');
 
 printRstMessage();
 ?>
@@ -45,7 +45,7 @@ printRstMessage();
                             <td>
     <?php  if ($TagID2) { ?>
                                     <input type="checkbox" name="oldtags[]" value="<?= $TagID2 ?>" />
-                                <?php  } ?>
+    <?php  } ?>
                             </td>
                             <td><a href="/torrents.php?taglist=<?= $TagName2 ?>" ><?= $TagName2 ?></a></td>
                             <td><?= $TagUses2 ?></td>
@@ -53,7 +53,7 @@ printRstMessage();
                             <td>
     <?php  if ($TagID3) { ?>
                                     <input type="checkbox" name="oldtags[]" value="<?= $TagID3 ?>" />
-                        <?php  } ?>
+    <?php  } ?>
                             </td>
                             <td><a href="/torrents.php?taglist=<?= $TagName3 ?>" ><?= $TagName3 ?></a></td>
                             <td><?= $TagUses3 ?></td>

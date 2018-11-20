@@ -1,6 +1,6 @@
 <?php
 
-if (empty($_REQUEST['groupid']) || !is_number($_REQUEST['groupid']) ) {
+if (empty($_REQUEST['groupid']) || !is_number($_REQUEST['groupid'])) {
      error(0);
 }
 $GroupID = (int) $_REQUEST['groupid'];
@@ -10,7 +10,9 @@ if (!check_perms('users_edit_badges')) {
 }
 
 $DB->query("SELECT Name, Comment from groups WHERE ID=$GroupID");
-if ($DB->record_count()==0) error(0);
+if ($DB->record_count()==0) {
+    error(0);
+}
 list($Name, $Description) = $DB->next_record();
 
 $DB->query("SELECT
@@ -20,9 +22,11 @@ $DB->query("SELECT
             JOIN users_main as um ON um.ID = ug.UserID
             WHERE GroupID=$GroupID");
 
-$Users = $DB->to_array(false,MYSQLI_BOTH);
+$Users = $DB->to_array(false, MYSQLI_BOTH);
 
-if (!$Users) { error("Cannot make an award to this group as there are no users in this group"); }
+if (!$Users) {
+    error("Cannot make an award to this group as there are no users in this group");
+}
 
 show_header('Mass Award', 'upload,bbcode,inbox');
 
@@ -35,8 +39,8 @@ $Text = new Luminance\Legacy\Text;
     <div class="colhead">Member list<span style="float:right;"><a href="#" onclick="$('#ulist').toggle(); this.innerHTML=(this.innerHTML=='(Hide)'?'(View)':'(Hide)'); return false;">(View)</a></span></div>
       <div id="ulist" class="box pad hidden">
 <?php
-           foreach ($Users as $User) {
-               list($UserID,$Username) = $User; ?>
+foreach ($Users as $User) {
+    list($UserID,$Username) = $User; ?>
                 <a href="/user.php?id=<?=$UserID?>"><?=$Username?></a><br/>
 <?php            }      ?>
       </div>
@@ -81,9 +85,13 @@ $Text = new Luminance\Legacy\Text;
                             <td>
                                 <input  type="radio" name="addbadge" value="<?=$ID?>" />
                                         <label for="addbadge"> <?=$Name;
-                                                if($Type=='Unique') echo " *(unique)";
-                                                elseif ($Auto) echo " (automatically awarded)";
-                                                else echo " ($Type)";  ?></label>
+                                        if ($Type=='Unique') {
+                                            echo " *(unique)";
+                                        } elseif ($Auto) {
+                                            echo " (automatically awarded)";
+                                        } else {
+                                            echo " ($Type)";
+                                        }  ?></label>
                                 <br />
                                 <input class="long" type="text" id="addbadge<?=$ID?>" name="addbadge<?=$ID?>" value="<?=$Tooltip?>" />
                             </td>

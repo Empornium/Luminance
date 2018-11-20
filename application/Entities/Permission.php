@@ -3,7 +3,8 @@ namespace Luminance\Entities;
 
 use Luminance\Core\Entity;
 
-class Permission extends Entity {
+class Permission extends Entity
+{
 
     protected $unserialized = null;
 
@@ -35,14 +36,16 @@ class Permission extends Entity {
         'IsUserClass'  => [ 'columns' => [ 'IsUserClass' ] ],
     ];
 
-    public function getUnserialized() {
+    public function getUnserialized()
+    {
         if (is_null($this->unserialized)) {
             $this->unserialized = unserialize($this->Values);
         }
         return $this->unserialized;
     }
 
-    public function getLegacy() {
+    public function getLegacy()
+    {
         $p = [];
         $p['Class'] = $this->Level;
         $p['Permissions'] = $this->getUnserialized();

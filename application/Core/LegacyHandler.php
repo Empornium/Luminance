@@ -5,22 +5,26 @@ use Luminance\Responses\Response;
 use Luminance\Legacy\Debug;
 use Luminance\Legacy\SphinxSearch;
 
-class LegacyHandler {
+class LegacyHandler
+{
 
     public $master;
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         $this->master = $master;
     }
 
-    public function handle_legacy_request($section) {
+    public function handle_legacy_request($section)
+    {
         $this->script_start();
         $this->load_section($section);
         $this->script_finish();
         return new Response('');
     }
 
-    public function load_section($section) {
+    public function load_section($section)
+    {
         global $AllowedProxies, $ArticleCats, $ArticleSubCats, $AttemptID, $Attempts,
             $AutoAwardTypes, $BadgesArray, $BadgeTypes, $BannedUntil, $Bans, $Browser,
             $Cache, $CaptchaBGs, $CaptchaFonts, $CatsArray, $Class, $Classes,
@@ -41,7 +45,8 @@ class LegacyHandler {
         require(SERVER_ROOT . '/Legacy/sections/' . $section . '/index.php');
     }
 
-    public function script_start() {
+    public function script_start()
+    {
         # This code was originally part of script_start.php
 
         # First mark a whole lot of vars global since they were previously not inside a class context
@@ -105,7 +110,8 @@ class LegacyHandler {
         }
     }
 
-    public function script_finish() {
+    public function script_finish()
+    {
         # This code was originally part of script_start.php
         global $Debug;
 

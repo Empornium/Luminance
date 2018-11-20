@@ -12,11 +12,11 @@
 ini_set('max_file_uploads', '100');
 show_header('Upload', 'upload,bbcode,autocomplete,tag_autocomplete,jquery');
 
-if (empty($Properties) && !empty($_POST['fill']) && is_number($_POST['template']) && check_perms('site_use_templates') ) {
+if (empty($Properties) && !empty($_POST['fill']) && is_number($_POST['template']) && check_perms('site_use_templates')) {
     /* -------  Get template ------- */
     $TemplateID = (int) $_POST['template'];
     $Properties = $Cache->get_value('template_' . $TemplateID);
-    if ($Properties === FALSE) {
+    if ($Properties === false) {
         $DB->query("SELECT
                             t.ID,
                             t.UserID,
@@ -49,7 +49,6 @@ if (empty($Properties) && !empty($_POST['fill']) && is_number($_POST['template']
             unset($Properties);
         }
     }
-
 } elseif (empty($Properties) && !empty($_GET['groupid']) && is_number($_GET['groupid'])) {
     $DB->query("SELECT
         tg.ID as GroupID,
@@ -103,7 +102,7 @@ if (!isset($Text)) {
 
 /* -------  Draw a box with do_not_upload list  -------   */
 $DNU = $Cache->get_value('do_not_upload_list');
-if ($DNU === FALSE) {
+if ($DNU === false) {
     $DB->query("SELECT
               d.Name,
               d.Comment,
@@ -119,8 +118,9 @@ $DB->query("SELECT IF(MAX(t.Time) < '$Updated' OR MAX(t.Time) IS NULL,1,0) FROM 
             WHERE UserID = " . $LoggedUser['ID']);
 list($NewDNU) = $DB->next_record();
 // test $HideDNU first as it may have been passed from upload_handle
-if (!$HideDNU)
+if (!$HideDNU) {
     $HideDNU = check_perms('torrents_hide_dnu') || !$NewDNU;
+}
 ?>
 
 
@@ -135,7 +135,7 @@ if (!$HideDNU)
         <p>The following releases are currently forbidden from being uploaded to the site. Make sure you have read the list.
             <?php  if ($HideDNU) { ?>
                 <span id="showdnu"><a href="#" onclick="$('#dnulist').toggle(); this.innerHTML=(this.innerHTML=='(Hide)'?'(Show)':'(Hide)'); return false;">(Show)</a></span>
-<?php  } ?>
+            <?php  } ?>
         </p>
         <table id="dnulist" class="<?= ($HideDNU ? 'hidden' : '') ?>" style="">
             <tr class="colhead_dark">
@@ -150,13 +150,13 @@ if (!$HideDNU)
                     <td><?= $Text->full_format($Name) ?></td>
                     <td><?= $Text->full_format($Comment) ?></td>
                 </tr>
-    <?php  } ?>
+            <?php  } ?>
         </table>
     </div>
     <?php
     /* -------  Draw a box with imagehost whitelist  ------- */
     $Whitelist = $Cache->get_value('imagehost_whitelist');
-    if ($Whitelist === FALSE) {
+    if ($Whitelist === false) {
         $DB->query("SELECT
                     Imagehost,
                     Link,
@@ -174,8 +174,9 @@ if (!$HideDNU)
              LEFT JOIN torrents AS t ON t.UserID = '$LoggedUser[ID]' ");
     list($Updated, $NewWL) = $DB->next_record();
 // test $HideWL first as it may have been passed from upload_handle
-    if (!$HideWL)
+    if (!$HideWL) {
         $HideWL = check_perms('torrents_hide_imagehosts') || !$NewWL;
+    }
     ?>
     <div class="head">Approved Imagehosts</div>
     <div class="box pad">
@@ -205,37 +206,39 @@ foreach ($Whitelist as $ImageHost) {
                     </td>
                     <td><?=$Text->full_format($Comment)?></td>
                 </tr>
-    <?php  } ?>
+<?php  } ?>
         </table>
     </div>
 <?php
-    if (check_perms('site_use_templates')) {
-        $CanDelAny = check_perms('site_delete_any_templates')?'1':'0';
+if (check_perms('site_use_templates')) {
+    $CanDelAny = check_perms('site_delete_any_templates')?'1':'0';
 ?>
-        <div class="head">Templates</div>
-        <div class="box pad shadow">
-            <form action="" class="center" enctype="multipart/form-data"  method="post" onsubmit="return ($('#template').raw().value!=0);">
-                <div style="margin:5px auto 10px;" class="nobr center">
-                    <label for="template">select template: </label>
-                    <div id="template_container" style="display: inline-block">
+<div class="head">Templates</div>
+<div class="box pad shadow">
+    <form action="" class="center" enctype="multipart/form-data"  method="post" onsubmit="return ($('#template').raw().value!=0);">
+        <div style="margin:5px auto 10px;" class="nobr center">
+            <label for="template">select template: </label>
+            <div id="template_container" style="display: inline-block">
 <?php
-                        echo get_templatelist_html($LoggedUser['ID'], $TemplateID);
+                echo get_templatelist_html($LoggedUser['ID'], $TemplateID);
 ?>
 
-                    </div>
-                    <input type="submit" name="fill" id="fill" value="fill from" disabled="disabled" title="Fill the upload form from selected template" />
-                    <input type="button" onclick="DeleteTemplate(<?=$CanDelAny?>);" name="delete" id="delete" value="delete" disabled="disabled" title="Delete selected template" />
-                    <input type="button" onclick="OverwriteTemplate(<?=$CanDelAny?>);" name="save" id="save" value="save over" disabled="disabled" title="Save current form as selected template (overwrites data in this template)" />
-                </div>
-                <div style="margin:10px auto 5px;" class="nobr center">
+            </div>
+            <input type="submit" name="fill" id="fill" value="fill from" disabled="disabled" title="Fill the upload form from selected template" />
+            <input type="button" onclick="DeleteTemplate(<?=$CanDelAny?>);" name="delete" id="delete" value="delete" disabled="disabled" title="Delete selected template" />
+            <input type="button" onclick="OverwriteTemplate(<?=$CanDelAny?>);" name="save" id="save" value="save over" disabled="disabled" title="Save current form as selected template (overwrites data in this template)" />
+        </div>
+        <div style="margin:10px auto 5px;" class="nobr center">
 
 <?php           if (check_perms('site_make_private_templates')) {
                     $addsep=true; ?>
                     <a href="#" onclick="AddTemplate(<?=$CanDelAny?>,0);" title="Make a private template from the details currently in the form">Add Private Template</a>
 <?php           }
-            if (check_perms('site_make_public_templates')) {
-                 if ($addsep) echo "&nbsp;&nbsp;&nbsp|&nbsp;&nbsp;&nbsp;";  ?>
-                    <a href="#" onclick="AddTemplate(<?=$CanDelAny?>,1);" title="Make a public template from the details currently in the form">Add Public Template</a>
+if (check_perms('site_make_public_templates')) {
+    if ($addsep) {
+        echo "&nbsp;&nbsp;&nbsp|&nbsp;&nbsp;&nbsp;";
+    }  ?>
+                <a href="#" onclick="AddTemplate(<?=$CanDelAny?>,1);" title="Make a public template from the details currently in the form">Add Public Template</a>
 <?php           }   ?>
                 </div>
             </form>
@@ -257,19 +260,20 @@ foreach ($Whitelist as $ImageHost) {
             echo 'tags[' . $cat['id'] . ']="' . $cat['tag'] . '"' . ";\n";
         }
         ?>
-                if ($('#category').raw().value == 0) {
-                    $('#tagtext').html("");
-                } else {
-                    $('#tagtext').html("<strong>The tag "+tags[$('#category').raw().value]+" will be added automatically.</strong>");
-                }
-            }
+        if ($('#category').raw().value == 0) {
+            $('#tagtext').html("");
+        } else {
+            $('#tagtext').html("<strong>The tag "+tags[$('#category').raw().value]+" will be added automatically.</strong>");
+        }
+        }
         <?php
-        if (!empty($Properties))
+        if (!empty($Properties)) {
             echo "addDOMLoadEvent(SynchInterface);";
+        }
         ?>
         //]]></script>
 <?php
-    }
+}
 
 ?>
     <a id="startform"></a>

@@ -9,14 +9,13 @@ include(SERVER_ROOT . '/Legacy/sections/torrents/functions.php');
 
 $Message = '';
 if (isset($_POST['doit'])) {
-
     if (isset($_POST['oldtags'])) {
         $OldTagIDs = $_POST['oldtags'];
         $ChangeNames = array();
         $NotChangeNames = array();
         $ChangeIDs = array();
 
-        foreach ($OldTagIDs AS $OldTagID) {
+        foreach ($OldTagIDs as $OldTagID) {
             if (!is_number($OldTagID)) {
                 error(403);
             }
@@ -30,8 +29,9 @@ if (isset($_POST['doit'])) {
             if ($NumSynomyns==0) {
                 $ChangeIDs[] = (int) $OldTagID;
                 $ChangeNames[] = $SynName;
-            } else
+            } else {
                 $NotChangeNames[] = $SynName;
+            }
         }
         if (count($NotChangeNames)>0) {
             $Message .= "Cannot remove tags from official list that have synonyms: ". implode(', ', $NotChangeNames).". ";
@@ -46,12 +46,13 @@ if (isset($_POST['doit'])) {
     }
 
     if ($_POST['newtag']) {
-        $Tag = trim($_POST['newtag'],'.'); // trim dots from the beginning and end
+        $Tag = trim($_POST['newtag'], '.'); // trim dots from the beginning and end
         $Tag = sanitize_tag($Tag);
         $TagName = get_tag_synonym($Tag);
 
-        if ($Tag != $TagName) // this was a synonym replacement
+        if ($Tag != $TagName) { // this was a synonym replacement
             $Message .= "$Tag = $TagName. ";
+        }
 
         $DB->query("SELECT t.ID FROM tags AS t WHERE t.Name LIKE '" . $TagName . "'");
         list($TagID) = $DB->next_record();

@@ -4,7 +4,8 @@ namespace Luminance\Services;
 use Luminance\Core\Master;
 use Luminance\Core\Service;
 
-class TPL extends Service {
+class TPL extends Service
+{
     # Basically a wrapper around the Twig templating engine
 
     protected $loader;
@@ -14,7 +15,8 @@ class TPL extends Service {
         'settings'      => 'Settings',
     ];
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
         $this->loader = new \Twig_Loader_Filesystem($this->master->application_path . '/Templates');
         $options = [];
@@ -33,23 +35,28 @@ class TPL extends Service {
         $this->add_extensions();
     }
 
-    public function get_icon($set, $symbol) {
+    public function get_icon($set, $symbol)
+    {
         return '<svg class="'.$set.'" data-src="/static/common/'.$set.'.svg?v='.$this->master->render->public_file_mtime('/static/common/'.$set.'.svg').'#'.$symbol.'"></svg>';
     }
 
-    public function decode($value) {
+    public function decode($value)
+    {
         return html_entity_decode($value);
     }
 
-    public function add_template_path($templateDir, $namespace) {
+    public function add_template_path($templateDir, $namespace)
+    {
         $this->loader->addPath($templateDir, $namespace);
     }
 
-    public function override_template_path($tplPath) {
+    public function override_template_path($tplPath)
+    {
         $this->loader->prependPath($tplPath);
     }
 
-    private function add_extensions() {
+    private function add_extensions()
+    {
         $filter = new \Twig_SimpleFilter('format_size', 'get_size');
         $this->twig->addFilter($filter);
 
@@ -121,7 +128,8 @@ class TPL extends Service {
         }
     }
 
-    public function render($template, $values = [], $block = null) {
+    public function render($template, $values = [], $block = null)
+    {
         if (is_null($block)) {
             return $this->twig->render($template, $values);
         } else {
@@ -130,7 +138,8 @@ class TPL extends Service {
         }
     }
 
-    public function display($template, $values = [], $block = null) {
+    public function display($template, $values = [], $block = null)
+    {
         print($this->render($template, $values));
     }
 }

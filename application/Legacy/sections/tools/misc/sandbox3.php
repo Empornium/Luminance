@@ -26,36 +26,42 @@ $numtorrents = $DB->record_count();
         $i=0;
         $updaterow = array();
 
-        while ( list($ID, $Title) = $DB->next_record()  ) {
-            $Words = explode(' ', $Title);
-            $found = false;
-            foreach ($Words as &$word) {
-                $len = strlen($word);
-                if ($len <= $WordLength) continue;
-
-                $cutat = strrpos($word, '.', $WordLength - $len);
-                if ($cutat===false) $cutat = strrpos($word, '-', $WordLength - $len);
-                if ($cutat===false) $cutat = $WordLength-4;
-                $word = substr($word, 0, $cutat).' '.substr($word, $cutat+1);
-                $found = true;
-            }
-
-            if ($found) {
-                echo "<br/>---- 012345678901234567890123456789012345678901234567-50-234567-60-2345--8901234567-80-234567890<br/><br/>";
-                echo "OLD: $Title<br/>";
-                $Title = implode(' ', $Words);
-                echo "New: $Title<br/>";
-
-                $updaterow[] = "(" . $ID . ", '" . db_string($Title) . "')";
-                $i++;
-            }
+while (list($ID, $Title) = $DB->next_record()) {
+    $Words = explode(' ', $Title);
+    $found = false;
+    foreach ($Words as &$word) {
+        $len = strlen($word);
+        if ($len <= $WordLength) {
+            continue;
         }
 
-        if ($DoFix && $i>0) {
-            $DB->query("INSERT INTO torrents_group (ID, Name) VALUES "
-                    . implode(',', $updaterow)
-                    . " ON DUPLICATE KEY UPDATE Name=Values(Name)");
+        $cutat = strrpos($word, '.', $WordLength - $len);
+        if ($cutat===false) {
+            $cutat = strrpos($word, '-', $WordLength - $len);
         }
+        if ($cutat===false) {
+            $cutat = $WordLength-4;
+        }
+        $word = substr($word, 0, $cutat).' '.substr($word, $cutat+1);
+        $found = true;
+    }
+
+    if ($found) {
+        echo "<br/>---- 012345678901234567890123456789012345678901234567-50-234567-60-2345--8901234567-80-234567890<br/><br/>";
+        echo "OLD: $Title<br/>";
+        $Title = implode(' ', $Words);
+        echo "New: $Title<br/>";
+
+        $updaterow[] = "(" . $ID . ", '" . db_string($Title) . "')";
+        $i++;
+    }
+}
+
+if ($DoFix && $i>0) {
+    $DB->query("INSERT INTO torrents_group (ID, Name) VALUES "
+    . implode(',', $updaterow)
+    . " ON DUPLICATE KEY UPDATE Name=Values(Name)");
+}
 
         echo "</code><br/>" . ($DoFix? 'FIXED':'Found' ) ." $i titles with overlong words in them<br/>";
 

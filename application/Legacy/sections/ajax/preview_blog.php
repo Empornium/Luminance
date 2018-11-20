@@ -13,14 +13,18 @@ $Validate->SetFields('body', '1', 'desc', 'Description', array('regex' => $white
 $Err = $Validate->ValidateForm($_POST, $Text); // Validate the form
 
 $str ='';
-if ($Err) $str = '<div class="pad center warning">'.$Err."</div>\n";
+if ($Err) {
+    $str = '<div class="pad center warning">'.$Err."</div>\n";
+}
 
 $title = $_POST['title'];
 $body = $_POST['body'];
 $author = $_POST['author'];
 $image = $_POST['image'];
 
-if ($image) $str .= '<div class="pad center"><img style="max-width: 100%;max-height:1000px;" src="'.$image.'" /></div>';
+if ($image) {
+    $str .= '<div class="pad center"><img style="max-width: 100%;max-height:1000px;" src="'.$image.'" /></div>';
+}
 
 echo '  <div class="head">
             <strong>'. display_str($title).' </strong> - posted Just now by '.display_str($author).'

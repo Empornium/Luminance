@@ -12,8 +12,12 @@ $UserID = (int) $LoggedUser['ID'];
 $DB->query("SELECT RestrictedForums, PermittedForums FROM users_info WHERE UserID = $UserID");
 list($RestrictedForums, $PermittedForums) = $DB->next_record();
 
-if($PermittedForums) $PermittedForums = "f.ID IN ($PermittedForums) OR ";
-if($RestrictedForums) $RestrictedForums = " AND f.ID NOT IN ($RestrictedForums) ";
+if ($PermittedForums) {
+    $PermittedForums = "f.ID IN ($PermittedForums) OR ";
+}
+if ($RestrictedForums) {
+    $RestrictedForums = " AND f.ID NOT IN ($RestrictedForums) ";
+}
 
  // I cannot find any useful way of caching this... problem is this is viewing user dependent, but clearing the cache is any user posting
 
@@ -41,7 +45,7 @@ list($Results) = $DB->next_record();
 
 show_header('Unread Posts');
 
-$Pages=get_pages($Page,$Results,$PerPage,9);
+$Pages=get_pages($Page, $Results, $PerPage, 9);
 
 ?>
 <div class="thin">
@@ -66,42 +70,48 @@ $Pages=get_pages($Page,$Results,$PerPage,9);
                 </td>
             </tr>
 <?php  } else {
-
         $Row = 'a';
 
-        foreach ($UnreadPosts as $UnreadPost) {
-                list($ForumID, $ForumDescription, $ThreadID, $ForumName, $Title, $LastPostTime, $NumReplies, $NumViews,
-                      $LastPostID, $LastReadPostID, $LastAuthorID, $LastPostAuthorName, $MinRead, $Locked, $Sticky) = $UnreadPost;
-                $Row = ($Row == 'a') ? 'b' : 'a';
+    foreach ($UnreadPosts as $UnreadPost) {
+        list($ForumID, $ForumDescription, $ThreadID, $ForumName, $Title, $LastPostTime, $NumReplies, $NumViews,
+              $LastPostID, $LastReadPostID, $LastAuthorID, $LastPostAuthorName, $MinRead, $Locked, $Sticky) = $UnreadPost;
+        $Row = ($Row == 'a') ? 'b' : 'a';
 
-                $Read = 'unread';
+        $Read = 'unread';
 
-                // Removed per request, as distracting
-                if ($Locked) { $Read .= "_locked"; }
-                if ($Sticky) { $Read .= "_sticky"; }
+        // Removed per request, as distracting
+        if ($Locked) {
+            $Read .= "_locked";
+        }
+        if ($Sticky) {
+            $Read .= "_sticky";
+        }
 
 ?>
-                <tr class="row<?=$Row?>">
-                    <td class="<?=$Read?>" title="<?=ucfirst($Read)?>"></td>
-                    <td>
-                          <h4 class="min_padding">
-                                <a href="/forums.php?action=viewforum&amp;forumid=<?=$ForumID?>" title="<?=display_str($ForumDescription)?>"><?=display_str($ForumName)?></a>
-                          </h4>
-                    </td>
-                    <td>
-                          <span style="float:left;" class="last_topic">
-                                <a href="/forums.php?action=viewthread&amp;threadid=<?=$ThreadID?>" title="<?=display_str($Title)?>"><?=display_str(cut_string($Title, 50, 0))?></a>
-                          </span>
-                          <span style="float: left;" class="last_read" title="Jump to last read">
-                                <a href="/forums.php?action=viewthread&amp;threadid=<?=$ThreadID;if($LastReadPostID>0)echo"&amp;postid=$LastReadPostID#post$LastReadPostID"?>"></a>
-                          </span>
-                          <span style="float:right;" class="last_poster">by <?=format_username($LastAuthorID, $LastPostAuthorName)?> <?=time_diff($LastPostTime,1)?></span>
-                    </td>
-                    <td style="text-align: center;"><?=number_format($NumReplies)?></td>
-                    <td style="text-align: center;"><?=number_format($NumViews)?></td>
-                </tr>
-<?php           }
-      }
+        <tr class="row<?=$Row?>">
+            <td class="<?=$Read?>" title="<?=ucfirst($Read)?>"></td>
+            <td>
+                  <h4 class="min_padding">
+                        <a href="/forums.php?action=viewforum&amp;forumid=<?=$ForumID?>" title="<?=display_str($ForumDescription)?>"><?=display_str($ForumName)?></a>
+                  </h4>
+            </td>
+            <td>
+                  <span style="float:left;" class="last_topic">
+                        <a href="/forums.php?action=viewthread&amp;threadid=<?=$ThreadID?>" title="<?=display_str($Title)?>"><?=display_str(cut_string($Title, 50, 0))?></a>
+                  </span>
+                  <span style="float: left;" class="last_read" title="Jump to last read">
+                        <a href="/forums.php?action=viewthread&amp;threadid=<?=$ThreadID;
+                        if ($LastReadPostID>0) {
+                            echo"&amp;postid=$LastReadPostID#post$LastReadPostID";
+                        }?>"></a>
+                  </span>
+                  <span style="float:right;" class="last_poster">by <?=format_username($LastAuthorID, $LastPostAuthorName)?> <?=time_diff($LastPostTime, 1)?></span>
+            </td>
+            <td style="text-align: center;"><?=number_format($NumReplies)?></td>
+            <td style="text-align: center;"><?=number_format($NumViews)?></td>
+        </tr>
+    <?php           }
+}
 ?>
     </table>
     <div class="linkbox pager">

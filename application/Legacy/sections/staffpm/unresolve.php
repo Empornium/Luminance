@@ -18,11 +18,11 @@ if ($ConvID = (int) ($_GET['id'])) {
     $Message = sqltime()." - Unresolved by ".$LoggedUser['Username'];
     make_staffpm_note($Message, $ConvID);
 
-    if (isset($_GET['return']))
+    if (isset($_GET['return'])) {
         header("Location: staffpm.php?action=viewconv&id=$ConvID");
-    else
+    } else {
         header('Location: staffpm.php?view=open');
-
+    }
 } else {
     // No id
     header('Location: staffpm.php?view=open');

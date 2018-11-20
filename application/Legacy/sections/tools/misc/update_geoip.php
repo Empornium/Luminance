@@ -9,23 +9,24 @@ function get_first_day_current_month($dayofweek = 1)
     $current = date('m,Y');
     $current = explode(',', $current);
 
-    return get_first_day($current[0],$current[1],$dayofweek);
+    return get_first_day($current[0], $current[1], $dayofweek);
 }
 
-function get_first_day($month,$year,$dayofweek = 1,$timeformat="Ymd") { // sunday =0
+function get_first_day($month, $year, $dayofweek = 1, $timeformat = "Ymd")
+{
+ // sunday =0
 
     $dayofweek = $dayofweek % 7; // in case of stupid input
 
-    $num = date("w",mktime(0,0,0,$month,1,$year));
+    $num = date("w", mktime(0, 0, 0, $month, 1, $year));
 
-    if($num==$dayofweek)
-
-        return date($timeformat,mktime(0,0,0,$month,1,$year));
-    elseif($num>=0)
-        return date($timeformat,mktime(0,0,0,$month,1,$year)+(86400*( ($dayofweek+7-$num) % 7 ) ));
-    else
-      return date($timeformat,mktime(0,0,0,$month,1,$year)+(86400*(1-$num)));
-
+    if ($num==$dayofweek) {
+        return date($timeformat, mktime(0, 0, 0, $month, 1, $year));
+    } elseif ($num>=0) {
+        return date($timeformat, mktime(0, 0, 0, $month, 1, $year)+(86400*( ($dayofweek+7-$num) % 7 ) ));
+    } else {
+        return date($timeformat, mktime(0, 0, 0, $month, 1, $year)+(86400*(1-$num)));
+    }
 }
 
 // currently updated on the first tuesday of each month. See https://www.maxmind.com/app/geolite for details

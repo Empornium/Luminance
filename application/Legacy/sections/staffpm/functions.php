@@ -1,6 +1,7 @@
 <?php
 
-function check_access($ConvID) {
+function check_access($ConvID)
+{
     global $DB, $LoggedUser;
 
     // get vars from LoggedUser
@@ -33,8 +34,7 @@ function make_staffpm_note($Message, $ConvID)
             INSERT INTO staff_pm_messages
                 (UserID, SentDate, Message, ConvID, IsNotes)
             VALUES
-                (0, '".sqltime()."', '$Message', $ConvID, TRUE)"
-        );
+                (0, '".sqltime()."', '$Message', $ConvID, TRUE)");
     }
 }
 function get_num_staff_pms($UserID, $UserLevel)
@@ -84,8 +84,7 @@ $DB->query("
     FROM permissions as p
     JOIN users_main as m ON m.PermissionID=p.ID
     WHERE p.DisplayStaff='1'
-    ORDER BY p.Level DESC, m.Username ASC"
-);
+    ORDER BY p.Level DESC, m.Username ASC");
 while (list($ID, $Name) = $DB->next_record()) {
     // Create one <option> for each staff member
     $Selected = ($AssignedToUser == $ID) ? ' selected="selected"' : '';
@@ -122,39 +121,39 @@ while (list($ID, $Name) = $DB->next_record()) {
 <?php
 }
 
-function print_compose_staff_pm($Hidden = true, $Assign = 0, $Subject ='', $Msg = '', $Text = false)
+function print_compose_staff_pm($Hidden = true, $Assign = 0, $Subject = '', $Msg = '', $Text = false)
 {
         global $LoggedUser;
 
         // forwarding a msg
-        if ($_POST['action']=='forward') {
-            list($MsgType, $Subject, $FwdBody) = getForwardedPostData();
-        }
+    if ($_POST['action']=='forward') {
+        list($MsgType, $Subject, $FwdBody) = getForwardedPostData();
+    }
 
         $IsStaff = $LoggedUser['DisplayStaff'] == 1;
-        if (!$Text) {
-            $Text = new Luminance\Legacy\Text;
+    if (!$Text) {
+        $Text = new Luminance\Legacy\Text;
+    }
+    if ($Msg=='changeusername') {
+        $Subject='Change Username';
+        $Msg="\n\nI would like to change my username to\n\nBecause";
+        $Assign='admin';
+    } elseif ($Msg=='donategb' || $Msg=='donatelove') {
+        $Subject='I would like to donate for ';
+        if ($Msg=='donategb') {
+            $Subject .= 'GB';
+            $Msg="\n\nPlease send me instructions on how to donate to remove gb from my download.";
+        } else {
+            $Subject .= 'love';
+            $Msg="\n\nPlease send me instructions on how to donate to help support the site.";
         }
-        if ($Msg=='changeusername') {
-            $Subject='Change Username';
-            $Msg="\n\nI would like to change my username to\n\nBecause";
-            $Assign='admin';
-        } elseif ($Msg=='donategb' || $Msg=='donatelove') {
-            $Subject='I would like to donate for ';
-            if ($Msg=='donategb') {
-                $Subject .= 'GB';
-                $Msg="\n\nPlease send me instructions on how to donate to remove gb from my download.";
-            } else {
-                $Subject .= 'love';
-                $Msg="\n\nPlease send me instructions on how to donate to help support the site.";
-            }
-            $Assign='sysop';
-            $AssignDirect = '1000';
-        } elseif ($Msg=='nobtcrate') {
-            $Subject='Error: No exchange rate for bitcoin';
-            $Msg='';
-            $Assign='admin';
-        }
+        $Assign='sysop';
+        $AssignDirect = '1000';
+    } elseif ($Msg=='nobtcrate') {
+        $Subject='Error: No exchange rate for bitcoin';
+        $Msg='';
+        $Assign='admin';
+    }
 
         ?>
         <div id="compose" class="<?=($Hidden ? 'hide' : '')?>">
@@ -164,18 +163,18 @@ function print_compose_staff_pm($Hidden = true, $Assign = 0, $Subject ='', $Msg 
                     </div>
 <?php       }
 
-             if ($FwdBody) {
+if ($FwdBody) {
 ?>
-                 <div class="head">
-                     <?=$MsgType;?> to be forwarded:
-                 </div>
-                 <div class="box vertical_space">
-                     <div class="body" >
-                         <?=$Text->full_format($FwdBody, true)?>
-                     </div>
-                 </div>
+<div class="head">
+<?=$MsgType;?> to be forwarded:
+</div>
+<div class="box vertical_space">
+<div class="body" >
+<?=$Text->full_format($FwdBody, true)?>
+</div>
+</div>
 <?php
-             }
+}
 ?>
             <div id="preview" class="hidden"></div>
             <form action="staffpm.php" method="post" id="messageform">
@@ -201,11 +200,19 @@ function print_compose_staff_pm($Hidden = true, $Assign = 0, $Subject ='', $Msg 
                 <input type="text" value="<?=$Assign?>" disabled="disabled" />
 <?php                   } else { ?>
                 <select name="level">
-                    <option value="0"<?php if(!$Assign)echo ' selected="selected"';?>>First Line Support</option>
-                    <option value="500"<?php if($Assign=='mod')echo ' selected="selected"';?>>Moderators</option>
-                    <option value="549"<?php if($Assign=='smod')echo ' selected="selected"';?>>Senior Staff</option>
-<?php                       if($IsStaff) { ?>
-                    <option value="600"<?php if($Assign=='admin')echo ' selected="selected"';?>>Admin Team</option>
+                    <option value="0"<?php if (!$Assign) {
+                        echo ' selected="selected"';
+                                     }?>>First Line Support</option>
+                    <option value="500"<?php if ($Assign=='mod') {
+                        echo ' selected="selected"';
+                                       }?>>Moderators</option>
+                    <option value="549"<?php if ($Assign=='smod') {
+                        echo ' selected="selected"';
+                                       }?>>Senior Staff</option>
+<?php                       if ($IsStaff) { ?>
+                    <option value="600"<?php if ($Assign=='admin') {
+                        echo ' selected="selected"';
+                                       }?>>Admin Team</option>
 <?php                       } ?>
                 </select>
 <?php                   } ?>

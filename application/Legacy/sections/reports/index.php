@@ -5,7 +5,9 @@ if ($master->repos->restrictions->is_restricted($LoggedUser['ID'], \Luminance\En
     error('Your report rights have been disabled.');
 }
 
-if (empty($_REQUEST['action'])) { $_REQUEST['action'] = ''; }
+if (empty($_REQUEST['action'])) {
+    $_REQUEST['action'] = '';
+}
 
 // get vars from LoggedUser
 $SupportFor = $LoggedUser['SupportFor'];
@@ -27,14 +29,22 @@ switch ($_REQUEST['action']) {
         break;
     case 'Add comment':
         authorize();
-        if (!$IsFLS) error(403);
+        if (!$IsFLS) {
+            error(403);
+        }
 
-        if(empty($_POST['reportid']) && !is_number($_POST['reportid'])) error(0);
+        if (empty($_POST['reportid']) && !is_number($_POST['reportid'])) {
+            error(0);
+        }
         $ReportID = (int) $_POST['reportid'];
 
-        if (isset($_POST['comment'])) $Comment = trim($_POST['comment']);
-        if(!$Comment || $Comment == '') error("Cannot add a blank comment!");
-        $Comment=db_string(sqltime()." - {$LoggedUser['Username']} - $Comment"  );
+        if (isset($_POST['comment'])) {
+            $Comment = trim($_POST['comment']);
+        }
+        if (!$Comment || $Comment == '') {
+            error("Cannot add a blank comment!");
+        }
+        $Comment=db_string(sqltime()." - {$LoggedUser['Username']} - $Comment");
 
         $DB->query("UPDATE reports SET Comment=CONCAT_WS( '\n', Comment, '$Comment') WHERE ID='$ReportID'");
 
@@ -44,9 +54,13 @@ switch ($_REQUEST['action']) {
 
     case 'takepost': // == start a staff conversation
         authorize();
-        if (!$IsStaff) error(403);
+        if (!$IsStaff) {
+            error(403);
+        }
 
-        if(empty($_POST['reportid']) || !is_number($_POST['reportid'])) error(0);
+        if (empty($_POST['reportid']) || !is_number($_POST['reportid'])) {
+            error(0);
+        }
         $ReportID = (int) $_POST['reportid'];
 
         $ConvID = startStaffConversation($_POST['toid'], $_POST['subject'], $_POST['message']);

@@ -4,7 +4,7 @@
 // Works becaues the torrent FileList is in the format '|||filepath/name.mp4{{{234567}}}|||filepath/name2.mp4{{{34543543}}}'
 // then it loops through any returned torrentid's and looksup the torrent info to match, puts it all in an array and returns it
 
-function check_size_dupes($TorrentFilelist, $ExcludeID=0)
+function check_size_dupes($TorrentFilelist, $ExcludeID = 0)
 {
     global $SS, $ExcludeBytesDupeCheck, $Image_FileTypes;
 
@@ -20,11 +20,15 @@ function check_size_dupes($TorrentFilelist, $ExcludeID=0)
         list($Size, $Name) = $File;
 
         // skip matching files < 1mb in size
-        if ($Size < 1024*1024*2) continue;
+        if ($Size < 1024*1024*2) {
+            continue;
+        }
 
         // skip image files
         preg_match('/\.([^\.]+)$/i', $Name, $ext);
-        if (in_array($ext[1], $Image_FileTypes)) continue;
+        if (in_array($ext[1], $Image_FileTypes)) {
+            continue;
+        }
 
         if (isset($ExcludeBytesDupeCheck[$Size])) {
             $FakeEntry = array( array( 'excluded'=> $ExcludeBytesDupeCheck[$Size],
@@ -43,7 +47,6 @@ function check_size_dupes($TorrentFilelist, $ExcludeID=0)
         if ($Num>0) {
             // These ones were not found in the cache, run SQL
             if (!empty($Results['notfound'])) {
-
                 $SQLResults = get_groups($Results['notfound']);
 
                 if (is_array($SQLResults['notfound'])) { // Something wasn't found in the db, remove it from results
@@ -63,7 +66,7 @@ function check_size_dupes($TorrentFilelist, $ExcludeID=0)
             foreach ($Results['matches'] as $ID => $tdata) {
                 if ($tdata['ID']==$ExcludeID) {
                     unset($Results['matches'][$ID]);
-                } elseif ( (time_ago($tdata['Torrents'][$ID]['Time']) > 24*3600*EXCLUDE_DUPES_AFTER_DAYS) &&
+                } elseif ((time_ago($tdata['Torrents'][$ID]['Time']) > 24*3600*EXCLUDE_DUPES_AFTER_DAYS) &&
                             ($tdata['Torrents'][$ID]['Seeders']< EXCLUDE_DUPES_SEEDS) ) {
                     unset($Results['matches'][$ID]);
                 } else {
@@ -72,8 +75,7 @@ function check_size_dupes($TorrentFilelist, $ExcludeID=0)
                         // if there is no original file with same bytesize then it was most likely a hash collision
                         // discard false positive
                         unset($Results['matches'][$ID]);
-                    }
-                    else {
+                    } else {
                         $Results['matches'][$ID]['dupedfile'] = $Name;
                         $Results['matches'][$ID]['dupedfilesize'] = $Size;
                         $Results['matches'][$ID]['origfile'] = $origfile;
@@ -86,12 +88,16 @@ function check_size_dupes($TorrentFilelist, $ExcludeID=0)
                 $UniqueResults++;
                 $AllResults = array_merge($AllResults, $Results['matches']);
 
-                if (count($AllResults)>=500) break;
+                if (count($AllResults)>=500) {
+                    break;
+                }
             }
         }
     }
     $NumFiles = count($TorrentFilelist);
-    if(count($AllResults)<1) return array('UniqueMatches'=>0, 'NumChecked'=>$NumFiles, 'SizeUniqueMatches'=>0, 'DupeResults'=>false);
+    if (count($AllResults)<1) {
+        return array('UniqueMatches'=>0, 'NumChecked'=>$NumFiles, 'SizeUniqueMatches'=>0, 'DupeResults'=>false);
+    }
 
     return array('UniqueMatches'=>$UniqueResults, 'NumChecked'=>$NumFiles, 'SizeUniqueMatches'=>$SizeUniqueMatches, 'DupeResults'=>$AllResults) ;
 }
@@ -113,9 +119,7 @@ function get_filename_fromsize($TorrentID, $ExactSize)
         // not cached so just grab it, torrent_details is a massive cached beast so we wont grab & fill the cache just for this
         $DB->query("SELECT FileList FROM torrents WHERE ID=$TorrentID");
         list($FileList) = $DB->next_record();
-    }
-    else
-    {
+    } else {
         // $TorrentCache[1] is torrentlist, ($TorrentCache[0] is torrentdetails, $TorrentCache[2] is tags)
         // [0] is the index of the torrent in the group, always 0 because we have 1:1 group:torrent
         $FileList = $TorrentCache[1][0]['FileList'];
@@ -138,7 +142,7 @@ function get_templates_private($UserID)
     global $DB, $Cache;
 
     $UserTemplates = $Cache->get_value('templates_ids_' . $UserID);
-    if ($UserTemplates === FALSE) {
+    if ($UserTemplates === false) {
                         $DB->query("SELECT
                                     t.ID,
                                     t.Name,
@@ -160,7 +164,7 @@ function get_templates_public()
 {
     global $DB, $Cache;
     $PublicTemplates = $Cache->get_value('templates_public');
-    if ($PublicTemplates === FALSE) {
+    if ($PublicTemplates === false) {
                         $DB->query("SELECT
                                     t.ID,
                                     t.Name,
@@ -183,7 +187,7 @@ function get_templates_public()
  * @param int $GroupID The group id of the torrent
  * @return the html for the taglist
  */
-function get_templatelist_html($UserID, $SelectedTemplateID =0)
+function get_templatelist_html($UserID, $SelectedTemplateID = 0)
 {
     global $DB, $Cache;
 
@@ -194,31 +198,39 @@ function get_templatelist_html($UserID, $SelectedTemplateID =0)
 ?>
 
         <select id="template" name="template" onchange="SelectTemplate(<?=(check_perms('site_delete_any_templates')?'1':'0')?>);" title="Select a template (*=public)">
-            <option class="indent" value="0" <?php  if($SelectedTemplateID==0) echo ' selected="selected"' ?>>---</option>
+            <option class="indent" value="0" <?php  if ($SelectedTemplateID==0) {
+                echo ' selected="selected"';
+                                             } ?>>---</option>
 <?php
-        if (count($TemplatesPrivate)>0) {
+if (count($TemplatesPrivate)>0) {
 ?>
-            <optgroup label="private templates">
+<optgroup label="private templates">
 <?php
-            foreach ($TemplatesPrivate as $template) {
-                list($tID, $tName,$tPublic,$tAuthorname) = $template;
+foreach ($TemplatesPrivate as $template) {
+    list($tID, $tName,$tPublic,$tAuthorname) = $template;
 ?>
-                <option class="indent" value="<?=$tID?>"<?php  if($SelectedTemplateID==$tID) echo ' selected="selected"' ?>><?=$tName?></option>
+<option class="indent" value="<?=$tID?>"<?php  if ($SelectedTemplateID==$tID) {
+    echo ' selected="selected"';
+                              } ?>><?=$tName?></option>
 <?php           }         ?>
-            </optgroup>
+</optgroup>
 <?php
-        }
-        if (count($TemplatesPublic)>0) {
+}
+if (count($TemplatesPublic)>0) {
 ?>
-            <optgroup label="public templates">
+<optgroup label="public templates">
 <?php
-            foreach ($TemplatesPublic as $template) {
-                list($tID, $tName,$tPublic,$tAuthorname) = $template;
-                if ($tPublic==1) $tName .= " (by $tAuthorname)*"
+foreach ($TemplatesPublic as $template) {
+    list($tID, $tName,$tPublic,$tAuthorname) = $template;
+    if ($tPublic==1) {
+        $tName .= " (by $tAuthorname)*";
+    }
 ?>
-                <option class="indent" value="<?=$tID?>"<?php  if($SelectedTemplateID==$tID) echo ' selected="selected"' ?>><?=$tName?></option>
+<option class="indent" value="<?=$tID?>"<?php  if ($SelectedTemplateID==$tID) {
+    echo ' selected="selected"';
+                              } ?>><?=$tName?></option>
 <?php           }           ?>
-            </optgroup>
+</optgroup>
 <?php       }         ?>
         </select>
 <?php

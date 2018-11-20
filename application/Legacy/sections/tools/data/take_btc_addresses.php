@@ -1,6 +1,8 @@
 <?php
 authorize();
-if (!check_perms('admin_donor_addresses'))  error(403);
+if (!check_perms('admin_donor_addresses')) {
+    error(403);
+}
 
 include(SERVER_ROOT . '/Legacy/sections/donate/functions.php');
 
@@ -27,16 +29,16 @@ foreach ($input_addresses as $Key => &$address) {
 }
 
 if (count($invalid_addresses)==0) {
-
     $DB->query("SELECT ID FROM bitcoin_addresses WHERE public IN ('"  . implode("','", $sql_addresses)."')");
     $dupes=$DB->record_count();
-    if($dupes>0) error("There are $dupes address collisions! Addresses must be unique!");
+    if ($dupes>0) {
+        error("There are $dupes address collisions! Addresses must be unique!");
+    }
 
     $DB->query("INSERT INTO bitcoin_addresses (public, userID) VALUES " . implode(',', $sql_values));
 
     header("Location: tools.php?action=btc_address_input");
 } else {
-
     show_header("Invalid addresses");
 ?>
 <div class="thin">
@@ -49,13 +51,13 @@ if (count($invalid_addresses)==0) {
         <br/>
         <div class="donate_details">
 <?php
-        foreach ($input_addresses as $baddress) {
-            if (in_array($baddress, $invalid_addresses)) {
-                echo "<span style=\"color:red\">$baddress</span><br/>";
-            } else {
-                echo "$baddress<br/>";
-            }
-        }
+foreach ($input_addresses as $baddress) {
+    if (in_array($baddress, $invalid_addresses)) {
+        echo "<span style=\"color:red\">$baddress</span><br/>";
+    } else {
+        echo "$baddress<br/>";
+    }
+}
 ?>
         </div>
     </div>

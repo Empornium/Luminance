@@ -2,7 +2,7 @@
 
 // Set the encoding to something more "challenging."
 $ret = mb_internal_encoding('UTF-8');
-if ($ret === FALSE) {
+if ($ret === false) {
     echo "Couldn't set encoding.";
     exit(1);
 }
@@ -28,5 +28,3 @@ try {
     var_dump($ex);
     exit(1);
 }
-
-?>

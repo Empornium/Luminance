@@ -14,7 +14,7 @@ show_header('Staff Tools');
 <?php  } if (check_perms('admin_manage_shop')) { ?>
             <tr><td><a href="/tools.php?action=shop_list">Bonus Shop</a></td></tr>
 <?php  } if (check_perms('admin_manage_events')) { ?>
-			      <tr><td><a href="tools.php?action=events_list">Upload Events</a></td></tr>
+                  <tr><td><a href="tools.php?action=events_list">Upload Events</a></td></tr>
 <?php  } if (check_perms('admin_manage_categories')) { ?>
             <tr><td><a href="/tools.php?action=categories">Categories</a></td></tr>
 <?php  } if (check_perms('admin_whitelist')) { ?>

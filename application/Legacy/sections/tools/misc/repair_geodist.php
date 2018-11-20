@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('admin_update_geoip')) error(403);
+if (!check_perms('admin_update_geoip')) {
+    error(403);
+}
 
 set_time_limit(0);
 
@@ -7,7 +9,9 @@ $Text = new Luminance\Legacy\Text;
 
 $num_users = isset($_REQUEST['numusers'])?(int) $_REQUEST['numusers']:10;
 
-if($num_users<=0)$num_users=1;
+if ($num_users<=0) {
+    $num_users=1;
+}
 
 $done='';
 
@@ -28,7 +32,7 @@ if ($_REQUEST['submit']=='process') {
         if ($IP) {
             $ipcc = geoip($IP);
             $DB->query("UPDATE users_main SET ipcc='$ipcc' WHERE ID='$UserID'");
-            $Results[] = "| " . str_pad($UserID, 7)."| ". str_pad($Username, 14)."| ".str_pad($ipcc,2)." |"; //  ($IP)
+            $Results[] = "| " . str_pad($UserID, 7)."| ". str_pad($Username, 14)."| ".str_pad($ipcc, 2)." |"; //  ($IP)
         }
     }
 
@@ -43,7 +47,6 @@ if ($_REQUEST['submit']=='process') {
     $ret .= "+--------+---------------+----+\n";
     $ret .="[/code][/spoiler]\n";
 } elseif ($_REQUEST['submit2']=='fill users_geo_distribution') {
-
     $done= 'filled users_geo_distribution';
 
     $DB->query("TRUNCATE TABLE users_geodistribution");
@@ -59,7 +62,7 @@ if ($_REQUEST['submit']=='process') {
     $Cache->delete_value('geodistribution');
 }
 
-show_header('Repair Geo-Distribution','bbcode');
+show_header('Repair Geo-Distribution', 'bbcode');
 
 ?>
 <div class="thin">
@@ -83,7 +86,9 @@ show_header('Repair Geo-Distribution','bbcode');
             </tr>
             <tr>
                 <td style="vertical-align: top" class="center">
-                    <?php  if($done) echo $Text->full_format( "[size=2][b][color=red]status: $done [/color][/b][/size][br]$ret " );?>
+                    <?php  if ($done) {
+                        echo $Text->full_format("[size=2][b][color=red]status: $done [/color][/b][/size][br]$ret ");
+                    }?>
                 </td>
             </tr>
             <tr>

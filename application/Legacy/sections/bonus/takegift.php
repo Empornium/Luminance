@@ -1,7 +1,7 @@
 <?php
 enforce_login();
 authorize();
-if ( !check_perms('site_give_specialgift') ) {
+if (!check_perms('site_give_specialgift')) {
     error(404);
 }
 
@@ -83,12 +83,12 @@ $DB->query("SELECT
                 AND um.Enabled = '1'
                 AND um.ID != {$UserID}");
 $Eligible_Users = array_column($DB->to_array(), 'UserID');
-if(empty($Eligible_Users)) {
+if (empty($Eligible_Users)) {
     $master->flasher->error("No users match this criteria");
     header("Location: bonus.php?action=gift&class={$REQUIRED_CLASS}&ratio={$REQUIRED_RATIO}&credits={$REQUIRED_CREDITS}&activity={$REQUIRED_ACTIVITY}");
     die();
 }
-$OtherID = array_rand($Eligible_Users,1);
+$OtherID = array_rand($Eligible_Users, 1);
 $OtherID = $Eligible_Users[$OtherID];
 
 // Do this now so we get values before the gift.
@@ -109,11 +109,10 @@ list($Credits) = $DB->next_record();
 
 // again lets not trust the check on the previous page as to whether they can afford it
 if ($OtherID && ($Cost <= $Credits)) {
-
     $UpdateSet = array();
     $UpdateSetOther = array();
 
-    Switch($Action){  // atm hardcoded in db:  givecredits, givegb, gb, slot, title, badge
+    switch ($Action) {  // atm hardcoded in db:  givecredits, givegb, gb, slot, title, badge
         case 'givecredits':
             $CreditsGiven = $Value;
 
@@ -150,10 +149,10 @@ if ($OtherID && ($Cost <= $Credits)) {
 
             break;
 
-       default:
-           $Cost = 0;
-           $ResultMessage ="No valid action!";
-           break;
+        default:
+            $Cost = 0;
+            $ResultMessage ="No valid action!";
+            break;
     }
 
     if ($UpdateSetOther) {

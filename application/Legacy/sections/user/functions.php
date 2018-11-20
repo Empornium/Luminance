@@ -1,6 +1,7 @@
 <?php
 
-function delete_user($UserID) {
+function delete_user($UserID)
+{
     global $master;
 
     # Luminance Tables
@@ -64,10 +65,10 @@ function delete_user($UserID) {
 
     //update_tracker('remove_user', array('passkey' => $Cur['torrent_pass']));
     $master->tracker->removeUser($Cur['torrent_pass']);
-
 }
 
-function status($name, $enabled) {
+function status($name, $enabled)
+{
     $status = ($enabled === true)? 'enabled':'disabled';
     return "{$name} status {$status}";
 }

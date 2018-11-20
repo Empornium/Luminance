@@ -10,12 +10,14 @@ much.
 // Number of users per page
 define('FRIENDS_PER_PAGE', '50');
 
-show_header('Friends','jquery');
+show_header('Friends', 'jquery');
 
 $UserID = $LoggedUser['ID'];
 
 $FType = isset($_REQUEST['type'])?$_REQUEST['type']:'friends';
-if(!in_array($FType, array('friends','blocked'))) error(0);
+if (!in_array($FType, array('friends','blocked'))) {
+    error(0);
+}
 
 list($Page,$Limit) = page_limit(FRIENDS_PER_PAGE);
 
@@ -56,7 +58,7 @@ list($Results) = $DB->next_record();
     <div class="linkbox">
 <?php
 // Pagination
-$Pages=get_pages($Page,$Results,FRIENDS_PER_PAGE,9);
+$Pages=get_pages($Page, $Results, FRIENDS_PER_PAGE, 9);
 echo $Pages;
 
 if ($Results > 0) {
@@ -86,35 +88,35 @@ if ($Results == 0) {
                 <tr>
                       <td class="colhead" colspan="3">
                             <span style="float:left;"><?=format_username($FriendID, $Username, $Donor, true, $Enabled, $Class, $Title, true, $GroupPermID)?>
-    <?php 	if (check_paranoia('ratio', $Paranoia, $Level, $FriendID)) { ?>
+    <?php   if (check_paranoia('ratio', $Paranoia, $Level, $FriendID)) { ?>
                             &nbsp;Ratio: <strong><?=ratio($Uploaded, $Downloaded)?></strong>
-    <?php 	} ?>
-    <?php 	if (check_paranoia('uploaded', $Paranoia, $Level, $FriendID)) { ?>
+    <?php   } ?>
+    <?php   if (check_paranoia('uploaded', $Paranoia, $Level, $FriendID)) { ?>
                             &nbsp;Up: <strong><?=get_size($Uploaded)?></strong>
-    <?php 	} ?>
-    <?php 	if (check_paranoia('downloaded', $Paranoia, $Level, $FriendID)) { ?>
+    <?php   } ?>
+    <?php   if (check_paranoia('downloaded', $Paranoia, $Level, $FriendID)) { ?>
                             &nbsp;Down: <strong><?=get_size($Downloaded)?></strong>
-    <?php 	} ?>
+    <?php   } ?>
                             </span>
 
                             <span style="float:right;">&nbsp;&nbsp;<a href="#" class="togglelink" onclick="$('#friend<?=$FriendID?>').toggle(); this.innerHTML=(this.innerHTML=='(Hide)'?'(View)':'(Hide)'); return false;">(View)</a></span>&nbsp;
 
-    <?php 	if (check_paranoia('lastseen', $Paranoia, $Level, $FriendID)) { ?>
+    <?php   if (check_paranoia('lastseen', $Paranoia, $Level, $FriendID)) { ?>
                             <span style="float:right;"><?=time_diff($LastAccess)?></span>
-    <?php 	} ?>
+    <?php   } ?>
                       </td>
                 </tr>
                 <tr id="friend<?=$FriendID?>" class="hidden friendinfo">
                       <td width="50px" valign="top">
     <?php
-          if (empty($HeavyInfo['DisableAvatars'])) {
-                if (!empty($Avatar)) {
-          ?>
-                                  <img src="<?=$Avatar?>" alt="<?=$Username?>'s avatar" width="50px" />
-          <?php 	} else { ?>
+    if (empty($HeavyInfo['DisableAvatars'])) {
+        if (!empty($Avatar)) {
+            ?>
+                    <img src="<?=$Avatar?>" alt="<?=$Username?>'s avatar" width="50px" />
+        <?php     } else { ?>
                                   <img src="<?=STATIC_SERVER?>common/avatars/default.png" width="50px" alt="Default avatar" />
-          <?php 	}
-          } ?>
+        <?php     }
+    } ?>
                       </td>
                       <td valign="top">
                                   <input type="hidden" name="friendid" value="<?=$FriendID?>" />

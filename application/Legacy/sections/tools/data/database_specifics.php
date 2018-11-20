@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('site_debug')) { error(403); }
+if (!check_perms('site_debug')) {
+    error(403);
+}
 
 //View schemas
 if (!empty($_GET['table'])) {
@@ -25,10 +27,10 @@ if (!empty($_GET['table'])) {
 if (!$Tables = $Cache->get_value('database_table_stats')) {
     $DB->query('SHOW TABLE STATUS');
     $Tables =$DB->to_array();
-    $Cache->cache_value('database_table_stats',$Tables,3600*4);
+    $Cache->cache_value('database_table_stats', $Tables, 3600*4);
 }
 
-$Pie = new Luminance\Legacy\PieChart(750,400,array('Other'=>1,'Percentage'=>1,'Sort'=>1));
+$Pie = new Luminance\Legacy\PieChart(750, 400, array('Other'=>1,'Percentage'=>1,'Sort'=>1));
 
 //Begin sorting
 $Sort = array();
@@ -78,7 +80,7 @@ switch (empty($_GET['order_by'])?'':$_GET['order_by']) {
 }
 $Pie->generate();
 
-if (!empty ($_GET['order_way']) && $_GET['order_way'] == 'asc') {
+if (!empty($_GET['order_way']) && $_GET['order_way'] == 'asc') {
     $SortWay = SORT_ASC;
 } else {
     $SortWay = SORT_DESC;

@@ -11,7 +11,8 @@ use Luminance\Entities\Session;
 use Luminance\Errors\InternalError;
 use Luminance\Errors\UserError;
 
-class Secretary extends Service {
+class Secretary extends Service
+{
 
     public $ipChanged = null;
     public $Info;
@@ -31,7 +32,8 @@ class Secretary extends Service {
         'ips'        => 'IPRepository',
     ];
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
         $this->request = $this->master->request;
         $this->server = $this->master->server;
@@ -45,19 +47,22 @@ class Secretary extends Service {
         }
     }
 
-    public function getExternalToken($ident, $action = '') {
+    public function getExternalToken($ident, $action = '')
+    {
         $token = $this->crypto->generateAuthToken('token', $ident, $action);
         return $token;
     }
 
-    public function checkExternalToken($token, $ident, $action = '', $duration = 86400) {
+    public function checkExternalToken($token, $ident, $action = '', $duration = 86400)
+    {
         if ($this->crypto->checkAuthToken('token', $token, $ident, $action, $duration)) {
             return true;
         }
         throw new UserError('Authorization token expired or invalid');
     }
 
-    public function getToken($action = '') {
+    public function getToken($action = '')
+    {
         if (is_null($this->CID)) {
             throw new UserError('CID cookie not found or invalid');
         }
@@ -65,7 +70,8 @@ class Secretary extends Service {
         return $token;
     }
 
-    public function checkToken($token, $action = '', $duration = 86400) {
+    public function checkToken($token, $action = '', $duration = 86400)
+    {
         if (is_null($this->CID)) {
             throw new UserError('CID cookie not found or invalid');
         }
@@ -75,7 +81,8 @@ class Secretary extends Service {
         throw new UserError('Authorization token expired or invalid');
     }
 
-    public function checkClient() {
+    public function checkClient()
+    {
         $this->ips->check_banned($this->request->ip);
         $client = null;
         if (array_key_exists('cid', $this->request->cookie)) {
@@ -96,7 +103,8 @@ class Secretary extends Service {
         $this->request->client = $client;
     }
 
-    protected function createClient() {
+    protected function createClient()
+    {
         $client = new Client();
         $client->CID = $this->crypto->random_bytes(8);
         $client->IPID = $this->request->ip->ID;
@@ -105,7 +113,8 @@ class Secretary extends Service {
         return $client;
     }
 
-    public function timecheckClient(Client $client) {
+    public function timecheckClient(Client $client)
+    {
         $compDate = new \DateTime('2 minutes ago');
         $ipChanged = false;
 
@@ -124,14 +133,16 @@ class Secretary extends Service {
         return $client;
     }
 
-    public function parse_user_agent($UserAgentString) {
+    public function parse_user_agent($UserAgentString)
+    {
         # This just wraps the function from the provided library
         $Info = ['platform'=>null, 'browser'=>null, 'version'=>null];
         $Info = array_merge($Info, parse_user_agent($UserAgentString));
         return $Info;
     }
 
-    public function http_user_agent() {
+    public function http_user_agent()
+    {
         $UserAgentString = (array_key_exists('HTTP_USER_AGENT', $this->server)) ? $this->server['HTTP_USER_AGENT'] : '';
         $UserAgent = $this->useragents->get_by_string($UserAgentString);
         if (!$UserAgent) {
@@ -145,7 +156,8 @@ class Secretary extends Service {
         return $UserAgent;
     }
 
-    public function get_accept_headers() {
+    public function get_accept_headers()
+    {
         $Headers = [];
         $Headers['string'] = (array_key_exists('HTTP_ACCEPT', $this->server)) ? $this->server['HTTP_ACCEPT'] : null;
         $Headers['charset'] = (array_key_exists('HTTP_ACCEPT_CHARSET', $this->server)) ? $this->server['HTTP_ACCEPT_CHARSET'] : null;
@@ -154,7 +166,8 @@ class Secretary extends Service {
         return $Headers;
     }
 
-    public function http_accept() {
+    public function http_accept()
+    {
         $Headers = $this->get_accept_headers();
         $Accept = $this->accepts->get_by_values($Headers['string'], $Headers['charset'], $Headers['encoding'], $Headers['language']);
         if (!$Accept) {
@@ -168,7 +181,8 @@ class Secretary extends Service {
         return $Accept;
     }
 
-    public function updateClientInfo($options) {
+    public function updateClientInfo($options)
+    {
         $screen = $this->screens->get_by_values($options['width'], $options['height'], $options['colordepth']);
         if (!$screen) {
             $screen = new ClientScreen();
@@ -185,7 +199,8 @@ class Secretary extends Service {
         $this->clients->save($this->request->client);
     }
 
-    public function updateClient(Client $Client) {
+    public function updateClient(Client $Client)
+    {
         if ($Client->ClientUserAgentID) {
             $UserAgent = $this->useragents->load($Client->ClientUserAgentID);
             if ($UserAgent->String != $this->UserAgentString) {
@@ -215,7 +230,8 @@ class Secretary extends Service {
         return $Client;
     }
 
-    public function operating_system($UserAgentString) {
+    public function operating_system($UserAgentString)
+    {
         # Legacy function, slightly refactored
         if (empty($UserAgentString)) {
             return 'Hidden';
@@ -225,7 +241,8 @@ class Secretary extends Service {
         return $Return;
     }
 
-    public function mobile($UserAgentString) {
+    public function mobile($UserAgentString)
+    {
         # Legacy function
 
         if (strpos($UserAgentString, 'iPad')) {
@@ -240,7 +257,8 @@ class Secretary extends Service {
         return false;
     }
 
-    public function browser(&$UserAgentString) {
+    public function browser(&$UserAgentString)
+    {
         # Legacy function, slightly refactored
         if (empty($UserAgentString)) {
             return 'Hidden';

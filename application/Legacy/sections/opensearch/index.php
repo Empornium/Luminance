@@ -3,7 +3,7 @@ header('Content-type: application/opensearchdescription+xml');
 
 $SSL = $master->request->ssl;
 
-$Type = ((!empty($_GET['type']) && in_array($_GET['type'],array('torrents','tags','requests','forums','users','log')))?$_GET['type']:'torrents');
+$Type = ((!empty($_GET['type']) && in_array($_GET['type'], array('torrents','tags','requests','forums','users','log')))?$_GET['type']:'torrents');
 
 echo '<?php xml version="1.0" encoding="UTF-8"?>'; ?>
 

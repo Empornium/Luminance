@@ -93,7 +93,7 @@ show_header('Manage Categories', 'jquery');
                         <select id="cat_image<?= $id ?>" name="image" onchange="change_image('#display_image<?= $id ?>', '#cat_image<?= $id ?>');">
                             <?php  foreach ($images as $key => $value) { ?>
                                 <option value="<?= display_str($value) ?>"<?= ($image == $value) ? 'selected="selected"' : ''; ?>><?= $value ?></option>
-    <?php  } ?>
+                            <?php  } ?>
                         </select>
                     </span>
                 </td>
@@ -104,7 +104,9 @@ show_header('Manage Categories', 'jquery');
                     <input type="text" class="long"  name="tag" value="<?= display_str($tag) ?>" />
                 </td>
                 <td>
-                    <input type="checkbox" name="open" value="1" <?php  if($open)echo ' checked="checked"';?>/>
+                    <input type="checkbox" name="open" value="1" <?php  if ($open) {
+                        echo ' checked="checked"';
+                                                                 }?>/>
                 </td>
                 <td>
                     <input type="submit" name="submit" value="Edit" />
@@ -112,7 +114,7 @@ show_header('Manage Categories', 'jquery');
                 </td>
             </form>
             </tr>
-<?php  } ?>
+        <?php  } ?>
     </table>
 </div>
 

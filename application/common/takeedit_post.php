@@ -14,13 +14,17 @@ header('Content-Type: application/json; charset=utf-8');
 $Text = new Luminance\Legacy\Text;
 
 // Quick SQL injection check
-if (!$_POST['post'] || !is_number($_POST['post'])) { error(0, true); }
+if (!$_POST['post'] || !is_number($_POST['post'])) {
+    error(0, true);
+}
 
 if (empty($_POST['section']) || !in_array($_POST['section'], array('collages', 'requests', 'torrents', 'staffpm'))) {
     error(0, true);
 }
 
-if (empty($_POST['body'])) error('You cannot post a comment with no content.', true);
+if (empty($_POST['body'])) {
+    error('You cannot post a comment with no content.', true);
+}
 
 $master->repos->restrictions->check_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::POST);
 
@@ -31,7 +35,7 @@ $section = $_POST['section'];
 
 // what a mess... one day this will all be gone!
 $field = [];
-switch($section) {
+switch ($section) {
     case 'torrents':
         $field['table']  = 'torrents_comments';
         $field['item']   = 'GroupID';
@@ -63,7 +67,8 @@ switch($section) {
 }
 
 // get info on the current post
-$postinfo = $master->db->raw_query("SELECT
+$postinfo = $master->db->raw_query(
+    "SELECT
                                           $field[body],
                                           $field[author],
                                           $field[item],
@@ -72,40 +77,48 @@ $postinfo = $master->db->raw_query("SELECT
                                           EditedUserID
                                      FROM $field[table]
                                     WHERE ID = :postid",
-                                         [':postid' => $postID])->fetch(\PDO::FETCH_NUM);
+    [':postid' => $postID]
+)->fetch(\PDO::FETCH_NUM);
 
-if (!isset($postinfo[0])) error(404, true);
+if (!isset($postinfo[0])) {
+    error(404, true);
+}
 
 list($oldBody, $authorID, $itemID, $addedTime, $editedTime, $editedUserID)= $postinfo;
 
 
 
-switch($section) {
+switch ($section) {
     case 'torrents':
     case 'requests':
     case 'collages':
-
         validate_edit_comment($authorID, $editedUserID, $addedTime, $editedTime);
 
         if ($section != 'collages') {
-            $page = $master->db->raw_query("SELECT ceil(COUNT(ID) / :commentsperpage) AS Page FROM $field[table] WHERE $field[item] = :itemid AND ID <= :postid",
-                                                    [':commentsperpage' => TORRENT_COMMENTS_PER_PAGE,
+            $page = $master->db->raw_query(
+                "SELECT ceil(COUNT(ID) / :commentsperpage) AS Page FROM $field[table] WHERE $field[item] = :itemid AND ID <= :postid",
+                [':commentsperpage' => TORRENT_COMMENTS_PER_PAGE,
                                                      ':itemid'          => $itemID,
-                                                     ':postid'          => $postID])->fetchColumn();
+                ':postid'          => $postID]
+            )->fetchColumn();
             $catalogueID = floor((TORRENT_COMMENTS_PER_PAGE*$page-TORRENT_COMMENTS_PER_PAGE)/THREAD_CATALOGUE);
         }
         break;
 
     case 'staffpm':
-        $pminfo = $master->db->raw_query("SELECT Level, AssignedToUser
+        $pminfo = $master->db->raw_query(
+            "SELECT Level, AssignedToUser
                                            FROM staff_pm_conversations AS c
                                            JOIN staff_pm_messages AS m ON m.ConvID=c.ID
                                           WHERE m.ID = :postid",
-                                               [':postid' => $postID])->fetch(\PDO::FETCH_ASSOC);
+            [':postid' => $postID]
+        )->fetch(\PDO::FETCH_ASSOC);
         // only staff can save staffpm edits
-        if ($LoggedUser['DisplayStaff'] != 1) error(403, true);
+        if ($LoggedUser['DisplayStaff'] != 1) {
+            error(403, true);
+        }
 
-        if ( $pminfo['AssignedToUser'] != $LoggedUser['ID'] &&  $pminfo['Level'] > $LoggedUser['Class'] ) {
+        if ($pminfo['AssignedToUser'] != $LoggedUser['ID'] &&  $pminfo['Level'] > $LoggedUser['Class']) {
             // only let appropriate level staff edit this staffpm
             error(403, true);
         }
@@ -118,30 +131,33 @@ if ($Text->has_errors()) {
     $result = 'error';
     $bbErrors = implode('<br/>', $Text->get_errors());
     $preview = ("<strong>NOTE: Changes were not saved.</strong><br/><br/>There are errors in your bbcode (unclosed tags)<br/><br/>$bbErrors<br/><div class=\"box\"><div class=\"post_content\">$preview</div></div>");
-
 } else {
     // Perform the update
     $result = 'saved';
     $sqltime = sqltime();
-    $master->db->raw_query("UPDATE $field[table]
+    $master->db->raw_query(
+        "UPDATE $field[table]
                                SET $field[body] = :body,
                                    EditedUserID = :edituserid,
                                    EditedTime   = :edittime
                              WHERE ID = :postid",
-                                  [':body'       => $_POST['body'],
+        [':body'       => $_POST['body'],
                                    ':edituserid' => $LoggedUser['ID'],
                                    ':edittime'   => $sqltime,
-                                   ':postid'     => $postID]);
+        ':postid'     => $postID]
+    );
 
-    $master->db->raw_query("INSERT INTO comments_edits (Page, PostID, EditUser, EditTime, Body)
+    $master->db->raw_query(
+        "INSERT INTO comments_edits (Page, PostID, EditUser, EditTime, Body)
                                                 VALUES (:section, :postid, :userid, :sqltime, :body)",
-                                                     [':section' => $section,
+        [':section' => $section,
                                                       ':postid'  => $postID,
                                                       ':userid'  => $LoggedUser['ID'],
                                                       ':sqltime' => $sqltime,
-                                                      ':body'    => $oldBody]);
+        ':body'    => $oldBody]
+    );
     // Update the cache
-    switch($section) {
+    switch ($section) {
         case 'torrents':
             $master->cache->delete_value('torrents_edits_'.$postID);
             $master->cache->delete_value('torrent_comments_'.$itemID.'_catalogue_'.$catalogueID);

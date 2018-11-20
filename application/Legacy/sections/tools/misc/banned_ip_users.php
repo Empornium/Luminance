@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('users_view_ips')) { error(403); }
+if (!check_perms('users_view_ips')) {
+    error(403);
+}
 include(SERVER_ROOT . '/common/functions.php');
 
 if (empty($_GET['order_way']) || $_GET['order_way'] == 'asc') {
@@ -22,13 +24,14 @@ $Reasons = array(0=>'Unknown',1=>'Manual',2=>'Ratio',3=>'Inactive',4=>'Cheating'
 $BanReason = (isset($_GET['ban_reason']) && is_number($_GET['ban_reason']) && $_GET['ban_reason'] < 5) ? (int) $_GET['ban_reason'] : 4 ;
 
 $Weeks =  (isset($_GET['weeks']) && is_number($_GET['weeks']) ) ? (int) $_GET['weeks'] : 1 ;
-if ($Weeks > 104) $Weeks = 104;
+if ($Weeks > 104) {
+    $Weeks = 104;
+}
 
 list($Page,$Limit) = page_limit(25);
 
 $CachedDupeResults = $Cache->get_value("dupeip_users_{$BanReason}_{$Weeks}_$OrderBy{$OrderWay}_$Page");
 if ($CachedDupeResults===false) {
-
     $DB->query("SELECT SQL_CALC_FOUND_ROWS
                        n.ID as new_id,
                        n.JoinDate as joindate,
@@ -60,9 +63,9 @@ if ($CachedDupeResults===false) {
     list($NumResults, $DupeRecords) = $CachedDupeResults;
 }
 
-$Pages=get_pages($Page,$NumResults,25,9);
+$Pages=get_pages($Page, $NumResults, 25, 9);
 
-show_header('Dupe IPs','dupeip');
+show_header('Dupe IPs', 'dupeip');
 
 ?>
 <div class="thin">
@@ -83,7 +86,7 @@ show_header('Dupe IPs','dupeip');
             <td class="center">
                 <label for="ban_reason" title="View Speed">Ban Reason </label>&nbsp;
                 <select id="ban_reason" name="ban_reason" title="" onchange="change_view(<?="'$OrderBy','$OrderWay'"?>)">
-<?php                   foreach ($Reasons as $Key=>$Reason) {   ?>
+<?php                   foreach ($Reasons as $Key => $Reason) {   ?>
                         <option value="<?=$Key?>" <?=($Key==$BanReason?' selected="selected"':'');?>>&nbsp;<?=$Reason;?> &nbsp;</option>
 <?php                   } ?>
                 </select>
@@ -109,30 +112,30 @@ show_header('Dupe IPs','dupeip');
             <td class="center"><a href="/<?=header_link('bandate') ?>">Banned Date</a></td>
         </tr>
 <?php
-        if ($NumResults==0) {
+if ($NumResults==0) {
 ?>
-                    <tr class="rowb">
-                        <td class="center" colspan="5">no duped users</td>
-                    </tr>
+    <tr class="rowb">
+        <td class="center" colspan="5">no duped users</td>
+    </tr>
 <?php       } else {
             $i=0;
-            foreach ($DupeRecords as $Record) {
-                list($nID, $JoinDate, $IP, $bID, $BanDate) = $Record;
-                $Row = ($Row == 'a') ? 'b' : 'a';
-                $i++;
-                $nInfo = user_info($nID);
-                $bInfo = user_info($bID);
+    foreach ($DupeRecords as $Record) {
+        list($nID, $JoinDate, $IP, $bID, $BanDate) = $Record;
+        $Row = ($Row == 'a') ? 'b' : 'a';
+        $i++;
+        $nInfo = user_info($nID);
+        $bInfo = user_info($bID);
 ?>
-                <tr class="row<?=$Row?>">
-                    <td><?=format_username($nID, $nInfo['Username'], $nInfo['Donor'], true, $nInfo['Enabled'], $nInfo['PermissionID'], false, false, $nInfo['GroupPermissionID'])?></td>
-                    <td class="center"><?=time_diff($JoinDate)?></td>
-                    <td><?=display_str($IP)?><span style="float:right;">[<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="User Search on this IP" target="_blank">S</a>]</span></td>
-                    <td><?=format_username($bID, $bInfo['Username'], $bInfo['Donor'], true, $bInfo['Enabled'], $bInfo['PermissionID'], false, false, $bInfo['GroupPermissionID'])?></td>
+<tr class="row<?=$Row?>">
+    <td><?=format_username($nID, $nInfo['Username'], $nInfo['Donor'], true, $nInfo['Enabled'], $nInfo['PermissionID'], false, false, $nInfo['GroupPermissionID'])?></td>
+    <td class="center"><?=time_diff($JoinDate)?></td>
+    <td><?=display_str($IP)?><span style="float:right;">[<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="User Search on this IP" target="_blank">S</a>]</span></td>
+    <td><?=format_username($bID, $bInfo['Username'], $bInfo['Donor'], true, $bInfo['Enabled'], $bInfo['PermissionID'], false, false, $bInfo['GroupPermissionID'])?></td>
 
-                    <td class="center"><?=time_diff($BanDate)?></td>
-                </tr>
-<?php           }
-        }
+    <td class="center"><?=time_diff($BanDate)?></td>
+</tr>
+    <?php           }
+}
 ?>
     </table>
     <div class="linkbox"> <?=$Pages; ?> </div>

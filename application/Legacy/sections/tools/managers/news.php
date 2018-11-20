@@ -1,6 +1,8 @@
 <?php
 enforce_login();
-if (!check_perms('admin_manage_news')) error(403);
+if (!check_perms('admin_manage_news')) {
+    error(403);
+}
 
 $Text = new Luminance\Legacy\Text;
 
@@ -29,7 +31,7 @@ switch ($_REQUEST['action']) {
 
             // Deleting latest news
             $LatestNews = $Cache->get_value('news_latest_id');
-            if ($LatestNews !== FALSE && $LatestNews == $_GET['id']) {
+            if ($LatestNews !== false && $LatestNews == $_GET['id']) {
                 $Cache->delete_value('news_latest_id');
             }
         }
@@ -77,6 +79,6 @@ $Records = $master->db->raw_query(
 $NumResults = $master->db->found_rows();
 $Pages=get_pages($Page, $NumResults, 5, 13);
 
-show_header('Manage news','bbcode');
+show_header('Manage news', 'bbcode');
 echo $master->render->render('legacy/tools/news_manager.html.twig', ['page' => $Page, 'pages' => $Pages, 'edit' => $Edit, 'records' => $Records]);
 show_footer();

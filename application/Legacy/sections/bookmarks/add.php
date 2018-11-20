@@ -2,7 +2,9 @@
 
 authorize();
 
-if (!can_bookmark($_GET['type'])) { error(404); }
+if (!can_bookmark($_GET['type'])) {
+    error(404);
+}
 $Feed = new Luminance\Legacy\Feed;
 $Text = new Luminance\Legacy\Text;
 
@@ -30,31 +32,37 @@ if ($DB->record_count() == 0) {
         $DB->query("SELECT COUNT(*) FROM bookmarks_torrents WHERE UserID='$LoggedUser[ID]'");
         list($NumGroups) = $DB->next_record();
         $PageLimit = ceil((float)$NumGroups/(float)$TorrentsPerPage);
-        for($Page = 0; $Page <= $PageLimit; $Page++) {
-          $Cache->delete_value('bookmarks_torrent_'.$LoggedUser['ID'].'_page_'.$Page);
+        for ($Page = 0; $Page <= $PageLimit; $Page++) {
+            $Cache->delete_value('bookmarks_torrent_'.$LoggedUser['ID'].'_page_'.$Page);
         }
         $Cache->delete_value('bookmarks_torrent_'.$LoggedUser['ID'].'_full');
         $GroupID = $_GET['id'];
 
         $DB->query("SELECT Name, Body, TagList FROM torrents_group WHERE ID = '$GroupID'");
         list($GroupTitle, $Body, $TagList) = $DB->next_record();
-        $TagList = str_replace('_','.',$TagList);
+        $TagList = str_replace('_', '.', $TagList);
 
         $DB->query("SELECT ID, FreeTorrent, UserID FROM torrents WHERE GroupID = '$GroupID'");
         // RSS feed stuff
         while ($Torrent = $DB->next_record()) {
             $Title = $GroupTitle;
             list($TorrentID, $Freeleech, $UploaderID) = $Torrent;
-            if ($Freeleech == "1") { $Title .= " / Freeleech!"; }
-            if ($Freeleech == "2") { $Title .= " / Neutral leech!"; }
+            if ($Freeleech == "1") {
+                $Title .= " / Freeleech!";
+            }
+            if ($Freeleech == "2") {
+                $Title .= " / Neutral leech!";
+            }
 
             $UploaderInfo = user_info($UploaderID);
-            $Item = $Feed->item($Title,
-                                $Text->strip_bbcode($Body),
-                                'torrents.php?action=download&amp;authkey=[[AUTHKEY]]&amp;torrent_pass=[[PASSKEY]]&amp;id='.$TorrentID,
-                                $UploaderInfo['Username'],
-                                'torrents.php?id='.$GroupID,
-                                trim($TagList));
+            $Item = $Feed->item(
+                $Title,
+                $Text->strip_bbcode($Body),
+                'torrents.php?action=download&amp;authkey=[[AUTHKEY]]&amp;torrent_pass=[[PASSKEY]]&amp;id='.$TorrentID,
+                $UploaderInfo['Username'],
+                'torrents.php?id='.$GroupID,
+                trim($TagList)
+            );
             $Feed->populate('torrents_bookmarks_t_'.$LoggedUser['torrent_pass'], $Item);
         }
     } elseif ($Type == 'request') {

@@ -181,14 +181,16 @@ function permissions_form()
         preg_match('/^(.*?)_/', $Permission, $Section);
 
         // Didn't match anything?
-        if (empty($Section))
+        if (empty($Section)) {
             continue;
+        }
 
         $Section = $Section[1];
 
         // Already enumerated this section?
-        if (in_array($Section, $Sections))
+        if (in_array($Section, $Sections)) {
             continue;
+        }
 
         // New section
         $Sections[] = $Section;
@@ -196,26 +198,27 @@ function permissions_form()
 ?>
     <div class="permissions">
     <?php
-        foreach ($Sections as $Section):
-            $Permissions = preg_grep_keys('/^'.$Section.'/', $PermissionsArray);
+    foreach ($Sections as $Section) :
+        $Permissions = preg_grep_keys('/^'.$Section.'/', $PermissionsArray);
     ?>
-            <div class="permission_container">
-                <table>
-                    <tr>
-                        <td class="colhead"><?= ucfirst($Section) ?></td>
-                    </tr>
-                    <tr>
-                        <td>
-                        <?php
-                            foreach($Permissions as $Permission => $Description)
-                                display_perm($Permission, $Description, "$Description [$Permission]");
-                        ?>
-                        </td>
-                    </tr>
+    <div class="permission_container">
+        <table>
+            <tr>
+                <td class="colhead"><?= ucfirst($Section) ?></td>
+            </tr>
+            <tr>
+                <td>
+                <?php
+                foreach ($Permissions as $Permission => $Description) {
+                    display_perm($Permission, $Description, "$Description [$Permission]");
+                }
+                ?>
+                </td>
+                </tr>
                 </table>
             </div>
     <?php
-        endforeach;
+    endforeach;
     ?>
     </div>
     <div class="submit_container">

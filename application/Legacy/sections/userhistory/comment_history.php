@@ -24,15 +24,17 @@ if (isset($_GET['userid'])) {
     }
     $Perms = get_permissions($UserInfo['PermissionID']);
     $UserClass = $Perms['Class'];
-    if ( !check_force_anon($UserID) ||
-            !check_paranoia('torrentcomments', $UserInfo['Paranoia'], $UserClass, $UserID)) { error(PARANOIA_MSG); }
+    if (!check_force_anon($UserID) ||
+            !check_paranoia('torrentcomments', $UserInfo['Paranoia'], $UserClass, $UserID)) {
+        error(PARANOIA_MSG);
+    }
 } else {
     $UserID = $LoggedUser['ID'];
     $Username = $LoggedUser['Username'];
     $ViewingOwn = true;
 }
 
-show_header($MyTorrents?"Comments left on $Username's torrents":"Comment history for $Username",'comments,bbcode');
+show_header($MyTorrents?"Comments left on $Username's torrents":"Comment history for $Username", 'comments,bbcode');
 
 if (isset($LoggedUser['PostsPerPage'])) {
     $PerPage = $LoggedUser['PostsPerPage'];
@@ -47,12 +49,16 @@ if ($MyTorrents) {
     $Conditions = "WHERE t.UserID = $UserID AND tc.AuthorID != t.UserID AND tc.AddedTime > t.Time";
     $Title = 'Comments left on your torrents';
     $Header = 'Comments left on your uploads';
-    if($ViewingOwn) $OtherLink = '<a href="/userhistory.php?action=comments">Display comments you\'ve made</a>';
+    if ($ViewingOwn) {
+        $OtherLink = '<a href="/userhistory.php?action=comments">Display comments you\'ve made</a>';
+    }
 } else {
     $Conditions = "WHERE tc.AuthorID = $UserID";
     $Title = 'Comments made by '.($ViewingOwn?'you':$Username);
     $Header = 'Torrent comments left by '.($ViewingOwn?'you':format_username($UserID, $Username)).'';
-    if($ViewingOwn) $OtherLink = '<a href="/userhistory.php?action=comments&amp;my_torrents=1">Display comments left on your uploads</a>';
+    if ($ViewingOwn) {
+        $OtherLink = '<a href="/userhistory.php?action=comments&amp;my_torrents=1">Display comments left on your uploads</a>';
+    }
 }
 
 $Comments = $DB->query("SELECT
@@ -93,7 +99,7 @@ $Comments = $DB->query("SELECT
 $DB->query("SELECT FOUND_ROWS()");
 list($Results) = $DB->next_record();
 
-$Pages=get_pages($Page,$Results,$PerPage, 11);
+$Pages=get_pages($Page, $Results, $PerPage, 11);
 
 $DB->set_query_id($Comments);
 
@@ -117,7 +123,7 @@ $DB->set_query_id($Comments);
     </div>
 <?php
 
-     $Posts = $DB->to_array(false,MYSQLI_ASSOC,array('CustomPermissions'));
+     $Posts = $DB->to_array(false, MYSQLI_ASSOC, array('CustomPermissions'));
 
 foreach ($Posts as $Key => $Post) {
     list($UserID, $Username, $Class, $GroupPermID, $Enabled, $CustomPermissions, $Avatar, $Donor, $TorrentID, $GroupID, $Title, $PostID, $Body, $AddedTime, $EditedTime, $EditorID, $EditorUsername) = array_values($Post);
@@ -142,7 +148,7 @@ foreach ($Posts as $Key => $Post) {
 <?php   if (can_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime)) { ?>
          <a href="#post<?=$PostID?>" onclick="Edit_Form('comments','<?=$PostID?>','<?=$Key++?>');">[Edit]</a>
 <?php   }
-        if (check_perms('site_admin_forums')) { ?>
+if (check_perms('site_admin_forums')) { ?>
         - <a href="#post<?=$PostID?>" onclick="Delete('<?=$PostID?>');" title="permenantly delete this comment">[Delete]</a>
 <?php   } ?>
                 </span>
@@ -158,7 +164,7 @@ if (empty($HeavyInfo['DisableAvatars'])) {
 ?>
             <td class='avatar' valign="top">
 <?php
-                    if ($Avatar) {    ?>
+if ($Avatar) {    ?>
                         <img src="<?=$Avatar?>" class="avatar" style="<?=get_avatar_css($MaxAvatarWidth, $MaxAvatarHeight)?>" alt="<?=$Username ?>'s avatar" />
 <?php               } else {        ?>
                         <img src="<?=STATIC_SERVER?>common/avatars/default.png" class="avatar" style="<?=get_avatar_css(100, 120)?>" alt="Default avatar" />
@@ -178,7 +184,7 @@ if (empty($HeavyInfo['DisableAvatars'])) {
                             <a href="#content<?=$PostID?>" onclick="LoadEdit('torrents', <?=$PostID?>, 1)">&laquo;</a>
 <?php                           } ?>
                             <span class="editedby">Last edited by
-                                <?=format_username($EditorID, $EditorUsername) ?> <?=time_diff($EditedTime,2,true,true)?>
+                                <?=format_username($EditorID, $EditorUsername) ?> <?=time_diff($EditedTime, 2, true, true)?>
                             </span>
 <?php                    } ?>
                     </div>

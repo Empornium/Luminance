@@ -1,5 +1,7 @@
 <?php
-if (!isset($_GET['id']) || !is_number($_GET['id'])) { error(404); }
+if (!isset($_GET['id']) || !is_number($_GET['id'])) {
+    error(404);
+}
 $RequestID = $_GET['id'];
 
 $Action = $_GET['action'];
@@ -52,7 +54,7 @@ show_header(ucwords($Action)." Request");
         <?php  if ($Action == 'delete') { ?>
                         <div class="warning">To return all bounties to users make sure the 'Return Bounties' option is checked.</div>
         <?php
-                        echo get_votes_html( get_votes_array($RequestID), $RequestID );
+                        echo get_votes_html(get_votes_array($RequestID), $RequestID);
         ?>
                         <input type="checkbox" name="returnvotes" checked="checked" value="1" /> Return all Bounties to voters.<br \>
                         (When bounties are returned all voters will get a 'returned bounty' system PM, the request uploader always receives a 'deleted request' system PM)<br />

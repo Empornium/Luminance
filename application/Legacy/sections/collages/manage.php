@@ -1,6 +1,8 @@
 <?php
 $CollageID = $_GET['collageid'];
-if (!is_number($CollageID)) { error(0); }
+if (!is_number($CollageID)) {
+    error(0);
+}
 
 $DB->query("SELECT Name, UserID, CategoryID, Permissions FROM collages WHERE ID='$CollageID'");
 list($Name, $UserID, $CategoryID, $CPermissions) = $DB->next_record();
@@ -14,7 +16,9 @@ if (!check_perms('site_collages_manage')) {
     } else {
           $CanEdit=false; // can be overridden by permissions
     }
-    if (!$CanEdit) { error(403); }
+    if (!$CanEdit) {
+        error(403);
+    }
 }
 
 $DB->query("SELECT ct.GroupID,
@@ -50,7 +54,7 @@ show_header('Manage collage '.$Name);
         </tr>
 <?php
 $Number = 0;
-foreach ($TorrentList as $GroupID=>$Group) {
+foreach ($TorrentList as $GroupID => $Group) {
     list($GroupID, $GroupName, $TagList, $Torrents) = array_values($Group);
     list($GroupID2, $UserID, $Username, $Sort) = array_values($CollageDataList[$GroupID]);
 

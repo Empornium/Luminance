@@ -12,18 +12,18 @@ $Message = '';
 // ======================================  del synomyn
 
 if (isset($_POST['delsynomyns'])) {
-
     if (isset($_POST['oldsyns'])) {
         $OldSynomyns = $_POST['oldsyns'];
         $DeleteCache = array();
-        foreach ($OldSynomyns AS $OldSynID) {
+        foreach ($OldSynomyns as $OldSynID) {
             if (!is_number($OldSynID)) {
                 error(403);
             }
             $DB->query("SELECT Synomyn FROM tag_synomyns WHERE ID = $OldSynID");
             list($SynName) = $DB->next_record();
-            if ($SynName)
+            if ($SynName) {
                 $DeleteCache[] = $SynName;
+            }
         }
         $OldSynomyns = implode(', ', $OldSynomyns);
         $DB->query("DELETE FROM tag_synomyns WHERE ID IN ($OldSynomyns)");
@@ -36,7 +36,6 @@ if (isset($_POST['delsynomyns'])) {
 // ======================================  convert/add tag to/as synomyn
 
 if (isset($_POST['tagtosynomyn'])) {
-
     $ParentTagID = (int) $_POST['parenttagid'];
     if ($ParentTagID) {
         $DB->query("SELECT Name FROM tags WHERE ID=$ParentTagID");
@@ -46,8 +45,10 @@ if (isset($_POST['tagtosynomyn'])) {
     if (isset($_POST['multi'])) {
         $anchor = "#convertbox";
         $TagsID = explode(",", $_POST['multiID']) ;
-        foreach ($TagsID AS $TagID) {
-            if (!is_number($TagID)) error(0);
+        foreach ($TagsID as $TagID) {
+            if (!is_number($TagID)) {
+                error(0);
+            }
         }
     } else {
         $TagsID = array( (int) $_POST['movetagid'] );
@@ -69,7 +70,6 @@ if (isset($_POST['tagtosynomyn'])) {
         }
 
         if ($TagName && $ParentTagName) {
-
             // check this synonym is not already in syn table
             $DB->query("SELECT ID FROM tag_synomyns WHERE Synomyn LIKE '" . $TagName . "'");
             list($SynID) = $DB->next_record();
@@ -78,7 +78,6 @@ if (isset($_POST['tagtosynomyn'])) {
                 $Message .= "$TagName already exists as a synonym for " . get_tag_synonym($TagName);
                 $Result = 0;
             } else {
-
                 $DB->query("INSERT INTO tag_synomyns (Synomyn, TagID, UserID)
                                                      VALUES ('" . $TagName . "', " . $ParentTagID . ", " . $LoggedUser['ID'] . " )");
                 $Cache->delete_value('all_synomyns');
@@ -103,7 +102,8 @@ if (isset($_POST['tagtosynomyn'])) {
                         $NumChangedFilelists = 0;
                         if ($NumAffectedTorrents > 0) {
                             $SQL='';
-                            $Div = ''; $Div2 = '';
+                            $Div = '';
+                            $Div2 = '';
                             $MsgGroups = "torrents ";
                             foreach ($GroupInfos as $Group) {
                                 list($GroupID, $PVotes, $NVotes, $Count) = $Group;
@@ -123,8 +123,9 @@ if (isset($_POST['tagtosynomyn'])) {
                                 $DB->query($SQL);
                             }
                             // update the Uses where parenttag has been added as a replacement for tag
-                            if($NumChangedFilelists>0)
+                            if ($NumChangedFilelists>0) {
                                 $DB->query("UPDATE tags SET Uses=(Uses+$NumChangedFilelists) WHERE ID='$ParentTagID'");
+                            }
 
                             $DB->query("DELETE FROM torrents_tags WHERE TagID = '$TagID'");
                         }
@@ -151,12 +152,10 @@ if (isset($_POST['tagtosynomyn'])) {
 // ======================================  add synomyn
 
 if (isset($_POST['addsynomyn'])) {
-
     $ParentTagID = (int) $_POST['parenttagid'];
 
     if (isset($_POST['newsynname']) && $ParentTagID) {
-
-        $TagName = sanitize_tag(trim($_POST['newsynname'],'.'));
+        $TagName = sanitize_tag(trim($_POST['newsynname'], '.'));
         if ($TagName != '') {
             // check this synonym is not already in syn table or tag table
             $DB->query("SELECT ID FROM tag_synomyns WHERE Synomyn LIKE '" . $TagName . "'");

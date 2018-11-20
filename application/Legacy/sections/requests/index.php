@@ -28,7 +28,7 @@ if (!isset($_REQUEST['action'])) {
             break;
         case 'delete':
         case 'unfill':
-	case 'delete_vote':
+        case 'delete_vote':
             include(SERVER_ROOT.'/Legacy/sections/requests/interim.php');
             break;
         case 'takeunfill':
@@ -62,10 +62,12 @@ if (!isset($_REQUEST['action'])) {
             $master->repos->restrictions->check_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::POST);
 
             $Text = new Luminance\Legacy\Text;
-            $Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
+            $Text->validate_bbcode($_POST['body'], get_permissions_advtags($LoggedUser['ID']));
 
             $RequestID = $_POST['requestid'];
-            if (!$RequestID) { error(404); }
+            if (!$RequestID) {
+                error(404);
+            }
 
             flood_check('requests_comments');
 
@@ -122,10 +124,14 @@ if (!isset($_REQUEST['action'])) {
             authorize();
 
             // Quick SQL injection check
-            if (!$_GET['postid'] || !is_number($_GET['postid'])) { error(0); }
+            if (!$_GET['postid'] || !is_number($_GET['postid'])) {
+                error(0);
+            }
 
             // Make sure they are moderators
-            if (!check_perms('site_moderate_forums')) { error(403); }
+            if (!check_perms('site_moderate_forums')) {
+                error(403);
+            }
 
             // Get topicid, forumid, number of pages
             $DB->query("SELECT DISTINCT
@@ -145,22 +151,26 @@ if (!isset($_REQUEST['action'])) {
             //We need to clear all subsequential catalogues as they've all been bumped with the absence of this post
             $ThisCatalogue = floor((TORRENT_COMMENTS_PER_PAGE*$Page-TORRENT_COMMENTS_PER_PAGE)/THREAD_CATALOGUE);
             $LastCatalogue = floor((TORRENT_COMMENTS_PER_PAGE*$Pages-TORRENT_COMMENTS_PER_PAGE)/THREAD_CATALOGUE);
-            for ($i=$ThisCatalogue;$i<=$LastCatalogue;$i++) {
+            for ($i=$ThisCatalogue; $i<=$LastCatalogue; $i++) {
                 $Cache->delete('request_comments_'.$RequestID.'_catalogue_'.$i);
             }
 
             // Delete thread info cache (eg. number of pages)
             $Cache->delete('request_comments_'.$GroupID);
-        break;
+            break;
 
         case 'next':
             enforce_login();
 
-            if(empty($_GET['id']) || !is_number($_GET['id'])) error(0);
+            if (empty($_GET['id']) || !is_number($_GET['id'])) {
+                error(0);
+            }
 
-            $DB->query("SELECT ID FROM requests WHERE ID>'".$_GET['id']."' ORDER BY ID ASC LIMIT 1" );
+            $DB->query("SELECT ID FROM requests WHERE ID>'".$_GET['id']."' ORDER BY ID ASC LIMIT 1");
             list($RequestID) = $DB->next_record();
-            if(!$RequestID) error('Cannot find a next record after <a href="/requests.php?action=view&id='.$_GET['id'].'">the request you came from</a>');
+            if (!$RequestID) {
+                error('Cannot find a next record after <a href="/requests.php?action=view&id='.$_GET['id'].'">the request you came from</a>');
+            }
 
             header("Location: requests.php?action=view&id=".$RequestID);
             break;
@@ -168,11 +178,15 @@ if (!isset($_REQUEST['action'])) {
         case 'prev':
             enforce_login();
 
-            if(empty($_GET['id']) || !is_number($_GET['id'])) error(0);
+            if (empty($_GET['id']) || !is_number($_GET['id'])) {
+                error(0);
+            }
 
-            $DB->query("SELECT ID FROM requests WHERE ID<'".$_GET['id']."' ORDER BY ID DESC LIMIT 1" );
+            $DB->query("SELECT ID FROM requests WHERE ID<'".$_GET['id']."' ORDER BY ID DESC LIMIT 1");
             list($RequestID) = $DB->next_record();
-            if(!$RequestID) error('Cannot find a previous record to <a href="/requests.php?action=view&id='.$_GET['id'].'">the request you came from</a>');
+            if (!$RequestID) {
+                error('Cannot find a previous record to <a href="/requests.php?action=view&id='.$_GET['id'].'">the request you came from</a>');
+            }
 
             header("Location: requests.php?action=view&id=".$RequestID);
             break;
