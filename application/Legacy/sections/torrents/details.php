@@ -6,7 +6,9 @@ include(SERVER_ROOT.'/Legacy/sections/requests/functions.php');
 include(SERVER_ROOT.'/Legacy/sections/bookmarks/functions.php'); // has_bookmarked()
 $Text = new Luminance\Legacy\Text;
 
-if(!$GroupID) $GroupID=ceil($_GET['id']);
+if (!$GroupID) {
+    $GroupID=ceil($_GET['id']);
+}
 include(SERVER_ROOT.'/Legacy/sections/torrents/functions.php');
 $TorrentCache = get_group_info($GroupID, true);
 
@@ -39,7 +41,9 @@ if ($DB->next_record()) {
 }
 
 $tagsort = isset($_GET['tsort'])?$_GET['tsort']:'uses';
-if(!in_array($tagsort, array('uses','score','az','added'))) $tagsort = 'uses';
+if (!in_array($tagsort, array('uses','score','az','added'))) {
+    $tagsort = 'uses';
+}
 
 $Tags = array();
 if ($TorrentTags != '') {
@@ -54,13 +58,15 @@ if ($TorrentTags != '') {
         $Tags[$TagKey]['username']= anon_username_ifmatch($TagUsername, $Username, $IsAnon) ;
         $Tags[$TagKey]['uses']= $TagUses;
 
-        $TagVoteUsernames = explode('|',$TagVoteUsernames);
-        $TagVoteWays = explode('|',$TagVoteWays);
+        $TagVoteUsernames = explode('|', $TagVoteUsernames);
+        $TagVoteWays = explode('|', $TagVoteWays);
         $VoteMsgs=array();
-        $VoteMsgs[]= "$TagName (" . str_plural('use' , $TagUses).')';
+        $VoteMsgs[]= "$TagName (" . str_plural('use', $TagUses).')';
         $VoteMsgs[]= "added by ".anon_username_ifmatch($TagUsername, $Username, $IsAnon);
         foreach ($TagVoteUsernames as $TagVoteKey => $TagVoteUsername) {
-            if (!$TagVoteUsername) continue;
+            if (!$TagVoteUsername) {
+                continue;
+            }
             $VoteMsgs[] = $TagVoteWays[$TagVoteKey] . " (". anon_username_ifmatch($TagVoteUsername, $Username, $IsAnon).")";
         }
         $Tags[$TagKey]['votes'] = implode("\n", $VoteMsgs);
@@ -70,9 +76,13 @@ if ($TorrentTags != '') {
 }
 
 //advance tagsort for link
-if($tagsort=='score') $tagsort2='az';
-else if($tagsort=='az') $tagsort2='uses';
-else $tagsort2='score';
+if ($tagsort=='score') {
+    $tagsort2='az';
+} else if ($tagsort=='az') {
+    $tagsort2='uses';
+} else {
+    $tagsort2='score';
+}
 
 $LoggedUserID = $LoggedUser['ID'];
 $TokenTorrents = $Cache->get_value('users_tokens_'.$LoggedUserID);
@@ -85,7 +95,7 @@ if (empty($TokenTorrents)) {
 $Review = get_last_review($GroupID); // ,
 
 // Start output
-show_header($Title,'comments,status,torrent,bbcode,watchlist,jquery,jquery.cookie,details,tag_autocomplete,autocomplete');
+show_header($Title, 'comments,status,torrent,bbcode,watchlist,jquery,jquery.cookie,details,tag_autocomplete,autocomplete');
 
 $IsUploader =  $UserID == $LoggedUser['ID'];
 $CanEdit = (check_perms('torrents_edit') ||  $IsUploader );
@@ -119,32 +129,36 @@ $sqltime = sqltime();
 if ($DoubleTorrent == '1') {
     $SeedTooltip = "Unlimited Doubleseed"; // a theoretical state?
 } elseif (!empty($TokenTorrents[$TorrentID]) && $TokenTorrents[$TorrentID]['DoubleSeed'] > $sqltime) {
-    $SeedTooltip = "Personal Doubleseed Slot for ".time_diff($TokenTorrents[$TorrentID]['DoubleSeed'], 2, false,false,0);
+    $SeedTooltip = "Personal Doubleseed Slot for ".time_diff($TokenTorrents[$TorrentID]['DoubleSeed'], 2, false, false, 0);
 } elseif ($LoggedUser['personal_doubleseed'] > $sqltime) {
-    $SeedTooltip = "Personal Doubleseed for ".time_diff($LoggedUser['personal_doubleseed'], 2, false,false,0);
+    $SeedTooltip = "Personal Doubleseed for ".time_diff($LoggedUser['personal_doubleseed'], 2, false, false, 0);
 } elseif ($Sitewide_Doubleseed_On) {
-    $SeedTooltip = "Sitewide Doubleseed for ".time_diff($Sitewide_Doubleseed, 2,false,false,0);
+    $SeedTooltip = "Sitewide Doubleseed for ".time_diff($Sitewide_Doubleseed, 2, false, false, 0);
 }
 
 if ($FreeTorrent == '1') {
     $FreeTooltip = "Unlimited Freeleech";
 } elseif (!empty($TokenTorrents[$TorrentID]) && $TokenTorrents[$TorrentID]['FreeLeech'] > $sqltime) {
-    $FreeTooltip = "Personal Freeleech Slot for ".time_diff($TokenTorrents[$TorrentID]['FreeLeech'], 2, false,false,0);
+    $FreeTooltip = "Personal Freeleech Slot for ".time_diff($TokenTorrents[$TorrentID]['FreeLeech'], 2, false, false, 0);
 } elseif ($LoggedUser['personal_freeleech'] > $sqltime) {
-    $FreeTooltip = "Personal Freeleech for ".time_diff($LoggedUser['personal_freeleech'], 2, false,false,0);
+    $FreeTooltip = "Personal Freeleech for ".time_diff($LoggedUser['personal_freeleech'], 2, false, false, 0);
 } elseif ($Sitewide_Freeleech_On) {
-    $FreeTooltip = "Sitewide Freeleech for ".time_diff($Sitewide_Freeleech, 2,false,false,0);
+    $FreeTooltip = "Sitewide Freeleech for ".time_diff($Sitewide_Freeleech, 2, false, false, 0);
 }
 
 $Icons = '';
-if ($SeedTooltip)
+if ($SeedTooltip) {
     $Icons .= '<img src="static/common/symbols/doubleseed.gif" alt="DoubleSeed" title="'.$SeedTooltip.'" />&nbsp;&nbsp;';
-if ($FreeTooltip)
+}
+if ($FreeTooltip) {
     $Icons .= '<img src="static/common/symbols/freedownload.gif" alt="Freeleech" title="'.$FreeTooltip.'" />&nbsp;';
-if ($IsBookmarked)
+}
+if ($IsBookmarked) {
     $Icons .= '<img src="static/styles/'.$LoggedUser['StyleName'].'/images/star16.png" alt="bookmarked" title="You have this torrent bookmarked" />&nbsp;';
-if ($Ducky)
+}
+if ($Ducky) {
     $Icons .= '<span class="icon icon_ducky" title="This torrent was awarded a Golden Ducky award!"></span>';
+}
 
 if (!empty($Icons)) {
     $Icons .= '&nbsp;';
@@ -166,7 +180,9 @@ $ExtraIcons = torrent_icons(array('FreeTorrent'=>false, 'DoubleSeed'=>false, 'Du
 
 <?php
 if (check_perms('torrents_review')) {
-    if (!isset($_GET['checked'])) update_staff_checking("viewing \"".cut_string($GroupName, 32)."\"  #$GroupID", true);
+    if (!isset($_GET['checked'])) {
+        update_staff_checking("viewing \"".cut_string($GroupName, 32)."\"  #$GroupID", true);
+    }
 
 ?>
     <div id="staff_status" class="status_box">
@@ -179,73 +195,75 @@ if (check_perms('torrents_review')) {
 <?php
 }
 
-    if ($Review['Status'] == 'Warned' || $Review['Status'] == 'Pending') {
+if ($Review['Status'] == 'Warned' || $Review['Status'] == 'Pending') {
 ?>
-    <div id="warning_status" class="box vertical_space">
-        <div class="redbar warning">
-                <strong>Status:&nbsp;Warned&nbsp; (<?=$Review['StatusDescription']?>)</strong>
-            </div>
-            <div class="pad"><strong>This torrent has been marked for deletion and will be automatically deleted unless the uploader fixes it. </strong><span style="float:right;"><?=time_diff($Review['KillTime'])?></span></div>
-<?php       if ($UserID == $LoggedUser['ID']) { // if the uploader is looking at the warning message
-            if ($Review['Status'] == 'Warned') { ?>
-                <div id="user_message" class="center">If you have fixed this upload make sure you have told the staff: <a class="button greenButton" onclick="Send_Okay_Message(<?=$GroupID?>,<?=($Review['ConvID']?$Review['ConvID']:0)?>);" title="send staff a message">By clicking here</a></div>
-<?php           } else {  ?>
-                <div id="user_message" class="center"><div class="messagebar"><a href="/staffpm.php?action=viewconv&id=<?=$Review['ConvID']?>">You sent a message to staff <?=time_diff($Review['Time'])?></a></div></div>
-<?php           }
-        }
-?>
+<div id="warning_status" class="box vertical_space">
+<div class="redbar warning">
+        <strong>Status:&nbsp;Warned&nbsp; (<?=$Review['StatusDescription']?>)</strong>
     </div>
+    <div class="pad"><strong>This torrent has been marked for deletion and will be automatically deleted unless the uploader fixes it. </strong><span style="float:right;"><?=time_diff($Review['KillTime'])?></span></div>
+<?php       if ($UserID == $LoggedUser['ID']) { // if the uploader is looking at the warning message
+    if ($Review['Status'] == 'Warned') { ?>
+                <div id="user_message" class="center">If you have fixed this upload make sure you have told the staff: <a class="button greenButton" onclick="Send_Okay_Message(<?=$GroupID?>,<?=($Review['ConvID']?$Review['ConvID']:0)?>);" title="send staff a message">By clicking here</a></div>
+    <?php           } else {  ?>
+                <div id="user_message" class="center"><div class="messagebar"><a href="/staffpm.php?action=viewconv&id=<?=$Review['ConvID']?>">You sent a message to staff <?=time_diff($Review['Time'])?></a></div></div>
+    <?php           }
+}
+?>
+</div>
 <?php
-    }
+}
       $AlertClass = ' hidden';
-    if (isset($_GET['did']) && is_number($_GET['did'])) {
-          if ($_GET['did'] == 1) {
-              $ResultMessage ='Successfully edited description';
-              $AlertClass = '';
-          } elseif ($_GET['did'] == 2) {
-              $ResultMessage ='Successfully renamed title';
-              $AlertClass = '';
-          } elseif ($_GET['did'] == 3) {
-              $ResultMessage = 'Added '. display_str($_GET['addedtag']);
-              if (isset($_GET['synonym'])) $ResultMessage .= ' as a synonym of '. display_str($_GET['synonym']);
-              $AlertClass = '';
-          } elseif ($_GET['did'] == 4) {
-              $ResultMessage = display_str($_GET['addedtag']). ' is already added.';
-              $AlertClass = ' alert';
-          } elseif ($_GET['did'] == 5) {
-              $ResultMessage = display_str($_GET['synonym']). ' is a synonym for '. display_str($_GET['addedtag']). ' which is already added.';
-              $AlertClass = ' alert';
-          }
-      }
+if (isset($_GET['did']) && is_number($_GET['did'])) {
+    if ($_GET['did'] == 1) {
+        $ResultMessage ='Successfully edited description';
+        $AlertClass = '';
+    } elseif ($_GET['did'] == 2) {
+        $ResultMessage ='Successfully renamed title';
+        $AlertClass = '';
+    } elseif ($_GET['did'] == 3) {
+        $ResultMessage = 'Added '. display_str($_GET['addedtag']);
+        if (isset($_GET['synonym'])) {
+            $ResultMessage .= ' as a synonym of '. display_str($_GET['synonym']);
+        }
+        $AlertClass = '';
+    } elseif ($_GET['did'] == 4) {
+        $ResultMessage = display_str($_GET['addedtag']). ' is already added.';
+        $AlertClass = ' alert';
+    } elseif ($_GET['did'] == 5) {
+        $ResultMessage = display_str($_GET['synonym']). ' is a synonym for '. display_str($_GET['addedtag']). ' which is already added.';
+        $AlertClass = ' alert';
+    }
+}
 ?>
     <div id="messagebarA" class="messagebar<?=$AlertClass?>" title="<?=$ResultMessage?>"><?=$ResultMessage?></div>
 
     <div class="linkbox" >
-    <?php 	if ($CanEdit) {
-                if (check_perms('torrents_edit') || (check_perms('site_edit_torrents') && (check_perms('site_edit_override_timelock') || time_ago($TorrentTime) < TORRENT_EDIT_TIME))) {  ?>
+    <?php   if ($CanEdit) {
+        if (check_perms('torrents_edit') || (check_perms('site_edit_torrents') && (check_perms('site_edit_override_timelock') || time_ago($TorrentTime) < TORRENT_EDIT_TIME))) {  ?>
                     <a href="/torrents.php?action=editgroup&amp;groupid=<?=$GroupID?>">[Edit Torrent]</a>
-    <?php       }
-                if (check_perms('torrents_edit') || check_perms('site_upload_anon')) { ?>
+        <?php       }
+        if (check_perms('torrents_edit') || check_perms('site_upload_anon')) { ?>
                     <a href="/torrents.php?action=editanon&amp;groupid=<?=$GroupID?>" title="Set if uploader info is visible for other users">[Anon status]</a>
-    <?php       } ?>
+        <?php       } ?>
                 <a href="/torrents.php?action=viewbbcode&amp;groupid=<?=$GroupID?>" title="View BBCode">[View BBCode]</a>
     <?php   }
-            if ($IsBookmarked) { ?>
+if ($IsBookmarked) { ?>
                 <a href="#" id="bookmarklink_torrent_<?=$GroupID?>" onclick="Unbookmark('torrent', <?=$GroupID?>,'[Bookmark]');return false;">[Remove bookmark]</a>
-    <?php 	} else { ?>
+<?php   } else { ?>
                 <a href="#" id="bookmarklink_torrent_<?=$GroupID?>" onclick="Bookmark('torrent', <?=$GroupID?>,'[Remove bookmark]');return false;">[Bookmark]</a>
-    <?php 	} ?>
+<?php   } ?>
           <a href="/torrents.php?action=grouplog&amp;groupid=<?=$GroupID?>">[View log]</a>
-          <?php if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], \Luminance\Entities\Restriction::REPORT)): ?>
+            <?php if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], \Luminance\Entities\Restriction::REPORT)) : ?>
           <a href="/reportsv2.php?action=report&amp;id=<?=$TorrentID?>" title="Report">[Report]</a>
-          <?php endif; ?>
+            <?php endif; ?>
 
-    <?php 	if (check_perms('torrents_delete') || $UserID == $LoggedUser['ID']) { ?>
+    <?php   if (check_perms('torrents_delete') || $UserID == $LoggedUser['ID']) { ?>
             <a href="/torrents.php?action=delete&amp;torrentid=<?=$TorrentID ?>" title="Remove">[Remove]</a>
-    <?php 	}
+    <?php   }
 
-        if (check_perms('users_manage_cheats')) {
-            $DB->query("SELECT TorrentID FROM torrents_watch_list WHERE TorrentID='$TorrentID'"); ?>
+if (check_perms('users_manage_cheats')) {
+    $DB->query("SELECT TorrentID FROM torrents_watch_list WHERE TorrentID='$TorrentID'"); ?>
             <span id="wl">
 <?php           if ($DB->record_count() > 0) {?>
                 <a onclick="twatchlist_remove('<?=$GroupID?>','<?=$TorrentID?>');return false;" href="#" title="Remove this torrent from the speed records torrent watchlist">[Remove from watchlist]</a>
@@ -254,7 +272,7 @@ if (check_perms('torrents_review')) {
 <?php           } ?>
             </span>
 <?php       } ?>
-<?php       if (check_perms('torrents_delete') ) {  // testing first ?>
+<?php       if (check_perms('torrents_delete')) {  // testing first ?>
             <a href="/torrents.php?action=dupe_check&amp;id=<?=$GroupID ?>" title="Check for exact matches in filesize">[Dupe check]</a>
 <?php       } ?>
     </div>
@@ -286,13 +304,13 @@ if (check_perms('torrents_review')) {
 ?>
             <a href="/torrents.php?action=download&amp;id=<?=$TorrentID ?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>&amp;usetoken=1" class="button greenButton" title="This will use 1 slot" onClick="return confirm('Are you sure you want to use a freeleech slot here?');">FREELEECH TORRENT</a>
 <?php   }
-        if (!$Sitewide_Doubleseed_On && ($LoggedUser['FLTokens'] > 0) && $HasFile
+if (!$Sitewide_Doubleseed_On && ($LoggedUser['FLTokens'] > 0) && $HasFile
                 && (empty($TokenTorrents[$TorrentID]) || $TokenTorrents[$TorrentID]['DoubleSeed'] < $sqltime)
                 && ($DoubleTorrent == '0') && ($LoggedUser['personal_doubleseed'] < $sqltime) ) {
 ?>
-            <a href="/torrents.php?action=download&amp;id=<?=$TorrentID ?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>&amp;usetoken=2" class="button orangeButton" title="This will use 1 slot" onClick="return confirm('Are you sure you want to use a doubleseed slot here?');">DOUBLESEED TORRENT</a>
+<a href="/torrents.php?action=download&amp;id=<?=$TorrentID ?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>&amp;usetoken=2" class="button orangeButton" title="This will use 1 slot" onClick="return confirm('Are you sure you want to use a doubleseed slot here?');">DOUBLESEED TORRENT</a>
 <?php   }
-        if (check_perms('site_debug')) { ?>
+if (check_perms('site_debug')) { ?>
             [<a href="/torrents.php?action=output&amp;torrentid=<?=$TorrentID ?>" title="View torrent data">view data</a>]
             [<a href="/torrents.php?action=output_enc&amp;torrentid=<?=$TorrentID ?>" title="View bencode data">view bencode</a>]
 <?php   }
@@ -301,29 +319,28 @@ if (check_perms('torrents_review')) {
 <br/>
 <span class="torrent_buttons">
 <?php
-        if (check_perms('users_edit_pfl') && !empty($ActiveEvents)) { ?>
+if (check_perms('users_edit_pfl') && !empty($ActiveEvents)) { ?>
             <form id="form_events" action="torrents.php" method="post" style="display: inline-block;">
                 <input type="hidden" name="action" value="event_award" />
                 <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
                 <input type="hidden" name="groupid" value="<?=$GroupID?>" />
                     <button type="submit" class="button purpleButton">Award for:</button>
                     <select name="eventid">
-<?php       foreach($ActiveEvents as $Event) { ?>
+<?php       foreach ($ActiveEvents as $Event) { ?>
                         <option value="<?=$Event['ID']?>"><?=display_str($Event['Title']);?></option>
 <?php       } ?>
                     </select>
             </form>
 <?php   }
-
-    } ?>
+} ?>
 </span>
 </span>
 
         <span style="float: right;"><a id="slide_button"  class="button toggle infoButton" onclick="Details_Toggle();return false;" title="Toggle display">Hide Info</a></span>
 
-<?php 		if (check_perms('torrents_review')) { ?>
+<?php       if (check_perms('torrents_review')) { ?>
             <span style="float: right;"><a id="slide_tools_button"  class="button toggle redButton" onclick="Tools_Toggle();return false;" title="Toggle staff tools">Staff Tools</a></span>
-<?php 		} ?>
+<?php       } ?>
             <br style="clear:both" />
     </div>
     <br/>
@@ -332,56 +349,58 @@ if (check_perms('torrents_review')) {
 // For staff draw the tools section
 if (check_perms('torrents_review')) {
         // get review history
-        if ($Review['ID'] && is_number($Review['ID'])) { // if reviewID == null then no history
-            $DB->query("SELECT r.Status, r.Time, r.ConvID,
+    if ($Review['ID'] && is_number($Review['ID'])) { // if reviewID == null then no history
+        $DB->query("SELECT r.Status, r.Time, r.ConvID,
                                IF(r.ReasonID = 0, r.Reason, rs.Description),
                                r.UserID, um.Username
                       FROM torrents_reviews AS r
                       LEFT JOIN users_main AS um ON um.ID=r.UserID
                       LEFT JOIN review_reasons AS rs ON rs.ID=r.ReasonID
                       WHERE r.GroupID = $GroupID AND r.ID != $Review[ID] ORDER BY Time");
-            $NumReviews = $DB->record_count();
-        } else $NumReviews = 0;
+        $NumReviews = $DB->record_count();
+    } else {
+        $NumReviews = 0;
+    }
 ?>
     <table id="staff_tools" class="pad">
         <form id="form_reviews" action="" method="post">
                 <tr class="head">
                     <td colspan="3">
                         <span style="float:left;"><strong>Review Tools</strong></span>
-                   <?php  if ($NumReviews>0) { ?>
+                    <?php  if ($NumReviews>0) { ?>
                         <span style="float:right;"><a href="#" onclick="$('.history').toggle(); this.innerHTML=(this.innerHTML=='(Hide <?=$NumReviews?> Review Logs)'?'(View <?=$NumReviews?> Review Logs)':'(Hide <?=$NumReviews?> Review Logs)'); return false;">(View <?=$NumReviews?> Review Logs)</a></span>&nbsp;
-                   <?php  } ?>
+                    <?php  } ?>
                     </td>
                 </tr>
 <?php
-    if ($NumReviews>0) { // if there is review history show it
-        while (list($Stat, $StatTime, $StatConvID, $StatDescription, $StatUserID, $StatUsername) = $DB->next_record()) { ?>
+if ($NumReviews>0) { // if there is review history show it
+    while (list($Stat, $StatTime, $StatConvID, $StatDescription, $StatUserID, $StatUsername) = $DB->next_record()) { ?>
                 <tr class="history hidden">
                     <td width="200px"><strong>Status:</strong>&nbsp;&nbsp;<?=$Stat?"$Stat&nbsp;".get_status_icon($Stat):'Not set'?></td>
                     <td><?=$StatDescription?'<strong>Reason:</strong>&nbsp;&nbsp;'.$StatDescription:''?>
 <?php
-                         if ($StatConvID>0) {
-                             echo '<span style="float:right;">'.($Stat=='Pending'?'(user sent fixed message) &nbsp;&nbsp;':'').'<a href="/staffpm.php?action=viewconv&id='.$StatConvID.'">'.($Stat=='Pending'?'Message sent to staff':"reply sent to $Username").'</a></span>';
-                         } elseif ($Stat == 'Warned') {
-                             echo '<span style="float:right;">(pm sent to '.$Username.')</span>';
-                         }
+if ($StatConvID>0) {
+    echo '<span style="float:right;">'.($Stat=='Pending'?'(user sent fixed message) &nbsp;&nbsp;':'').'<a href="/staffpm.php?action=viewconv&id='.$StatConvID.'">'.($Stat=='Pending'?'Message sent to staff':"reply sent to $Username").'</a></span>';
+} elseif ($Stat == 'Warned') {
+    echo '<span style="float:right;">(pm sent to '.$Username.')</span>';
+}
 ?>
-                    </td>
-                    <td width="25%"><?=$Stat?'<strong>By:</strong>&nbsp;&nbsp;'.format_username($StatUserID, $StatUsername).'&nbsp;'.time_diff($StatTime):'';?></td>
-                </tr>
+                </td>
+                <td width="25%"><?=$Stat?'<strong>By:</strong>&nbsp;&nbsp;'.format_username($StatUserID, $StatUsername).'&nbsp;'.time_diff($StatTime):'';?></td>
+            </tr>
 <?php
-        }
-    } // end show history
+    }
+} // end show history
 ?>
                 <tr>
                     <td width="200px"><strong>Current Status:</strong>&nbsp;&nbsp;<?=$Review['Status']?"$Review[Status]&nbsp;".get_status_icon($Review['Status']):'Not set'?></td>
                     <td><?=$Review['StatusDescription']?'<strong>Reason:</strong>&nbsp;&nbsp;'.$Review['StatusDescription']:''?>
 <?php
-                         if ($Review['ConvID']>0) {
-                             echo '<span style="float:right;">'.($Review['Status']=='Pending'?'(user sent fixed message) &nbsp;&nbsp;':'').'<a href="/staffpm.php?action=viewconv&id='.$Review['ConvID'].'">'.($Review['Status']=='Pending'?'Message sent to staff':"reply sent to $Username").'</a></span>';
-                         } elseif ($Review['Status'] == 'Warned') {
-                             echo '<span style="float:right;">(pm sent to '.$Username.')</span>';
-                         }
+if ($Review['ConvID']>0) {
+    echo '<span style="float:right;">'.($Review['Status']=='Pending'?'(user sent fixed message) &nbsp;&nbsp;':'').'<a href="/staffpm.php?action=viewconv&id='.$Review['ConvID'].'">'.($Review['Status']=='Pending'?'Message sent to staff':"reply sent to $Username").'</a></span>';
+} elseif ($Review['Status'] == 'Warned') {
+    echo '<span style="float:right;">(pm sent to '.$Username.')</span>';
+}
 ?>
                     </td>
                     <td width="25%"><?=$Review['Status']?'<strong>By:</strong>&nbsp;&nbsp;'.format_username($Review['UserID'], $Review['Username']).'&nbsp;'.time_diff($Review['Time']):'';?></td>
@@ -394,12 +413,12 @@ if (check_perms('torrents_review')) {
                         <input type="hidden" id="convid" name="convid" value="<?=$Review['ConvID']?>" />
                         <input type="hidden" id="ninja"   name="ninja"   value="<?=$Review['ID']?>" />
                         <strong id="warn_insert" class="important_text" style="margin-right:20px;"></strong>
-<?php               if ( !$Review['Status'] || $Review['Status'] == 'Okay' || check_perms('torrents_review_override') ) { // onsubmit="return Validate_Form_Reviews('<?=$Status ')"   ?>
+<?php               if (!$Review['Status'] || $Review['Status'] == 'Okay' || check_perms('torrents_review_override')) { // onsubmit="return Validate_Form_Reviews('<?=$Status ')"   ?>
                         <select id="reasonid" name="reasonid"  onchange="Select_Reason(<?=($Review['Status'] == 'Warned' || $Review['Status'] == 'Pending' || $Review['Status'] == 'Okay')?'true':'false';?>);" >
                             <option value="-1" selected="selected">none&nbsp;&nbsp;</option>
 <?php
                     $DB->query("SELECT ID, Name FROM review_reasons ORDER BY Sort");
-                    while (list($ReasonID, $ReasonName) = $DB->next_record()) { ?>
+while (list($ReasonID, $ReasonName) = $DB->next_record()) { ?>
 
                             <option value="<?=$ReasonID?>"><?=$ReasonName?>&nbsp;&nbsp;</option>
 <?php                   }    ?>
@@ -418,7 +437,7 @@ if (check_perms('torrents_review')) {
 <?php               } else {  ?>
 
                         <input type="submit" name="submit" value="Mark as Okay" <?=($Review['Status']=='Okay'||($Review['Status'] == 'Warned' && !check_perms('torrents_review_override')))?'disabled="disabled" ':''?>title="Mark this torrent as Okay" />
-<?php                   if ($Review['Status'] == 'Warned' && check_perms('torrents_review_override') ) {  ?>
+<?php                   if ($Review['Status'] == 'Warned' && check_perms('torrents_review_override')) {  ?>
                         <br/><strong class="important_text" style="margin-left:10px;">override warned status?</strong>
 <?php                   }       ?>
 <?php               }       ?>
@@ -455,7 +474,7 @@ if ($FreeTorrent == '0' && $IsUploader) {
     include(SERVER_ROOT.'/Legacy/sections/bonus/functions.php');
     $ShopItems = get_shop_items_ufl();
 
- ?>
+    ?>
     <div class="head">
         <span style="float:left;">Buy unlimited universal freeleech for your torrent</span>
         <span style="float:right;"><a id="donatebutton" href="#" onclick="BuyFL_Toggle();return false;">(Hide)</a></span>&nbsp;
@@ -465,33 +484,35 @@ if ($FreeTorrent == '0' && $IsUploader) {
             <table style="width:600px;margin:auto">
 <?php
 
-    foreach ($ShopItems as $BonusItem) {
-            list($ItemID, $Title, $Description, $Action, $Value, $Cost) = $BonusItem;
+foreach ($ShopItems as $BonusItem) {
+    list($ItemID, $Title, $Description, $Action, $Value, $Cost) = $BonusItem;
 
-            if ( $Size < get_bytes($Value.'gb') ) continue; // skip over the items for smaller
-
-            $CanBuy = is_float((float) $LoggedUser['TotalCredits']) ? $LoggedUser['TotalCredits'] >= $Cost: false;
-
-            $Row = ($Row == 'a') ? 'b' : 'a';
-?>
-                <tr class="row<?=$Row?>">
-                    <td title="<?=display_str($Description)?>"><strong><?=display_str($Title) ?></strong></td>
-                    <td style="text-align: left;">(cost <?=number_format($Cost) ?>c)</td>
-                    <td style="text-align: right;">
-                    <form method="post" action="bonus.php" style="display:inline-block">
-                        <input type="hidden" name="action" value="buy" />
-                        <input type="hidden" name="torrentid" value="<?=$GroupID?>" />
-                        <input type="hidden" name="userid" value="<?=$LoggedUser['ID']?>" />
-                        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-                        <input type="hidden" name="itemid" value="<?=$ItemID?>" />
-                        <input type="hidden" name="rett" value="<?=$GroupID?>" />
-                        <input class="shopbutton<?=($CanBuy ? ' itembuy' : ' itemnotbuy')?>" name="submit" value="<?=($CanBuy?'Buy':'x')?>" type="submit"<?=($CanBuy ? '' : ' disabled="disabled"')?> />
-                    </form>
-                    </td>
-                </tr>
-<?php
-            break; // only draw the first viable item
+    if ($Size < get_bytes($Value.'gb')) {
+        continue; // skip over the items for smaller
     }
+
+    $CanBuy = is_float((float) $LoggedUser['TotalCredits']) ? $LoggedUser['TotalCredits'] >= $Cost: false;
+
+    $Row = ($Row == 'a') ? 'b' : 'a';
+?>
+        <tr class="row<?=$Row?>">
+            <td title="<?=display_str($Description)?>"><strong><?=display_str($Title) ?></strong></td>
+            <td style="text-align: left;">(cost <?=number_format($Cost) ?>c)</td>
+            <td style="text-align: right;">
+            <form method="post" action="bonus.php" style="display:inline-block">
+                <input type="hidden" name="action" value="buy" />
+                <input type="hidden" name="torrentid" value="<?=$GroupID?>" />
+                <input type="hidden" name="userid" value="<?=$LoggedUser['ID']?>" />
+                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="itemid" value="<?=$ItemID?>" />
+                <input type="hidden" name="rett" value="<?=$GroupID?>" />
+                <input class="shopbutton<?=($CanBuy ? ' itembuy' : ' itemnotbuy')?>" name="submit" value="<?=($CanBuy?'Buy':'x')?>" type="submit"<?=($CanBuy ? '' : ' disabled="disabled"')?> />
+            </form>
+            </td>
+        </tr>
+<?php
+    break; // only draw the first viable item
+}
 ?>
             </table>
         </div>
@@ -502,24 +523,24 @@ if ($FreeTorrent == '0' && $IsUploader) {
  <div id="details_top">
     <div class="sidebar" style="float: right;">
 <?php
-        if ($Image!="") {
+if ($Image!="") {
 ?>
-            <div class="head">
-                <span style="float:left;"><strong>Cover</strong></span>
-                <span style="float:right;"><a href="#" id="covertoggle" onclick="Cover_Toggle(); return false;">(Hide)</a></span>
-            </div>
-            <div id="coverimage" class="box box_albumart">
+<div class="head">
+<span style="float:left;"><strong>Cover</strong></span>
+<span style="float:right;"><a href="#" id="covertoggle" onclick="Cover_Toggle(); return false;">(Hide)</a></span>
+</div>
+<div id="coverimage" class="box box_albumart">
 <?php       if ($Image!="") {?>
             <img style="max-width: 100%;" src="<?=$Image?>" alt="<?=$AltName?>" onclick="lightbox.init(this,220);" />
 <?php           } else { ?>
             <img src="<?=STATIC_SERVER?>common/noartwork/noimage.png" alt="Click to see full size image" title="Click to see full size image  " width="220" border="0" />
 <?php
-            }
+}
 ?>
-            </div>
-            <br/>
+</div>
+<br/>
 <?php
-        }
+}
 ?>
             <a id="tags"></a>
             <div class="head">
@@ -553,7 +574,7 @@ if ($FreeTorrent == '0' && $IsUploader) {
                         <span style="font-family: monospace;" >&nbsp;&nbsp;&nbsp;</span>
 <?php           } if (check_perms('users_warn')) { ?>
                         <a title="Tag '__NAME__' added by __USERNAME__" href="/user.php?id=__USER_ID__" >[U]</a>
-<?php           } if (check_perms('site_delete_tag') ) { ?>
+<?php           } if (check_perms('site_delete_tag')) { ?>
                         <a title="Delete tag '__NAME__'" href="#tags" onclick="return Del_Tag(__ID__,__GROUP_ID__,'tagsort')"   style="font-family: monospace;">[X]</a>
 <?php           } else { ?>
                         <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;</span>
@@ -564,15 +585,15 @@ if ($FreeTorrent == '0' && $IsUploader) {
                 </div>
                 <div id="torrent_tags" class="tag_inner">
 <?php
-        if (count($Tags) == 0) {
+if (count($Tags) == 0) {
 ?>
-            Please add a tag for this torrent!
+Please add a tag for this torrent!
 <?php
-        } else {
+} else {
 ?>
-                    <ul id="torrent_tags_list" class="stats nobullet"></ul>
+    <ul id="torrent_tags_list" class="stats nobullet"></ul>
 <?php
-        }
+}
 ?>
                 </div>
 <?php
@@ -580,30 +601,30 @@ if ($FreeTorrent == '0' && $IsUploader) {
       // onfocus="if (this.value == 'search tags') this.value='';"
       // onblur="if (this.value == '') this.value='search tags';"
 
-        if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::TAGGING) && (check_perms('site_add_tag') || $IsUploader)) {
+if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::TAGGING) && (check_perms('site_add_tag') || $IsUploader)) {
 ?>
-                <div class="tag_add">
-                    <div id="messagebar" class="messagebar hidden"></div>
+<div class="tag_add">
+    <div id="messagebar" class="messagebar hidden"></div>
 
-                    <input type="hidden" name="action" value="add_tag" />
-                    <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-                    <input type="hidden" id="groupid" name="groupid" value="<?=$GroupID?>" />
-                    <input type="hidden" name="tagsort" value="<?=$tagsort?>" />
+    <input type="hidden" name="action" value="add_tag" />
+    <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+    <input type="hidden" id="groupid" name="groupid" value="<?=$GroupID?>" />
+    <input type="hidden" name="tagsort" value="<?=$tagsort?>" />
 
-                    <div class="autoresults"> <!-- we have to insert the font here for js to be able to grab it (js bug) -->
-                        <input type="text" id="taginput" value="" style="font: 10pt monospace;"
-                                onkeyup="return autocomp.keyup(event);"
-                                onkeydown="return autocomp.keydown(event);"
-                                autocomplete="off"
-                                size="25"
-                                title="enter text to search for tags, click (or enter) to select a tag from the drop-down" />
-                        <input type="button" value="+" onclick="addTag(); return false;" />
-                        <ul id="tagdropdown"></ul>
-                    </div>
+    <div class="autoresults"> <!-- we have to insert the font here for js to be able to grab it (js bug) -->
+        <input type="text" id="taginput" value="" style="font: 10pt monospace;"
+                onkeyup="return autocomp.keyup(event);"
+                onkeydown="return autocomp.keydown(event);"
+                autocomplete="off"
+                size="25"
+                title="enter text to search for tags, click (or enter) to select a tag from the drop-down" />
+        <input type="button" value="+" onclick="addTag(); return false;" />
+        <ul id="tagdropdown"></ul>
+    </div>
 
-                </div>
+</div>
 <?php
-        }       ?>
+}       ?>
             </div>
     </div>
 
@@ -628,28 +649,28 @@ function filelist($Str)
 $EditionID = 0;
 
         // The report array has been moved up above the display name so "reported" could be added to the title.
-        if (count($Reports) > 0) {
-        $Reported = true;
-        include(SERVER_ROOT.'/Legacy/sections/reportsv2/array.php');
-        $ReportInfo = '<table class="reported"><tr class="smallhead"><td>This torrent has '.count($Reports)." active ".(count($Reports) > 1 ?'reports' : 'report').":</td></tr>";
+if (count($Reports) > 0) {
+    $Reported = true;
+    include(SERVER_ROOT.'/Legacy/sections/reportsv2/array.php');
+    $ReportInfo = '<table class="reported"><tr class="smallhead"><td>This torrent has '.count($Reports)." active ".(count($Reports) > 1 ?'reports' : 'report').":</td></tr>";
 
-        foreach ($Reports as $Report) {
-            list($ReportID, $ReporterID, $ReportType, $ReportReason, $ReportedTime) = $Report;
+    foreach ($Reports as $Report) {
+        list($ReportID, $ReporterID, $ReportType, $ReportReason, $ReportedTime) = $Report;
 
-            $Reporter = user_info($ReporterID);
-            $ReporterName = $Reporter['Username'];
+        $Reporter = user_info($ReporterID);
+        $ReporterName = $Reporter['Username'];
 
-            if (array_key_exists($ReportType, $Types)) {
-                $ReportType = $Types[$ReportType];
-            } else {
-                //There was a type but it wasn't an option!
-                $ReportType = $Types['other'];
-            }
-            $ReportInfo .= "<tr><td>".(check_perms('admin_reports') ? "<a href='user.php?id=$ReporterID'>$ReporterName</a> <a href='reportsv2.php?view=report&amp;id=$ReportID'>reported it</a> " : "Someone reported it ").time_diff($ReportedTime,2,true,true)." for the reason '".$ReportType['title']."':";
-            $ReportInfo .= "<blockquote>".$Text->full_format($ReportReason)."</blockquote></td></tr>";
+        if (array_key_exists($ReportType, $Types)) {
+            $ReportType = $Types[$ReportType];
+        } else {
+            //There was a type but it wasn't an option!
+            $ReportType = $Types['other'];
         }
-        $ReportInfo .= "</table>";
+        $ReportInfo .= "<tr><td>".(check_perms('admin_reports') ? "<a href='user.php?id=$ReporterID'>$ReporterName</a> <a href='reportsv2.php?view=report&amp;id=$ReportID'>reported it</a> " : "Someone reported it ").time_diff($ReportedTime, 2, true, true)." for the reason '".$ReportType['title']."':";
+        $ReportInfo .= "<blockquote>".$Text->full_format($ReportReason)."</blockquote></td></tr>";
     }
+    $ReportInfo .= "</table>";
+}
 
 
 // count filetypes
@@ -658,22 +679,25 @@ $num = preg_match_all('/\.([^\.]*)\{\{\{/ism', $FileList, $Extensions);
 $TempFileTypes = array('video'=>0,'image'=>0,'compressed'=>0, 'other'=>0);
 foreach ($Extensions[1] as $ext) { // filetypes arrays defined in config
     $ext = strtolower($ext);
-    if (in_array($ext, $Video_FileTypes))
+    if (in_array($ext, $Video_FileTypes)) {
         $TempFileTypes['video']+=1;
-    elseif (in_array($ext, $Image_FileTypes))
+    } elseif (in_array($ext, $Image_FileTypes)) {
         $TempFileTypes['image']+=1;
-    elseif (in_array($ext, $Zip_FileTypes))
+    } elseif (in_array($ext, $Zip_FileTypes)) {
         $TempFileTypes['compressed']+=1;
-    else
+    } else {
         $TempFileTypes['other']+=1;
+    }
 }
 $FileTypes=array();
-foreach ($TempFileTypes as $image_ext=>$count) {
-    if ($count>0) $FileTypes[] = "$count <img src=\"static/common/symbols/$image_ext.gif\" alt=\"$image_ext\" title=\"$image_ext files\" /> ";
+foreach ($TempFileTypes as $image_ext => $count) {
+    if ($count>0) {
+        $FileTypes[] = "$count <img src=\"static/common/symbols/$image_ext.gif\" alt=\"$image_ext\" title=\"$image_ext files\" /> ";
+    }
 }
   $FileTypes = "<span class=\"grey\" style=\"float:left;\">" . implode(' ', $FileTypes)."</span>";
-    $FileList = str_replace('|||','<tr><td>',display_str($FileList));
-    $FileList = preg_replace_callback('/\{\{\{([^\{]*)\}\}\}/i','filelist',$FileList);
+    $FileList = str_replace('|||', '<tr><td>', display_str($FileList));
+    $FileList = preg_replace_callback('/\{\{\{([^\{]*)\}\}\}/i', 'filelist', $FileList);
     $FileList = '<table style="overflow-x:auto;"><tr class="smallhead"><td colspan="2">'.(empty($FilePath) ? '/' : '/'.$FilePath.'/' ).'</td></tr><tr class="rowa"><td><strong><div style="float: left; display: block;">File Name'.(check_perms('users_mod') ? ' [<a href="/torrents.php?action=regen_filelist&amp;torrentid='.$TorrentID.'">Regenerate</a>]' : '').'</div></strong></td><td><strong>Size</strong></td></tr><tr><td>'.$FileList."</td></tr></table>";
 
     $TorrentUploader = $Username; // Save this for "Uploaded by:" below
@@ -682,14 +706,38 @@ foreach ($TempFileTypes as $image_ext=>$count) {
     $ExtraInfo = $GroupName;
   $AddExtra = ' / ';
 
-    if ($FreeTorrent == '1') { $ExtraInfo.=$AddExtra.'<strong>Freeleech!</strong>'; $AddExtra=' / '; }
-    if ($FreeTorrent == '2') { $ExtraInfo.=$AddExtra.'<strong>Neutral Leech!</strong>'; $AddExtra=' / '; }
-    if (!empty($TokenTorrents[$TorrentID]) && $TokenTorrents[$TorrentID]['Type'] == 'leech') { $ExtraInfo.=$AddExtra.'<strong>Personal Freeleech!</strong>'; $AddExtra=' / '; }
-    if (!empty($TokenTorrents[$TorrentID]) && $TokenTorrents[$TorrentID]['Type'] == 'seed') { $ExtraInfo.=$AddExtra.'<strong>Personal Doubleseed!</strong>'; $AddExtra=' / '; }
-    if ($Reported) { $ExtraInfo.=$AddExtra.'<strong>Reported</strong>'; $AddExtra=' / '; }
-    if (!empty($BadTags)) { $ExtraInfo.=$AddExtra.'<strong>Bad Tags</strong>'; $AddExtra=' / '; }
-    if (!empty($BadFolders)) { $ExtraInfo.=$AddExtra.'<strong>Bad Folders</strong>'; $AddExtra=' / '; }
-    if (!empty($BadFiles)) { $ExtraInfo.=$AddExtra.'<strong>Bad File Names</strong>'; $AddExtra=' / '; }
+if ($FreeTorrent == '1') {
+    $ExtraInfo.=$AddExtra.'<strong>Freeleech!</strong>';
+    $AddExtra=' / ';
+}
+if ($FreeTorrent == '2') {
+    $ExtraInfo.=$AddExtra.'<strong>Neutral Leech!</strong>';
+    $AddExtra=' / ';
+}
+if (!empty($TokenTorrents[$TorrentID]) && $TokenTorrents[$TorrentID]['Type'] == 'leech') {
+    $ExtraInfo.=$AddExtra.'<strong>Personal Freeleech!</strong>';
+    $AddExtra=' / ';
+}
+if (!empty($TokenTorrents[$TorrentID]) && $TokenTorrents[$TorrentID]['Type'] == 'seed') {
+    $ExtraInfo.=$AddExtra.'<strong>Personal Doubleseed!</strong>';
+    $AddExtra=' / ';
+}
+if ($Reported) {
+    $ExtraInfo.=$AddExtra.'<strong>Reported</strong>';
+    $AddExtra=' / ';
+}
+if (!empty($BadTags)) {
+    $ExtraInfo.=$AddExtra.'<strong>Bad Tags</strong>';
+    $AddExtra=' / ';
+}
+if (!empty($BadFolders)) {
+    $ExtraInfo.=$AddExtra.'<strong>Bad Folders</strong>';
+    $AddExtra=' / ';
+}
+if (!empty($BadFiles)) {
+    $ExtraInfo.=$AddExtra.'<strong>Bad File Names</strong>';
+    $AddExtra=' / ';
+}
 
 ?>
 
@@ -733,44 +781,46 @@ if (count($FilledRequests) > 0) {
             </td>
         </tr>
 <?php
-    foreach ($FilledRequests as $Request) {
-        $RequestVotes = get_votes_array($Request['ID']);
-        $row = $row =='a'?'b':'a';
+foreach ($FilledRequests as $Request) {
+    $RequestVotes = get_votes_array($Request['ID']);
+    $row = $row =='a'?'b':'a';
 ?>
-            <tr class="requestrows row<?=$row?>">
-                <td colspan="2" >
-                    <a href="/requests.php?action=view&id=<?=$Request['ID']?>"><?=$Request['Title']?></a>
-                </td>
-                <td colspan="4" >
-                    <span style="float:right"><em>for <?=get_size($RequestVotes['TotalBounty'])?></em></span>
-                </td>
-            </tr>
-<?php 	}
+    <tr class="requestrows row<?=$row?>">
+        <td colspan="2" >
+            <a href="/requests.php?action=view&id=<?=$Request['ID']?>"><?=$Request['Title']?></a>
+        </td>
+        <td colspan="4" >
+            <span style="float:right"><em>for <?=get_size($RequestVotes['TotalBounty'])?></em></span>
+        </td>
+    </tr>
+<?php   }
 }
 ?>
             <tr class="groupid_<?=$GroupID?> edition_<?=$EditionID?> torrentdetails pad" id="torrent_<?=$TorrentID; ?>">
                 <td colspan="6" style="border-top:none;">
 
 <?php
-        if ($Seeders < 5 && $LastActive != '0000-00-00 00:00:00' && (time() - strtotime($TorrentTime) > 86400)) {
-                        $lasttimesinceactive =  time() - strtotime($LastActive);
-                        $ReseedStr='';
-                        if ($Seeders < 3 || $lasttimesinceactive >= 86400) { // 24 hrs
-                                $ReseedStr = "<strong>Last active: ".time_diff($LastActive)."</strong>";
-                        } elseif ($lasttimesinceactive >= 3600 * 3) {
-                                $ReseedStr = "Last active: ".time_diff($LastActive);
-                        }
-                        // NOTE: if you change this from 259200 also change the value in reseed.php! (hard coded badness... replace with siteoption soon)
-                        if (time()-strtotime($LastReseedRequest)< 259200 ) {  // 259200= 3 days  | 432000= 5 days
-                                $ReseedStr .= " <em>re-seed was requested (".time_diff($LastReseedRequest).")</em> ";
-                        } elseif ( ($Snatched > 2 || $Snatched > $Seeders) &&
-                                   (($Seeders < 3 && $lasttimesinceactive >= 3600 * 3) || $lasttimesinceactive >= 86400)) {
-                                $ReseedStr .= ' <a href="/torrents.php?action=reseed&amp;torrentid='.$TorrentID.'&amp;groupid='.$GroupID.'" title="request a reseed from the '.$Snatched.' users who have snatched this torrent"> [Request re-seed] </a> ';
-                        }
-                        if($ReseedStr) echo '<blockquote  style="text-align: center;">'.$ReseedStr.'</blockquote>';
-        }
+if ($Seeders < 5 && $LastActive != '0000-00-00 00:00:00' && (time() - strtotime($TorrentTime) > 86400)) {
+        $lasttimesinceactive =  time() - strtotime($LastActive);
+        $ReseedStr='';
+    if ($Seeders < 3 || $lasttimesinceactive >= 86400) { // 24 hrs
+        $ReseedStr = "<strong>Last active: ".time_diff($LastActive)."</strong>";
+    } elseif ($lasttimesinceactive >= 3600 * 3) {
+        $ReseedStr = "Last active: ".time_diff($LastActive);
+    }
+        // NOTE: if you change this from 259200 also change the value in reseed.php! (hard coded badness... replace with siteoption soon)
+    if (time()-strtotime($LastReseedRequest)< 259200) {  // 259200= 3 days  | 432000= 5 days
+        $ReseedStr .= " <em>re-seed was requested (".time_diff($LastReseedRequest).")</em> ";
+    } elseif (($Snatched > 2 || $Snatched > $Seeders) &&
+                   (($Seeders < 3 && $lasttimesinceactive >= 3600 * 3) || $lasttimesinceactive >= 86400)) {
+        $ReseedStr .= ' <a href="/torrents.php?action=reseed&amp;torrentid='.$TorrentID.'&amp;groupid='.$GroupID.'" title="request a reseed from the '.$Snatched.' users who have snatched this torrent"> [Request re-seed] </a> ';
+    }
+    if ($ReseedStr) {
+        echo '<blockquote  style="text-align: center;">'.$ReseedStr.'</blockquote>';
+    }
+}
 
-       if (check_perms('site_mass_pm_snatchers')) { ?>
+if (check_perms('site_mass_pm_snatchers')) { ?>
                     <div class="linkbox">
                         <a href="/torrents.php?action=masspm&amp;id=<?=$GroupID?>&amp;torrentid=<?=$TorrentID?>&type=reseed">[Mass PM Snatchers]</a>
                     </div>
@@ -814,7 +864,7 @@ if (count($Requests) > 0) {
                     <td>Votes</td>
                     <td>Bounty</td>
                 </tr>
-<?php 	foreach ($Requests as $Request) {
+<?php   foreach ($Requests as $Request) {
         $RequestVotes = get_votes_array($Request['ID']);
 ?>
                 <tr class="requestrows <?=(++$i%2?'rowa':'rowb')?>">
@@ -829,7 +879,7 @@ if (count($Requests) > 0) {
                     </td>
                     <td><?=get_size($RequestVotes['TotalBounty'])?></td>
                 </tr>
-<?php 	} ?>
+<?php   } ?>
             </table>
         </div>
 <?php
@@ -848,14 +898,14 @@ if (count($Collages)>0) {
                 <td width="85%">Collage name</td>
                 <td># torrents</td>
             </tr>
-<?php 	foreach ($Collages as $Collage) {
+<?php   foreach ($Collages as $Collage) {
         list($CollageName, $CollageTorrents, $CollageID) = $Collage;
 ?>
             <tr>
                 <td><a href="/collages.php?id=<?=$CollageID?>"><?=$CollageName?></a></td>
                 <td><?=$CollageTorrents?></td>
             </tr>
-<?php 	} ?>
+<?php   } ?>
         </table>
 <?php
 }
@@ -870,7 +920,7 @@ if (!is_array($PersonalCollages)) {
 if (count($PersonalCollages)>0) {
     if (count($PersonalCollages) > MAX_PERS_COLLAGES) {
         // Pick 5 at random
-        $Range = range(0,count($PersonalCollages) - 1);
+        $Range = range(0, count($PersonalCollages) - 1);
         shuffle($Range);
         $Indices = array_slice($Range, 0, MAX_PERS_COLLAGES);
         $SeeAll = ' <a href="#" onClick="$(\'.personal_rows\').toggle(); return false;">(See all)</a>';
@@ -885,7 +935,7 @@ if (count($PersonalCollages)>0) {
                 <td width="85%">This torrent is in <?=count($PersonalCollages)?> personal collage<?=((count($PersonalCollages)>1)?'s':'')?><?=$SeeAll?></td>
                 <td># torrents</td>
             </tr>
-<?php 	foreach ($Indices as $i) {
+<?php   foreach ($Indices as $i) {
         list($CollageName, $CollageTorrents, $CollageID) = $PersonalCollages[$i];
         unset($PersonalCollages[$i]);
 ?>
@@ -893,15 +943,15 @@ if (count($PersonalCollages)>0) {
                 <td><a href="/collages.php?id=<?=$CollageID?>"><?=$CollageName?></a></td>
                 <td><?=$CollageTorrents?></td>
             </tr>
-<?php 	}
-    foreach ($PersonalCollages as $Collage) {
-        list($CollageName, $CollageTorrents, $CollageID) = $Collage;
+<?php   }
+foreach ($PersonalCollages as $Collage) {
+    list($CollageName, $CollageTorrents, $CollageID) = $Collage;
 ?>
-            <tr class="personal_rows hidden">
-                <td><a href="/collages.php?id=<?=$CollageID?>"><?=$CollageName?></a></td>
-                <td><?=$CollageTorrents?></td>
-            </tr>
-<?php 	} ?>
+    <tr class="personal_rows hidden">
+        <td><a href="/collages.php?id=<?=$CollageID?>"><?=$CollageName?></a></td>
+        <td><?=$CollageTorrents?></td>
+    </tr>
+<?php   } ?>
         </table>
 <?php
 }
@@ -921,28 +971,28 @@ if (count($PersonalCollages)>0) {
             <div id="descbox" class="body">
 <?php
                         $PermissionsInfo = get_permissions_for_user($UserID);
-                        if ($Body!='') {
-                            $Body = $Text->full_format($Body, isset($PermissionsInfo['site_advanced_tags']) &&  $PermissionsInfo['site_advanced_tags'] );
-                            echo $Body;
-                        } else
-                            echo "There is no information on this torrent.";
+if ($Body!='') {
+    $Body = $Text->full_format($Body, isset($PermissionsInfo['site_advanced_tags']) &&  $PermissionsInfo['site_advanced_tags']);
+    echo $Body;
+} else {
+    echo "There is no information on this torrent.";
+}
 ?>
 <?php
-        if (!$IsAnon) {
-
-            $UserInfo = user_info($UserID);
-            $TorrentSig = $UserInfo['TorrentSignature'];
-            if ($TorrentSig!='') {
+if (!$IsAnon) {
+    $UserInfo = user_info($UserID);
+    $TorrentSig = $UserInfo['TorrentSignature'];
+    if ($TorrentSig!='') {
 ?>
-                <div id="torrentsigbox" style="max-height: <?=TORRENT_SIG_MAX_HEIGHT?>px">
+        <div id="torrentsigbox" style="max-height: <?=TORRENT_SIG_MAX_HEIGHT?>px">
 <?php
-                            $TorrentSig = $Text->full_format($TorrentSig, isset($PermissionsInfo['site_advanced_tags']) &&  $PermissionsInfo['site_advanced_tags'] );
-                            echo $TorrentSig;
+                    $TorrentSig = $Text->full_format($TorrentSig, isset($PermissionsInfo['site_advanced_tags']) &&  $PermissionsInfo['site_advanced_tags']);
+                    echo $TorrentSig;
 ?>
-                </div>
+        </div>
 <?php
-            }
-        }
+    }
+}
 ?>
             </div>
         </div>
@@ -953,23 +1003,25 @@ if (count($PersonalCollages)>0) {
 <?php
 
     $Thanks = $Cache->get_value('torrent_thanks_'.$GroupID);
-    if ($Thanks === false) {
-          $Thanks = [];
-          $DB->query("SELECT Thanks FROM torrents WHERE GroupID = '$GroupID'");
-          list($Thanks['names']) = $DB->next_record();
-          $Thanks['count'] = count(explode(', ', $Thanks['names']));
-          $Cache->cache_value('torrent_thanks_'.$GroupID, $Thanks);
-    }
-    if (!$IsUploader && (!$Thanks || strpos($Thanks['names'], $LoggedUser['Username'])===false )) {
+if ($Thanks === false) {
+    $Thanks = [];
+    $DB->query("SELECT Thanks FROM torrents WHERE GroupID = '$GroupID'");
+    list($Thanks['names']) = $DB->next_record();
+    $Thanks['count'] = count(explode(', ', $Thanks['names']));
+    $Cache->cache_value('torrent_thanks_'.$GroupID, $Thanks);
+}
+if (!$IsUploader && (!$Thanks || strpos($Thanks['names'], $LoggedUser['Username'])===false )) {
 ?>
-                <form action="torrents.php" method="post" id="thanksform">
-                    <input type="hidden" name="action" value="thank" />
-                    <input type="hidden" name="groupid" value="<?=$GroupID?>" />
-                    <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-                    <input id="thanksbutton" type="button" onclick="Say_Thanks()" value="Thank the uploader!" class=" center" style="font-weight:bold;font-size:larger;" />
-               </form>
+        <form action="torrents.php" method="post" id="thanksform">
+            <input type="hidden" name="action" value="thank" />
+            <input type="hidden" name="groupid" value="<?=$GroupID?>" />
+            <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+            <input id="thanksbutton" type="button" onclick="Say_Thanks()" value="Thank the uploader!" class=" center" style="font-weight:bold;font-size:larger;" />
+       </form>
 <?php   }   ?>
-                <div  id="thanksdiv" class="pad<?php if(!$Thanks['names'])echo' hidden';?>" style="text-align:left">
+                <div  id="thanksdiv" class="pad<?php if (!$Thanks['names']) {
+                    echo' hidden';
+                                               }?>" style="text-align:left">
                     <p><strong id="thanksdigest">The following <?=$Thanks['count']?> people said thanks!</strong> &nbsp;<span id="thankstext"><?=$Thanks['names']?></span></p>
                 </div>
         </div>
@@ -980,9 +1032,9 @@ $Results = get_num_comments($GroupID);
 if (isset($_GET['postid']) && is_number($_GET['postid']) && $Results > TORRENT_COMMENTS_PER_PAGE) {
     $DB->query("SELECT COUNT(ID) FROM torrents_comments WHERE GroupID = $GroupID AND ID <= $_GET[postid]");
     list($PostNum) = $DB->next_record();
-    list($Page,$Limit) = page_limit(TORRENT_COMMENTS_PER_PAGE,$PostNum);
+    list($Page,$Limit) = page_limit(TORRENT_COMMENTS_PER_PAGE, $PostNum);
 } else {
-    list($Page,$Limit) = page_limit(TORRENT_COMMENTS_PER_PAGE,$Results);
+    list($Page,$Limit) = page_limit(TORRENT_COMMENTS_PER_PAGE, $Results);
 }
 
 //Get the cache catalogue
@@ -1008,16 +1060,16 @@ if ($Catalogue === false) {
             WHERE c.GroupID = '$GroupID'
             ORDER BY c.ID
             LIMIT $CatalogueLimit");
-    $Catalogue = $DB->to_array(false,MYSQLI_ASSOC, array('Badges'));
+    $Catalogue = $DB->to_array(false, MYSQLI_ASSOC, array('Badges'));
     $Cache->cache_value('torrent_comments_'.$GroupID.'_catalogue_'.$CatalogueID, $Catalogue, 0);
 }
 
 //This is a hybrid to reduce the catalogue down to the page elements: We use the page limit % catalogue
-$Thread = array_slice($Catalogue,((TORRENT_COMMENTS_PER_PAGE*$Page-TORRENT_COMMENTS_PER_PAGE)%THREAD_CATALOGUE),TORRENT_COMMENTS_PER_PAGE,true);
+$Thread = array_slice($Catalogue, ((TORRENT_COMMENTS_PER_PAGE*$Page-TORRENT_COMMENTS_PER_PAGE)%THREAD_CATALOGUE), TORRENT_COMMENTS_PER_PAGE, true);
 ?>
     <div class="linkbox"><a name="comments"></a>
 <?php
-$Pages=get_pages($Page,$Results,TORRENT_COMMENTS_PER_PAGE,9,'#comments');
+$Pages=get_pages($Page, $Results, TORRENT_COMMENTS_PER_PAGE, 9, '#comments');
 echo $Pages;
 ?>
     </div>
@@ -1037,12 +1089,14 @@ foreach ($Thread as $Key => $Post) {
                 <?=format_username($AuthorID, $Username, $Donor, true, $Enabled, $PermissionID, $UserTitle, true, $GroupPermissionID, true)?> <?=time_diff($AddedTime)?>
                 - <a href="#quickpost" onclick="Quote('comments','<?=$PostID?>','t<?=$GroupID?>','<?=$Username?>');">[Quote]</a>
 <?php if (can_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime)) { ?>
-                        - <a href="#post<?=$PostID?>" onclick="Edit_Form('comments','<?=$PostID?>','<?=$Key?>');">[Edit]</a><?php }
-    if (check_perms('site_admin_forums')) { ?>
-                        - <a href="#post<?=$PostID?>" onclick="Delete('<?=$PostID?>');">[Delete]</a> <?php } ?>
+                        - <a href="#post<?=$PostID?>" onclick="Edit_Form('comments','<?=$PostID?>','<?=$Key?>');">[Edit]</a><?php
+}
+if (check_perms('site_admin_forums')) { ?>
+                        - <a href="#post<?=$PostID?>" onclick="Delete('<?=$PostID?>');">[Delete]</a> <?php
+} ?>
             </span>
             <span id="bar<?=$PostID?>" style="float:right;">
-                <?php if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], \Luminance\Entities\Restriction::REPORT)): ?>
+                <?php if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], \Luminance\Entities\Restriction::REPORT)) : ?>
                 <a href="/reports.php?action=report&amp;type=torrents_comment&amp;id=<?=$PostID?>">[Report]</a>
                 <?php endif; ?>
                 &nbsp;
@@ -1058,9 +1112,9 @@ foreach ($Thread as $Key => $Post) {
     <?php  } else { ?>
             <img src="<?=STATIC_SERVER?>common/avatars/default.png" class="avatar" style="<?=get_avatar_css(100, 120)?>" alt="Default avatar" />
     <?php
-         }
+    }
         $UserBadges = get_user_badges($AuthorID);
-        if ( !empty($UserBadges) ) {  ?>
+if (!empty($UserBadges)) {  ?>
                <div class="badges">
 <?php                   print_badges_array($UserBadges, $AuthorID); ?>
                </div>
@@ -1075,28 +1129,28 @@ $AllowTags= get_permissions_advtags($AuthorID, false, $AuthorPermissions);
                       <div class="post_content"><?=$Text->full_format($Body, $AllowTags) ?> </div>
 <?php  if ($EditedUserID) { ?>
                         <div class="post_footer">
-<?php 	if (check_perms('site_moderate_forums')) { ?>
+<?php   if (check_perms('site_moderate_forums')) { ?>
                 <a href="#content<?=$PostID?>" onclick="LoadEdit('torrents', <?=$PostID?>, 1); return false;">&laquo;</a>
-<?php  	} ?>
+<?php   } ?>
                         <span class="editedby">Last edited by
-                <?=format_username($EditedUserID, $EditedUsername) ?> <?=time_diff($EditedTime,2,true,true)?>
+                <?=format_username($EditedUserID, $EditedUsername) ?> <?=time_diff($EditedTime, 2, true, true)?>
                         </span>
                         </div>
-        <?php  }   ?>
+<?php  }   ?>
             </div>
         </td>
     </tr>
 <?php
-      if ( empty($HeavyInfo['DisableSignatures']) && ($MaxSigLength > 0) && !empty($Signature) ) { //post_footer
+if (empty($HeavyInfo['DisableSignatures']) && ($MaxSigLength > 0) && !empty($Signature)) { //post_footer
 
-            echo '
+    echo '
       <tr>
             <td class="sig"><div id="sig" style="max-height: '.SIG_MAX_HEIGHT. 'px"><div>' . $Text->full_format($Signature, $AllowTags) . '</div></div></td>
       </tr>';
-           }
+}
 ?>
 </table>
-<?php 	} ?>
+<?php   } ?>
         <div class="linkbox">
         <?=$Pages?>
         </div>
@@ -1119,11 +1173,11 @@ if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\En
                     </tr>
                     <tr>
                         <td class="avatar" valign="top">
-                              <?php  if (!empty($LoggedUser['Avatar'])) {  ?>
+                                <?php  if (!empty($LoggedUser['Avatar'])) {  ?>
                                             <img src="<?=$LoggedUser['Avatar']?>" class="avatar" style="<?=get_avatar_css($LoggedUser['MaxAvatarWidth'], $LoggedUser['MaxAvatarHeight'])?>" alt="<?=$LoggedUser['Username']?>'s avatar" />
-                               <?php  } else { ?>
+                                <?php  } else { ?>
                                           <img src="<?=STATIC_SERVER?>common/avatars/default.png" class="avatar" style="<?=get_avatar_css(100, 120)?>" alt="Default avatar" />
-                              <?php  } ?>
+                                <?php  } ?>
                         </td>
                         <td class="body" valign="top">
                             <div id="contentpreview" style="text-align:left;"></div>
@@ -1145,7 +1199,7 @@ if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\En
                 </form>
             </div>
 <?php  } ?>
-            <?php if(empty($LoggedUser['HideDetailsSidebar'])): ?>
+            <?php if (empty($LoggedUser['HideDetailsSidebar'])) : ?>
             <div id="details-sidebar" class="content">
                 <div id="modal_content">
                   <div class="details thin">
@@ -1172,20 +1226,20 @@ if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\En
 ?>
                         <a href="/torrents.php?action=download&amp;id=<?=$TorrentID ?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>&amp;usetoken=1" class="button greenButton" title="This will use 1 slot" onClick="return confirm('Are you sure you want to use a freeleech slot here?');">FREELEECH TORRENT</a>
 <?php                       }
-                    if (!$Sitewide_Doubleseed_On && ($LoggedUser['FLTokens'] > 0) && $HasFile
+if (!$Sitewide_Doubleseed_On && ($LoggedUser['FLTokens'] > 0) && $HasFile
                             && (empty($TokenTorrents[$TorrentID]) || $TokenTorrents[$TorrentID]['DoubleSeed'] < $sqltime)
                             && ($DoubleTorrent == '0') && ($LoggedUser['personal_doubleseed'] < $sqltime) ) {
 ?>
-                        <a href="/torrents.php?action=download&amp;id=<?=$TorrentID ?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>&amp;usetoken=2" class="button orangeButton" title="This will use 1 slot" onClick="return confirm('Are you sure you want to use a doubleseed slot here?');">DOUBLESEED TORRENT</a>
+<a href="/torrents.php?action=download&amp;id=<?=$TorrentID ?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>&amp;usetoken=2" class="button orangeButton" title="This will use 1 slot" onClick="return confirm('Are you sure you want to use a doubleseed slot here?');">DOUBLESEED TORRENT</a>
 <?php                   } ?>
 
 <?php               }
 
-                if (!$IsUploader && (!$Thanks || strpos($Thanks['names'], $LoggedUser['Username'])===false)) {
+if (!$IsUploader && (!$Thanks || strpos($Thanks['names'], $LoggedUser['Username'])===false)) {
 ?>
-                    <input type="button" onclick="this.disabled=true; document.getElementById('thanksbutton').click();this.style.display = 'none';" value="Thank the uploader!" />
+<input type="button" onclick="this.disabled=true; document.getElementById('thanksbutton').click();this.style.display = 'none';" value="Thank the uploader!" />
 <?php               }
-                if (check_perms('torrents_review')) { ?>
+if (check_perms('torrents_review')) { ?>
                     <span id="admin-sidebar" style="float: right;">
                         <form action="" method="post">
                             <input type="hidden" name="action" value="set_review_status" />
@@ -1194,11 +1248,11 @@ if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\En
                             <input type="hidden" name="convid" value="<?=$Review['ConvID']?>" />
                             <input type="hidden" name="ninja" value="<?=$Review['ID']?>" />
                             <span>Status:&nbsp;<?=$Review['Status']?"$Review[Status]".get_status_icon($Review['Status']):'Not set'?></span>
-<?php                       if ( !$Review['Status'] || $Review['Status'] == 'Okay' || check_perms('torrents_review_override') ) { ?>
+<?php                       if (!$Review['Status'] || $Review['Status'] == 'Okay' || check_perms('torrents_review_override')) { ?>
                                 <select name="reasonid" onchange="this.nextElementSibling.disabled = this.value == -1 ? 1 : 0">
                                     <option value="-1" selected="selected">none</option>
 <?php                               $DB->query("SELECT ID, Name FROM review_reasons ORDER BY Sort");
-                                    while (list($ReasonID, $ReasonName) = $DB->next_record()) { ?>
+while (list($ReasonID, $ReasonName) = $DB->next_record()) { ?>
                                         <option value="<?=$ReasonID?>"><?=$ReasonName?></option>
 <?php                               } ?>
                                     <option value="0">Other</option>
@@ -1211,7 +1265,7 @@ if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\En
                                 <input type="submit" name="submit" value="Reject Fix" title="Reject the fix this uploader has made" />
 <?php                       } else { ?>
                                 <input type="submit" name="submit" value="Mark as Okay" <?=($Review['Status']=='Okay'||($Review['Status'] == 'Warned' && !check_perms('torrents_review_override')))?'disabled="disabled" ':''?>title="Mark this torrent as Okay" />
-<?php                           if ($Review['Status'] == 'Warned' && check_perms('torrents_review_override') ) { ?>
+<?php                           if ($Review['Status'] == 'Warned' && check_perms('torrents_review_override')) { ?>
                                     <strong class="important_text" >override warned status?</strong>
 <?php                           } ?>
 <?php                       } ?>
@@ -1222,7 +1276,7 @@ if (!$master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\En
           </div>
       </div>
     </div>
-   <?php endif; ?>
+            <?php endif; ?>
 </div>
 </div>
 <?php

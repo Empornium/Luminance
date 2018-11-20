@@ -1,5 +1,7 @@
 <?php
-if (!isset($_POST['topicid']) || !is_number($_POST['topicid'])) { error(0,true); }
+if (!isset($_POST['topicid']) || !is_number($_POST['topicid'])) {
+    error(0, true);
+}
 $TopicID = $_POST['topicid'];
 
 if (!empty($_POST['large'])) {
@@ -22,7 +24,9 @@ if (!$ThreadInfo = $Cache->get_value('thread_'.$TopicID.'_info')) {
         LEFT JOIN forums_polls AS p ON p.TopicID=t.ID
         WHERE t.ID = '$TopicID'
         GROUP BY fp.TopicID");
-    if ($DB->record_count()==0) { die(); }
+    if ($DB->record_count()==0) {
+        die();
+    }
     $ThreadInfo = $DB->next_record(MYSQLI_ASSOC);
     if (!$ThreadInfo['IsLocked'] || $ThreadInfo['IsSticky']) {
         $Cache->cache_value('thread_'.$TopicID.'_info', $ThreadInfo, 0);
@@ -52,7 +56,7 @@ if (!list($Question,$Answers,$Votes,$Featured,$Closed) = $Cache->get_value('poll
 }
 
 if ($Closed) {
-    error(403,true);
+    error(403, true);
 }
 
 if (!empty($Votes)) {
@@ -82,7 +86,9 @@ if (!isset($_POST['vote']) || !is_number($_POST['vote'])) {
 } else {
     authorize();
     $Vote = $_POST['vote'];
-    if (!isset($Answers[$Vote]) && $Vote != 0) { error(0,true); }
+    if (!isset($Answers[$Vote]) && $Vote != 0) {
+        error(0, true);
+    }
 
     //Add our vote
     $DB->query('INSERT IGNORE INTO forums_polls_votes (TopicID, UserID, Vote) VALUES ('.$TopicID.','.$LoggedUser['ID'].','.$Vote.')');
@@ -102,40 +108,40 @@ if (!isset($_POST['vote']) || !is_number($_POST['vote'])) {
 ?>
         <ul class="poll nobullet">
 <?php
-        if ($ForumID != STAFF_FORUM_ID) {
-            for ($i = 1, $il = count($Answers); $i <= $il; $i++) {
-                if (!empty($Votes[$i]) && $TotalVotes > 0) {
-                    $Ratio = $Votes[$i]/$MaxVotes;
-                    $Percent = $Votes[$i]/$TotalVotes;
-                } else {
-                    $Ratio=0;
-                    $Percent=0;
-                }
-?>
-                    <li><?=display_str($Answers[$i])?> (<?=number_format($Percent*100,2)?>%)</li>
-                    <li class="graph">
-                        <span class="left_poll"></span>
-                        <span class="center_poll" style="width:<?=round($Ratio*$Size)?>px;"></span>
-                        <span class="right_poll"></span>
-                    </li>
-<?php		}
+if ($ForumID != STAFF_FORUM_ID) {
+    for ($i = 1, $il = count($Answers); $i <= $il; $i++) {
+        if (!empty($Votes[$i]) && $TotalVotes > 0) {
+            $Ratio = $Votes[$i]/$MaxVotes;
+            $Percent = $Votes[$i]/$TotalVotes;
         } else {
-            //Staff forum, output voters, not percentages
-            $DB->query("SELECT GROUP_CONCAT(um.Username SEPARATOR ', '),
+            $Ratio=0;
+            $Percent=0;
+        }
+?>
+            <li><?=display_str($Answers[$i])?> (<?=number_format($Percent*100, 2)?>%)</li>
+            <li class="graph">
+                <span class="left_poll"></span>
+                <span class="center_poll" style="width:<?=round($Ratio*$Size)?>px;"></span>
+                <span class="right_poll"></span>
+            </li>
+    <?php	  }
+} else {
+    //Staff forum, output voters, not percentages
+    $DB->query("SELECT GROUP_CONCAT(um.Username SEPARATOR ', '),
                             fpv.Vote
                         FROM users_main AS um
                             JOIN forums_polls_votes AS fpv ON um.ID = fpv.UserID
                         WHERE TopicID = ".$TopicID."
                         GROUP BY fpv.Vote");
 
-            $StaffVotes = $DB->to_array();
-            foreach ($StaffVotes as $StaffVote) {
-                list($StaffString, $StaffVoted) = $StaffVote;
+    $StaffVotes = $DB->to_array();
+    foreach ($StaffVotes as $StaffVote) {
+        list($StaffString, $StaffVoted) = $StaffVote;
 ?>
-                <li><a href="/forums.php?action=change_vote&amp;threadid=<?=$TopicID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;vote=<?=(int) $StaffVoted?>"><?=display_str(empty($Answers[$StaffVoted]) ? "Blank" : $Answers[$StaffVoted])?></a> - <?=$StaffString?></li>
+        <li><a href="/forums.php?action=change_vote&amp;threadid=<?=$TopicID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;vote=<?=(int) $StaffVoted?>"><?=display_str(empty($Answers[$StaffVoted]) ? "Blank" : $Answers[$StaffVoted])?></a> - <?=$StaffString?></li>
 <?php
-            }
-        }
+    }
+}
 ?>
         </ul>
         <br /><strong>Votes:</strong> <?=number_format($TotalVotes)?>

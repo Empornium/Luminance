@@ -1,19 +1,25 @@
 <?php
-function display_perm($Key,$Title,$ToolTip='')
+function display_perm($Key, $Title, $ToolTip = '')
 {
     global $Values;
-    if (!$ToolTip)$ToolTip=$Title;
+    if (!$ToolTip) {
+        $ToolTip=$Title;
+    }
     $Perm='<input type="checkbox" name="perm_'.$Key.'" id="'.$Key.'" value="1"';
-    if (!empty($Values[$Key])) { $Perm.=" checked"; }
+    if (!empty($Values[$Key])) {
+        $Perm.=" checked";
+    }
     $Perm.=' /> <label for="'.$Key.'" title="'.$ToolTip.'">'.$Title.'</label><br />';
     echo $Perm;
 }
 
-show_header('Manage Permissions','validate');
+show_header('Manage Permissions', 'validate');
 
 echo $Val->GenerateJS('permform');
 
-if(isset($_REQUEST['isclass']) &&  $_REQUEST['isclass']=='1') $IsUserClass = true;
+if (isset($_REQUEST['isclass']) &&  $_REQUEST['isclass']=='1') {
+    $IsUserClass = true;
+}
 ?>
 <form name="permform" id="permform" method="post" action="" onsubmit="return formVal();">
     <input type="hidden" name="action" value="permissions" />
@@ -50,7 +56,9 @@ if(isset($_REQUEST['isclass']) &&  $_REQUEST['isclass']=='1') $IsUserClass = tru
         </tr>
         <tr>
             <td class="label">Auto Promotion</td>
-            <td><input type="checkbox" name="isautopromote" value="1" <?php  if (!empty($isAutoPromote)) { ?>checked<?php  } ?> /></td>
+            <td><input type="checkbox" name="isautopromote" value="1" <?php  if (!empty($isAutoPromote)) {
+?>checked<?php
+} ?> /></td>
         </tr>
         <tr>
             <td class="label">Req Weeks</td>
@@ -74,7 +82,9 @@ if(isset($_REQUEST['isclass']) &&  $_REQUEST['isclass']=='1') $IsUserClass = tru
         </tr>
         <tr>
             <td class="label">Show on Staff page</td>
-            <td><input type="checkbox" name="displaystaff" value="1" <?php  if (!empty($DisplayStaff)) { ?>checked<?php  } ?> /></td>
+            <td><input type="checkbox" name="displaystaff" value="1" <?php  if (!empty($DisplayStaff)) {
+?>checked<?php
+} ?> /></td>
         </tr>
         <tr>
             <td class="label">Maximum number of personal collages</td>

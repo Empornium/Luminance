@@ -15,8 +15,7 @@ header('Pragma:');
 header('Expires: '.date('D, d M Y H:i:s', time()+(2*60*60)).' GMT');
 header('Last-Modified: '.date('D, d M Y H:i:s').' GMT');
 
-if (
-    empty($_GET['feed']) ||
+if (empty($_GET['feed']) ||
     empty($_GET['authkey']) ||
     empty($_GET['auth']) ||
     empty($_GET['passkey']) ||
@@ -60,8 +59,8 @@ switch ($_GET['feed']) {
                 FROM news
                 ORDER BY Time DESC
                 LIMIT 10");
-            $News = $DB->to_array(false,MYSQLI_NUM);
-            $Cache->cache_value('news',$News,1209600);
+            $News = $DB->to_array(false, MYSQLI_NUM);
+            $Cache->cache_value('news', $News, 1209600);
         }
         $Count = 0;
         foreach ($News as $NewsItem) {
@@ -70,7 +69,7 @@ switch ($_GET['feed']) {
                 continue;
             }
             //echo $Feed->item($Title, "test" , 'index.php#news'.$NewsID, SITE_NAME.' Staff','','',$NewsTime);
-            echo $Feed->item($Title, $Text->strip_bbcode($Body), 'index.php#news'.$NewsID, SITE_NAME.' Staff','','',$NewsTime);
+            echo $Feed->item($Title, $Text->strip_bbcode($Body), 'index.php#news'.$NewsID, SITE_NAME.' Staff', '', '', $NewsTime);
             if (++$Count > 4) {
                 break;
             }
@@ -94,16 +93,16 @@ switch ($_GET['feed']) {
                 ORDER BY Time DESC
                 LIMIT 20");
             $Blog = $DB->to_array();
-            $Cache->cache_value('Blog',$Blog,1209600);
+            $Cache->cache_value('Blog', $Blog, 1209600);
         }
         foreach ($Blog as $BlogItem) {
             list($BlogID, $Author, $Title, $Body, $BlogTime, $ThreadID) = $BlogItem;
-            echo $Feed->item($Title, $Text->strip_bbcode($Body), 'forums.php?action=viewthread&amp;threadid='.$ThreadID, SITE_NAME.' Staff','','',$BlogTime);
+            echo $Feed->item($Title, $Text->strip_bbcode($Body), 'forums.php?action=viewthread&amp;threadid='.$ThreadID, SITE_NAME.' Staff', '', '', $BlogTime);
         }
         break;
     case 'torrents_all':
         $Feed->channel('All Torrents', 'RSS feed for all new Torrent uploads.');
-        $Feed->retrieve('torrents_all',$_GET['authkey'],$_GET['passkey']);
+        $Feed->retrieve('torrents_all', $_GET['authkey'], $_GET['passkey']);
         break;
 
     default:
@@ -111,18 +110,18 @@ switch ($_GET['feed']) {
         if (empty($_GET['name']) && substr($_GET['feed'], 0, 16) == 'torrents_notify_') {
             // All personalized torrent notifications
             $Feed->channel('Personalized torrent notifications', 'RSS feed for personalized torrent notifications.');
-            $Feed->retrieve($_GET['feed'],$_GET['authkey'],$_GET['passkey']);
+            $Feed->retrieve($_GET['feed'], $_GET['authkey'], $_GET['passkey']);
         } elseif (!empty($_GET['name']) && substr($_GET['feed'], 0, 16) == 'torrents_notify_') {
             // Specific personalized torrent notification channel
             $Feed->channel(display_str($_GET['name']), 'Personal RSS feed: '.display_str($_GET['name']));
-            $Feed->retrieve($_GET['feed'],$_GET['authkey'],$_GET['passkey']);
+            $Feed->retrieve($_GET['feed'], $_GET['authkey'], $_GET['passkey']);
         } elseif (!empty($_GET['name']) && substr($_GET['feed'], 0, 21) == 'torrents_bookmarks_t_') {
             // Bookmarks
             $Feed->channel('Bookmarked torrent notifications', 'RSS feed for bookmarked torrents.');
-            $Feed->retrieve($_GET['feed'],$_GET['authkey'],$_GET['passkey']);
+            $Feed->retrieve($_GET['feed'], $_GET['authkey'], $_GET['passkey']);
         } else {
             $Feed->channel('All Torrents', 'RSS feed for all new Torrent uploads.');
-            $Feed->retrieve('torrents_all',$_GET['authkey'],$_GET['passkey']);
+            $Feed->retrieve('torrents_all', $_GET['authkey'], $_GET['passkey']);
         }
 }
 $Feed->close_feed();

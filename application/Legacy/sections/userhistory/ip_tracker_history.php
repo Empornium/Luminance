@@ -12,10 +12,14 @@ user.
 
 define('IPS_PER_PAGE', 25);
 
-if (!check_perms('users_mod')) { error(403); }
+if (!check_perms('users_mod')) {
+    error(403);
+}
 
 $UserID = $_GET['userid'];
-if (!is_number($UserID)) { error(404); }
+if (!is_number($UserID)) {
+    error(404);
+}
 
 $DB->query("SELECT um.Username, p.Level AS Class FROM users_main AS um LEFT JOIN permissions AS p ON p.ID=um.PermissionID WHERE um.ID = ".$UserID);
 list($Username, $Class) = $DB->next_record();
@@ -44,7 +48,7 @@ $DB->query("SELECT FOUND_ROWS()");
 list($NumResults) = $DB->next_record();
 $DB->set_query_id($TrackerIps);
 
-$Pages=get_pages($Page,$NumResults,IPS_PER_PAGE,9);
+$Pages=get_pages($Page, $NumResults, IPS_PER_PAGE, 9);
 
 ?>
     <div class="linkbox"><?=$Pages?></div>

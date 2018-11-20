@@ -5,11 +5,15 @@
 
 header('Content-Type: application/json; charset=utf-8');
 
-if(!check_perms('site_vote'))  error(403, true);
+if (!check_perms('site_vote')) {
+    error(403, true);
+}
 
 authorize();
 
-if(empty($_GET['id']) || !is_number($_GET['id'])) error(0, true);
+if (empty($_GET['id']) || !is_number($_GET['id'])) {
+    error(0, true);
+}
 
 $RequestID = (int) $_GET['id'];
 
@@ -23,15 +27,16 @@ $Bounty = $Amount;
 
 $DB->query('SELECT TorrentID, UserID FROM requests WHERE ID='.$RequestID);
 list($Filled, $RequesterID) = $DB->next_record();
-if(!isset($Filled))error("This request has been deleted!", true);
-if($Filled>0) error("This torrent is already filled!", true);
+if (!isset($Filled)) {
+    error("This request has been deleted!", true);
+}
+if ($Filled>0) {
+    error("This torrent is already filled!", true);
+}
 
 if (($LoggedUser['BytesUploaded'] - $LoggedUser['BytesDownloaded']) < $Amount) {
-
     echo json_encode(array( 'bankrupt', $Bounty, 0, 0, false ));
-
 } else {
-
     // Create vote!
     $DB->query("INSERT IGNORE INTO requests_votes
                     (RequestID, UserID, Bounty)
@@ -68,5 +73,5 @@ if (($LoggedUser['BytesUploaded'] - $LoggedUser['BytesDownloaded']) < $Amount) {
     $RequestVotes = get_votes_array($RequestID);
 
     echo json_encode(array( $voteaction, $Bounty,
-                            $RequestVotes['TotalBounty'], count($RequestVotes['Voters']), get_votes_html( $RequestVotes, $RequestID ) ) );
+                            $RequestVotes['TotalBounty'], count($RequestVotes['Voters']), get_votes_html($RequestVotes, $RequestID) ));
 }

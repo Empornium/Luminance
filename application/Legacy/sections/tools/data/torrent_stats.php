@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('site_view_flow')) { error(403); }
+if (!check_perms('site_view_flow')) {
+    error(403);
+}
 show_header('Torrents');
 
 if (!$TorrentStats = $Cache->get_value('new_torrent_stats')) {
@@ -13,10 +15,10 @@ if (!$TorrentStats = $Cache->get_value('new_torrent_stats')) {
     list($WeekNum, $WeekSize, $WeekFiles) = $DB->next_record();
     $DB->query("SELECT COUNT(ID), SUM(Size), SUM(FileCount) FROM torrents WHERE Time > SUBDATE('".sqltime()."', INTERVAL 30 DAY)");
     list($MonthNum, $MonthSize, $MonthFiles) = $DB->next_record();
-    $Cache->cache_value('new_torrent_stats',array($TorrentCount,$TotalSize,$TotalFiles,
+    $Cache->cache_value('new_torrent_stats', array($TorrentCount,$TotalSize,$TotalFiles,
                         $NumUsers,$DayNum,$DaySize,$DayFiles,
                         $WeekNum,$WeekSize,$WeekFiles,$MonthNum,
-                        $MonthSize,$MonthFiles),3600);
+                        $MonthSize,$MonthFiles), 3600);
 } else {
     list($TorrentCount,$TotalSize,$TotalFiles,$NumUsers,$DayNum,$DaySize,$DayFiles,
         $WeekNum,$WeekSize,$WeekFiles,$MonthNum,$MonthSize,$MonthFiles) = $TorrentStats;

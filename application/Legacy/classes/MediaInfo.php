@@ -9,18 +9,18 @@ class MediaInfo
 {
 
     // options
-    public    $checkEncodingSettings = FALSE;
-    public    $characterSet = 'ISO-8859-1';  // hopefully your site is UTF-8, if so change this default
+    public $checkEncodingSettings = false;
+    public $characterSet = 'ISO-8859-1';  // hopefully your site is UTF-8, if so change this default
 
     // outputs
-    public    $filename = 'Mediainfo Log';
-    public    $sanitizedLog = '';
-    public    $audio = array();
-    public    $text = array();
-    public    $logs = array(); // will contain an object for each mediainfo log processed
+    public $filename = 'Mediainfo Log';
+    public $sanitizedLog = '';
+    public $audio = array();
+    public $text = array();
+    public $logs = array(); // will contain an object for each mediainfo log processed
 
     // internal use
-    private $hadBlankLine = FALSE; // only parse as a mediainfo log if it included a blank line
+    private $hadBlankLine = false; // only parse as a mediainfo log if it included a blank line
     private $audionum = 0;
     private $textnum = 0;
     private $currentSection = ''; // tracks log section while parsing
@@ -32,7 +32,8 @@ class MediaInfo
      * @property-write string $output    final HTML output
      * @property-write array $logs    one object per log
     */
-    public function parse($string) {
+    public function parse($string)
+    {
 
         $string = trim($string);
         $output = array();
@@ -66,8 +67,8 @@ class MediaInfo
                 if (preg_match($mistart, $line)) { // start of a mediainfo log?
 
                     $Log = new MEDIAINFO;  // create an instance of the class
-                    if ($this->checkEncodingSettings === TRUE) {
-                        $Log->checkEncodingSettings = TRUE;
+                    if ($this->checkEncodingSettings === true) {
+                        $Log->checkEncodingSettings = true;
                     }
 
                     $inmi = true;
@@ -137,7 +138,8 @@ class MediaInfo
      * @param string $line
      * @return string
     */
-    protected function parseProperties($line) {
+    protected function parseProperties($line)
+    {
         $array = explode(":", $line, 2);
         $property = strtolower(trim($array[0]));
         $property = preg_replace("#/string$#", "", $property);
@@ -249,7 +251,7 @@ class MediaInfo
                     $this->audio[$this->audionum]['profile'] = $value;
                     break;
             }
-        }    else if (stripos($this->currentSection, "text") > -1) {
+        } else if (stripos($this->currentSection, "text") > -1) {
             switch ($property) {
                 case "title":
                     $this->text[$this->textnum]['title-lang'] = $value;
@@ -270,11 +272,11 @@ class MediaInfo
      * convert language to country code
      * @return string
     */
-   private function getLocaleCodeForDisplayLanguage($language)
-   {
-       $language = strtolower($language);
+    private function getLocaleCodeForDisplayLanguage($language)
+    {
+        $language = strtolower($language);
 
-       $languageCodes = [
+        $languageCodes = [
            "afar"                                                       => "aa",
            "abkhazian"                                                  => "ab",
            "avestan"                                                    => "ae",
@@ -464,14 +466,15 @@ class MediaInfo
         ];
 
         return isset($languageCodes[$language]) ? $languageCodes[$language] : null;
-   }
+    }
 
 
    /**
     * compute mediainfo specs and add HTML
     * @return string HTML
    */
-   protected function addHTML() {
+    protected function addHTML()
+    {
         $this->codeccomputed = $this::computeCodec();
 
         $miaudio = array();
@@ -509,7 +512,7 @@ class MediaInfo
                 $result .= " @ " . $this->audio[$i]['bitrate'];
             }
             if ($this->audio[$i]['title']
-                && (stripos($this->filename, $this->audio[$i]['title']) === FALSE) ) { // ignore audio track title if it contains filename
+                && (stripos($this->filename, $this->audio[$i]['title']) === false) ) { // ignore audio track title if it contains filename
                 $result .= " (" . $this->audio[$i]['title'] . ")";
             }
             $miaudio[] = $result;
@@ -517,13 +520,13 @@ class MediaInfo
 
         $misubs = array();
         for ($i=1; $i < count($this->text)+1; $i++) {
-
-            if($this->text[$i]['title-lang'])
-             $result = $this->text[$i]['title-lang'];
-            elseif($this->text[$i]['lang'])
-             $result = $this->text[$i]['lang'];
-            elseif($this->text[$i]['default'])
-             $result = 'Default';
+            if ($this->text[$i]['title-lang']) {
+                $result = $this->text[$i]['title-lang'];
+            } elseif ($this->text[$i]['lang']) {
+                $result = $this->text[$i]['lang'];
+            } elseif ($this->text[$i]['default']) {
+                $result = 'Default';
+            }
             $misubs[] = $result;
         }
 
@@ -536,7 +539,7 @@ class MediaInfo
                 $this->bitrate = "Variable";
             } else {
                 $this->bitrate = $this->nominalbitrate;
-                $italicBitrate = TRUE;
+                $italicBitrate = true;
             }
         }
 
@@ -556,7 +559,7 @@ class MediaInfo
         . '<td><table class="nobr noborder"><caption>Video</caption>'
         . '<tr><td>Codec:&nbsp;</td><td>' . self::sanitizeHTML($this->codeccomputed);
 
-        if (stripos($this->bitdepth, "10 bit") !== FALSE) {
+        if (stripos($this->bitdepth, "10 bit") !== false) {
             $table .= " (10-bit)";
         }
 
@@ -565,11 +568,11 @@ class MediaInfo
         . '</td></tr><tr><td>Frame&nbsp;rate:&nbsp;</td><td>' . self::sanitizeHTML($this->framerate)
         . '</td></tr><tr><td>Bit&nbsp;rate:&nbsp;</td><td>';
 
-//        if ($italicBitrate === TRUE) {
-//            $table .= "<em>" . self::sanitizeHTML($this->bitrate) . "</em>";
-//        } else {
+  //        if ($italicBitrate === TRUE) {
+  //            $table .= "<em>" . self::sanitizeHTML($this->bitrate) . "</em>";
+  //        } else {
             $table .= self::sanitizeHTML($this->bitrate);
-//        }
+  //        }
 
         $table .= '</td></tr>' // <tr><td>BPP:&nbsp;</td><td>' . self::sanitizeHTML($this->bpp)
         . '</table></td><td>'
@@ -580,31 +583,32 @@ class MediaInfo
             . self::sanitizeHTML($miaudio[$i]) . '</td></tr>';
         }
 
-      if($misubs){
+        if ($misubs) {
+            $table .= '</table></td><td>'
+            . '<table class="nobr noborder"><caption>Subtitles</caption>';
 
-        $table .= '</table></td><td>'
-        . '<table class="nobr noborder"><caption>Subtitles</caption>';
+            for ($i = 0, $c = count($misubs); $i < $c; $i++) {
+                $Iteration = intval($i + 1);
+                $Flag      = '';
+                $Language  = self::sanitizeHTML($misubs[$i]);
 
-         for ($i = 0, $c = count($misubs); $i < $c; $i++) {
-             $Iteration = intval($i + 1);
-             $Flag      = '';
-             $Language  = self::sanitizeHTML($misubs[$i]);
+                // Consider 'default' as english
+                if ($misubs[$i] === 'Default') {
+                    $misubs[$i] = 'English';
+                }
 
-             // Consider 'default' as english
-             if($misubs[$i] === 'Default')
-                $misubs[$i] = 'English';
+                // Get country code
+                $cd = trim(preg_replace('/\(SDH\)/', '', $misubs[$i])); // Remove SDH mention
+                $cd = $this->getLocaleCodeForDisplayLanguage($cd);
 
-             // Get country code
-             $cd = trim(preg_replace('/\(SDH\)/', '', $misubs[$i])); // Remove SDH mention
-             $cd = $this->getLocaleCodeForDisplayLanguage($cd);
+                // Add a flag if there's an image for it
+                if ($cd) {
+                    $Flag = '<img src="/static/common/flags/iso16/'.$cd.'.png" alt="'.$Language.'" title="'.$Language.'" />';
+                }
 
-             // Add a flag if there's an image for it
-             if ($cd)
-                 $Flag = '<img src="/static/common/flags/iso16/'.$cd.'.png" alt="'.$Language.'" title="'.$Language.'" />';
-
-             $table .= "<tr><td>#$Iteration:</td><td>$Flag</td><td>$Language</td></tr>";
-         }
-      }
+                $table .= "<tr><td>#$Iteration:</td><td>$Flag</td><td>$Language</td></tr>";
+            }
+        }
 
         $table .= '</table></td></tr>';
 
@@ -618,7 +622,7 @@ class MediaInfo
             }
         }
 
-      $table .= '</table>';
+        $table .= '</table>';
 
         return "<div>" . $midiv_start . $this->sanitizedLog . $midiv_end . $table . "</div>";
     }
@@ -627,14 +631,15 @@ class MediaInfo
      * check video encoding settings
      * @return string or null
     */
-    protected function checkEncodingSettings() {
+    protected function checkEncodingSettings()
+    {
         $poorSpecs = array();
         $settings = explode("/", $this->encodingsettings);
 
-        foreach($settings as $str) {
+        foreach ($settings as $str) {
             $arr = explode("=", $str);
-            $property = strtolower( trim($arr[0]) );
-            $value = trim( $arr[1] );
+            $property = strtolower(trim($arr[0]));
+            $value = trim($arr[1]);
 
             switch ($property) {
                 case "rc_lookahead":
@@ -658,7 +663,8 @@ class MediaInfo
      * calculates approximate display dimensions of anamorphic video
      * @return string HTML or null
     */
-    private function displayDimensions() {
+    private function displayDimensions()
+    {
         $w = intval($this->width);
         $h = intval($this->height);
         if ($h < 1 || $w < 1 || !$this->aspectratio) {
@@ -685,7 +691,7 @@ class MediaInfo
             return;
         }
 
-        if ( ($w * $calch) > ($calcw * $h) ) { // pick greater overall size
+        if (($w * $calch) > ($calcw * $h)) { // pick greater overall size
             $tmp = $output;
             $output = $outputAlt;
             $outputAlt = $tmp;
@@ -700,7 +706,8 @@ class MediaInfo
      * @param string $string
      * @return string
     */
-    private function parseSize($string) {
+    private function parseSize($string)
+    {
         return str_replace(array('pixels', ' '), null, $string);
     }
 
@@ -708,7 +715,8 @@ class MediaInfo
      * Calculates the codec of the input mediainfo file
      * @return string
     */
-    private function computeCodec() {
+    private function computeCodec()
+    {
         switch (strtolower($this->videoformat)) {
             case "mpeg video":
                 switch (strtolower($this->videoformatversion)) {
@@ -751,7 +759,8 @@ class MediaInfo
      * @param string $string
      * @return string
     */
-    private function stripPath($string) {
+    private function stripPath($string)
+    {
         $string = str_replace("\\", "/", $string);
         $path_parts = pathinfo($string);
         return $path_parts['basename'];
@@ -763,15 +772,15 @@ class MediaInfo
      * @param mixed $value str or array
      * @return mixed sanitized output
     */
-    private function sanitizeHTML (&$value) {
+    private function sanitizeHTML(&$value)
+    {
 
-        if (is_array($value)){
-            foreach ($value as $k => $v){
+        if (is_array($value)) {
+            foreach ($value as $k => $v) {
                 $value[$k] = self::sanitizeHTML($v);
             }
         }
 
         return htmlentities((string) $value, ENT_QUOTES, $this->characterSet);
     }
-
 } // end class

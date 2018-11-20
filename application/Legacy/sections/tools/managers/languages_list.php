@@ -38,44 +38,50 @@ $images = array_diff($images, array('.', '..'));
 <?php
         $DB->query("SELECT  ID, language, code, flag_cc, active FROM languages ORDER BY active DESC, language");
 
-        while (list($id, $language, $code, $flag_cc, $active) = $DB->next_record()) {
+while (list($id, $language, $code, $flag_cc, $active) = $DB->next_record()) {
+    ?>
+    <tr>
+    <form action="tools.php" method="post">
+<td>
+    <input type="hidden" name="action" value="languages_alter" />
+    <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+    <input type="hidden" name="id" value="<?= $id ?>" />
+    <input class="medium" type="text" name="language" value="<?=$language?>" />
+</td>
+<td>
+    <input class="medium" type="text" name="code" value="<?=$code?>" />
+</td>
+<td class="right">
+    <span id="lang_image<?=$id?>">
+        <img style="vertical-align: bottom" title="<?=$flag_cc?>" src="//<?=SITE_URL?>/static/common/flags/iso16/<?=$flag_cc?>.png" />
+    </span>
+</td>
+<td>
+    <span style=" ">
+        <select id="flag_image<?=$id?>" name="flag" onchange="change_image('#lang_image<?=$id?>', '#flag_image<?=$id?>');">
+                    <option value="">none</option>
+            <?php  foreach ($images as $key => $value) {
+                if (strlen($value)==6) {
+                    $value = substr($value, 0, strlen($value)-4); // remove .png extension  ?>
+                                        <option value="<?= display_str($value) ?>" <?php  if ($flag_cc==$value) {
+                                            echo 'selected="selected"';
+                                                       }?>><?= $value ?></option>
+                <?php       }
+}
             ?>
-            <tr>
-            <form action="tools.php" method="post">
-                <td>
-                    <input type="hidden" name="action" value="languages_alter" />
-                    <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
-                    <input type="hidden" name="id" value="<?= $id ?>" />
-                    <input class="medium" type="text" name="language" value="<?=$language?>" />
-                </td>
-                <td>
-                    <input class="medium" type="text" name="code" value="<?=$code?>" />
-                </td>
-                <td class="right">
-                    <span id="lang_image<?=$id?>">
-                        <img style="vertical-align: bottom" title="<?=$flag_cc?>" src="//<?=SITE_URL?>/static/common/flags/iso16/<?=$flag_cc?>.png" />
-                    </span>
-                </td>
-                <td>
-                    <span style=" ">
-                        <select id="flag_image<?=$id?>" name="flag" onchange="change_image('#lang_image<?=$id?>', '#flag_image<?=$id?>');">
-                                    <option value="">none</option>
-                            <?php  foreach ($images as $key => $value) {
-                                    if (strlen($value)==6) {
-                                        $value = substr($value, 0, strlen($value)-4  ); // remove .png extension  ?>
-                                        <option value="<?= display_str($value) ?>" <?php  if($flag_cc==$value) echo 'selected="selected"';?>><?= $value ?></option>
-                            <?php       }
-                               }
-                            ?>
-                        </select>
-                    </span>
-                </td>
-                <td>
-                    <input type="checkbox" name="active" value="1" <?php  if($active) echo 'checked="checked"';?> />
+        </select>
+            </span>
+        </td>
+        <td>
+            <input type="checkbox" name="active" value="1" <?php  if ($active) {
+                echo 'checked="checked"';
+                                                           }?> />
                 </td>
                 <td>
                     <input type="submit" name="submit" value="Edit" />
-                    <input type="submit" name="submit" <?php  if(!isset($_GET['del'])) echo 'disabled="disabled"';?> value="Delete" title="To enable the delete button use the &del=1 parameter in the url, but normally you should just deactivate a language option" />
+                    <input type="submit" name="submit" <?php  if (!isset($_GET['del'])) {
+                        echo 'disabled="disabled"';
+                                                       }?> value="Delete" title="To enable the delete button use the &del=1 parameter in the url, but normally you should just deactivate a language option" />
                 </td>
             </form>
             </tr>
@@ -113,11 +119,11 @@ $images = array_diff($images, array('.', '..'));
                     <select id="flag_image0" name="flag" onchange="change_image('#lang_image0', '#flag_image0');">
                                     <option value="">none</option>
                         <?php  foreach ($images as $key => $value) {
-                                if (strlen($value)==6) {
-                                    $value = substr($value, 0, strlen($value)-4  ); // remove .png extension  ?>
+                            if (strlen($value)==6) {
+                                $value = substr($value, 0, strlen($value)-4); // remove .png extension  ?>
                                     <option value="<?= display_str($value) ?>"><?= $value ?></option>
-                        <?php       }
-                           }
+                            <?php       }
+                        }
                         ?>
                     </select>
                 </span>

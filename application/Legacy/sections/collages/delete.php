@@ -9,16 +9,20 @@ $DB->query("SELECT Name, UserID, CategoryID FROM collages WHERE ID='$CollageID'"
 list($Name, $CreatorID, $CategoryID) = $DB->next_record();
 
 // if user has permission to delete collages then no further checks needed
-if (!check_perms('site_collages_delete') ) {
+if (!check_perms('site_collages_delete')) {
     // if not the user then cannot delete
-    if ($CreatorID != $LoggedUser['ID']) error(403);
+    if ($CreatorID != $LoggedUser['ID']) {
+        error(403);
+    }
 
     if ($CategoryID !=0) {  // if personal cat then user can delete
         $DB->query("SELECT DISTINCT UserID FROM collages_torrents WHERE CollageID='$CollageID'");
         $NumUsers = $DB->record_count();
         if ($NumUsers == 1) {
             $UserIDs = $DB->collect('UserID');
-            if ( !in_array($CreatorID, $UserIDs)) error("You cannot delete a collage that other users have contributed torrents to");
+            if (!in_array($CreatorID, $UserIDs)) {
+                error("You cannot delete a collage that other users have contributed torrents to");
+            }
         } elseif ($NumUsers >1) {
             error("You cannot delete a collage that other users have contributed torrents to");
         }

@@ -19,8 +19,10 @@ if ($Forum === false) {
 }
 $Text = new Luminance\Legacy\Text;
 
-if (!check_forumperm($ForumID, 'Write') || !check_forumperm($ForumID, 'Create')) { error(403); }
-show_header('Forums > '.$Forum['Name'].' > New Topic','comments,bbcode,jquery');
+if (!check_forumperm($ForumID, 'Write') || !check_forumperm($ForumID, 'Create')) {
+    error(403);
+}
+show_header('Forums > '.$Forum['Name'].' > New Topic', 'comments,bbcode,jquery');
 ?>
 <div class="thin">
     <div class="hidden" id="newthreadpreview">

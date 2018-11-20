@@ -13,13 +13,13 @@ It will be accompanied with:
 
 \*********************************************************************/
 
-if(!check_perms('site_moderate_forums')) {
-    error('You lack the permission to unlock this post.',true);
+if (!check_perms('site_moderate_forums')) {
+    error('You lack the permission to unlock this post.', true);
 }
 
 // Quick SQL injection check
 if (!is_number($_POST['post'])) {
-    error(0,true);
+    error(0, true);
 }
 // End injection check
 

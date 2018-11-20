@@ -33,7 +33,8 @@ $Body   = $_POST['body'];
 $PostID = $_POST['post'];
 
 // get current post info
-$postinfo = $master->db->raw_query("SELECT
+$postinfo = $master->db->raw_query(
+    "SELECT
                                         p.Body,
                                         p.AuthorID,
                                         p.TopicID,
@@ -54,22 +55,25 @@ $postinfo = $master->db->raw_query("SELECT
                                     JOIN forums_topics as t on p.TopicID = t.ID
                                     JOIN forums as f ON t.ForumID=f.ID
                                     WHERE p.ID=:postid2",
-                                    [':postid' => $PostID,
-                                     ':postid2'=> $PostID])->fetch(\PDO::FETCH_NUM);
+    [':postid' => $PostID,
+    ':postid2'=> $PostID]
+)->fetch(\PDO::FETCH_NUM);
 
-if (!isset($postinfo[0])) error(404, true);
+if (!isset($postinfo[0])) {
+    error(404, true);
+}
 
 list($OldBody, $AuthorID, $TopicID, $AddedTime, $IsLocked, $ForumID, $StickyPostID, $MinClassWrite, $EditedTime, $EditedUserID, $TimeLock, $Page) = $postinfo;
 
 // Make sure they aren't trying to edit posts they shouldn't
 if (!check_forumperm($ForumID, 'Write') || ($IsLocked && !check_perms('site_moderate_forums'))) {
-    error('Either the thread is locked, or you lack the permission to edit this post.',true);
+    error('Either the thread is locked, or you lack the permission to edit this post.', true);
 }
 
 validate_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime, $TimeLock);
 
 
-$preview = $Text->full_format($_POST['body'],  get_permissions_advtags($AuthorID), true);
+$preview = $Text->full_format($_POST['body'], get_permissions_advtags($AuthorID), true);
 if ($Text->has_errors()) {
     $result = 'error';
     $bbErrors = implode('<br/>', $Text->get_errors());
@@ -78,31 +82,33 @@ if ($Text->has_errors()) {
 
 if (!$bbErrors) {
     // Perform the update
-    $master->db->raw_query("UPDATE forums_posts
+    $master->db->raw_query(
+        "UPDATE forums_posts
                                SET Body         = :body,
                                    EditedUserID = :userid,
                                    EditedTime   = :sqltime
                              WHERE ID = :postid",
-                                   [':body'    => $Body,
+        [':body'    => $Body,
                                     ':userid'  => $UserID,
                                     ':sqltime' => sqltime(),
-                                    ':postid'  => $PostID]);
+        ':postid'  => $PostID]
+    );
 
     if ($PostID == $StickyPostID) {
         $master->cache->delete('thread_'.$TopicID.'_info');
-
     } else {
         $CatalogueID = floor((POSTS_PER_PAGE*$Page-POSTS_PER_PAGE)/THREAD_CATALOGUE);
         $master->cache->delete('thread_'.$TopicID.'_catalogue_'.$CatalogueID);
-
     }
 
-    $master->db->raw_query("INSERT INTO comments_edits (Page, PostID, EditUser, EditTime, Body)
+    $master->db->raw_query(
+        "INSERT INTO comments_edits (Page, PostID, EditUser, EditTime, Body)
                                 VALUES ('forums', :postid, :userid, :sqltime, :body)",
-                                      [':postid'  => $PostID,
+        [':postid'  => $PostID,
                                        ':userid'  => $UserID,
                                        ':sqltime' => sqltime(),
-                                       ':body'    => $OldBody]);
+        ':body'    => $OldBody]
+    );
     $master->cache->delete_value("forums_edits_$PostID");
     $result = 'saved';
 }
@@ -112,25 +118,25 @@ ob_start();
     <?=$preview; ?>
 </div>
 <?php
-    if ($result=='saved') {
+if ($result=='saved') {
 ?>
 <div class="post_footer">
 <?php
-        if (check_perms('site_moderate_forums')) { ?>
+if (check_perms('site_moderate_forums')) { ?>
     <a href="#content<?=$PostID?>" onclick="LoadEdit('forums', <?=$PostID?>, 1); return false;">&laquo;</a>
 <?php
-        }
+}
 ?>
-    <span class="editedby">Last edited by <a href="/user.php?id=<?=$LoggedUser['ID']?>"><?=$LoggedUser['Username']?></a> just now</span>
+<span class="editedby">Last edited by <a href="/user.php?id=<?=$LoggedUser['ID']?>"><?=$LoggedUser['Username']?></a> just now</span>
 <?php
-        if (check_perms('site_admin_forums')) { ?>
+if (check_perms('site_admin_forums')) { ?>
     &nbsp;&nbsp;<a href="#content<?=$PostID?>" onclick="RevertEdit(<?=$PostID?>); return false;" title="remove last edit">&reg;</a>
 <?php
-        }
+}
 ?>
 </div>
 <?php
-    }
+}
 
 $html = ob_get_contents();
 ob_end_clean();

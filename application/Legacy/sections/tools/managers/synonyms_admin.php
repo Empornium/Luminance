@@ -10,7 +10,7 @@ $UseMultiInterface= true;
 $DB->query("SELECT ID, Name, Uses FROM tags WHERE TagType='genre' ORDER BY Name ASC");
 $Tags = $DB->to_array();
 
-show_header('Official Synonyms Manager','tagmanager,bbcode');
+show_header('Official Synonyms Manager', 'tagmanager,bbcode');
 
 printRstMessage();
 ?>
@@ -54,20 +54,20 @@ printRstMessage();
                     <table class="noborder">
 <?php
                     $AtoZ = array('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','other');
-                    foreach ($AtoZ as $char) {
+foreach ($AtoZ as $char) {
 ?>
-                      <tr>
-                        <td style="width:100px"><?=$char?></td>
-                        <td style="width:90%;text-align:left;">
-                        <select id="movetagid_<?=$char?>" name="movetagid[<?=$char?>]"
-                                onclick="Get_Taglist('movetagid_<?=$char?>', '<?=$char?>')"
-                                  onchange="Select_Tag('<?=$char?>', this.value, this.options[this.selectedIndex].text );" >
-                            <option value="0" selected="selected">tags beginning with <?=$char?>&nbsp;</option>
-                        </select>
-                        </td>
-                      </tr>
+<tr>
+<td style="width:100px"><?=$char?></td>
+<td style="width:90%;text-align:left;">
+<select id="movetagid_<?=$char?>" name="movetagid[<?=$char?>]"
+onclick="Get_Taglist('movetagid_<?=$char?>', '<?=$char?>')"
+onchange="Select_Tag('<?=$char?>', this.value, this.options[this.selectedIndex].text );" >
+<option value="0" selected="selected">tags beginning with <?=$char?>&nbsp;</option>
+</select>
+</td>
+</tr>
 <?php
-                    }
+}
 ?>
                     </table>
 

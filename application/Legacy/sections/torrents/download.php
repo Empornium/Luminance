@@ -19,7 +19,9 @@ if (!isset($_REQUEST['torrent_pass'])) {
     }
     $UserInfo = array($UserInfo);
     list($UserID,$DownloadAlt)=array_shift($UserInfo);
-    if (!$UserID) { error(403); }
+    if (!$UserID) {
+        error(403);
+    }
     $TorrentPass = $_REQUEST['torrent_pass'];
 }
 
@@ -29,7 +31,9 @@ if (!$master->options->EnableDownloads) {
 
 $TorrentID = $_REQUEST['id'];
 
-if (!is_number($TorrentID)) { error(0); }
+if (!is_number($TorrentID)) {
+    error(0);
+}
 
 $Info = $Cache->get_value('torrent_download_'.$TorrentID);
 if (!is_array($Info) || empty($Info[10])) {
@@ -117,7 +121,6 @@ if ($_REQUEST['usetoken'] == 1 && $FreeTorrent == 0) {
         }
     }
 } elseif ($_REQUEST['usetoken'] == 2 && $DoubleTorrent == 0) {
-
     // First make sure this isn't already DS, and if it is, do nothing
     if (empty($TokenTorrents[$TorrentID]) || $TokenTorrents[$TorrentID]['DoubleSeed'] < sqltime()) {
         if (isset($LoggedUser)) {

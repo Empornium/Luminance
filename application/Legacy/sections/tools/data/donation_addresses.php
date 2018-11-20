@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('admin_donor_addresses')) { error(403); }
+if (!check_perms('admin_donor_addresses')) {
+    error(403);
+}
 
 include(SERVER_ROOT.'/Legacy/sections/donate/functions.php');
 define('DONATIONS_PER_PAGE', 50);
@@ -58,7 +60,7 @@ show_header('Bitcoin addresses');
 ?>
     <div class="linkbox">
     <?php
-        $Pages=get_pages($Page,$Results,DONATIONS_PER_PAGE,11) ;
+        $Pages=get_pages($Page, $Results, DONATIONS_PER_PAGE, 11) ;
         echo $Pages;
     ?>
     </div>
@@ -79,22 +81,22 @@ show_header('Bitcoin addresses');
                         <td></td>
                     </tr>
     <?php
-        foreach ($Addresses as $Address) {
-            list($ID, $public, $UserID, $Username, $PermissionID, $Enabled, $Donor) = $Address;
+    foreach ($Addresses as $Address) {
+        list($ID, $public, $UserID, $Username, $PermissionID, $Enabled, $Donor) = $Address;
 
-                $row = $row=='b'?'a':'b';
+        $row = $row=='b'?'a':'b';
     ?>
-                    <tr class="row<?=$row?>">
-                        <td>
-                            <input type="checkbox" name="deleteids[]" value="<?=$ID?>" title="If checked this address will be selected for delete" />
-                        </td>
-                        <td><?=$ID?></td>
-                        <td class="address"><?=$public?></td>
-                        <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?></td>
-                        <td><?=( validate_btc_address($public)?'':'<span class="red">invalid format!</span>');?> </td>
-                    </tr>
+            <tr class="row<?=$row?>">
+                <td>
+                    <input type="checkbox" name="deleteids[]" value="<?=$ID?>" title="If checked this address will be selected for delete" />
+                </td>
+                <td><?=$ID?></td>
+                <td class="address"><?=$public?></td>
+                <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?></td>
+                <td><?=( validate_btc_address($public)?'':'<span class="red">invalid format!</span>');?> </td>
+            </tr>
 
-    <?php 	} ?>
+    <?php   } ?>
                 </table>
             </div>
             <div>

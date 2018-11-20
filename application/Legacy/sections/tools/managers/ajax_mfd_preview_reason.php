@@ -1,6 +1,8 @@
 <?php
 /* AJAX Previews, simple stuff. */
-if (!check_perms('torrents_review_manage')) error(403);
+if (!check_perms('torrents_review_manage')) {
+    error(403);
+}
 $Text = new Luminance\Legacy\Text;
 
 if (!empty($_POST['description'])) {

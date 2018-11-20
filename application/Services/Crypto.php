@@ -11,12 +11,14 @@ use \Defuse\Crypto\Crypto as DCrypto;
 use \Defuse\Crypto\Exception as DCryptoEx;
 use Luminance\Errors\UserError;
 
-class Crypto extends Service {
+class Crypto extends Service
+{
 
     protected $CryptoKey;
     protected $DerivedKeys = [];
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
         require_once($master->library_path . '/php-encryption/autoload.php');
         $this->CryptoKey = $this->hex2bin($this->master->settings->keys->crypto_key);
@@ -25,9 +27,12 @@ class Crypto extends Service {
         }
     }
 
-    public function encrypt($Message, $KeyIdentifier = 'default', $Hex = false) {
+    public function encrypt($Message, $KeyIdentifier = 'default', $Hex = false)
+    {
         $Key = $this->get_derived_key($KeyIdentifier);
-        if (is_array($Message)) $Message = serialize($Message);
+        if (is_array($Message)) {
+            $Message = serialize($Message);
+        }
         try {
             $Ciphertext = DCrypto::encrypt($Message, $Key);
         } catch (DCryptoEx\CryptoTestFailedException $ex) {
@@ -35,11 +40,14 @@ class Crypto extends Service {
         } catch (DCryptoEx\CannotPerformOperationException $ex) {
             throw new SystemError('Cannot safely perform encryption');
         }
-        if ($Hex) $Ciphertext = $this->bin2hex($Ciphertext);
+        if ($Hex) {
+            $Ciphertext = $this->bin2hex($Ciphertext);
+        }
         return $Ciphertext;
     }
 
-    public function decrypt($Ciphertext, $KeyIdentifier = 'default', $Hex = false) {
+    public function decrypt($Ciphertext, $KeyIdentifier = 'default', $Hex = false)
+    {
         # Always check for return value === false when using this!
         # It implies the ciphertext was invalid.
         if ($Hex) {
@@ -59,27 +67,33 @@ class Crypto extends Service {
         } catch (DCryptoEx\CannotPerformOperationException $ex) {
             throw new SystemError('Cannot safely perform encryption');
         }
-        if (@unserialize($Message)) $Message = unserialize($Message);
+        if (@unserialize($Message)) {
+            $Message = unserialize($Message);
+        }
         return $Message;
     }
 
-    protected function shortHMAC($keyIdentifier, $data) {
+    protected function shortHMAC($keyIdentifier, $data)
+    {
         $key = $this->get_derived_key($keyIdentifier);
         return substr(hash_hmac('sha256', $data, $key, true), 0, 12);
     }
 
-    protected function shortHash($data) {
+    protected function shortHash($data)
+    {
         return substr(hash('sha256', strval($data), true), 0, 4);
     }
 
-    public function generateAuthToken($keyIdentifier, $cid, $action = '') {
+    public function generateAuthToken($keyIdentifier, $cid, $action = '')
+    {
         $timestamp = intval(date('U'));
         $baseToken = pack('a4a4N', $this->shortHash($action), $this->shortHash($cid), $timestamp);
         $fullToken = $baseToken . $this->shortHMAC($keyIdentifier, $baseToken);
         return self::bin2hex($fullToken);
     }
 
-    public function checkAuthToken($keyIdentifier, $token, $cid, $action = '', $duration = 86400) {
+    public function checkAuthToken($keyIdentifier, $token, $cid, $action = '', $duration = 86400)
+    {
         try {
             $fullToken = $this->hex2bin($token);
             $baseToken = substr($fullToken, 0, 12);
@@ -100,7 +114,8 @@ class Crypto extends Service {
         }
     }
 
-    public function random_bytes($length) {
+    public function random_bytes($length)
+    {
         $strong = null;
         $bytes = openssl_random_pseudo_bytes($length, $strong);
         if ($strong !== true) {
@@ -109,7 +124,8 @@ class Crypto extends Service {
         return $bytes;
     }
 
-    public function random_string($length = 32, $chars = 'abcdefghijklmnopqrstuvwxyz0123456789') {
+    public function random_string($length = 32, $chars = 'abcdefghijklmnopqrstuvwxyz0123456789')
+    {
         # This is intended to provide an unbiased random string suitable for use in strong crypto.
         # Don't mess with it unless you fully understand it.
         $mod = strlen($chars);
@@ -129,7 +145,8 @@ class Crypto extends Service {
         return $target;
     }
 
-    protected function get_derived_key($Identifier) {
+    protected function get_derived_key($Identifier)
+    {
         if (array_key_exists($Identifier, $this->DerivedKeys)) {
             $DerivedKey = $this->DerivedKeys[$Identifier];
         } else {
@@ -147,7 +164,8 @@ class Crypto extends Service {
         return $DerivedKey;
     }
 
-    protected static function derive_key($ikm, $length, $info = '', $salt = null) {
+    protected static function derive_key($ikm, $length, $info = '', $salt = null)
+    {
         # This function has been borrowed from the php-encryption library ("HKDF" function).
         # Although the library recommends only using its public methods, there appear to be
         # no other general purpose key derivation functions available, and this is still better
@@ -205,7 +223,8 @@ class Crypto extends Service {
         return $orm;
     }
 
-    protected static function our_strlen($str) {
+    protected static function our_strlen($str)
+    {
         static $exists = null;
         if ($exists === null) {
             $exists = \function_exists('mb_strlen');
@@ -223,7 +242,8 @@ class Crypto extends Service {
         }
     }
 
-    protected static function our_substr($str, $start, $length = null) {
+    protected static function our_substr($str, $start, $length = null)
+    {
         static $exists = null;
         if ($exists === null) {
             $exists = \function_exists('mb_substr');
@@ -250,11 +270,13 @@ class Crypto extends Service {
         }
     }
 
-    public static function bin2hex($BinString) {
+    public static function bin2hex($BinString)
+    {
         return DCrypto::binToHex($BinString);
     }
 
-    public static function hex2bin($HexString) {
+    public static function hex2bin($HexString)
+    {
         return DCrypto::hexToBin($HexString);
     }
 }

@@ -1,7 +1,9 @@
 <?php
 authorize();
 // Quick SQL injection check
-if (!isset($_GET['postid']) || !is_number($_GET['postid'])) { error(0); }
+if (!isset($_GET['postid']) || !is_number($_GET['postid'])) {
+    error(0);
+}
 $PostID = $_GET['postid'];
 
 // Make sure they are moderators
@@ -30,7 +32,9 @@ $DB->query("SELECT
     WHERE p.TopicID=(SELECT TopicID FROM forums_posts WHERE ID='$PostID')");
 list($TopicID, $ForumID, $Pages, $Page) = $DB->next_record();
 
-if ( !check_forumperm($ForumID, 'Write') ) { error(403); }
+if (!check_forumperm($ForumID, 'Write')) {
+    error(403);
+}
 
 // $Pages = number of pages in the thread
 // $Page = which page the post is on
@@ -84,7 +88,7 @@ $Cache->delete_value('latest_topics_forum_'.$ForumID);
 //We need to clear all subsequential catalogues as they've all been bumped with the absence of this post
 $ThisCatalogue = floor((POSTS_PER_PAGE*$Page-POSTS_PER_PAGE)/THREAD_CATALOGUE);
 $LastCatalogue = floor((POSTS_PER_PAGE*$Pages-POSTS_PER_PAGE)/THREAD_CATALOGUE);
-for ($i=$ThisCatalogue;$i<=$LastCatalogue;$i++) {
+for ($i=$ThisCatalogue; $i<=$LastCatalogue; $i++) {
     $Cache->delete('thread_'.$TopicID.'_catalogue_'.$i);
 }
 

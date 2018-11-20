@@ -1,7 +1,8 @@
 <?php
 namespace Luminance\Errors;
 
-class ForbiddenError extends UserError {
+class ForbiddenError extends UserError
+{
 
     public $http_status = 403;
     public $public_message = "Forbidden";

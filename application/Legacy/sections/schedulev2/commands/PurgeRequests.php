@@ -47,7 +47,9 @@ class PurgeRequests extends ScheduledCommand
         foreach ($RemoveBounties as $BountyInfo) {
             list($RequestID, $Title, $UserID, $Bounty) = $BountyInfo;
             // collect unique request ID's the old fashioned way
-            if (!in_array($RequestID, $RemoveRequestIDs)) $RemoveRequestIDs[] = $RequestID;
+            if (!in_array($RequestID, $RemoveRequestIDs)) {
+                $RemoveRequestIDs[] = $RequestID;
+            }
             // return bounty and log in staff notes
             $Title = db_string($Title);
             $this->olddb->query("UPDATE users_info AS ui JOIN users_main AS um ON um.ID = ui.UserID
@@ -66,7 +68,7 @@ class PurgeRequests extends ScheduledCommand
             $this->olddb->query("SELECT r.ID, r.Title, Count(v.UserID) AS NumUsers, SUM( v.Bounty) AS Bounty, r.GroupID, r.Description, r.UserID
                       FROM requests as r JOIN requests_votes as v ON v.RequestID=r.ID
                      WHERE r.ID IN(".implode(",", $RemoveRequestIDs).")
-                     GROUP BY r.ID" );
+                     GROUP BY r.ID");
 
             $RemoveRequests = $this->olddb->to_array();
 

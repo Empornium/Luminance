@@ -60,7 +60,6 @@ if (isset($_POST['tempfileid']) && is_number($_POST['tempfileid'])) {
 $FileName = '';
 
 if ($Properties['tempfileid']) {
-
     //******************************************************************************//
     //--------------- Get already loaded torrent file ----------------------------------------//
 
@@ -78,9 +77,7 @@ if ($Properties['tempfileid']) {
 
     $Contents = unserialize(base64_decode($Contents));
     $Tor = new Luminance\Legacy\Torrent($Contents, true); // new Torrent object
-
 } else {
-
     $File = $_FILES['file_input']; // This is our torrent file
     $TorrentName = $File['tmp_name'];
     $FileName = $File['name'];
@@ -136,7 +133,7 @@ if (!empty($Err)) { // Show the upload form, with the data the user entered
     die();
 }
 
-$sqltime = db_string( sqltime() );
+$sqltime = db_string(sqltime());
 
 // File list and size
 list($TotalSize, $FileList) = $Tor->file_list();
@@ -179,8 +176,9 @@ if ($Err) { // Show the upload form, with the data the user entered
 $FilePath = $Tor->Val['info']->Val['files'] ? db_string($Tor->Val['info']->Val['name']) : "";
 
 if (!isset($_POST['title']) || $_POST['title']=='') {
-    if ($FilePath) $_POST['title'] = $FilePath;
-    else if (isset($TmpFileList[0])) {
+    if ($FilePath) {
+        $_POST['title'] = $FilePath;
+    } else if (isset($TmpFileList[0])) {
         $_POST['title'] = preg_replace('/\{\{\{([^\{]*)\}\}\}/i', '', $TmpFileList[0]);
     }
     $Properties['Title'] = $_POST['title'];
@@ -201,7 +199,7 @@ if (empty($_POST['ignoredupes']) && $DupeResults['DupeResults']) { // Show the u
     }
 
     $Err = 'The torrent contained one or more possible dupes. Please check carefully!';
-	$DupeResults['TotalSize'] = $TotalSize;
+    $DupeResults['TotalSize'] = $TotalSize;
     include(SERVER_ROOT . '/Legacy/sections/upload/upload.php');
     die();
 }
@@ -221,7 +219,7 @@ $Validate->SetFields('desc', '1', 'desc', 'Description', array('regex' => $white
 
 $Err = $Validate->ValidateForm($_POST, $Text); // Validate the form
 
-if (!$Err && !$Text->validate_bbcode($_POST['desc'],  get_permissions_advtags($LoggedUser['ID']), false, false)) {
+if (!$Err && !$Text->validate_bbcode($_POST['desc'], get_permissions_advtags($LoggedUser['ID']), false, false)) {
         $Err = "There are errors in your bbcode (unclosed tags)";
 }
 
@@ -262,7 +260,7 @@ $T = array();
 foreach ($Properties as $Key => $Value) {
     $T[$Key] = "'" . db_string(trim($Value)) . "'";
     if (!$T[$Key]) {
-        $T[$Key] = NULL;
+        $T[$Key] = null;
     }
 }
 
@@ -320,8 +318,12 @@ foreach ($Tags as $Tag) {
     }
     $Tag = get_tag_synonym($Tag);
 
-    if (empty($Tag)) continue;
-    if (in_array($Tag, $TagsAdded)) continue;
+    if (empty($Tag)) {
+        continue;
+    }
+    if (in_array($Tag, $TagsAdded)) {
+        continue;
+    }
 
     $TagsAdded[] = $Tag;
     $DB->query("INSERT INTO tags
@@ -331,7 +333,6 @@ foreach ($Tags as $Tag) {
     $TagID = $DB->inserted_id();
 
     if (empty($LoggedUser['NotVoteUpTags'])) {
-
         $UserVote = check_perms('site_vote_tag_enhanced') ? ENHANCED_VOTE_POWER : 1;
         $VoteValue = $UserVote + 8;
 
@@ -347,7 +348,6 @@ foreach ($Tags as $Tag) {
                             (TagID, GroupID, UserID, PositiveVotes) VALUES
                             ($TagID, $GroupID, $LoggedUser[ID], 8);");
     }
-
 }
 // replace the original tag array with corrected tags
 $Tags = $TagsAdded;
@@ -398,7 +398,7 @@ if ($Properties['Anonymous'] == "0") {
 //******************************************************************************//
 //--------------- possible dupe - send staff a pm ---------------------------------------//
 
-if(!empty($_POST['ignoredupes']) && $DupeResults['DupeResults']) { // means uploader has ignored dupe warning...
+if (!empty($_POST['ignoredupes']) && $DupeResults['DupeResults']) { // means uploader has ignored dupe warning...
     $NumDupes = count($DupeResults['DupeResults']);
     $DupeIDs = array_unique(array_column($DupeResults['DupeResults'], 'ID'));
     $UniqueResults = $DupeResults['UniqueMatches'];
@@ -407,7 +407,7 @@ if(!empty($_POST['ignoredupes']) && $DupeResults['DupeResults']) { // means uplo
     $Subject = db_string("Possible dupe was uploaded: $LogName by $LoggedUser[Username]");
     $Message = "";
 
-	// ### DEBUGGING #### (remove at some point) - mifune
+    // ### DEBUGGING #### (remove at some point) - mifune
     //$DebuggingOutput = print_r($DupeResults, true);
 
     foreach ($DupeIDs as $ID) {
@@ -427,13 +427,17 @@ if(!empty($_POST['ignoredupes']) && $DupeResults['DupeResults']) { // means uplo
         }
         $Message .= "[/table][br][br]";
     }
-    $Percent = round((($DupeResults['SizeUniqueMatches']/$TotalSize)*100),2);
+    $Percent = round((($DupeResults['SizeUniqueMatches']/$TotalSize)*100), 2);
 
-	// ### DEBUGGING #### (remove at some point) - mifune
-	//$DebuggingOutput = "[br][br][hr][br][b]Debugging:[/b][br][br]Percent: {$Percent}[br][br]\$DupeResults:[br][br]" . $DebuggingOutput;
+    // ### DEBUGGING #### (remove at some point) - mifune
+    //$DebuggingOutput = "[br][br][hr][br][b]Debugging:[/b][br][br]Percent: {$Percent}[br][br]\$DupeResults:[br][br]" . $DebuggingOutput;
 
-    if ($Percent >= 50) $bbPercent ='[color=#AA0000]([id=percent]'.$Percent.'[/id]%) :dupe:[/color]';
-    if ($Percent < 50) $bbPercent ='[color=#009900]([id=percent]'.$Percent.'[/id]%) :gjob:[/color]';
+    if ($Percent >= 50) {
+        $bbPercent ='[color=#AA0000]([id=percent]'.$Percent.'[/id]%) :dupe:[/color]';
+    }
+    if ($Percent < 50) {
+        $bbPercent ='[color=#009900]([id=percent]'.$Percent.'[/id]%) :gjob:[/color]';
+    }
     //if ($Percent >= 40.00) {
         $Message = db_string("[br]Possible dupe was uploaded:[br][br][align=center][size=4][b][id=urlnew][url=/torrents.php?id=$GroupID]{$LogName}[/url][/id][/b] (" . get_size($TotalSize) . ")[/size][size=2] was uploaded by $LoggedUser[Username][/size][/align]
 [br][br][table][tr][th]Duped files[/th][th]Duped size[/th][/tr][tr]
@@ -450,7 +454,6 @@ if(!empty($_POST['ignoredupes']) && $DupeResults['DupeResults']) { // means uplo
                                      (UserID, SentDate, Message, ConvID)
                             VALUES ('0', '".sqltime()."', '$Message', $ConvID)");
     //}
-
 }
 
 
@@ -459,20 +462,22 @@ if(!empty($_POST['ignoredupes']) && $DupeResults['DupeResults']) { // means uplo
 
 $Title = trim($Properties['Title']) . ' ';
 
-$Item = $Feed->torrent($Title,
-                        $Text->strip_bbcode($Body),
-                        'torrents.php?id=' . $GroupID,
-                        'torrents.php?action=download&amp;authkey=[[AUTHKEY]]&amp;torrent_pass=[[PASSKEY]]&amp;id=' . $TorrentID,
-                        rawurlencode($InfoHash),
-                        $FileName,
-                        $TorrentSize,
-                        $TotalSize,
-                        get_size($TotalSize),
-                        'anon',
-                        "torrents.php?filter_cat[".$_POST['category']."]=1",
-                        $NewCategories[(int) $_POST['category']]['name'],
-                        implode($Tags, ' '),
-                        (int)$Properties['FreeTorrent']);
+$Item = $Feed->torrent(
+    $Title,
+    $Text->strip_bbcode($Body),
+    'torrents.php?id=' . $GroupID,
+    'torrents.php?action=download&amp;authkey=[[AUTHKEY]]&amp;torrent_pass=[[PASSKEY]]&amp;id=' . $TorrentID,
+    rawurlencode($InfoHash),
+    $FileName,
+    $TorrentSize,
+    $TotalSize,
+    get_size($TotalSize),
+    'anon',
+    "torrents.php?filter_cat[".$_POST['category']."]=1",
+    $NewCategories[(int) $_POST['category']]['name'],
+    implode($Tags, ' '),
+    (int)$Properties['FreeTorrent']
+);
 
 //Notifications
 $SQL = "SELECT unf.ID, unf.UserID, torrent_pass

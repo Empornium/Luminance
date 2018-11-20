@@ -26,13 +26,13 @@ if ($_GET['id'] && is_number($_GET['id'])) {
 } else {
     $View = $_GET['view'];
     switch ($_GET['view']) {
-        case 'old' :
+        case 'old':
             $Where = "Status='Resolved'";
             break;
-        case 'new' :
+        case 'new':
             $Where = "Status='New'";
             break;
-        default :
+        default:
             error(404);
             break;
     }
@@ -141,7 +141,7 @@ $DB->set_query_id($Reports);
                     <td>
                         <select name="type">
                             <option value="all" <?php selected('type', 'all') ?>>All</option>
-                            <?php foreach ($Types as $Type => $Data): ?>
+                            <?php foreach ($Types as $Type => $Data) : ?>
                                 <option value="<?= $Type ?>" <?php selected('type', $Type) ?>><?= $Data['title'] ?></option>
                             <?php endforeach; ?>
                         </select>
@@ -190,7 +190,7 @@ $DB->set_query_id($Reports);
         $Reference = "reports.php?id=" . $ReportID . "#report" . $ReportID;
 
         switch ($Short) {
-            case "user" :
+            case "user":
                 $DB->query("SELECT Username FROM users_main WHERE ID=" . $ThingID);
                 if ($DB->record_count() < 1) {
                     $Link = "No user with the reported ID found";
@@ -201,8 +201,8 @@ $DB->set_query_id($Reports);
                     $UserID = $ThingID;
                 }
                 break;
-            case "request" :
-            case "request_update" :
+            case "request":
+            case "request_update":
                 $DB->query("SELECT r.Title,
                                      r.UserID,
                                      u.Username
@@ -217,7 +217,7 @@ $DB->set_query_id($Reports);
                     $Link = "<a href='requests.php?action=view&amp;id=" . $ThingID . "'>Request '" . display_str($Name) . "' by " . display_str($Username) . "</a>";
                 }
                 break;
-            case "collage" :
+            case "collage":
                 $DB->query("SELECT c.Name,
                                      c.UserID,
                                      u.Username
@@ -232,7 +232,7 @@ $DB->set_query_id($Reports);
                     $Link = "<a href='collages.php?id=" . $ThingID . "'>Collage '" . display_str($Name) . "' by " . display_str($Username) . "</a>";
                 }
                 break;
-            case "thread" :
+            case "thread":
                 $DB->query("SELECT f.Title,
                                      f.AuthorID,
                                      u.Username
@@ -247,7 +247,7 @@ $DB->set_query_id($Reports);
                     $Link = "<a href='forums.php?action=viewthread&amp;threadid=" . $ThingID . "'>Thread '" . display_str($Title) . "' by " . display_str($Username) . "</a>";
                 }
                 break;
-            case "post" :
+            case "post":
                 if (isset($LoggedUser['PostsPerPage'])) {
                     $PerPage = $LoggedUser['PostsPerPage'];
                 } else {
@@ -274,7 +274,7 @@ $DB->set_query_id($Reports);
                     $Link = "<a href='forums.php?action=viewthread&amp;threadid=" . $TopicID . "&post=" . $PostNum . "#post" . $PostID . "'>Post#$PostID by " . display_str($Username) . " in thread '" . display_str($Title) . "'</a>";
                 }
                 break;
-            case "requests_comment" :
+            case "requests_comment":
                 $DB->query("SELECT rc.RequestID,
                                      rc.Body,
                                      (SELECT COUNT(ID) FROM requests_comments
@@ -296,7 +296,7 @@ $DB->set_query_id($Reports);
                     $Link = "<a href='requests.php?action=view&amp;id=" . $RequestID . "&page=" . $PageNum . "#post" . $ThingID . "'>Comment#$ThingID by " . display_str($Username) . " in request '" . display_str($Title) . "'</a>";
                 }
                 break;
-            case "torrents_comment" :
+            case "torrents_comment":
                 $DB->query("SELECT tc.GroupID,
                                      tc.Body,
                                      (SELECT COUNT(ID) FROM torrents_comments
@@ -318,7 +318,7 @@ $DB->set_query_id($Reports);
                     $Link = "<a href='torrents.php?id=" . $GroupID . "&page=" . $PageNum . "#post" . $ThingID . "'>Comment#$ThingID by " . display_str($Username) . " in torrent '" . display_str($Title) . "'</a>";
                 }
                 break;
-            case "collages_comment" :
+            case "collages_comment":
                 $DB->query("SELECT cc.CollageID,
                                      cc.Body,
                                      (SELECT COUNT(ID) FROM collages_comments

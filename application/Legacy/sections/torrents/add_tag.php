@@ -18,12 +18,14 @@ $DB->query("SELECT UserID FROM torrents WHERE GroupID='$GroupID'");
 list($AuthorID) = $DB->next_record();
 $IsAuthor = $AuthorID == $UserID;
 
-if (!check_perms('site_add_tag') && !$IsAuthor) error(403,true);
+if (!check_perms('site_add_tag') && !$IsAuthor) {
+    error(403, true);
+}
 
 $Tags = explode(' ', $_POST['tagname']);
 
 $VoteValue = $IsAuthor ? 8: 4;
-if ( empty($LoggedUser['NotVoteUpTags']) ) {
+if (empty($LoggedUser['NotVoteUpTags'])) {
     $UserVote = check_perms('site_vote_tag_enhanced') ? ENHANCED_VOTE_POWER : 1;
     $VoteValue += $UserVote;
 }
@@ -35,7 +37,7 @@ $AddedIDs = array();
 
 foreach ($Tags as $Tag) {
     $Tag = trim($Tag, '.'); // trim dots from the beginning and end
-    if ( count($CheckedTags)>0 && !check_perms('site_add_multiple_tags') ) {
+    if (count($CheckedTags)>0 && !check_perms('site_add_multiple_tags')) {
         $Results[] = array(0, "You cannot enter multiple tags.");
         break;
     }
@@ -44,7 +46,7 @@ foreach ($Tags as $Tag) {
 
         $Tag = display_str(strtolower(trim($Tag)));
 
-        if ( !check_tag_input($Tag)) {
+        if (!check_tag_input($Tag)) {
             $Results[] = array(0, "$Tag contains invalid characters.");
             continue;
         }
@@ -52,7 +54,7 @@ foreach ($Tags as $Tag) {
         $OrigTag = $Tag;
         $Tag = sanitize_tag($Tag);
 
-        if ( !is_valid_tag($Tag)) {
+        if (!is_valid_tag($Tag)) {
             $Results[] = array(0, "$OrigTag is not a valid tag.");
             continue;
         } elseif ($OrigTag!=$Tag) {
@@ -62,11 +64,11 @@ foreach ($Tags as $Tag) {
         $TagName = get_tag_synonym($Tag, false);
 
         if (in_array($TagName, $AddedTags)) {
-                if ($Tag != $TagName) { // this was a   replacement
-                    $Results[] = array(0, "$Tag --> $TagName : already added.");
-                } else {
-                    $Results[] = array(0, "$TagName is already added.");
-                }
+            if ($Tag != $TagName) { // this was a   replacement
+                $Results[] = array(0, "$Tag --> $TagName : already added.");
+            } else {
+                $Results[] = array(0, "$TagName is already added.");
+            }
             continue;
         }
 
@@ -79,7 +81,6 @@ foreach ($Tags as $Tag) {
         }
 
         if ($TagID) {
-
             $DB->query("SELECT TagID FROM torrents_tags_votes
                                 WHERE GroupID='$GroupID' AND TagID='$TagID' AND UserID='$UserID'");
             if ($DB->record_count() != 0) { // User has already added/voted on this tag+torrent so dont count again
@@ -94,20 +95,20 @@ foreach ($Tags as $Tag) {
             $AddedTags[] = $TagName;
             $AddedIDs[] = $TagID;
 
-            if ($Tag != $TagName) // this was a synonym replacement
+            if ($Tag != $TagName) { // this was a synonym replacement
                 $Results[] = array(1, "Added $Tag --> $TagName");
-            else
+            } else {
                 $Results[] = array(1, "Added $TagName");
-       }
+            }
+        }
     }
 }
 
 $count =count($AddedIDs);
 if ($count>0) {
-
     $Values = "('".implode("', '$GroupID', '$VoteValue', '$UserID'), ('", $AddedIDs)."', '$GroupID', '$VoteValue', '$UserID')";
 
-    if ( !empty($LoggedUser['NotVoteUpTags']) ) {
+    if (!empty($LoggedUser['NotVoteUpTags'])) {
         // add without voting up if already present
         $DB->query("INSERT IGNORE INTO torrents_tags
                               (TagID, GroupID, PositiveVotes, UserID) VALUES
@@ -126,15 +127,14 @@ if ($count>0) {
                                 ON DUPLICATE KEY UPDATE Way='up'");
     }
 
-    $DB->query("UPDATE tags SET Uses=Uses+1 WHERE ID IN (".implode(',',$AddedIDs).")");
+    $DB->query("UPDATE tags SET Uses=Uses+1 WHERE ID IN (".implode(',', $AddedIDs).")");
 
     $DB->query("INSERT INTO group_log (GroupID, UserID, Time, Info)
-                  VALUES ('$GroupID'," . $LoggedUser['ID'] . ",'" . sqltime() . "','" . db_string('Tag'.($count>1?'s':''). " ".implode(', ',$AddedTags)." added to torrent") . "')");
+                  VALUES ('$GroupID'," . $LoggedUser['ID'] . ",'" . sqltime() . "','" . db_string('Tag'.($count>1?'s':''). " ".implode(', ', $AddedTags)." added to torrent") . "')");
 
     update_hash($GroupID); // Delete torrent group cache
 
     echo json_encode(array($Results, get_taglist_html($GroupID, $_POST['tagsort'])));
-
 } else { //none actually added
 
     echo json_encode(array($Results, 0));

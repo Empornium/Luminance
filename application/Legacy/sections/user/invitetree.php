@@ -1,6 +1,8 @@
 <?php
 if (isset($_GET['userid']) && check_perms('users_view_invites')) {
-    if (!is_number($_GET['userid'])) { error(403); }
+    if (!is_number($_GET['userid'])) {
+        error(403);
+    }
 
     $UserID=$_GET['userid'];
     $Sneaky = true;
@@ -22,9 +24,9 @@ $Tree = new Luminance\Legacy\InviteTree($UserID);
 show_header($Username.' &gt; Invites &gt; Tree');
 ?>
 <div class="thin">
-    <h2><?=format_username($UserID,$Username)?> &gt; <a href="/users/<?=$UserID?>/invite">Invites</a> &gt; Tree</h2>
+    <h2><?=format_username($UserID, $Username)?> &gt; <a href="/users/<?=$UserID?>/invite">Invites</a> &gt; Tree</h2>
     <div class="box pad">
-<?php 	$Tree->make_tree(); ?>
+<?php   $Tree->make_tree(); ?>
     </div>
 </div>
 <?php

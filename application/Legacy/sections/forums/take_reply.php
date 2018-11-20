@@ -43,16 +43,22 @@ $master->repos->restrictions->check_restricted($LoggedUser['ID'], Luminance\Enti
 $Body = $_POST['body'];
 
 $Text = new Luminance\Legacy\Text;
-$Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
+$Text->validate_bbcode($_POST['body'], get_permissions_advtags($LoggedUser['ID']));
 
 $TopicID = $_POST['thread'];
 $ThreadInfo = get_thread_info($TopicID);
-if ($ThreadInfo === false) { error(404); }
+if ($ThreadInfo === false) {
+    error(404);
+}
 $ForumID = $ThreadInfo['ForumID'];
 $sqltime = sqltime();
 
-if (!check_forumperm($ForumID)) { error(403); }
-if (!check_forumperm($ForumID, 'Write') || $master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::POST) || $ThreadInfo['IsLocked'] == "1" && !check_perms('site_moderate_forums')) { error(403); }
+if (!check_forumperm($ForumID)) {
+    error(403);
+}
+if (!check_forumperm($ForumID, 'Write') || $master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::POST) || $ThreadInfo['IsLocked'] == "1" && !check_perms('site_moderate_forums')) {
+    error(403);
+}
 
 if (isset($_POST['subscribe'])) {
     $DB->query("INSERT IGNORE INTO users_subscriptions VALUES ($LoggedUser[ID], '".db_string($TopicID)."')");
@@ -135,7 +141,7 @@ if ($ThreadInfo['LastPostAuthorID'] == $LoggedUser['ID'] // User has written the
         list($Forum,,,$Stickies) = $Forum;
 
         //if the topic is already on this page
-        if (array_key_exists($TopicID,$Forum)) {
+        if (array_key_exists($TopicID, $Forum)) {
             $Thread = $Forum[$TopicID];
             unset($Forum[$TopicID]);
             $Thread['NumPosts'] = $Thread['NumPosts']+1; //Increment post count
@@ -175,14 +181,18 @@ if ($ThreadInfo['LastPostAuthorID'] == $LoggedUser['ID'] // User has written the
             }
         }
         if ($Stickies > 0) {
-            $Part1 = array_slice($Forum,0,$Stickies,true); //Stickies
-            $Part3 = array_slice($Forum,$Stickies,TOPICS_PER_PAGE-$Stickies-1,true); //Rest of page
+            $Part1 = array_slice($Forum, 0, $Stickies, true); //Stickies
+            $Part3 = array_slice($Forum, $Stickies, TOPICS_PER_PAGE-$Stickies-1, true); //Rest of page
         } else {
             $Part1 = array();
             $Part3 = $Forum;
         }
-        if (is_null($Part1)) { $Part1 = array(); }
-        if (is_null($Part3)) { $Part3 = array(); }
+        if (is_null($Part1)) {
+            $Part1 = array();
+        }
+        if (is_null($Part3)) {
+            $Part3 = array();
+        }
         if ($ThreadInfo['IsSticky'] == 1) {
             $Forum = $Part2 + $Part1 + $Part3; //Merge it
         } else {
@@ -213,7 +223,9 @@ if ($ThreadInfo['LastPostAuthorID'] == $LoggedUser['ID'] // User has written the
     $CatalogueID = floor((POSTS_PER_PAGE*ceil($ThreadInfo['Posts']/POSTS_PER_PAGE)-POSTS_PER_PAGE)/THREAD_CATALOGUE);
 
       $DB->query("SELECT Signature FROM users_main WHERE ID='{$LoggedUser['ID']}'");
-      if ($DB->record_count()>0) list($Sig)= $DB->next_record();
+    if ($DB->record_count()>0) {
+        list($Sig)= $DB->next_record();
+    }
 
     //Insert the post into the thread catalogue (block of 500 posts)
     $Cache->begin_transaction('thread_'.$TopicID.'_catalogue_'.$CatalogueID);

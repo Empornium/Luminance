@@ -8,10 +8,12 @@ Make sure all constants are defined in config.php and not in random files
 enforce_login();
 $Val = new Luminance\Legacy\Validate;
 
-if (empty($_REQUEST['action'])) { $_REQUEST['action']=''; }
+if (empty($_REQUEST['action'])) {
+    $_REQUEST['action']='';
+}
 
 switch ($_REQUEST['action']) {
-      case 'dupes':
+    case 'dupes':
         include 'manage_linked.php';
         break;
     case 'notify':
@@ -60,9 +62,11 @@ switch ($_REQUEST['action']) {
         include 'takemoderate.php';
         break;
     default:
-        if ($_REQUEST['action']=='reset_login_watch' && is_number($_POST['loginid']) ) {
+        if ($_REQUEST['action']=='reset_login_watch' && is_number($_POST['loginid'])) {
             authorize();
-            if (!check_perms('admin_login_watch')) error(403);
+            if (!check_perms('admin_login_watch')) {
+                error(403);
+            }
 
             if ($flood = $master->repos->floods->load($_POST['loginid'])) {
                 $master->repos->floods->delete($flood);

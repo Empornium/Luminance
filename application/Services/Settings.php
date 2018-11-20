@@ -5,7 +5,8 @@ use Luminance\Core\Master;
 use Luminance\Core\Service;
 use Luminance\Errors\ConfigurationError;
 
-class Settings extends Service {
+class Settings extends Service
+{
 
     protected $defaults = [
         'main' => [
@@ -259,7 +260,8 @@ class Settings extends Service {
 
     protected $settings;
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
         $this->settings = $this->defaults;
         $this->settings_file = $this->master->application_path . '/settings.ini';
@@ -267,15 +269,19 @@ class Settings extends Service {
         $this->fill_settings();
     }
 
-    protected function check_cryptoKey() {
+    protected function check_cryptoKey()
+    {
         if (is_null($this->settings['keys']['crypto_key'])) {
             $cryptoKey = bin2hex(openssl_random_pseudo_bytes(16, $strong));
-            if (!$strong) throw new ConfigurationError("Cannot generate strong crypto_key!");
+            if (!$strong) {
+                throw new ConfigurationError("Cannot generate strong crypto_key!");
+            }
             $this->settings['keys']['crypto_key'] = $cryptoKey;
         }
     }
 
-    protected function read_settings_file() {
+    protected function read_settings_file()
+    {
         $filename = $this->settings_file;
         if (!is_file($filename) || !is_readable($filename)) {
             // Test for CLI mode, no request object is ready yet though
@@ -295,7 +301,8 @@ class Settings extends Service {
         }
     }
 
-    protected function write_settings_file($file_settings) {
+    protected function write_settings_file($file_settings)
+    {
         $filename = $this->settings_file;
         if (!is_writable(dirname($filename))) {
             throw new ConfigurationError("Unable to write settings file: {$filename}");
@@ -308,12 +315,14 @@ class Settings extends Service {
         fclose($settings_file);
     }
 
-    public function generateConfig($settings) {
+    public function generateConfig($settings)
+    {
         $this->settings = $this->defaults;
         foreach ($this->settings as $section_name => $section) {
             foreach ($section as $setting => $value) {
-                if (isset($settings[$section_name][$setting]))
+                if (isset($settings[$section_name][$setting])) {
                     $this->settings[$section_name][$setting] = $settings[$section_name][$setting];
+                }
             }
         }
         $this->check_cryptoKey();
@@ -325,7 +334,8 @@ class Settings extends Service {
         $this->write_settings_file($file_settings);
     }
 
-    public function print_settings($print_legacy = true, $print_minimal = false) {
+    public function print_settings($print_legacy = true, $print_minimal = false)
+    {
         print("; Settings which don't have to be changed from the default can be left commented\n"
              ."; out or deleted entirely.\n");
 
@@ -333,8 +343,12 @@ class Settings extends Service {
             $sectionHasContent = false;
             foreach ($section as $setting => $value) {
                 // Filter out constants and defaults
-                if ($value===@$this->defaults[$section_name][$setting] && $print_minimal) continue;
-                if ($value===@$this->legacy_constant_names[$section_name][$setting] && $print_minimal) continue;
+                if ($value===@$this->defaults[$section_name][$setting] && $print_minimal) {
+                    continue;
+                }
+                if ($value===@$this->legacy_constant_names[$section_name][$setting] && $print_minimal) {
+                    continue;
+                }
                 if (!$sectionHasContent) {
                      print("\n[{$section_name}]\n");
                      $sectionHasContent = true;
@@ -358,7 +372,8 @@ class Settings extends Service {
         }
     }
 
-    public function __get($section_name) {
+    public function __get($section_name)
+    {
         # this allows settings to be read as ->section_name->setting_name
         if (is_array($this->settings[$section_name])) {
             $section_object = (object) $this->settings[$section_name];
@@ -366,13 +381,15 @@ class Settings extends Service {
         }
     }
 
-    public function __isset($section_name) {
+    public function __isset($section_name)
+    {
         if (is_array($this->settings[$section_name])) {
             return true;
         }
     }
 
-    protected function fill_settings() {
+    protected function fill_settings()
+    {
         // Remove http(s):// from site URLs
         if (!is_null($this->settings['main']['nonssl_site_url'])) {
             $this->settings['main']['nonssl_site_url'] = preg_replace('|http(s)?://|i', '', $this->settings['main']['nonssl_site_url']);
@@ -419,7 +436,8 @@ class Settings extends Service {
         }
     }
 
-    public function get_legacy_constants() {
+    public function get_legacy_constants()
+    {
         $settings = $this->defaults;
         foreach ($this->legacy_constant_names as $section_name => $section) {
             foreach ($section as $key => $constant_name) {
@@ -431,7 +449,8 @@ class Settings extends Service {
         return $settings;
     }
 
-    public function set_legacy_constants() {
+    public function set_legacy_constants()
+    {
         global $ForumsRevealVoters, $ForumsDoublePost, $CollageCats, $CollageIcons, $ArticleCats, $ArticleSubCats, $BadgeTypes, $AutoAwardTypes, $ShopActions, $Video_FileTypes, $Image_FileTypes, $Zip_FileTypes, $ExcludeForums, $DonateLevels, $ExcludeBytesDupeCheck, $CaptchaFonts, $CaptchaBGs, $SpecialChars;
 
         foreach ($this->legacy_constant_names as $section_name => $section) {
@@ -507,7 +526,8 @@ class Settings extends Service {
         $this->set_regex_constants();
     }
 
-    public function set_regex_constants() {
+    public function set_regex_constants()
+    {
         //resource_type://username:password@domain:port/path?query_string#anchor
         define('RESOURCE_REGEX', '(https?|ftps?):\/\/');
         define('IP_REGEX', '(\d{1,3}\.){3}\d{1,3}');

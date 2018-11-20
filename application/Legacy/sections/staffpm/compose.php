@@ -11,21 +11,21 @@ show_header('Start Conversation', 'inbox,staffpm,bbcode,jquery');
 <?php  if ($IsStaff) { ?>
             [ &nbsp;<a href="/staffpm.php?view=my">My unanswered<?= $NumMy > 0 ? " ($NumMy)" : '' ?></a>&nbsp; ] &nbsp;
         <?php
-        }
+}
         // FLS/Staff
-        if ($IsFLS) {
-            ?>
-            [ &nbsp;<a href="/staffpm.php?view=unanswered">All unanswered<?= $NumUnanswered > 0 ? " ($NumUnanswered)" : '' ?></a>&nbsp; ] &nbsp;
-            [ &nbsp;<a href="/staffpm.php?view=open">Open<?= $NumOpen > 0 ? " ($NumOpen)" : '' ?></a>&nbsp; ] &nbsp;
-            [ &nbsp;<a href="/staffpm.php?view=resolved">Resolved</a>&nbsp; ]  &nbsp;
-            [ &nbsp;<a href="/staffpm.php?action=responses&amp;convid=<?= $ConvID ?>">Common Answers</a>&nbsp; ]
-            <?php
-            // User
-        } else {
-            ?>
-            [ &nbsp;<a href="/staffpm.php">Back to inbox</a>&nbsp; ]
-            <?php
-        }
+if ($IsFLS) {
+    ?>
+    [ &nbsp;<a href="/staffpm.php?view=unanswered">All unanswered<?= $NumUnanswered > 0 ? " ($NumUnanswered)" : '' ?></a>&nbsp; ] &nbsp;
+    [ &nbsp;<a href="/staffpm.php?view=open">Open<?= $NumOpen > 0 ? " ($NumOpen)" : '' ?></a>&nbsp; ] &nbsp;
+    [ &nbsp;<a href="/staffpm.php?view=resolved">Resolved</a>&nbsp; ]  &nbsp;
+    [ &nbsp;<a href="/staffpm.php?action=responses&amp;convid=<?= $ConvID ?>">Common Answers</a>&nbsp; ]
+    <?php
+    // User
+} else {
+    ?>
+    [ &nbsp;<a href="/staffpm.php">Back to inbox</a>&nbsp; ]
+    <?php
+}
         ?>
     </div>
 
@@ -54,10 +54,10 @@ show_header('Start Conversation', 'inbox,staffpm,bbcode,jquery');
                 </div>
             </div>
 <?php
-            if (!empty($_GET['toid']) && is_number($_GET['toid'])) {
-                $DB->query("SELECT Username FROM users_main WHERE ID='$_GET[toid]'");
-                list($Username) = $DB->next_record();
-            }
+if (!empty($_GET['toid']) && is_number($_GET['toid'])) {
+    $DB->query("SELECT Username FROM users_main WHERE ID='$_GET[toid]'");
+    list($Username) = $DB->next_record();
+}
 ?>
             <div class="head">Start Conversation with <?=($Username?$Username:'User')?></div>
             <div class="box pad">
@@ -73,7 +73,7 @@ show_header('Start Conversation', 'inbox,staffpm,bbcode,jquery');
                                 <td class="label"><label for="user">Send to</label></td>
                                 <td>
 <?php
-                                    if ($Username) {  ?>
+if ($Username) {  ?>
                                         <input type="hidden" name="toid" value="<?=$_GET['toid']?>" />
                                         <input class="long" type="text" name="user" id="user" disabled="disabled" value="<?= display_str($Username) ?>" />
 <?php                                   } else { ?>

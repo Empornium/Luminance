@@ -1,5 +1,6 @@
 <?php
 namespace Luminance\Legacy;
+
 class poll_graph extends google_charts
 {
     public function __construct()
@@ -10,7 +11,7 @@ class poll_graph extends google_charts
     public function add($Label, $Data)
     {
         if ($Label !== false) {
-            $this->Labels[] = cut_string($Label,35);
+            $this->Labels[] = cut_string($Label, 35);
         }
         $this->Data[] = $Data;
     }
@@ -26,8 +27,8 @@ class poll_graph extends google_charts
         $Labels = array();
         foreach ($this->Data as $Key => $Value) {
             $Data[] = $this->encode(($Value/$Max)*4095);
-            $Labels[] = '@t'.str_replace(array(' ',','),array('+','\,'),$this->Labels[$Key]).',000000,1,'.round((($Key + 1)/$Count) - (12/$Height),2).':0,12';
+            $Labels[] = '@t'.str_replace(array(' ',','), array('+','\,'), $this->Labels[$Key]).',000000,1,'.round((($Key + 1)/$Count) - (12/$Height), 2).':0,12';
         }
-        $this->URL .= "&amp;chbh=25,0,5&amp;chs=214x$Height&amp;chl=0%|".round($Increment,1)."%|".round($Increment * 2,1)."%|".round($Increment * 3,1)."%|".round($Increment * 4,1)."%&amp;chm=".implode('|', $Labels).'&amp;chd=e:'.implode('', $Data);
+        $this->URL .= "&amp;chbh=25,0,5&amp;chs=214x$Height&amp;chl=0%|".round($Increment, 1)."%|".round($Increment * 2, 1)."%|".round($Increment * 3, 1)."%|".round($Increment * 4, 1)."%&amp;chm=".implode('|', $Labels).'&amp;chd=e:'.implode('', $Data);
     }
 }

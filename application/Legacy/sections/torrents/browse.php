@@ -106,50 +106,48 @@ $UseCache = true;
 
 
     // Advanced search, and yet so much simpler in code.
-    if (!empty($_GET['searchtext'])) {
-        $UseCache = false;
-        $SearchText = ' ' . trim($_GET['searchtext']);
-        $SearchText = preg_replace(['/ not /', '/ or /', '/ and /', '/\(/', '/\)/'], [' -', ' | ', ' & ', ' ( ', ' ) '], $SearchText);
-        $SearchText = trim($SearchText);
+if (!empty($_GET['searchtext'])) {
+    $UseCache = false;
+    $SearchText = ' ' . trim($_GET['searchtext']);
+    $SearchText = preg_replace(['/ not /', '/ or /', '/ and /', '/\(/', '/\)/'], [' -', ' | ', ' & ', ' ( ', ' ) '], $SearchText);
+    $SearchText = trim($SearchText);
 
-        $Queries[] = '@searchtext ' . $SearchText; // *
-    }
+    $Queries[] = '@searchtext ' . $SearchText; // *
+}
 
-    if (!empty($_GET['taglist'])) {
-        $UseCache = false;
-        // Keep extended search signs.
-        $TagList =  $_GET['taglist'];
-        // add whitespace around brackets to stop sphinx getting confused (do it before splitting and rebuilding taglist to avoid extra whitespace in final string)
-        $TagList = preg_replace(['/\(/', '/\)/'], [' ( ', ' ) '], $TagList);
-        $TagList = preg_split("/([!&|]| -| )/", $TagList, NULL, PREG_SPLIT_DELIM_CAPTURE);
+if (!empty($_GET['taglist'])) {
+    $UseCache = false;
+    // Keep extended search signs.
+    $TagList =  $_GET['taglist'];
+    // add whitespace around brackets to stop sphinx getting confused (do it before splitting and rebuilding taglist to avoid extra whitespace in final string)
+    $TagList = preg_replace(['/\(/', '/\)/'], [' ( ', ' ) '], $TagList);
+    $TagList = preg_split("/([!&|]| -| )/", $TagList, null, PREG_SPLIT_DELIM_CAPTURE);
 
-        foreach ($TagList as $Key => &$Tag) {
-            $Tag = strtolower(trim($Tag)) ;
+    foreach ($TagList as $Key => &$Tag) {
+        $Tag = strtolower(trim($Tag)) ;
 
-            if ($Tag == '-' || $Tag == '!' || $Tag == '|' || $Tag == '&' || $Tag == '(' || $Tag == ')') {
-                continue;
-            }
-            // do synomyn replacement and skip <2 length tags
-            if (strlen($Tag) >= 2) {
-                $Tag = get_tag_synonym($Tag, false);
-                $Tag = str_replace('.', '_', $Tag);
-                $Tag = $SS->EscapeString($Tag);
-            } else {
-                unset($TagList[$Key]);
-            }
+        if ($Tag == '-' || $Tag == '!' || $Tag == '|' || $Tag == '&' || $Tag == '(' || $Tag == ')') {
+            continue;
         }
-        unset($Tag);
-        $TagList = implode(' ', $TagList);
-        $TagList = preg_replace(['/ not /', '/ or /', '/ and /'], [' -', ' | ', ' & '], $TagList);
-        $TagList = trim($TagList);
-
-        $Queries[] = '@taglist ' . $TagList;
-
+        // do synomyn replacement and skip <2 length tags
+        if (strlen($Tag) >= 2) {
+            $Tag = get_tag_synonym($Tag, false);
+            $Tag = str_replace('.', '_', $Tag);
+            $Tag = $SS->EscapeString($Tag);
+        } else {
+            unset($TagList[$Key]);
+        }
     }
+    unset($Tag);
+    $TagList = implode(' ', $TagList);
+    $TagList = preg_replace(['/ not /', '/ or /', '/ and /'], [' -', ' | ', ' & '], $TagList);
+    $TagList = trim($TagList);
+
+    $Queries[] = '@taglist ' . $TagList;
+}
 
 
-foreach (array('title'=>'groupname') as $Search=>$Queryname) {
-
+foreach (array('title'=>'groupname') as $Search => $Queryname) {
     if (!empty($_GET[$Search])) {
         $UseCache = false;
         $_GET[$Search] = str_replace(array('%'), '', $_GET[$Search]);
@@ -191,8 +189,12 @@ if (!empty($_GET['filter_cat'])) {
 }
 
 
-if (!isset($_GET['sizerange'])) $_GET['sizerange'] = 0.01;
-if (!isset($_GET['sizetype'])) $_GET['sizetype'] = 'gb';
+if (!isset($_GET['sizerange'])) {
+    $_GET['sizerange'] = 0.01;
+}
+if (!isset($_GET['sizetype'])) {
+    $_GET['sizetype'] = 'gb';
+}
 
 if (!empty($_GET['sizeall'])) {
     $UseCache = false;
@@ -266,7 +268,7 @@ if ($UseCache) {
     $CacheKey = "torrents_{$RealStart}_{$TorrentsPerPage}_{$OrderWay}_{$OrderBy}_{$MaxMatches}";
     #print($CacheKey);
     $Results = $Cache->get_value($CacheKey);
-    if (!$Results || !array_key_exists('timestamp', $Results) || (time() - $Results['timestamp'] > 120) ) {
+    if (!$Results || !array_key_exists('timestamp', $Results) || (time() - $Results['timestamp'] > 120)) {
         $SS->set_index(SPHINX_INDEX . ' delta');
         $Results = $SS->search($Query, '', 0, array(), '', '');
         $Results['count'] = $SS->TotalResults;
@@ -284,7 +286,6 @@ if ($UseCache) {
 
 // These ones were not found in the cache, run SQL
 if (!empty($Results['notfound'])) {
-
     $SQLResults = get_groups($Results['notfound']);
 
     if (is_array($SQLResults['notfound'])) { // Something wasn't found in the db, remove it from results
@@ -314,25 +315,27 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
         <a style="float:left;margin-top:4px" href="/feeds.php?feed=torrents_all&amp;user=<?=$LoggedUser['ID']?>&amp;auth=<?=$LoggedUser['RSS_Auth']?>&amp;passkey=<?=$LoggedUser['torrent_pass']?>&amp;authkey=<?=$LoggedUser['AuthKey']?>" title="<?=SITE_NAME?> : All Torrents" ><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
     Browse Torrents</h2>
 <?php
-    if (check_perms('torrents_review')) {
-        update_staff_checking("browsing torrents", true);
+if (check_perms('torrents_review')) {
+    update_staff_checking("browsing torrents", true);
 ?>
-        <div id="staff_status" class="status_box">
-            <span class="status_loading">loading staff checking status...</span>
-        </div>
-        <br class="clear"/>
-        <script type="text/javascript">
-            Status_Timer();
-        </script>
+<div id="staff_status" class="status_box">
+    <span class="status_loading">loading staff checking status...</span>
+</div>
+<br class="clear"/>
+<script type="text/javascript">
+    Status_Timer();
+</script>
 <?php
-    }
+}
     print_latest_forum_topics();
 ?>
 <form id="search_form" name="filter" method="get" action=''>
     <div id="search_box" class="filter_torrents">
         <div class="head">Search</div>
         <div class="box pad">
-            <table id="cat_list" class="cat_list on_cat_change <?php  if (!empty($LoggedUser['HideCats'])) { ?>hidden<?php  } ?>">
+            <table id="cat_list" class="cat_list on_cat_change <?php  if (!empty($LoggedUser['HideCats'])) {
+?>hidden<?php
+} ?>">
                 <?php
                 $row = 'a';
                 $x = 0;
@@ -346,19 +349,23 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
                         <tr class="row<?=$row?>">
                             <?php
                             $row = $row == 'a' ? 'b' : 'a';
-                        }
+                    }
                         $x++;
                         ?>
                         <td>
-                            <input type="checkbox" name="filter_cat[<?= ($Cat['id']) ?>]" id="cat_<?= ($Cat['id']) ?>" value="1" <?php  if (isset($_GET['filter_cat'][$Cat['id']])) { ?>checked="checked"<?php  } ?>/>
+                            <input type="checkbox" name="filter_cat[<?= ($Cat['id']) ?>]" id="cat_<?= ($Cat['id']) ?>" value="1" <?php  if (isset($_GET['filter_cat'][$Cat['id']])) {
+?>checked="checked"<?php
+} ?>/>
                             <label for="cat_<?= ($Cat['id']) ?>" class="cat_label"><span><a href="/torrents.php?filter_cat[<?=$Cat['id']?>]=1"><?= $Cat['name'] ?></a></span></label>
                         </td>
-                    <?php  } ?>
+                <?php  } ?>
                     <td colspan="<?= 7 - ($x % 7) ?>"></td>
                 </tr>
             </table>
             <table class="noborder">
-                <tr class="on_cat_change <?php  if (!empty($LoggedUser['HideCats'])) { ?>hidden<?php  } ?>"><td colspan="4">&nbsp;</td></tr>
+                <tr class="on_cat_change <?php  if (!empty($LoggedUser['HideCats'])) {
+?>hidden<?php
+} ?>"><td colspan="4">&nbsp;</td></tr>
                 <tr>
                     <td class="label" style="width:140px">Order by:</td>
                     <td colspan="4">
@@ -403,10 +410,10 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
                             <span>
                             <input type="submit" class="hidden" value="Search" />
 <?php
-                                if ($didSearch) {    // count($Queries) > 0 || count($SS->Filters) > 1 ?>
+if ($didSearch) {    // count($Queries) > 0 || count($SS->Filters) > 1 ?>
                                     <input type="submit" name="setdefault" value="Make Default" /><br/>
 <?php                           }
-                                if (!empty($LoggedUser['DefaultSearch'])) {   ?>
+if (!empty($LoggedUser['DefaultSearch'])) {   ?>
                                     <input type="submit" name="cleardefault" value="Clear Default" /><br/>
 <?php                           } ?>
 
@@ -434,10 +441,18 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
                         <td colspan="3">
                             <input type="text" spellcheck="false" size="25" name="sizeall" class="smallish" title="Specify a size, IMPORTANT: because size is rounded from bytes there is a small margin each way - so not all matches will have the exact same number of bytes" value="<?php  form('sizeall') ?>" />
                             <select name="sizetype">
-                                    <option value="kb" <?php if($_GET['sizetype']=='kb')echo'selected="selected"'?> > KB </option>
-                                    <option value="mb" <?php if($_GET['sizetype']=='mb')echo'selected="selected"'?>> MB </option>
-                                    <option value="gb" <?php if($_GET['sizetype']=='gb')echo'selected="selected"'?>> GB </option>
-                                    <option value="tb" <?php if($_GET['sizetype']=='tb')echo'selected="selected"'?>> TB </option>
+                                    <option value="kb" <?php if ($_GET['sizetype']=='kb') {
+                                        echo'selected="selected"';
+}?> > KB </option>
+                                    <option value="mb" <?php if ($_GET['sizetype']=='mb') {
+                                        echo'selected="selected"';
+}?>> MB </option>
+                                    <option value="gb" <?php if ($_GET['sizetype']=='gb') {
+                                        echo'selected="selected"';
+}?>> GB </option>
+                                    <option value="tb" <?php if ($_GET['sizetype']=='tb') {
+                                        echo'selected="selected"';
+}?>> TB </option>
                             </select>
                             &nbsp; range &plusmn;
                             <input type="text" spellcheck="false" size="10" name="sizerange" class="smallest" title="Advanced users! Specify a range modifier, default is &plusmn;0.01" value="<?php  form('sizerange') ?>" />
@@ -473,7 +488,9 @@ $Pages = get_pages($Page, $TorrentCount, $TorrentsPerPage);
                             <a href="#" onclick="$('#taglist').toggle(); if (this.innerHTML=='(View Tags)') {this.innerHTML='(Hide Tags)';} else {this.innerHTML='(View Tags)';}; return false;"><?= (empty($LoggedUser['ShowTags'])) ? '(View Tags)' : '(Hide Tags)' ?></a>
                         </span>
 
-            <table width="100%" class="taglist <?php  if (empty($LoggedUser['ShowTags'])) { ?>hidden<?php  } ?>" id="taglist">
+            <table width="100%" class="taglist <?php  if (empty($LoggedUser['ShowTags'])) {
+?>hidden<?php
+} ?>" id="taglist">
                 <tr class="row<?=$row?>">
                     <?php
                     $GenreTags = $Cache->get_value('genre_tags');
@@ -537,7 +554,9 @@ if ($TorrentCount == 0) {
     <div class="box pad" align="center">
         <h2>Your search did not match anything.</h2>
         <p>Make sure all names are spelled correctly, or try making your search less specific.</p>
-        <p>You might like (Beta): <?php  while (list($Tag) = $DB->next_record()) { ?><a href="/torrents.php?taglist=<?= $Tag ?>"><?= $Tag ?></a> <?php  } ?></p>
+        <p>You might like (Beta): <?php  while (list($Tag) = $DB->next_record()) {
+?><a href="/torrents.php?taglist=<?= $Tag ?>"><?= $Tag ?></a> <?php
+} ?></p>
     </div></div>
     <?php
     show_footer();
@@ -546,7 +565,7 @@ if ($TorrentCount == 0) {
 
 // if no searchtext or tags specified then we are showing all torrents
 $AllTorrents = ((!isset($_GET['taglist']) || $_GET['taglist']=='')
-             && (!isset($_GET['searchtext']) || $_GET['searchtext']==''))?TRUE:FALSE;
+             && (!isset($_GET['searchtext']) || $_GET['searchtext']==''))?true:false;
 $Bookmarks = all_bookmarks('torrent');
 ?>
 <table class="torrent_table grouping" id="torrent_table">
@@ -573,7 +592,7 @@ $Bookmarks = all_bookmarks('torrent');
         list($TorrentID, $Data) = each($Torrents);
 
         $Review = get_last_review($GroupID);
-        if(isset($_GET['filter_unmarked']) && $_GET['filter_unmarked'] == 1 && $Review['Status']){
+        if (isset($_GET['filter_unmarked']) && $_GET['filter_unmarked'] == 1 && $Review['Status']) {
              continue;
         }
 
@@ -594,7 +613,9 @@ $Bookmarks = all_bookmarks('torrent');
         $TorrentTags = array();
         $numtags=0;
         foreach ($TagList as $Tag) {
-            if ($numtags++>=$LoggedUser['MaxTags'])  break;
+            if ($numtags++>=$LoggedUser['MaxTags']) {
+                break;
+            }
             $TorrentTags[] = '<a href="/torrents.php?taglist=' . $Tag . '">' . $Tag . '</a>';
         }
         $TorrentTags = implode(' ', $TorrentTags);
@@ -615,22 +636,24 @@ $Bookmarks = all_bookmarks('torrent');
             </td>
             <td>
 <?php
-                if ($Data['ReportCount'] > 0) {
-                    $Title = "This torrent has ".$Data['ReportCount']." active ".($Data['ReportCount'] > 1 ?'reports' : 'report');
-                    $Reported = ' /<span class="reported" title="'.$Title.'"> Reported</span>';
-                } else {
-                    $Reported = '';
-                }
+if ($Data['ReportCount'] > 0) {
+    $Title = "This torrent has ".$Data['ReportCount']." active ".($Data['ReportCount'] > 1 ?'reports' : 'report');
+    $Reported = ' /<span class="reported" title="'.$Title.'"> Reported</span>';
+} else {
+    $Reported = '';
+}
 
                 $newtag = '';
-                if($Data['Time'] > $LoggedUser['LastBrowse']) { $newtag = '<span class="newtorrent">(New!)</span>'; }
+if ($Data['Time'] > $LoggedUser['LastBrowse']) {
+    $newtag = '<span class="newtorrent">(New!)</span>';
+}
 
-                if ($LoggedUser['HideFloat']) {?>
+if ($LoggedUser['HideFloat']) {?>
                     <?=$AddExtra.$newtag?> <a href="/torrents.php?id=<?=$GroupID?>"><?=$GroupName?></a>
 <?php           } else {
-                    if (preg_match('/(fapping.empornium.sx|jerking.empornium.me)/', $Image)) {
-                        $Image = preg_replace('/(?<=[^(th|md)])\.(jpg|jpeg|png|bmp)/', '.th.$1', $Image);
-                    }
+    if (preg_match('/(fapping.empornium.sx|jerking.empornium.me)/', $Image)) {
+        $Image = preg_replace('/(?<=[^(th|md)])\.(jpg|jpeg|png|bmp)/', '.th.$1', $Image);
+    }
                     $Overlay = get_overlay_html($GroupName, $TorrentUsername, $Image, $Data['Seeders'], $Data['Leechers'], $Data['Size'], $Data['Snatched']);
 ?>
                     <script>
@@ -643,7 +666,7 @@ $Bookmarks = all_bookmarks('torrent');
                 <br />
                 <?php  if ($LoggedUser['HideTagsInLists'] !== 1) { ?>
                 <div class="tags">
-                   <?= $TorrentTags ?>
+                    <?= $TorrentTags ?>
                 </div>
                 <?php  } ?>
             </td>

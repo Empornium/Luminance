@@ -1,7 +1,9 @@
 <?php
 //TODO: restrict to viewing bellow class, username in h2
 if (isset($_GET['userid']) && check_perms('users_view_ips') && check_perms('users_logout')) {
-        if (!is_number($_GET['userid'])) { error(404); }
+    if (!is_number($_GET['userid'])) {
+        error(404);
+    }
         $UserID = $_GET['userid'];
 } else {
         $UserID = $LoggedUser['ID'];
@@ -53,7 +55,7 @@ list($UserID, $Username) = array_values(user_info($UserID));
 show_header($Username.' &gt; Sessions');
 ?>
 <div class="thin">
-<h2><?=format_username($UserID,$Username)?> &gt; Sessions</h2>
+<h2><?=format_username($UserID, $Username)?> &gt; Sessions</h2>
         <div class="box pad">
                 <p>Note: Clearing cookies can result in ghost sessions which are automatically removed after 30 days.</p>
         </div>
@@ -78,31 +80,31 @@ show_header($Username.' &gt; Sessions');
                         </tr>
 <?php
         $Row = 'a';
-        foreach ($UserSessions as $Session) {
-                $Row = ($Row == 'a') ? 'b' : 'a';
-                if(empty($Session['StartAddress'])) {
-                    $Session['StartAddress'] = '0.0.0.0';
-                } else {
-                    $Session['StartAddress'] = inet_ntop($Session['StartAddress']);
-                }
+foreach ($UserSessions as $Session) {
+    $Row = ($Row == 'a') ? 'b' : 'a';
+    if (empty($Session['StartAddress'])) {
+        $Session['StartAddress'] = '0.0.0.0';
+    } else {
+        $Session['StartAddress'] = inet_ntop($Session['StartAddress']);
+    }
 ?>
-                        <tr class="row<?=$Row?>">
-                                <td><?=$PermissionsInfo['site_disable_ip_history'] ? "127.0.0.1" : $Session['StartAddress'] ?></td>
-                                <td><?=$Session['Browser']?> <?=!empty($Session['Version']) ? "({$Session['Version']})" : '' ?></td>
-                                <td><?=$Session['Platform']?></td>
-                                <td><?=$Session['Width']?>x<?=$Session['Height']?>, <?=$Session['ColorDepth']?> bit</td>
-                                <td><?=$Session['TimezoneOffset']?></td>
-                                <td><?=$Session['TLSVersion']?></td>
-                                <td><?=time_diff($Session['Updated'])?></td>
-                                <td>
-                                        <form action="" method="post">
-                                                <input type="hidden" name="action" value="sessions" />
-                                                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-                                                <input type="hidden" name="session" value="<?=$Session['ID']?>" />
-                                                <input type="submit" value="<?=(($master->request->session->ID === $Session['ID'])?'Current" disabled="disabled':'Logout')?>" />
-                                        </form>
-                                </td>
-                        </tr>
+        <tr class="row<?=$Row?>">
+                <td><?=$PermissionsInfo['site_disable_ip_history'] ? "127.0.0.1" : $Session['StartAddress'] ?></td>
+                <td><?=$Session['Browser']?> <?=!empty($Session['Version']) ? "({$Session['Version']})" : '' ?></td>
+                <td><?=$Session['Platform']?></td>
+                <td><?=$Session['Width']?>x<?=$Session['Height']?>, <?=$Session['ColorDepth']?> bit</td>
+                <td><?=$Session['TimezoneOffset']?></td>
+                <td><?=$Session['TLSVersion']?></td>
+                <td><?=time_diff($Session['Updated'])?></td>
+                <td>
+                        <form action="" method="post">
+                                <input type="hidden" name="action" value="sessions" />
+                                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                                <input type="hidden" name="session" value="<?=$Session['ID']?>" />
+                                <input type="submit" value="<?=(($master->request->session->ID === $Session['ID'])?'Current" disabled="disabled':'Logout')?>" />
+                        </form>
+                </td>
+        </tr>
 <?php  } ?>
                 </table>
         </div>

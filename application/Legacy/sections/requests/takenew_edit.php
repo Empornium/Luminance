@@ -5,7 +5,9 @@
 
 authorize();
 
-if(!check_perms('site_submit_requests')) error(403);
+if (!check_perms('site_submit_requests')) {
+    error(403);
+}
 
 if ($_POST['action'] != "takenew" &&  $_POST['action'] != "takeedit") {
     error(0);
@@ -79,10 +81,8 @@ if ($NewRequest) {
         $Bounty = trim($_POST['amount']);
         if (!is_number($Bounty)) {
             $Err = "Your entered bounty is not a number";
-
         } elseif ($Bounty < 100*1024*1024) {
             $Err = "Minumum bounty is 100MB";
-
         } elseif ($Bounty > ($LoggedUser['BytesUploaded'] - $LoggedUser['BytesDownloaded'])) {
             // check users cannot go below 1.0 ratio!
             $Err = "You do not have sufficient upload credit to add " . get_size($Bounty) . " to this request";
@@ -100,11 +100,14 @@ if (empty($_POST['image'])) {
     $Image = "";
 } else {
       $Result = validate_imageurl($_POST['image'], 12, 255, get_whitelist_regex());
-      if($Result!==TRUE) $Err = display_str($Result);
-      else $Image = trim($_POST['image']);
+    if ($Result!==true) {
+        $Err = display_str($Result);
+    } else {
+        $Image = trim($_POST['image']);
+    }
 }
 
-$Text->validate_bbcode($_POST['description'],  get_permissions_advtags($LoggedUser['ID']));
+$Text->validate_bbcode($_POST['description'], get_permissions_advtags($LoggedUser['ID']));
 
 if (!empty($Err)) {
     error($Err);
@@ -135,23 +138,25 @@ $Tags = explode(' ', strtolower($OpenCategories[$CategoryID]['tag']." ".$Tags));
 
 $TagsAdded=array();
 foreach ($Tags as $Tag) {
-        $Tag = strtolower(trim($Tag,'.')); // trim dots from the beginning and end
-        if (!is_valid_tag($Tag) || !check_tag_input($Tag)) continue;
+        $Tag = strtolower(trim($Tag, '.')); // trim dots from the beginning and end
+    if (!is_valid_tag($Tag) || !check_tag_input($Tag)) {
+        continue;
+    }
         $Tag = get_tag_synonym($Tag);
-        if (!empty($Tag)) {
-            if (!in_array($Tag, $TagsAdded)) { // and to create new tags as Uses=1 which seems more correct
-                $TagsAdded[] = $Tag;
-                $DB->query("INSERT INTO tags
+    if (!empty($Tag)) {
+        if (!in_array($Tag, $TagsAdded)) { // and to create new tags as Uses=1 which seems more correct
+            $TagsAdded[] = $Tag;
+            $DB->query("INSERT INTO tags
                             (Name, UserID, Uses) VALUES
                             ('$Tag', $LoggedUser[ID], 1)
                             ON DUPLICATE KEY UPDATE Uses=Uses+1;");
-                $TagID = $DB->inserted_id();
+            $TagID = $DB->inserted_id();
 
-                $DB->query("INSERT IGNORE INTO requests_tags
+            $DB->query("INSERT IGNORE INTO requests_tags
                     (TagID, RequestID) VALUES
                     ($TagID, $RequestID)");
-            }
         }
+    }
 }
 // replace the original tag array with corrected tags
 $Tags = $TagsAdded;
@@ -175,17 +180,26 @@ if ($NewRequest) {
     send_irc('PRIVMSG #'.SITE_URL.'-requests :'.$Announce);
 
     write_log("Request $RequestID ($Title) created with " . get_size($Bounty). " bounty by ".$LoggedUser['Username']);
-
 } else {
     $Cache->delete_value('request_'.$RequestID);
 
     // Resolve what changed
     $ChangedFields = [];
-    if (!empty(array_diff($Request['Tags'], $Tags))) { $ChangedFields[] = 'Tags'; }
-    if ($Request['CategoryID'] != $CategoryID) { $ChangedFields[] = 'CategoryID'; }
-    if ($Request['Title'] != $Title) { $ChangedFields[] = 'Title'; }
-    if ($Request['Image'] != $Image) { $ChangedFields[] = 'Image'; }
-    if ($Request['Description'] != $Description) { $ChangedFields[] = 'Description'; }
+    if (!empty(array_diff($Request['Tags'], $Tags))) {
+        $ChangedFields[] = 'Tags';
+    }
+    if ($Request['CategoryID'] != $CategoryID) {
+        $ChangedFields[] = 'CategoryID';
+    }
+    if ($Request['Title'] != $Title) {
+        $ChangedFields[] = 'Title';
+    }
+    if ($Request['Image'] != $Image) {
+        $ChangedFields[] = 'Image';
+    }
+    if ($Request['Description'] != $Description) {
+        $ChangedFields[] = 'Description';
+    }
 
     $LogDetails = implode(', ', $ChangedFields);
     write_log("Request {$RequestID} was edited by {$LoggedUser['Username']} ({$LogDetails})");

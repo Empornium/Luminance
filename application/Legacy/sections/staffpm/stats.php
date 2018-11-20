@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('admin_staffpm_stats')) { error(403); }
+if (!check_perms('admin_staffpm_stats')) {
+    error(403);
+}
 
 include(SERVER_ROOT.'/Legacy/sections/staffpm/functions.php');
 include(SERVER_ROOT.'/Legacy/sections/staff/functions.php');
@@ -16,18 +18,18 @@ list($NumMy, $NumUnanswered, $NumOpen) = get_num_staff_pms($LoggedUser['ID'], $L
     <div class="thin">
         <div class="linkbox" >
 <?php   if ($IsStaff) {
-            echo view_link($View, 'my',         "<a href='staffpm.php?view=my'>My unanswered". ($NumMy > 0 ? "($NumMy)":"") ."</a>");
-        }
+            echo view_link($View, 'my', "<a href='staffpm.php?view=my'>My unanswered". ($NumMy > 0 ? "($NumMy)":"") ."</a>");
+}
             echo view_link($View, 'unanswered', "<a href='staffpm.php?view=unanswered'>All unanswered". ($NumUnanswered > 0 ? " ($NumUnanswered)":"") ."</a>");
-            echo view_link($View, 'open',       "<a href='staffpm.php?view=open'>Open" . ($NumOpen > 0 ? " ($NumOpen)":"") ."</a>");
-            echo view_link($View, 'resolved',   "<a href='staffpm.php?view=resolved'>Resolved</a>");
-        if (check_perms('admin_stealth_resolve')) {
-            echo view_link($View, 'stealthresolved', "<a href='staffpm.php?view=stealthresolved'>Stealth Resolved</a>");
-        }
-            echo view_link($Action, 'responses',     "<a href='staffpm.php?action=responses'>Common Answers</a>");
-        if (check_perms('admin_staffpm_stats')) {
-            echo view_link($Action, 'stats',         "<a href='staffpm.php?action=stats'>StaffPM Stats</a>");
-        } ?>
+            echo view_link($View, 'open', "<a href='staffpm.php?view=open'>Open" . ($NumOpen > 0 ? " ($NumOpen)":"") ."</a>");
+            echo view_link($View, 'resolved', "<a href='staffpm.php?view=resolved'>Resolved</a>");
+if (check_perms('admin_stealth_resolve')) {
+    echo view_link($View, 'stealthresolved', "<a href='staffpm.php?view=stealthresolved'>Stealth Resolved</a>");
+}
+            echo view_link($Action, 'responses', "<a href='staffpm.php?action=responses'>Common Answers</a>");
+if (check_perms('admin_staffpm_stats')) {
+    echo view_link($Action, 'stats', "<a href='staffpm.php?action=stats'>StaffPM Stats</a>");
+} ?>
         <br />
         <br />
 <?php
@@ -50,7 +52,7 @@ $SupportStaff = array_merge($FrontLineSupport, $Staff, $Admins);
 $SupportStaff = array_column($SupportStaff, 'ID');
 $SupportStaff = implode(',', $SupportStaff);
 
-if($View!='staff') {
+if ($View!='staff') {
     $IN    = "NOT IN";
     $COL   = "PMs";
     $EXTRA = "(SELECT Count(spc.ID)

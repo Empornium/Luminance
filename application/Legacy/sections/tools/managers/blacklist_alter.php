@@ -16,7 +16,6 @@ if ($_POST['submit'] == 'Delete') {
     $DB->query('DELETE FROM xbt_client_blacklist WHERE id=' . $_POST['id']);
     //update_tracker('remove_blacklist', array('peer_id' => $PeerID));
     $master->tracker->removeBlacklist($PeerID);
-
 } else { //Edit & Create, Shared Validation
 
     if ($_POST['submit'] == 'Edit') { //Edit
@@ -49,13 +48,16 @@ if ($_POST['submit'] == 'Delete') {
             $PeerID = db_string($_POST['peer_id']);
             $Client = db_string($_POST['client']);
         } else {
-
-            if (empty($_POST['clients'])) error("Clients field is blank");
-            $Clients = str_replace( array("\r\n", "\r"), "\n", $_POST['clients']);
+            if (empty($_POST['clients'])) {
+                error("Clients field is blank");
+            }
+            $Clients = str_replace(array("\r\n", "\r"), "\n", $_POST['clients']);
             $Clients = explode("\n", $Clients);
 
             $clientinfo = trim($Clients[0]);
-            if (empty($clientinfo)) error("Error parsing input: $clientinfo");
+            if (empty($clientinfo)) {
+                error("Error parsing input: $clientinfo");
+            }
             $first_space = mb_strpos($clientinfo, ' ');
             if ($first_space === false || $first_space >= mb_strlen($clientinfo)-1) {
                 error("Incorrectly formatted line: $clientinfo");
@@ -66,8 +68,10 @@ if ($_POST['submit'] == 'Delete') {
             $Clients = implode("\n", $Clients);
         }
 
-        $DB->query("SELECT id FROM xbt_client_blacklist WHERE peer_id = '$PeerID'" );
-        if ($DB->record_count()>0) error("There is already an entry in the blacklist with peer_id=$PeerID");
+        $DB->query("SELECT id FROM xbt_client_blacklist WHERE peer_id = '$PeerID'");
+        if ($DB->record_count()>0) {
+            error("There is already an entry in the blacklist with peer_id=$PeerID");
+        }
 
         $DB->query("INSERT INTO xbt_client_blacklist
                             (vstring, peer_id)

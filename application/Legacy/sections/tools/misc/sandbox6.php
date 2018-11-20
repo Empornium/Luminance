@@ -20,22 +20,20 @@ $Awards = $DB->to_array(false, MYSQLI_BOTH);
 <?php
         $LastBadge='';
 
-        foreach ($Awards as $Award) {
-            list($Name, $Type, $Desc, $Cost, $Image, $Badge, $Rank) = $Award;
+foreach ($Awards as $Award) {
+    list($Name, $Type, $Desc, $Cost, $Image, $Badge, $Rank) = $Award;
 
-            if ($LastBadge != $Badge) {
+    if ($LastBadge != $Badge) {
+        $Str .= "[size=3]$Name ($Badge)[/size]\n";
 
-                $Str .= "[size=3]$Name ($Badge)[/size]\n";
+        $LastBadge = $Badge;
+    }
 
-                $LastBadge = $Badge;
-            }
-
-            $Str .= "$Name (Rank $Rank)\n";
-            $Str .= "$Desc \n";
-            $Str .= "[img]/common/badges/{$Image}[/img]\n";
-            $Str .= "[quote]criteria: [/quote]\n\n";
-
-        }
+    $Str .= "$Name (Rank $Rank)\n";
+    $Str .= "$Desc \n";
+    $Str .= "[img]/common/badges/{$Image}[/img]\n";
+    $Str .= "[quote]criteria: [/quote]\n\n";
+}
 
         echo $Str;
 ?>

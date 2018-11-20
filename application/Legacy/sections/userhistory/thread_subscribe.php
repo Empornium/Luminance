@@ -19,10 +19,10 @@ if (!check_forumperm($ForumID)) {
 if (!$UserSubscriptions = $Cache->get_value('subscriptions_user_'.$LoggedUser['ID'])) {
     $DB->query('SELECT TopicID FROM users_subscriptions WHERE UserID = '.db_string($LoggedUser['ID']));
     $UserSubscriptions = $DB->collect(0);
-    $Cache->cache_value('subscriptions_user_'.$LoggedUser['ID'],$UserSubscriptions,0);
+    $Cache->cache_value('subscriptions_user_'.$LoggedUser['ID'], $UserSubscriptions, 0);
 }
 
-if (($Key = array_search($_GET['topicid'],$UserSubscriptions)) !== FALSE) {
+if (($Key = array_search($_GET['topicid'], $UserSubscriptions)) !== false) {
     $DB->query('DELETE FROM users_subscriptions WHERE UserID = '.db_string($LoggedUser['ID']).' AND TopicID = '.db_string($_GET['topicid']));
     unset($UserSubscriptions[$Key]);
     echo -1;

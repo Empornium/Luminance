@@ -6,7 +6,9 @@ include(SERVER_ROOT.'/Legacy/sections/bookmarks/functions.php');
 // Number of users per page
 define('BOOKMARKS_PER_PAGE', '20');
 
-if (empty($_REQUEST['action'])) { $_REQUEST['action'] = 'view'; }
+if (empty($_REQUEST['action'])) {
+    $_REQUEST['action'] = 'view';
+}
 switch ($_REQUEST['action']) {
     case 'add':
         require(SERVER_ROOT.'/Legacy/sections/bookmarks/add.php');
@@ -30,7 +32,9 @@ switch ($_REQUEST['action']) {
         break;
 
     case 'view':
-        if (empty($_REQUEST['type'])) { $_REQUEST['type'] = 'torrents'; }
+        if (empty($_REQUEST['type'])) {
+            $_REQUEST['type'] = 'torrents';
+        }
         switch ($_REQUEST['type']) {
             case 'torrents':
                 require(SERVER_ROOT.'/Legacy/sections/bookmarks/torrents.php');

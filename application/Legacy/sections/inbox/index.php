@@ -3,7 +3,9 @@ enforce_login();
 
 include_once(SERVER_ROOT.'/Legacy/sections/inbox/functions.php');
 
-if (!isset($_REQUEST['action'])) { $_REQUEST['action'] = ''; }
+if (!isset($_REQUEST['action'])) {
+    $_REQUEST['action'] = '';
+}
 switch ($_REQUEST['action']) {
     case 'takecompose':
         require 'takecompose.php';

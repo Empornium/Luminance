@@ -3,7 +3,7 @@ enforce_login();
 
 $eur_rate = get_current_btc_rate();
 
-show_header('Donate','bitcoin');
+show_header('Donate', 'bitcoin');
 ?>
 <!-- Donate -->
 <div class="thin">
@@ -15,11 +15,11 @@ show_header('Donate','bitcoin');
         $Body = get_article('donateinline');
         if ($Body) {
             $Text = new Luminance\Legacy\Text;
-            echo $Text->full_format($Body , get_permissions_advtags($LoggedUser['ID']));
+            echo $Text->full_format($Body, get_permissions_advtags($LoggedUser['ID']));
         }
         ?>
         <br/>
-        <p style="font-size: 1.1em" title="rate is the https://bitcoinaverage.com daily average: <?=$eur_rate?>">The current bitcoin exchange rate is 1 bitcoin = &euro;<?=number_format($eur_rate,2);?></p>
+        <p style="font-size: 1.1em" title="rate is the https://bitcoinaverage.com daily average: <?=$eur_rate?>">The current bitcoin exchange rate is 1 bitcoin = &euro;<?=number_format($eur_rate, 2);?></p>
 
         <div style="text-align: center">
             <a style="font-weight: bold;font-size: 1.6em;" href="/donate.php?action=my_donations&new=1"><span style="color:red;"> >> </span>click here to get a personal donation address<span style="color:red;"> << </span></a>
@@ -28,7 +28,7 @@ show_header('Donate','bitcoin');
 
     <div class="head">Donate for <img src="<?= STATIC_SERVER ?>common/symbols/donor.png" alt="love" /></div>
     <div class="box pad">
-        <p><span style="font-size:1.1em;font-weight: bold;">What you will receive for a suggested minimum &euro;5 donation (<?=number_format(5.0/$eur_rate,3)?> bitcoins) :</span> </p>
+        <p><span style="font-size:1.1em;font-weight: bold;">What you will receive for a suggested minimum &euro;5 donation (<?=number_format(5.0/$eur_rate, 3)?> bitcoins) :</span> </p>
         <ul>
             <?php if ($LoggedUser['Donor']) { ?>
                 <li>Even more love! (You will not get multiple hearts.)</li>
@@ -39,20 +39,20 @@ show_header('Donate','bitcoin');
             <?php }
 
             $DB->query("SELECT Title, Description, Image, Cost FROM badges WHERE Type='Donor' ORDER BY Cost");
-            if ($DB->record_count()>0) {
-                ?>
-                <li>In order to recognise large contributers we have the following donor medals</li>
-                <?php
-                while ( list($title, $desc, $image, $cost) = $DB->next_record()) {
-                    ?>
-                    <br/> &nbsp; &nbsp;<img style="vertical-align: middle;" src="<?= STATIC_SERVER ?>common/badges/<?=$image?>" alt="<?=$title?>" title="<?=$title?>" />  &nbsp; If you donate <span style="font-size: 1.3em;font-weight: bolder">&euro;<?=$cost?></span> you will get a <?=$title?>  <strong>(<?=number_format($cost/$eur_rate,3)?> bitcoins)</strong>
+if ($DB->record_count()>0) {
+    ?>
+    <li>In order to recognise large contributers we have the following donor medals</li>
+    <?php
+    while (list($title, $desc, $image, $cost) = $DB->next_record()) {
+        ?>
+        <br/> &nbsp; &nbsp;<img style="vertical-align: middle;" src="<?= STATIC_SERVER ?>common/badges/<?=$image?>" alt="<?=$title?>" title="<?=$title?>" />  &nbsp; If you donate <span style="font-size: 1.3em;font-weight: bolder">&euro;<?=$cost?></span> you will get a <?=$title?>  <strong>(<?=number_format($cost/$eur_rate, 3)?> bitcoins)</strong>
                     <br/>
                     <?php
-                }
-                ?>
-                <br/>
-                <?php
-            }
+    }
+    ?>
+    <br/>
+    <?php
+}
             ?>
             <li><span  style="font-size: 1.2em;">If you want to donate for <img src="<?= STATIC_SERVER ?>common/symbols/donor.png" alt="love" title="love" />
                     <a style="font-weight: bold;" href="/donate.php?action=my_donations&new=1"><span style="color:red;"> >> </span>click here to get a personal donation address<span style="color:red;"> << </span></a></span></li>
@@ -65,9 +65,9 @@ show_header('Donate','bitcoin');
         <ul>
             <?php
 
-            foreach ($DonateLevels as $level=>$rate) {
+            foreach ($DonateLevels as $level => $rate) {
                 ?>
-                    <li>If you donate &euro;<?=$level?> you will get <?=number_format($level * $rate)?> GB removed from your <u>download</u>   <strong>(rate: <?=$rate?>gb per &euro;) &nbsp; ( <?=number_format($level/$eur_rate,6)?> bitcoins)</strong></li>
+                    <li>If you donate &euro;<?=$level?> you will get <?=number_format($level * $rate)?> GB removed from your <u>download</u>   <strong>(rate: <?=$rate?>gb per &euro;) &nbsp; ( <?=number_format($level/$eur_rate, 6)?> bitcoins)</strong></li>
 
                 <?php
             }

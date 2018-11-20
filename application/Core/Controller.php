@@ -10,15 +10,18 @@ use Luminance\Errors\NotFoundError;
 use Luminance\Responses\Response;
 use Luminance\Responses\Rendered;
 
-abstract class Controller extends Slave {
+abstract class Controller extends Slave
+{
 
     public $routes = [];
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
     }
 
-    public function handle_path() {
+    public function handle_path()
+    {
         $path = func_get_args();
         # implode/explode to ensure path is as we expect
         $path = explode('/', implode('/', $path));

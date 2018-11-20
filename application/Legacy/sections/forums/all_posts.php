@@ -1,7 +1,9 @@
 <?php
 /******************************************************************************/
 
-if (!check_perms('users_fls')) error(403);
+if (!check_perms('users_fls')) {
+    error(403);
+}
 
 //---------- Things to sort out before it can start printing/generating content
 
@@ -16,7 +18,7 @@ if (isset($LoggedUser['PostsPerPage'])) {
 list($Page, $Limit) = page_limit($PerPage);
 
 // Start printing
-show_header('All forum posts' , 'overlib,comments,bbcode,jquery,jquery.cookie');
+show_header('All forum posts', 'overlib,comments,bbcode,jquery,jquery.cookie');
 ?>
 <div class="thin">
     <h2>Latest Forum Posts</h2>
@@ -102,11 +104,11 @@ foreach ($Forums as $Forum) {
         <form action="forums.php?action=allposts" method="get">
             <input type="hidden" name="action" value="allposts" />
             <table cellpadding="6" cellspacing="1" border="0" class="border" width="100%">
-                <?php foreach ($Data as $ID => $ProcessedForums): ?>
+                <?php foreach ($Data as $ID => $ProcessedForums) : ?>
                     <tr><td class="colhead"><?= display_str($ForumCats[$ID]) ?></td></tr>
                     <tr>
                         <td>
-                            <?php foreach ($ProcessedForums as $Forum): ?>
+                            <?php foreach ($ProcessedForums as $Forum) : ?>
                                 <div class="quarter_width_checkbox_container">
                                     <input id="forum_<?= (int) $Forum['ID'] ?>" name="forums[<?= (int) $Forum['ID'] ?>]" type="checkbox" <?= in_array($Forum['ID'], $ForumsIDs) ? 'checked' : '' ?>>
                                     <label for="forum_<?= (int) $Forum['ID'] ?>" class="quarter_width_checkbox"><?= display_str($Forum['Name']) ?></label>
@@ -176,7 +178,7 @@ foreach ($Forums as $Forum) {
 
     <div class="linkbox"><a name="posts"></a>
 <?php
-$Pages=get_pages($Page,$NumResults,$PerPage,9);
+$Pages=get_pages($Page, $NumResults, $PerPage, 9);
 echo $Pages;
 ?>
     </div>
@@ -205,9 +207,11 @@ foreach ($Posts as $Key => $Post) {
                 <?=format_username($AuthorID, $Username, $Donor, true, $Enabled, $PermissionID, $UserTitle, true)?> <?=time_diff($AddedTime)?> <a href="/reports.php?action=report&amp;type=post&amp;id=<?=$PostID?>">[Report]</a>
 
 <?php if (can_edit_comment($AuthorID, $EditedUserID, $AddedTime, $EditedTime)) { ?>
-                        - <a href="#post<?=$PostID?>" onclick="Edit_Form('forums','<?=$PostID?>','<?=$Key?>');">[Edit]</a><?php }
-  if (check_perms('site_admin_forums')) { ?>
-                        - <a href="#post<?=$PostID?>" onclick="Delete('<?=$PostID?>');">[Delete]</a> <?php } ?>
+                        - <a href="#post<?=$PostID?>" onclick="Edit_Form('forums','<?=$PostID?>','<?=$Key?>');">[Edit]</a><?php
+}
+if (check_perms('site_admin_forums')) { ?>
+                        - <a href="#post<?=$PostID?>" onclick="Delete('<?=$PostID?>');">[Delete]</a> <?php
+} ?>
             </span>
             <span id="bar<?=$PostID?>" style="float:right;">
                 <a href="#">&uarr;</a>
@@ -222,9 +226,9 @@ foreach ($Posts as $Key => $Post) {
     <?php } else { ?>
             <img src="<?=STATIC_SERVER?>common/avatars/default.png" class="avatar" style="<?=get_avatar_css(100, 120)?>" alt="Default avatar" />
     <?php
-         }
+}
         $UserBadges = get_user_badges($AuthorID);
-        if ( !empty($UserBadges) ) {  ?>
+if (!empty($UserBadges)) {  ?>
                <div class="badges">
 <?php                   print_badges_array($UserBadges, $AuthorID); ?>
                </div>
@@ -239,29 +243,29 @@ $AllowTags= get_permissions_advtags($AuthorID, false, $AuthorPermissions);
                       <div class="post_content"><?=$Text->full_format($Body, $AllowTags) ?> </div>
 <?php  if ($EditedUserID) { ?>
                         <div class="post_footer">
-<?php 	if (check_perms('site_moderate_forums')) { ?>
+<?php   if (check_perms('site_moderate_forums')) { ?>
                 <a href="#content<?=$PostID?>" onclick="LoadEdit('forums', <?=$PostID?>, 1); return false;">&laquo;</a>
-<?php  	} ?>
+<?php   } ?>
                         <span class="editedby">Last edited by
-                <?=format_username($EditedUserID, $EditedUsername) ?> <?=time_diff($EditedTime,2,true,true)?>
+                <?=format_username($EditedUserID, $EditedUsername) ?> <?=time_diff($EditedTime, 2, true, true)?>
                         </span>
                         </div>
-        <?php  }   ?>
+<?php  }   ?>
             </div>
         </td>
     </tr>
 <?php
-      if ( empty($HeavyInfo['DisableSignatures']) && ($MaxSigLength > 0) && !empty($Signature) ) { //post_footer
+if (empty($HeavyInfo['DisableSignatures']) && ($MaxSigLength > 0) && !empty($Signature)) { //post_footer
 
-            echo '
+    echo '
       <tr>
             <td class="sig"><div id="sig" style="max-height: '.SIG_MAX_HEIGHT. 'px"><div>' . $Text->full_format($Signature, $AllowTags) . '</div></div></td>
       </tr>';
-           }
+}
 ?>
 </table>
     </div>
-<?php 	} ?>
+<?php   } ?>
     <div class="linkbox">
         <?=$Pages?>
     </div>

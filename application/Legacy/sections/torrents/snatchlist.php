@@ -1,8 +1,8 @@
 <?php
-if (!isset($_GET['torrentid']) || !is_number($_GET['torrentid']) ) {
+if (!isset($_GET['torrentid']) || !is_number($_GET['torrentid'])) {
     error(404);
 }
-if ( !check_perms('site_view_torrent_snatchlist')) {
+if (!check_perms('site_view_torrent_snatchlist')) {
     error(403);
 }
 $TorrentID = $_GET['torrentid'];
@@ -30,7 +30,7 @@ list($NumResults) = $DB->next_record();
 
 <?php  if ($NumResults > 100) { ?>
     <div class="linkbox"><?= js_pages('show_snatches', $_GET['torrentid'], $NumResults, $Page) ?></div>
-    <?php  } ?>
+<?php  } ?>
 <table>
     <?php
     if ($NumResults == 0) {

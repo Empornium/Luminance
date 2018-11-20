@@ -10,7 +10,7 @@ much.
 // Number of users per page
 define('FRIENDS_PER_PAGE', '20');
 
-show_header("User Groups",'jquery');
+show_header("User Groups", 'jquery');
 
 list($Page,$Limit) = page_limit(FRIENDS_PER_PAGE);
 
@@ -91,7 +91,7 @@ if ($DB->record_count()==0) {
                 </td>
             </form>
         </tr>
-<?php   }
+    <?php   }
 }      ?>
     </table>
 

@@ -1,10 +1,12 @@
 <?php
-function class_list($Selected=0)
+function class_list($Selected = 0)
 {
     global $Classes;
     $Return = '';
     foreach ($Classes as $ID => $Class) {
-        if($Class['IsUserClass']=='0') continue;
+        if ($Class['IsUserClass']=='0') {
+            continue;
+        }
         $Name = $Class['Name'];
         $Level = $Class['Level'];
         $Return.='<option value="'.$Level.'"';
@@ -18,7 +20,9 @@ function class_list($Selected=0)
     return $Return;
 }
 
-if (!check_perms('admin_manage_forums')) { error(403); }
+if (!check_perms('admin_manage_forums')) {
+    error(403);
+}
 
 show_header('Forum Management');
 $DB->query('SELECT ID, Name FROM forums ORDER BY Sort');
@@ -128,9 +132,11 @@ while (list($ID, $CategoryID, $Sort, $Name, $Description, $MinClassRead, $MinCla
             <td>
                 <select name="categoryid">
 <?php   reset($ForumCats);
-    foreach ($ForumCats as $CurCat => $CatName) {
+foreach ($ForumCats as $CurCat => $CatName) {
 ?>
-                    <option value="<?=$CurCat?>" <?php  if ($CurCat == $CategoryID) { echo ' selected="selected"'; } ?>><?=$CatName?></option>
+            <option value="<?=$CurCat?>" <?php  if ($CurCat == $CategoryID) {
+                echo ' selected="selected"';
+} ?>><?=$CatName?></option>
 <?php   } ?>
                 </select>
             </td>
@@ -181,8 +187,10 @@ while (list($ID, $CategoryID, $Sort, $Name, $Description, $MinClassRead, $MinCla
             <td>
                 <select name="categoryid">
 <?php   reset($ForumCats);
-    while (list($CurCat, $CatName) = each($ForumCats)) { ?>
-                    <option value="<?=$CurCat?>" <?php  if ($CurCat == $CategoryID) { echo ' selected="selected"'; } ?>><?=$CatName?></option>
+while (list($CurCat, $CatName) = each($ForumCats)) { ?>
+                    <option value="<?=$CurCat?>" <?php  if ($CurCat == $CategoryID) {
+                        echo ' selected="selected"';
+} ?>><?=$CatName?></option>
 <?php   } ?>
                 </select>
             </td>

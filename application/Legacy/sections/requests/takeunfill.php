@@ -42,12 +42,12 @@ $FullName = $Title;
 $Reason = $_POST['reason'];
 
 $RequestVotes = get_votes_array($RequestID);
-if (!empty($Reason)){
+if (!empty($Reason)) {
     $Reason = "\nReason: ".$Reason;
 } else {
     $Reason = '';
 }
-if ( $FillerID == $UploaderID || $UploaderID == 0) {
+if ($FillerID == $UploaderID || $UploaderID == 0) {
     if ($RequestVotes['TotalBounty'] > $FillerUploaded) {
         // If we can't take it all out of upload, zero that out and add whatever is left as download.
         $DB->query("UPDATE users_main SET Uploaded = 0 WHERE ID = ".$FillerID);

@@ -11,7 +11,7 @@ $Articles = $DB->to_array();
 //list($NumResults) = $DB->next_record();
 $NumResults=count($Articles);
 
-show_header( "Articles>Search Results", 'browse,overlib,bbcode');
+show_header("Articles>Search Results", 'browse,overlib,bbcode');
 ?>
 
 <div class="thin">
@@ -37,33 +37,35 @@ show_header( "Articles>Search Results", 'browse,overlib,bbcode');
     <table width="100%" class="topic_list">
             <tr class="colhead">
                     <td colspan="2">Searched for: <?=htmlentities($Searchtext)?></td>
-                    <td>Found <?=$NumResults?> result<?php if($NumResults!=1) echo"s";?></td>
+                    <td>Found <?=$NumResults?> result<?php if ($NumResults!=1) {
+                        echo"s";
+                              }?></td>
             </tr>
 <?php
     $Row = 'a';
 
-    foreach ($Articles as $Article) {
-        list($TopicID, $Title, $Description, $Category, $SubCat, $MinClass) = $Article;
+foreach ($Articles as $Article) {
+    list($TopicID, $Title, $Description, $Category, $SubCat, $MinClass) = $Article;
 
-        $Row = ($Row == 'a') ? 'b' : 'a';
+    $Row = ($Row == 'a') ? 'b' : 'a';
 ?>
-            <tr class="row<?=$Row?>">
+    <tr class="row<?=$Row?>">
 
-                    <td class="topic_link">
-                        <?="$ArticleCats[$Category] > $ArticleSubCats[$SubCat]"?>
-                    </td>
-                    <td class="topic_link">
-                            <a href="/articles.php?topic=<?=$TopicID?>"><?=display_str($Title)?></a>
-                    </td>
-                    <td>
-                            <?=display_str($Description)?>
+            <td class="topic_link">
+                <?="$ArticleCats[$Category] > $ArticleSubCats[$SubCat]"?>
+            </td>
+            <td class="topic_link">
+                    <a href="/articles.php?topic=<?=$TopicID?>"><?=display_str($Title)?></a>
+            </td>
+            <td>
+                    <?=display_str($Description)?>
 <?php               if ($MinClass) { ?>
                         <span style="float:right">
                             <?="[{$ClassLevels[$MinClass][Name]}+]"?>
                         </span>
 <?php               } ?>
-                    </td>
-            </tr>
+            </td>
+    </tr>
 <?php  } ?>
     </table>
 </div>

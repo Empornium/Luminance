@@ -20,7 +20,7 @@ if (!empty($TopicIDs)) {
         l.PostID,
         CEIL((SELECT COUNT(ID) FROM forums_posts WHERE forums_posts.TopicID = l.TopicID AND forums_posts.ID<=l.PostID)/$PerPage) AS Page
         FROM forums_last_read_topics AS l
-        WHERE TopicID IN(".implode(',',$TopicIDs).") AND
+        WHERE TopicID IN(".implode(',', $TopicIDs).") AND
         UserID='$LoggedUser[ID]'");
     $LastRead = $DB->to_array('TopicID', MYSQLI_ASSOC);
 } else {
@@ -72,7 +72,7 @@ $RestrictedForums = explode(',', $RestrictedForums);
 $PermittedForums = array_keys((array)$LoggedUser['PermittedForums']);
 foreach ($Forums as $Forum) {
     list($ForumID, $CategoryID, $ForumName, $ForumDescription, $MinRead, $MinWrite, $MinCreate, $NumTopics, $NumPosts, $LastPostID, $LastAuthorID, $LastPostAuthorName, $LastTopicID, $LastTime, $SpecificRules, $LastTopic, $Locked, $Sticky) = array_values($Forum);
-    if ($LoggedUser['CustomForums'][$ForumID] != 1 && ($MinRead>$LoggedUser['Class'] || array_search($ForumID, $RestrictedForums) !== FALSE)) {
+    if ($LoggedUser['CustomForums'][$ForumID] != 1 && ($MinRead>$LoggedUser['Class'] || array_search($ForumID, $RestrictedForums) !== false)) {
         continue;
     }
     $Row = ($Row == 'a') ? 'b' : 'a';
@@ -83,7 +83,7 @@ foreach ($Forums as $Forum) {
         $LastCategoryID=$CategoryID;
         if ($OpenTable) { ?>
     </table>
-<?php 		} ?>
+        <?php       } ?>
 
 <div class="head"><?=$ForumCats[$CategoryID]?></div>
     <table class="forum_index">
@@ -98,7 +98,7 @@ foreach ($Forums as $Forum) {
 <?php
         $OpenTable = true;
     }
-    if ( $LastPostID != 0 && ((empty($LastRead[$LastTopicID]) || $LastRead[$LastTopicID]['PostID'] < $LastPostID) && strtotime($LastTime)>$LoggedUser['CatchupTime'])) {
+    if ($LastPostID != 0 && ((empty($LastRead[$LastTopicID]) || $LastRead[$LastTopicID]['PostID'] < $LastPostID) && strtotime($LastTime)>$LoggedUser['CatchupTime'])) {
         $Read = 'unread';
     } else {
         $Read = 'read';
@@ -125,7 +125,7 @@ foreach ($Forums as $Forum) {
                 <a href="/forums.php?action=viewthread&amp;threadid=<?=$LastTopicID?>&amp;page=<?=$LastRead[$LastTopicID]['Page']?>#post<?=$LastRead[$LastTopicID]['PostID']?>"></a>
             </span>
 <?php } ?>
-            <span style="float:right;" class="last_poster">by <?=format_username($LastAuthorID, $LastPostAuthorName)?> <?=time_diff($LastTime,1)?></span>
+            <span style="float:right;" class="last_poster">by <?=format_username($LastAuthorID, $LastPostAuthorName)?> <?=time_diff($LastTime, 1)?></span>
         </td>
         <td style="text-align: center;"><?=number_format($NumTopics)?></td>
         <td style="text-align: center;"><?=number_format($NumPosts)?></td>

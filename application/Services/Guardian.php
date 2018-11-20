@@ -9,7 +9,8 @@ use Luminance\Errors\InternalError;
 use Luminance\Errors\ForbiddenError;
 use Luminance\Errors\AuthError;
 
-class Guardian extends Service {
+class Guardian extends Service
+{
 
     protected static $useRepositories = [
         'users'    => 'UserRepository',
@@ -24,23 +25,28 @@ class Guardian extends Service {
         'options'  => 'Options',
     ];
 
-    public function detect($type, $user = null) {
+    public function detect($type, $user = null)
+    {
         $IP = $this->request->ip;
         $flood = $this->floods->get_or_new($type, $IP, $user);
         return $flood;
     }
 
-    public function get_last_attempt($type) {
+    public function get_last_attempt($type)
+    {
         $user = $this->request->user;
         $IP = $this->request->ip;
         $flood = $this->floods->get_or_new($type, $IP, $user);
         return $flood;
     }
 
-    protected function record_attempt($type, $UserID = 0) {
+    protected function record_attempt($type, $UserID = 0)
+    {
 
         // Don't be a dick in debug mode
-        if ($this->settings->site->debug_mode) return;
+        if ($this->settings->site->debug_mode) {
+            return;
+        }
 
         switch ($type) {
             case '2fa':
@@ -67,7 +73,8 @@ class Guardian extends Service {
         }
     }
 
-    public function log_attempt($type = 'login', $UserID = 0) {
+    public function log_attempt($type = 'login', $UserID = 0)
+    {
         // The user exists in the database, inform the user about the failed login attempt.
         if ($UserID > 0 && $type==='login') {
             $user = $this->users->load($UserID);
@@ -90,9 +97,12 @@ class Guardian extends Service {
         $this->record_attempt($type, $UserID);
     }
 
-    public function log_reset($UserID) {
+    public function log_reset($UserID)
+    {
 
-        if ($UserID == 0) return;
+        if ($UserID == 0) {
+            return;
+        }
 
         $user          = $this->users->load($UserID);
         $RequestIP     = $this->request->ip;
@@ -132,7 +142,8 @@ class Guardian extends Service {
      * @param User $user
      * @param IP $ip
      */
-    public function log_disabled(User $user, IP $ip) {
+    public function log_disabled(User $user, IP $ip)
+    {
         if (!$this->options->DisabledHits) {
             return;
         }

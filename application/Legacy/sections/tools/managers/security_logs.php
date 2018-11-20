@@ -79,8 +79,8 @@ if (!empty($_REQUEST['end_date']) && !preg_match('/^\d{4}-\d{2}-\d{2}$/i', $_REQ
 
 if (in_array($_REQUEST['date_option'], ['on', 'before', 'after', 'between']) && $_REQUEST['start_date']) {
     $SqlConditions = array_merge(
-            $SqlConditions,
-            date_compare('Date', $_REQUEST['date_option'], $_REQUEST['start_date'], $_REQUEST['end_date'])
+        $SqlConditions,
+        date_compare('Date', $_REQUEST['date_option'], $_REQUEST['start_date'], $_REQUEST['end_date'])
     );
 }
 
@@ -248,23 +248,23 @@ show_header('Security logs');
                 <td><strong>Event</strong></td>
                 <td><strong>Date</strong></td>
                 <td><strong>IP</strong></td>
-                <?php if(isset($_REQUEST['first_ip'])): ?>
+                <?php if (isset($_REQUEST['first_ip'])) : ?>
                     <td><strong>First IP</strong></td>
                 <?php endif; ?>
-                <?php if(isset($_REQUEST['last_ip'])): ?>
+                <?php if (isset($_REQUEST['last_ip'])) : ?>
                     <td><strong>Last IP</strong></td>
                 <?php endif; ?>
                 <td><strong>By</strong></td>
             </tr>
-            <?php foreach ($SecurityLogs as $SecurityLog): ?>
+            <?php foreach ($SecurityLogs as $SecurityLog) : ?>
             <?php $SecurityLog['IPStr'] = $SecurityLog['IPID'] ? display_ip((string) $ip = $master->repos->ips->load($SecurityLog['IPID']), $ip->geoip) : '-'; ?>
             <?php
-                if (isset($SecurityLog['FirstIP'])):
-                    $SecurityLog['FirstIPStr'] = $SecurityLog['FirstIP'] ? display_ip((string) $ip = $master->repos->ips->get_or_new($SecurityLog['FirstIP']), geoip((string) $ip)) : '-';
-                endif;
+            if (isset($SecurityLog['FirstIP'])) :
+                $SecurityLog['FirstIPStr'] = $SecurityLog['FirstIP'] ? display_ip((string) $ip = $master->repos->ips->get_or_new($SecurityLog['FirstIP']), geoip((string) $ip)) : '-';
+            endif;
             ?>
                 <?php
-                if (isset($SecurityLog['LastIP'])):
+                if (isset($SecurityLog['LastIP'])) :
                     $SecurityLog['LastIPStr'] = $SecurityLog['LastIP'] ? display_ip((string) $ip = $master->repos->ips->get_or_new($SecurityLog['LastIP']), geoip((string) $ip)) : '-';
                 endif;
                 ?>
@@ -273,10 +273,10 @@ show_header('Security logs');
                 <td><?php echo display_str($SecurityLog['Event']) ?></td>
                 <td><?php echo time_diff($SecurityLog['Date']) ?></td>
                 <td><?php echo $SecurityLog['IPStr'] ?></td>
-                <?php if(isset($SecurityLog['FirstIP'])): ?>
+                <?php if (isset($SecurityLog['FirstIP'])) : ?>
                 <td><?php echo $SecurityLog['FirstIPStr'] ?></td>
                 <?php endif; ?>
-                <?php if(isset($SecurityLog['LastIP'])): ?>
+                <?php if (isset($SecurityLog['LastIP'])) : ?>
                     <td><?php echo $SecurityLog['LastIPStr'] ?></td>
                 <?php endif; ?>
                 <td><?php echo $master->render->username($SecurityLog['AuthorID'], $options); ?></td>

@@ -1,6 +1,8 @@
 <?php
 enforce_login();
-if (!check_perms('admin_edit_articles')) { error(403); }
+if (!check_perms('admin_edit_articles')) {
+    error(403);
+}
 
 $Text = new Luminance\Legacy\Text;
 
@@ -12,22 +14,28 @@ if ($LoggedUser['Class']>=STAFF_LEVEL) { // only interested in staff classes
     $StaffClass = STAFF_LEVEL;
 }
 
-if (!check_perms('admin_edit_articles')) error(403);
+if (!check_perms('admin_edit_articles')) {
+    error(403);
+}
 
 switch ($_REQUEST['action']) {
     case 'takeeditarticle':
         if (is_number($_POST['articleid'])) {
                 authorize();
                 $TopicID = strtolower($_POST['topicid']);
-                if(!$TopicID) error("You must enter a topicid for this article");
-                if (!preg_match('/^[a-z0-9\-\_.()\@&]+$/', $TopicID)) error("Invalid characters in topicID ($TopicID); allowed: a-z 0-9 -_.()@&");
+            if (!$TopicID) {
+                error("You must enter a topicid for this article");
+            }
+            if (!preg_match('/^[a-z0-9\-\_.()\@&]+$/', $TopicID)) {
+                error("Invalid characters in topicID ($TopicID); allowed: a-z 0-9 -_.()@&");
+            }
                 $Count = $master->db->raw_query(
                     "SELECT Count(*) as c FROM articles WHERE TopicID=? AND ID<>?",
                     [$TopicID, $_POST['articleid']]
                 )->fetchColumn();
-                if ($Count > 0) {
-                    error('The topic ID must be unique for the article');
-                }
+            if ($Count > 0) {
+                error('The topic ID must be unique for the article');
+            }
                 $OldBody = $master->db->raw_query("SELECT Body FROM articles WHERE TopicID=?", [$TopicID])->fetchColumn();
 
                 $master->db->raw_query(
@@ -45,7 +53,7 @@ switch ($_REQUEST['action']) {
                         $_POST['category'], $_POST['subcat'], $TopicID, $_POST['title'],
                         $_POST['description'], $_POST['body'], $_POST['level'], sqltime(), $_POST['articleid']
                     ]
-                 );
+                );
 
                 $Cache->delete_value("article_$TopicID");
                 $Cache->delete_value("articles_$_POST[category]");
@@ -61,19 +69,28 @@ switch ($_REQUEST['action']) {
         $edit = $master->db->raw_query("SELECT ID, Category, SubCat, TopicID, Title, Description, Body, MinClass FROM articles WHERE ID=?", [$ArticleID])->fetch();
 
         if ($edit['MinClass']>0) { // check permissions
-            if ( $StaffClass < $edit['MinClass'] ) error(403);
+            if ($StaffClass < $edit['MinClass']) {
+                error(403);
+            }
         }
         break;
 
     case 'takearticle':
         $TopicID = strtolower($_POST['topicid']);
-        if(!$TopicID) error("You must enter a topicid for this article");
-        if (!preg_match('/^[a-z0-9\-\_.()\@&]+$/', $TopicID)) error("Invalid characters in topicID ($TopicID); allowed: a-z 0-9 -_.()@&");
+        if (!$TopicID) {
+            error("You must enter a topicid for this article");
+        }
+        if (!preg_match('/^[a-z0-9\-\_.()\@&]+$/', $TopicID)) {
+            error("Invalid characters in topicID ($TopicID); allowed: a-z 0-9 -_.()@&");
+        }
 
         $Count = $master->db->raw_query(
-            "SELECT Count(*) as c FROM articles WHERE TopicID=?", [$TopicID]
+            "SELECT Count(*) as c FROM articles WHERE TopicID=?",
+            [$TopicID]
         )->fetchColumn();
-        if ($Count > 0) error('The topic ID must be unique for the article');
+        if ($Count > 0) {
+            error('The topic ID must be unique for the article');
+        }
         $master->db->raw_query(
             "INSERT INTO articles (Category, SubCat, TopicID, Title, Description, Body, Time, MinClass)
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -91,7 +108,9 @@ switch ($_REQUEST['action']) {
         break;
 
     case 'deletearticle':
-        if (!check_perms('admin_delete_articles')) error(403);
+        if (!check_perms('admin_delete_articles')) {
+            error(403);
+        }
         if (is_number($_GET['id'])) {
             authorize();
             $del = $master->db->raw_query("SELECT TopicID, Category, SubCat FROM articles WHERE ID=?", [$_GET['id']])->fetchAll(PDO::FETCH_ASSOC);
@@ -111,6 +130,6 @@ $records = $master->db->raw_query(
    ORDER BY Category, SubCat, Title"
 )->fetchAll(PDO::FETCH_ASSOC);
 
-show_header('Manage articles','bbcode');
+show_header('Manage articles', 'bbcode');
 echo $master->render->render('legacy/tools/articles_manager.html.twig', ['edit' => $edit, 'records' => $records, 'articleCategories' => $ArticleCats, 'articleSubCategories' => $ArticleSubCats, 'classLevels' => $ClassLevels, 'staffClass' => $StaffClass]);
 show_footer();

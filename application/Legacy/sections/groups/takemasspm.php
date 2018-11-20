@@ -20,9 +20,9 @@ $Message = db_string($_POST['message']);
 //******************************************************************************//
 //--------------- Validate data in edit form -----------------------------------//
 
-$Validate->SetFields('groupid','1','number','Invalid group ID.',array('maxlength'=>1000000000, 'minlength'=>1)); // we shouldn't have group IDs higher than a billion either
-$Validate->SetFields('subject','1','string','Invalid subject.',array('maxlength'=>1000, 'minlength'=>1));
-$Validate->SetFields('message','1','string','Invalid message.',array('maxlength'=>10000, 'minlength'=>1));
+$Validate->SetFields('groupid', '1', 'number', 'Invalid group ID.', array('maxlength'=>1000000000, 'minlength'=>1)); // we shouldn't have group IDs higher than a billion either
+$Validate->SetFields('subject', '1', 'string', 'Invalid subject.', array('maxlength'=>1000, 'minlength'=>1));
+$Validate->SetFields('message', '1', 'string', 'Invalid message.', array('maxlength'=>10000, 'minlength'=>1));
 $Err = $Validate->ValidateForm($_POST); // Validate the form
 
 if ($Err) {
@@ -39,10 +39,10 @@ $DB->query('SELECT UserID FROM users_groups WHERE GroupID='.$GroupID);
 if ($DB->record_count()>0) {
     $Users = $DB->collect('UserID');
     if ($SenderID == 0) { // we only want to send a masspm if from system
-        send_pm($Users,0,$Subject,$Message);
+        send_pm($Users, 0, $Subject, $Message);
     } else {
         foreach ($Users as $UserID) {
-        send_pm($UserID,($SenderID==$UserID?0:$SenderID),$Subject,$Message);
+            send_pm($UserID, ($SenderID==$UserID?0:$SenderID), $Subject, $Message);
         }
     }
 }

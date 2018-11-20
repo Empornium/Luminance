@@ -3,7 +3,8 @@ namespace Luminance\Entities;
 
 use Luminance\Core\Entity;
 
-class ClientUserAgent extends Entity {
+class ClientUserAgent extends Entity
+{
 
     public static $table = 'client_user_agents';
 

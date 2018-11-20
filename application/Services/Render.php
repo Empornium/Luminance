@@ -9,7 +9,8 @@ use Luminance\Errors\InternalError;
 use Luminance\Entities\User;
 
 # The render class is a useful little minion that helps tie interface/template logic together
-class Render extends Service {
+class Render extends Service
+{
 
     public $userinfo_tools_entries = [
         #  permission                   action                                  title
@@ -69,12 +70,14 @@ class Render extends Service {
         'db'        => 'DB',
     ];
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
         $this->request = $master->request;
     }
 
-    protected function get_base_variables() {
+    protected function get_base_variables()
+    {
         global $Document;
 
         $user = $this->request->user;
@@ -119,7 +122,8 @@ class Render extends Service {
         return $base_variables;
     }
 
-    protected function getRSSAuthString() {
+    protected function getRSSAuthString()
+    {
         $u = $this->request->user;
         if (!$u) {
             return '';
@@ -128,30 +132,35 @@ class Render extends Service {
         return $rss_auth_string;
     }
 
-    public function display($template, $values) {
+    public function display($template, $values)
+    {
         $all_values = array_merge($this->get_base_variables(), $values);
         $this->tpl->display($template, $all_values);
     }
 
-    public function render($template, $values) {
+    public function render($template, $values)
+    {
         $all_values = array_merge($this->get_base_variables(), $values);
         $output = $this->tpl->render($template, $all_values);
         return $output;
     }
 
-    public function sri_checksum($input) {
+    public function sri_checksum($input)
+    {
         $hash = hash('sha256', $input, true);
         $hash_base64 = base64_encode($hash);
         return "sha256-$hash_base64";
     }
 
-    public function display_header($values = []) {
+    public function display_header($values = [])
+    {
         $values = $this->get_header_vars($values);
         $values['headeronly'] = true;
         $this->display('core/base.html.twig', $values);
     }
 
-    public function display_page($template, $values, $block = null) {
+    public function display_page($template, $values, $block = null)
+    {
         $values = array_merge($this->get_base_variables(), $values);
         if (!isset($values['bscripts'])) {
             $values['bscripts'] = '';
@@ -161,23 +170,27 @@ class Render extends Service {
         $this->tpl->display($template, $values, $block);
     }
 
-    public function display_footer() {
+    public function display_footer()
+    {
         $values = $this->get_footer_vars();
         $values['footeronly'] = true;
         $this->display('core/base.html.twig', $values);
     }
 
-    public function public_file_mtime($path) {
+    public function public_file_mtime($path)
+    {
         $full_path = $this->master->public_path . '/' . $path;
         return filemtime($full_path);
     }
 
-    public function public_file_exists($path) {
+    public function public_file_exists($path)
+    {
         $full_path = $this->master->public_path . '/' . $path;
         return file_exists($full_path);
     }
 
-    public function get_allowed_userinfo_tools() {
+    public function get_allowed_userinfo_tools()
+    {
         $entries = [];
         foreach ($this->userinfo_tools_entries as $e) {
             list($privilege, $target, $title) = $e;
@@ -191,7 +204,8 @@ class Render extends Service {
         return $entries;
     }
 
-    public function get_scripts($extra_scripts = []) {
+    public function get_scripts($extra_scripts = [])
+    {
         $scripts = [];
         $scripts[] = [ 'path'=>'functions/sizzle.js' ];
         $scripts[] = [ 'path'=>'functions/script_start.js' ];
@@ -246,7 +260,8 @@ class Render extends Service {
         return $scripts;
     }
 
-    public function get_notifications() {
+    public function get_notifications()
+    {
         $user = $this->request->user;
         if (!$user) {
             return null;
@@ -267,7 +282,8 @@ class Render extends Service {
     }
 
 
-    public function get_header_vars($values = []) {
+    public function get_header_vars($values = [])
+    {
         if ($this->request->user) {
             // Set HTTP headers
             $this->request->setHttpHeaders();
@@ -284,8 +300,12 @@ class Render extends Service {
                 $params = [':userclass' => $user->legacy['Class'],
                           ':userid'    => $user->ID];
 
-                if (is_array($PermittedForums)) $permittedvars = $this->db->bindParamArray('pfid', $PermittedForums, $params);
-                if (is_array($RestrictedForums)) $restrictedvars = $this->db->bindParamArray('rfid', $RestrictedForums, $params);
+                if (is_array($PermittedForums)) {
+                    $permittedvars = $this->db->bindParamArray('pfid', $PermittedForums, $params);
+                }
+                if (is_array($RestrictedForums)) {
+                    $restrictedvars = $this->db->bindParamArray('rfid', $RestrictedForums, $params);
+                }
 
                 $hv->NewSubscriptions = $this->db->raw_query("SELECT COUNT(s.TopicID)
                            FROM users_subscriptions AS s
@@ -515,7 +535,9 @@ class Render extends Service {
             $values['doubleseed_html'] = $this->get_doubleseed_html();
             $values['donation_drive'] = $this->get_donation_drive();
         }
-        if (!isset($values['bscripts'])) $values['bscripts'] = [];
+        if (!isset($values['bscripts'])) {
+            $values['bscripts'] = [];
+        }
         $values['scripts'] = $this->get_scripts($values['bscripts']);
         $values['flashes'] = $this->flasher->grabFlashes();
         $values['flashStyleClasses'] = $this->flashStyleClasses;
@@ -523,7 +545,8 @@ class Render extends Service {
         return $values;
     }
 
-    public function get_footer_vars($values = []) {
+    public function get_footer_vars($values = [])
+    {
         if ($this->auth->isAllowed('users_mod')) {
             $values['performance_info'] = $this->get_performance_info();
         }
@@ -534,7 +557,8 @@ class Render extends Service {
         return $values;
     }
 
-    public function get_freeleech_html() {
+    public function get_freeleech_html()
+    {
         global $Sitewide_Freeleech_On, $Sitewide_Freeleech;
 
         $user = $this->request->user;
@@ -568,7 +592,8 @@ class Render extends Service {
         return $PFL;
     }
 
-    public function get_doubleseed_html() {
+    public function get_doubleseed_html()
+    {
         global $Sitewide_Doubleseed_On, $Sitewide_Doubleseed;
 
         $user = $this->request->user;
@@ -602,12 +627,15 @@ class Render extends Service {
         return $PDS;
     }
 
-    public function get_donation_drive() {
+    public function get_donation_drive()
+    {
         $ActiveDrive = $this->cache->get_value('active_drive');
         if ($ActiveDrive===false) {
             $ActiveDrive = $this->db->raw_query("SELECT ID, name, start_time, target_euros, threadid
                                                  FROM donation_drives WHERE state='active' ORDER BY start_time DESC LIMIT 1")->fetch(\PDO::FETCH_NUM);
-            if (!$ActiveDrive) $ActiveDrive = array('false');
+            if (!$ActiveDrive) {
+                $ActiveDrive = array('false');
+            }
             $this->cache->cache_value('active_drive', $ActiveDrive, 0);
         }
 
@@ -616,7 +644,9 @@ class Render extends Service {
             list($raised_euros, $count) = $this->db->raw_query("SELECT SUM(amount_euro), Count(ID)
                                                                 FROM bitcoin_donations WHERE state!='unused' AND received > :starttime", [':starttime' => $start_time])->fetch(\PDO::FETCH_NUM);
             $percentdone = (int) ($raised_euros * 100 / $target_euros);
-            if ($percentdone>100) $percentdone=100;
+            if ($percentdone>100) {
+                $percentdone=100;
+            }
             $donation_drive = new \stdClass();
             $donation_drive->name = $name;
             $donation_drive->threadid = $threadid;
@@ -629,7 +659,8 @@ class Render extends Service {
         return $donation_drive;
     }
 
-    protected function get_performance_info() {
+    protected function get_performance_info()
+    {
         $Load = sys_getloadavg();
         $info = new \stdClass();
         $info->time = number_format(((microtime(true)-$this->debug->StartTime)*1000), 5);
@@ -639,7 +670,8 @@ class Render extends Service {
         return $info;
     }
 
-    protected function get_debug_html() {
+    protected function get_debug_html()
+    {
         /*
          * Prevent var_dump from being clipped in debug info
          */
@@ -660,7 +692,8 @@ class Render extends Service {
         return $debug_html;
     }
 
-    public function username($user, $options = []) {
+    public function username($user, $options = [])
+    {
         // User can be user object or UserID
         $user = $this->users->load($user);
         if (!empty($user)) {

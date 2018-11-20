@@ -97,7 +97,9 @@ function get_shop_items($UserID)
                         FROM bonus_shop_actions AS s
                         JOIN badges AS b ON b.ID=s.Value AND Action = 'badge'
                         ORDER BY s.Sort");
-  if ($DB->record_count()>0) $ShopItems = array_merge($ShopItems, $DB->to_array(false, MYSQLI_BOTH));
+    if ($DB->record_count()>0) {
+        $ShopItems = array_merge($ShopItems, $DB->to_array(false, MYSQLI_BOTH));
+    }
     return $ShopItems;
 }
 
@@ -165,13 +167,15 @@ function blockedGift($toID, $fromID, &$Err = false)
          // staff are never blocked from sending
         if (!isset($staffIDs[$fromID])) {
             // check if sender is on recepients blocked list
-            $friendType = $master->db->raw_query("SELECT Type FROM friends
+            $friendType = $master->db->raw_query(
+                "SELECT Type FROM friends
                                                    WHERE UserID=:toid AND FriendID=:fromid",
-                                                        [':toid'=>$toID, ':fromid'=>$fromID])->fetchColumn();
+                [':toid'=>$toID, ':fromid'=>$fromID]
+            )->fetchColumn();
             $enabled = $master->db->raw_query("SELECT Enabled FROM users_main WHERE ID=?", [$toID])->fetchColumn();
-            if ($friendType == 'blocked')
+            if ($friendType == 'blocked') {
                 $Err = "This user cannot receive Gifts from you.";
-            else {
+            } else {
                 // check recepients blockPM setting
                 $blockGifts = $master->db->raw_query("SELECT BlockGifts FROM users_info WHERE UserID=:toid", [':toid'=>$toID])->fetchColumn();
                 if ($blockGifts == 2) {

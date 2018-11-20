@@ -17,7 +17,7 @@ class Feed
         echo "\t</channel>\n</rss>";
     }
 
-    public function channel($Title, $Description, $Section='')
+    public function channel($Title, $Description, $Section = '')
     {
         $Site = $this->UseSSL ? 'https://'.SSL_SITE_URL : 'http://'.NONSSL_SITE_URL;
         echo "\t\t<title>$Title :: ". SITE_NAME. "</title>\n";
@@ -29,7 +29,7 @@ class Feed
         echo "\t\t<generator>Gazelle Feed Class</generator>\n\n";
     }
 
-    public function item($Title, $Description, $Page, $Creator, $Comments='', $Category='', $Date='')
+    public function item($Title, $Description, $Page, $Creator, $Comments = '', $Category = '', $Date = '')
     {
         $Timestamp = !empty($Date) ? strtotime($Date) : time();
         $Date      = date("r", $Timestamp);
@@ -58,7 +58,7 @@ class Feed
     }
 
     // Specialised creator function for torrent items
-    public function torrent($Title, $Description, $Page, $DownLink, $InfoHash, $TorrentName, $TorrentSize, $ContentSize, $ContentSizeHR, $Creator, $Domain, $Category='', $Tags='', $FreeTorrent=0)
+    public function torrent($Title, $Description, $Page, $DownLink, $InfoHash, $TorrentName, $TorrentSize, $ContentSize, $ContentSizeHR, $Creator, $Domain, $Category = '', $Tags = '', $FreeTorrent = 0)
     {
         $Date = date("r");
 
@@ -96,7 +96,7 @@ class Feed
         return $Item;
     }
 
-    public function retrieve($CacheKey,$AuthKey,$PassKey)
+    public function retrieve($CacheKey, $AuthKey, $PassKey)
     {
         global $Cache;
         $Entries = $Cache->get_value($CacheKey);
@@ -104,15 +104,15 @@ class Feed
             $Entries = array();
         } else {
             foreach ($Entries as $Item) {
-                echo str_replace(array('[[PASSKEY]]','[[AUTHKEY]]'),array(display_str($PassKey),display_str($AuthKey)),$Item);
+                echo str_replace(array('[[PASSKEY]]','[[AUTHKEY]]'), array(display_str($PassKey),display_str($AuthKey)), $Item);
             }
         }
     }
 
-    public function populate($CacheKey,$Item)
+    public function populate($CacheKey, $Item)
     {
         global $Cache;
-        $Entries = $Cache->get_value($CacheKey,true);
+        $Entries = $Cache->get_value($CacheKey, true);
         if (!$Entries) {
             $Entries = array();
         } else {

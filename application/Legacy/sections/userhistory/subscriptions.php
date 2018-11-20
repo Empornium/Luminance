@@ -14,7 +14,7 @@ if (isset($LoggedUser['PostsPerPage'])) {
 }
 list($Page,$Limit) = page_limit($PerPage);
 
-show_header('Subscribed topics','subscriptions,bbcode,jquery');
+show_header('Subscribed topics', 'subscriptions,bbcode,jquery');
 
 if ($LoggedUser['CustomForums']) {
     unset($LoggedUser['CustomForums']['']);
@@ -54,7 +54,7 @@ $sql .= '
     ORDER BY t.LastPostID DESC
     LIMIT '.$Limit;
 $PostIDs = $DB->query($sql);
-$PostCounts = $DB->to_array('ID',MYSQLI_ASSOC);
+$PostCounts = $DB->to_array('ID', MYSQLI_ASSOC);
 $PostIDs = array_keys($PostCounts);
 $DB->query('SELECT FOUND_ROWS()');
 list($NumResults) = $DB->next_record();
@@ -85,11 +85,11 @@ if ($NumResults > $PerPage*($Page-1)) {
         LEFT JOIN users_main AS um ON um.ID = p.AuthorID
         LEFT JOIN users_info AS ui ON ui.UserID = um.ID
         LEFT JOIN users_main AS ed ON ed.ID = um.ID
-        WHERE p.ID IN ('.implode(',',$PostIDs).')
+        WHERE p.ID IN ('.implode(',', $PostIDs).')
         GROUP BY p.ID
         ORDER BY f.Name ASC, t.LastPostID DESC';
     $DB->query($sql);
-    $Posts = $DB->to_array(false,MYSQLI_ASSOC);
+    $Posts = $DB->to_array(false, MYSQLI_ASSOC);
 }
 ?>
 <div class="thin">
@@ -130,7 +130,7 @@ if (!$NumResults) {
 ?>
     <div class="linkbox">
 <?php
-    $Pages=get_pages($Page,$NumResults,$PerPage, 11);
+    $Pages=get_pages($Page, $NumResults, $PerPage, 11);
     echo $Pages;
 ?>
     </div>
@@ -151,9 +151,9 @@ foreach ($Posts as $Post) {
                     <a href="/forums.php?action=viewforum&amp;forumid=<?=$ForumID?>"><?=$ForumName?></a> &gt;
                     <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>" title="<?=display_str($ThreadTitle)?>"><?=cut_string($ThreadTitle, 75)?></a>
         <?php $NewPosts = $PostCounts[$PostID]['Posts'];
-              if ($NewPosts > 0) {
+        if ($NewPosts > 0) {
         ?>
-                    <span title="<?=$NewPosts?> new post<?=($NewPosts > 1) ? 's':''?>!" class="newstatus">(New!)</span>
+        <span title="<?=$NewPosts?> new post<?=($NewPosts > 1) ? 's':''?>!" class="newstatus">(New!)</span>
         <?php  } ?>
                 </span>
                 <span style="float:left;" class="last_read" title="Jump to last read">
@@ -180,7 +180,7 @@ foreach ($Posts as $Post) {
 $AllowTags= get_permissions_advtags($AuthorID, false, $AuthorPermissions); ?>
             <td class='body' valign="top">
                 <div class="content3">
-                    <?=$Text->full_format($Body,$AllowTags) ?>
+                    <?=$Text->full_format($Body, $AllowTags) ?>
         <?php  if ($EditedUserID) { ?>
                     <br /><br />
                     Last edited by
@@ -190,7 +190,7 @@ $AllowTags= get_permissions_advtags($AuthorID, false, $AuthorPermissions); ?>
             </td>
         </tr>
     </table>
-    <?php  } // while(list(...)) ?>
+<?php  } // while(list(...)) ?>
     <div class="linkbox">
 <?=$Pages?>
     </div>

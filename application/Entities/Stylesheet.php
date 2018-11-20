@@ -3,7 +3,8 @@ namespace Luminance\Entities;
 
 use Luminance\Core\Entity;
 
-class Stylesheet extends Entity {
+class Stylesheet extends Entity
+{
 
     public static $table = 'stylesheets';
 

@@ -1,7 +1,9 @@
 <?php
 include(SERVER_ROOT . '/Legacy/sections/tools/managers/speed_functions.php');
 
-if (!check_perms('users_manage_cheats')) { error(403); }
+if (!check_perms('users_manage_cheats')) {
+    error(403);
+}
 
 $Action = 'speed_cheats';
 
@@ -38,7 +40,7 @@ if (isset($_GET['viewexcluded']) && $_GET['viewexcluded']) {
     $EXCLUDED = "AND nc.UserID IS NULL";
 }
 
-show_header('Speed Cheats','watchlist');
+show_header('Speed Cheats', 'watchlist');
 
 ?>
 <div class="thin">
@@ -72,11 +74,15 @@ show_header('Speed Cheats','watchlist');
                 <td class="right">
                             <label for="viewbanned" title="Keep Speed">show disabled users </label>
                         <input type="checkbox" value="1" onchange="change_view()"
-                               id="viewbanned" name="viewbanned" <?php  if (isset($_GET['viewbanned']) && $_GET['viewbanned'])echo' checked="checked"'?> />
-			<br>
+                               id="viewbanned" name="viewbanned" <?php  if (isset($_GET['viewbanned']) && $_GET['viewbanned']) {
+                                    echo' checked="checked"';
+                                                                 }?> />
+            <br>
                             <label for="viewexcluded" title="Keep Speed">show excluded users </label>
                         <input type="checkbox" value="1" onchange="change_view()"
-                               id="viewexcluded" name="viewexcluded" <?php  if (isset($_GET['viewexcluded']) && $_GET['viewexcluded'])echo' checked="checked"'?> />
+                               id="viewexcluded" name="viewexcluded" <?php  if (isset($_GET['viewexcluded']) && $_GET['viewexcluded']) {
+                                    echo' checked="checked"';
+                                                                     }?> />
                 </td>
                 <td class="center">
                     <label for="viewspeed" title="View Speed">View records with upload speed over </label>
@@ -85,12 +91,12 @@ show_header('Speed Cheats','watchlist');
                         <option value="262144"<?=($ViewSpeed==262144?' selected="selected"':'');?>>&nbsp;<?=get_size(262144);?>/s&nbsp;&nbsp;</option>
                         <option value="524288"<?=($ViewSpeed==524288?' selected="selected"':'');?>>&nbsp;<?=get_size(524288);?>/s&nbsp;&nbsp;</option>
                         <option value="1048576"<?=($ViewSpeed==1048576?' selected="selected"':'');?>>&nbsp;<?=get_size(1048576);?>/s&nbsp;&nbsp;</option>
-<?php                       for ($i=2;$i<=20;$i+=2) {
-                            print_speed_option($i * 1048576 , $ViewSpeed );
-                        }
-                        for ($i=30;$i<=200;$i+=10) {
-                            print_speed_option($i * 1048576 , $ViewSpeed );
-                        }
+<?php                       for ($i=2; $i<=20; $i+=2) {
+                            print_speed_option($i * 1048576, $ViewSpeed);
+}
+for ($i=30; $i<=200; $i+=10) {
+    print_speed_option($i * 1048576, $ViewSpeed);
+}
                         ?>
                     </select>
                 </td>
@@ -103,24 +109,32 @@ show_header('Speed Cheats','watchlist');
                     <label for="viewptnupspeed" title="Display records with matching upspeeds">matching upspeeds</label>
                     <input type="checkbox" value="1" onchange="change_view()"
                          id="viewptnupspeed" name="viewptnupspeed" <?php
-                         if (isset($_GET['viewptnupspeed']) && $_GET['viewptnupspeed'])echo' checked="checked"'?> />
+                            if (isset($_GET['viewptnupspeed']) && $_GET['viewptnupspeed']) {
+                                echo' checked="checked"';
+                            }?> />
                     &nbsp;&nbsp;
                     <label for="viewptnupload" title="Display records with matching upspeeds">matching uploads</label>
                     <input type="checkbox" value="1" onchange="change_view()"
                          id="viewptnupload" name="viewptnupload" <?php
-                         if (isset($_GET['viewptnupload']) && $_GET['viewptnupload'])echo' checked="checked"'?> />
+                            if (isset($_GET['viewptnupload']) && $_GET['viewptnupload']) {
+                                echo' checked="checked"';
+                            }?> />
                     &nbsp;&nbsp;
                     <label for="viewptnall" title="Display records with matching upspeeds and matching uploaded">toggle both</label>
                     <input type="checkbox" value="1" onchange="toggle_pattern()"
                          id="viewptnall" name="viewptnall" <?php
-                         if (isset($_GET['viewptnupspeed']) && $_GET['viewptnupspeed'] &&
-                                 isset($_GET['viewptnupload']) && $_GET['viewptnupload'])echo' checked="checked"'?> />
+                            if (isset($_GET['viewptnupspeed']) && $_GET['viewptnupspeed'] &&
+                                 isset($_GET['viewptnupload']) && $_GET['viewptnupload']) {
+                                echo' checked="checked"';
+                            }?> />
 
                     &nbsp;&nbsp;&nbsp;&nbsp;
                     (<label for="viewptnzero" title="Show matches with zero speed or zero download stats">show 0 speed/dld matches</label>
                     <input type="checkbox" value="1" onchange="change_view()"
                          id="viewptnzero" name="viewptnzero" <?php
-                         if (isset($_GET['viewptnzero']) && $_GET['viewptnzero'] )echo' checked="checked"'?> />)
+                            if (isset($_GET['viewptnzero']) && $_GET['viewptnzero']) {
+                                echo' checked="checked"';
+                            }?> />)
                 </td>
             </tr>
         </form>
@@ -132,12 +146,12 @@ show_header('Speed Cheats','watchlist');
                 <td class="center">
                     <label for="banspeed" title="Ban Speed">Ban users with upload speed over </label>
                     <select id="banspeed" name="banspeed" title="Ban users who have recorded speeds over this"  onchange="preview_users()">
-    <?php                       for ($i=4;$i<=20;$i+=2) {
-                                print_speed_option($i * 1048576 , $BanSpeed );
-                            }
-                            for ($i=30;$i<=200;$i+=10) {
-                                print_speed_option($i * 1048576 , $BanSpeed );
-                            }
+    <?php                       for ($i=4; $i<=20; $i+=2) {
+                                print_speed_option($i * 1048576, $BanSpeed);
+    }
+for ($i=30; $i<=200; $i+=10) {
+    print_speed_option($i * 1048576, $BanSpeed);
+}
                             ?>
                     </select>
                     &nbsp;<a href="#" onclick="preview_users();return false;" title="Preview all the users who have recorded a max speed over this">Preview users</a>
@@ -159,12 +173,16 @@ $Having = '';
 if (isset($_GET['viewptnupspeed']) && $_GET['viewptnupspeed']) {
     $GroupBy .= ", xbt.upspeed";
     $Having = 'HAVING Count(xbt.id)>1';
-    if (!$_GET['viewptnzero']) $WHERE .= " AND xbt.upspeed!=0 ";
+    if (!$_GET['viewptnzero']) {
+        $WHERE .= " AND xbt.upspeed!=0 ";
+    }
 }
 if (isset($_GET['viewptnupload']) && $_GET['viewptnupload']) {
     $GroupBy .= ", xbt.uploaded";
     $Having = 'HAVING Count(xbt.id)>1';
-    if (!$_GET['viewptnzero']) $WHERE .= " AND xbt.uploaded!=0 ";
+    if (!$_GET['viewptnzero']) {
+        $WHERE .= " AND xbt.uploaded!=0 ";
+    }
 }
 
 $DB->query("SELECT SQL_CALC_FOUND_ROWS
@@ -188,7 +206,7 @@ $Records = $DB->to_array();
 $DB->query("SELECT FOUND_ROWS()");
 list($NumResults) = $DB->next_record();
 
-$Pages=get_pages($Page,$NumResults,25,9);
+$Pages=get_pages($Page, $NumResults, 25, 9);
 
 ?>
 
@@ -208,22 +226,22 @@ $Pages=get_pages($Page,$NumResults,25,9);
             </tr>
 <?php
             $row = 'a';
-            if ($NumResults==0) {
+if ($NumResults==0) {
 ?>
-                    <tr class="rowb">
-                        <td class="center" colspan="8">no speed records</td>
-                    </tr>
+<tr class="rowb">
+<td class="center" colspan="8">no speed records</td>
+</tr>
 <?php
-            } else {
-                foreach ($Records as $Record) {
-                    list( $UserID, $Username, $CountRecords, $MaxUpSpeed, $MaxUploaded, $LastTime, $PeerIDs, $IPs,
-                            $IsDonor, $Enabled, $ClassID, $OnWatchlist) = $Record;
-                    $row = ($row === 'a' ? 'b' : 'a');
+} else {
+    foreach ($Records as $Record) {
+        list( $UserID, $Username, $CountRecords, $MaxUpSpeed, $MaxUploaded, $LastTime, $PeerIDs, $IPs,
+                $IsDonor, $Enabled, $ClassID, $OnWatchlist) = $Record;
+        $row = ($row === 'a' ? 'b' : 'a');
 
-                    $PeerIDs = explode('|', $PeerIDs);
-                    $IPs = explode('|', $IPs);
+        $PeerIDs = explode('|', $PeerIDs);
+        $IPs = explode('|', $IPs);
 
-                    $DB->query("SELECT uh.UserID AS UserID, uh.IP
+        $DB->query("SELECT uh.UserID AS UserID, uh.IP
                                   FROM users_history_ips AS uh
                                   JOIN users_history_ips AS me ON uh.IP=me.IP
                                  WHERE uh.IP != '127.0.0.1' AND uh.IP !='' AND me.UserID = $UserID AND uh.UserID != $UserID
@@ -231,122 +249,125 @@ $Pages=get_pages($Page,$NumResults,25,9);
                               ORDER BY UserID, IP
                                  LIMIT 50");
 
-                    $IPDupeCount = $DB->record_count();
-                    $IPDupes = $DB->to_array();
+        $IPDupeCount = $DB->record_count();
+        $IPDupes = $DB->to_array();
 
-                    $bantype=1; //'ban_speed_cheat';
-                    $viewlink='';
-                    $pattern=0;
-                    if ($_GET['viewptnupspeed']==1) {
-                        $viewlink="&matchspeed=$MaxUpSpeed";
-                        $bantype=2; //'ban_pattern_cheat';
-                        $pattern=$CountRecords;
-                    }
-                    if ($_GET['viewptnupload']==1) {
-                        $viewlink.="&matchuploaded=$MaxUploaded";
-                        $bantype=2; //'ban_pattern_cheat';
-                        $pattern=$CountRecords;
-                    }
-                    if($pattern>0) $pattern= "&pattern=$pattern";
-                    else $pattern='';
+        $bantype=1; //'ban_speed_cheat';
+        $viewlink='';
+        $pattern=0;
+        if ($_GET['viewptnupspeed']==1) {
+            $viewlink="&matchspeed=$MaxUpSpeed";
+            $bantype=2; //'ban_pattern_cheat';
+            $pattern=$CountRecords;
+        }
+        if ($_GET['viewptnupload']==1) {
+            $viewlink.="&matchuploaded=$MaxUploaded";
+            $bantype=2; //'ban_pattern_cheat';
+            $pattern=$CountRecords;
+        }
+        if ($pattern>0) {
+            $pattern= "&pattern=$pattern";
+        } else {
+            $pattern='';
+        }
 
 ?>
-                    <tr class="row<?=$row?>">
-                        <td>
-                           <a href="?action=speed_records&viewspeed=0<?=$viewlink?>&userid=<?=$UserID?>" title="View records for just <?=$Username?>"><img src="static/common/symbols/view.png" alt="view" /></a>
-                           <div style="display:inline-block">
+        <tr class="row<?=$row?>">
+            <td>
+               <a href="?action=speed_records&viewspeed=0<?=$viewlink?>&userid=<?=$UserID?>" title="View records for just <?=$Username?>"><img src="static/common/symbols/view.png" alt="view" /></a>
+               <div style="display:inline-block">
 <?php                          if (!$OnWatchlist) {
 ?>                            <a onclick="watchlist_add('<?=$UserID?>',true);return false;" href="#" title="Add <?=$Username?> to watchlist"><img src="static/common/symbols/watchedred.png" alt="wl add" /></a><br/><?php
-                           }
- ?>                           <a onclick="excludelist_add('<?=$UserID?>',true);return false;" href="#" title="Add <?=$Username?> to exclude list"><img src="static/common/symbols/watchedgreen.png" alt="excl add" /></a><?php
-                            //}
- ?>                        </div>
-                           <a onclick="remove_records('<?=$UserID?>');return false;" href="#" title="Remove all speed records belonging to <?=$Username?> from stored records"><img src="static/common/symbols/trash.png" alt="del records" /></a>
+}
+?>                           <a onclick="excludelist_add('<?=$UserID?>',true);return false;" href="#" title="Add <?=$Username?> to exclude list"><img src="static/common/symbols/watchedgreen.png" alt="excl add" /></a><?php
+                //}
+?>                        </div>
+               <a onclick="remove_records('<?=$UserID?>');return false;" href="#" title="Remove all speed records belonging to <?=$Username?> from stored records"><img src="static/common/symbols/trash.png" alt="del records" /></a>
 <?php
-                            if ($Enabled=='1') {
-                                if ($bantype==1) { ?>
+if ($Enabled=='1') {
+    if ($bantype==1) { ?>
                                 <a href="/tools.php?action=ban_speed_cheat<?=$pattern?>&banuser=1&returnto=cheats&userid=<?=$UserID?>" title="ban this user for being a big fat cheat (speeding)"><img src="static/common/symbols/ban.png" alt="ban" /></a>
-<?php                               } else {?>
+    <?php                               } else {?>
                                 <a href="/tools.php?action=ban_pattern_cheat<?=$pattern?>&banuser=1&returnto=cheats&userid=<?=$UserID?>" title="ban this user for being a big fat cheat (pattern matching)"><img src="static/common/symbols/ban2.png" alt="ban" /></a>
-<?php                               }
-                            }
-                           ?>
+    <?php                               }
+}
+                ?>
                         </td>
                         <td class="center">
 <?php                           echo format_username($UserID, $Username, $IsDonor, true, $Enabled, $ClassID, false, false);
 
-                            if ($IPDupeCount>0) { ?>
+if ($IPDupeCount>0) { ?>
 
                             <span style="float:right;">
                                 <a href="#" title="view matching ip's for this user" onclick="$('#linkeddiv<?=$UserID?>').toggle();this.innerHTML=this.innerHTML=='(hide)'?'(view)':'(hide)';return false;">(view)</a>
                             </span>
 <?php
-                            }
+}
 ?>
+            </td>
+            <td class="center"><?=speed_span($MaxUpSpeed, $master->options->KeepSpeed, 'red', get_size($MaxUpSpeed).'/s')?></td>
+            <td class="center"><?=get_size($MaxUploaded)?></td>
+            <td class="center"><?=$CountRecords?></td>
+            <td class="center"><?php
+            foreach ($PeerIDs as $PeerID) {
+                    ?>  <span style="color:#555"><?=substr($PeerID, 0, 8)  ?></span> <br/>
+            <?php   } ?>
                         </td>
-                        <td class="center"><?=speed_span($MaxUpSpeed, $master->options->KeepSpeed, 'red', get_size($MaxUpSpeed).'/s')?></td>
-                        <td class="center"><?=get_size($MaxUploaded)?></td>
-                        <td class="center"><?=$CountRecords?></td>
                         <td class="center"><?php
-                            foreach ($PeerIDs as $PeerID) {
-                        ?>  <span style="color:#555"><?=substr($PeerID,0,8)  ?></span> <br/>
-                        <?php   } ?>
-                        </td>
-                        <td class="center"><?php
-                            foreach ($IPs as $IP) {
-                                $ipcc = geoip($IP);
-                                echo display_ip($IP, $ipcc)."<br/>";
-                            }
+                        foreach ($IPs as $IP) {
+                            $ipcc = geoip($IP);
+                            echo display_ip($IP, $ipcc)."<br/>";
+                        }
                         ?>
                         </td>
                         <td class="center"><?=time_diff($LastTime, 2, true, false, 1)?></td>
                     </tr>
 <?php
-            if ($IPDupeCount>0) {
+if ($IPDupeCount>0) {
 ?>
-                    <tr id="linkeddiv<?=$UserID?>" style="font-size:0.9em;" class="hidden row<?=$row?>">
-                        <td colspan="8">
-            <table width="100%" class="border">
+        <tr id="linkeddiv<?=$UserID?>" style="font-size:0.9em;" class="hidden row<?=$row?>">
+            <td colspan="8">
+<table width="100%" class="border">
 <?php
-            $i = 0;
-            foreach ($IPDupes AS $IPDupe) {
-                list($EUserID, $IP) = $IPDupe;
-                $i++;
-                $DupeInfo = user_info($EUserID);
+$i = 0;
+foreach ($IPDupes as $IPDupe) {
+    list($EUserID, $IP) = $IPDupe;
+    $i++;
+    $DupeInfo = user_info($EUserID);
 ?>
-            <tr>
+<tr>
 
-                <td align="center">
-                    <?=format_username($EUserID, $DupeInfo['Username'], $DupeInfo['Donor'], true, $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
-                </td>
-                <td align="center">
-                    <?=display_ip($IP, $DupeInfo['ipcc'])?>
-                </td>
-                <td align="left">
-                    <?="$Username's history <-> $DupeInfo[Username]'s history"?>
-                </td>
-                <td>
+    <td align="center">
+        <?=format_username($EUserID, $DupeInfo['Username'], $DupeInfo['Donor'], true, $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
+    </td>
+    <td align="center">
+        <?=display_ip($IP, $DupeInfo['ipcc'])?>
+    </td>
+    <td align="left">
+        <?="$Username's history <-> $DupeInfo[Username]'s history"?>
+    </td>
+    <td>
 <?php
-                    if ( !array_key_exists($EUserID, (array)$Dupes) ) {
+if (!array_key_exists($EUserID, (array)$Dupes)) {
 ?>
-                        [<a href="/user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>" title="link this user to <?=$Username?>">link</a>]
+[<a href="/user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>" title="link this user to <?=$Username?>">link</a>]
 <?php
-                    }
+}
 ?>
-                </td>
-            </tr>
+    </td>
+</tr>
 <?php
-            }
+}
 ?>
-            </table>
-                        </td>
-                    </tr>
+</table>
+            </td>
+        </tr>
 <?php
-            }
+}
 ?>
 <?php
-                }
-            }
+    }
+}
             ?>
         </table>
     <div class="linkbox"><?=$Pages?></div>

@@ -3,7 +3,8 @@ namespace Luminance\Entities;
 
 use Luminance\Core\Entity;
 
-class RequestFlood extends Entity {
+class RequestFlood extends Entity
+{
 
     public static $table = 'request_flood';
 

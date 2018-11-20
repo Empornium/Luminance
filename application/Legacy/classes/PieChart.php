@@ -1,8 +1,9 @@
 <?php
 namespace Luminance\Legacy;
+
 class PieChart extends google_charts
 {
-    public function __construct ($Width, $Height, $Options=array())
+    public function __construct($Width, $Height, $Options = array())
     {
         $Type = (isset($Options['3D']))?'p3':'p';
         parent::__construct($Type, $Width, $Height, $Options);

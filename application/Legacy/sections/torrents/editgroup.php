@@ -4,10 +4,12 @@
 ************************************************************************/
 
 $GroupID = $_GET['groupid'];
-if (!is_number($GroupID) || !$GroupID) { error(0); }
+if (!is_number($GroupID) || !$GroupID) {
+    error(0);
+}
 
     // may as well use prefilled vars if coming from takegroupedit
-if ($HasDescriptionData !== TRUE) {
+if ($HasDescriptionData !== true) {
     $DB->query("SELECT
           tg.NewCategoryID,
           tg.Name,
@@ -20,39 +22,41 @@ if ($HasDescriptionData !== TRUE) {
           FROM torrents_group AS tg
           JOIN torrents AS t ON t.GroupID = tg.ID
           WHERE tg.ID='$GroupID'");
-    if ($DB->record_count() == 0) { error(404); }
+    if ($DB->record_count() == 0) {
+        error(404);
+    }
     list($CategoryID, $Name, $Image, $Body, $AuthorID, $Free, $AddedTime, $IsAnon) = $DB->next_record();
 
     $CanEdit = check_perms('torrents_edit');
     if (!$CanEdit) {
-
         if ($LoggedUser['ID'] == $AuthorID) {
-            if ( check_perms ('site_edit_torrents') &&
-                (check_perms ('site_edit_override_timelock') || time_ago($AddedTime)< TORRENT_EDIT_TIME) ) {
+            if (check_perms('site_edit_torrents') &&
+                (check_perms('site_edit_override_timelock') || time_ago($AddedTime)< TORRENT_EDIT_TIME) ) {
                 $CanEdit = true;
             } else {
                 error("Sorry - you only have ". date('z\d\a\y\s i\m\i\n\s', TORRENT_EDIT_TIME). "  to edit your torrent before it is automatically locked.");
             }
         }
-
     }
 }
 
-if (!$CanEdit) { error(403); }
+if (!$CanEdit) {
+    error(403);
+}
 
 if (!isset($Text)) {
     $Text = new Luminance\Legacy\Text;
 }
 
-show_header('Edit torrent','bbcode,edittorrent');
+show_header('Edit torrent', 'bbcode,edittorrent');
 
 // Start printing form
 ?>
 <div class="thin">
 <?php
-    if ($Err) { ?>
+if ($Err) { ?>
             <div id="messagebar" class="messagebar alert"><?=$Err?></div>
-<?php 	}
+<?php   }
 // =====================================================
 //  Do we want users to be able to edit their own titles??
 //  If so then maybe the title edit should be integrated into the main form ?
@@ -125,8 +129,12 @@ show_header('Edit torrent','bbcode,edittorrent');
                 <tr>
                     <td class="label">Freeleech</td>
                     <td>
-            <input name="freeleech" value="0" type="radio"<?php  if($Free!=1) echo ' checked="checked"';?>/> None&nbsp;&nbsp;
-            <input name="freeleech" value="1" type="radio"<?php  if($Free==1) echo ' checked="checked"';?>/> Freeleech&nbsp;&nbsp;
+            <input name="freeleech" value="0" type="radio"<?php  if ($Free!=1) {
+                echo ' checked="checked"';
+                                                          }?>/> None&nbsp;&nbsp;
+            <input name="freeleech" value="1" type="radio"<?php  if ($Free==1) {
+                echo ' checked="checked"';
+                                                          }?>/> Freeleech&nbsp;&nbsp;
                     </td>
                 </tr>
             </table>

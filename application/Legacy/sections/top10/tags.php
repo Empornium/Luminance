@@ -1,7 +1,7 @@
 <?php
 // error out on invalid requests (before caching)
 if (isset($_GET['details'])) {
-    if (in_array($_GET['details'],array('ut','ur','v'))) {
+    if (in_array($_GET['details'], array('ut','ur','v'))) {
         $Details = $_GET['details'];
     } else {
         error(404);
@@ -41,7 +41,7 @@ if ($Details=='all' || $Details=='ut') {
             ORDER BY Uses DESC, PosVotes DESC, NegVotes ASC
             LIMIT $Limit");
         $TopUsedTags = $DB->to_array();
-        $Cache->cache_value('topusedtag_'.$Limit,$TopUsedTags,3600*12);
+        $Cache->cache_value('topusedtag_'.$Limit, $TopUsedTags, 3600*12);
     }
 
     generate_tag_table('Most Used Torrent Tags', 'ut', $TopUsedTags, $Limit);
@@ -60,7 +60,7 @@ if ($Details=='all' || $Details=='ur') {
             ORDER BY Uses DESC
             LIMIT $Limit");
         $TopRequestTags = $DB->to_array();
-        $Cache->cache_value('toprequesttag_'.$Limit,$TopRequestTags,3600*12);
+        $Cache->cache_value('toprequesttag_'.$Limit, $TopRequestTags, 3600*12);
     }
 
     generate_tag_table('Most Used Request Tags', 'ur', $TopRequestTags, $Limit, false, true);
@@ -81,7 +81,7 @@ if ($Details=='all' || $Details=='v') {
             ORDER BY Votes DESC, Uses DESC
             LIMIT $Limit");
         $TopVotedTags = $DB->to_array();
-        $Cache->cache_value('topvotedtag_'.$Limit,$TopVotedTags,3600*12);
+        $Cache->cache_value('topvotedtag_'.$Limit, $TopVotedTags, 3600*12);
     }
 
     generate_tag_table('Most Highly Voted Tags', 'v', $TopVotedTags, $Limit);
@@ -92,7 +92,7 @@ show_footer();
 exit;
 
 // generate a table based on data from most recent query to $DB
-function generate_tag_table($Caption, $Tag, $Details, $Limit, $ShowVotes=true, $RequestsTable = false)
+function generate_tag_table($Caption, $Tag, $Details, $Limit, $ShowVotes = true, $RequestsTable = false)
 {
     if ($RequestsTable) {
         $URLString = 'requests.php?tags=';
@@ -112,16 +112,16 @@ function generate_tag_table($Caption, $Tag, $Details, $Limit, $ShowVotes=true, $
         <td class="tags_rank">Rank</td>
         <td class="tags_tag">Tag</td>
         <td class="tags_uses">Uses</td>
-<?php 	if ($ShowVotes) {	?>
+<?php   if ($ShowVotes) {   ?>
         <td class="tags_votes">Votes</td>
             <td class="tags_votes_detail"></td>
             <td class="tags_votes_detail2"></td>
-<?php 	}	?>
+<?php   }   ?>
     </tr>
 <?php
     // in the unlikely event that query finds 0 rows...
-    if (empty($Details)) {
-        echo '
+if (empty($Details)) {
+    echo '
         <tr class="rowb">
             <td colspan="9" class="center">
                 Found no tags matching the criteria
@@ -129,26 +129,26 @@ function generate_tag_table($Caption, $Tag, $Details, $Limit, $ShowVotes=true, $
         </tr>
         </table><br />';
 
-        return;
-    }
+    return;
+}
     $Rank = 0;
-    foreach ($Details as $Detail) {
-        $Rank++;
-        $Highlight = ($Rank%2 ? 'b' : 'a');
+foreach ($Details as $Detail) {
+    $Rank++;
+    $Highlight = ($Rank%2 ? 'b' : 'a');
 
-        // print row
+    // print row
 ?>
-    <tr class="row<?=$Highlight?>">
-        <td class="tags_rank"><?=$Rank?></td>
-        <td class="tags_tag"><a href="/<?=$URLString?><?=$Detail['Name']?>"><?=$Detail['Name']?></a></td>
-        <td class="tags_uses"><?=$Detail['Uses']?></td>
-<?php 		if ($ShowVotes) { ?>
+<tr class="row<?=$Highlight?>">
+<td class="tags_rank"><?=$Rank?></td>
+<td class="tags_tag"><a href="/<?=$URLString?><?=$Detail['Name']?>"><?=$Detail['Name']?></a></td>
+<td class="tags_uses"><?=$Detail['Uses']?></td>
+<?php       if ($ShowVotes) { ?>
         <td class="tags_votes"><span class="total_votes"><?=($Detail['PosVotes']-$Detail['NegVotes'])?></span></td>
             <td class="tags_votes_detail"><span class="pos_votes">+<?=$Detail['PosVotes']?></span></td>
             <td class="tags_votes_detail2"><span class="neg_votes">-<?=$Detail['NegVotes']?></span></td>
-<?php 		} ?>
-    </tr>
+<?php       } ?>
+</tr>
 <?php
-    }
+}
     echo '</table><br />';
 }

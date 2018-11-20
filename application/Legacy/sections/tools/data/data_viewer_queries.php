@@ -414,7 +414,7 @@ GROUP BY
 ORDER BY
     CreditsGiven DESC"
     ],
-'users_special_gifts_donors' => [
+    'users_special_gifts_donors' => [
         'title' => 'Users: &nbsp;&nbsp;&nbsp;Special Gifts - Donors',
         'description' => 'This query shows Special Gifts given by users.',
         'sql' => "
@@ -430,7 +430,7 @@ GROUP BY
 ORDER BY
     CreditsSpent DESC"
     ],
-'users_special_gifts_recipients' => [
+    'users_special_gifts_recipients' => [
         'title' => 'Users: &nbsp;&nbsp;&nbsp;Special Gifts - Recipients',
         'description' => 'This query shows Special Gifts received by users.',
         'sql' => "
@@ -445,7 +445,7 @@ GROUP BY
 ORDER BY
     CreditsReceived DESC, GBsReceived DESC"
     ],
-'/24 abusive IPv4 subnets' => [
+    '/24 abusive IPv4 subnets' => [
         'title' => 'Network: &nbsp;Abusive /24 IP subnets',
         'description' => 'This query shows IP address ranges with high numbers of failed login attempts',
         'sql' => "
@@ -464,7 +464,7 @@ HAVING
 ORDER BY
     IPCount DESC"
     ],
-'/16 abusive IPv4 subnets' => [
+    '/16 abusive IPv4 subnets' => [
         'title' => 'Network: &nbsp;Abusive /16 IP subnets',
         'description' => 'This query shows IP address ranges with high numbers of failed login attempts',
         'sql' => "
@@ -483,7 +483,7 @@ HAVING
 ORDER BY
     IPCount DESC"
     ],
-'/8 abusive IPv4 subnets' => [
+    '/8 abusive IPv4 subnets' => [
         'title' => 'Network: &nbsp;Abusive /8 IP subnets',
         'description' => 'This query shows IP address ranges with high numbers of failed login attempts',
         'sql' => "

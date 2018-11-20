@@ -23,7 +23,7 @@ $Types = array(
         'title' => 'Dupe',
         'report_messages' => array(
             'Please specify a link to the original torrent.',
-            "Note: It's ok to dupe torrents that are over " . time_diff(time()+ (EXCLUDE_DUPES_AFTER_DAYS*24*3600),1,false,false,0). " old and have less than ".EXCLUDE_DUPES_SEEDS." seeders.",
+            "Note: It's ok to dupe torrents that are over " . time_diff(time()+ (EXCLUDE_DUPES_AFTER_DAYS*24*3600), 1, false, false, 0). " old and have less than ".EXCLUDE_DUPES_SEEDS." seeders.",
             "The site will not accept reports where the duped torrent fits this criteria."
         ),
         'report_fields' => array(

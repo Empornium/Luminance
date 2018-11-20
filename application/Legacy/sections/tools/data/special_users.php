@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('admin_manage_permissions')) { error(403); }
+if (!check_perms('admin_manage_permissions')) {
+    error(403);
+}
 show_header('Special Users List');
 ?>
 <div class="thin">
@@ -22,12 +24,12 @@ if ($DB->record_count()) {
             <td>Access</td>
         </tr>
 <?php
-    while (list($UserID, $Username, $PermissionID, $Enabled, $Donor,$GroupPermissionID)=$DB->next_record()) {
+while (list($UserID, $Username, $PermissionID, $Enabled, $Donor,$GroupPermissionID)=$DB->next_record()) {
 ?>
-        <tr>
-            <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID, '', false, $GroupPermissionID, true)?></td>
-            <td><a href="/user.php?action=permissions&amp;userid=<?=$UserID?>">Manage</a></td>
-        </tr>
+<tr>
+    <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID, '', false, $GroupPermissionID, true)?></td>
+    <td><a href="/user.php?action=permissions&amp;userid=<?=$UserID?>">Manage</a></td>
+</tr>
 <?php } ?>
     </table>
 <?php } else { ?>

@@ -20,7 +20,8 @@ use Luminance\Responses\Rendered;
 
 use Luminance\Legacy\UserRank;
 
-class UsersPlugin extends Plugin {
+class UsersPlugin extends Plugin
+{
 
     public $routes = [
         # [method] [path match] [target function] [auth level] <extra arguments>
@@ -79,13 +80,15 @@ class UsersPlugin extends Plugin {
         'db'            => 'DB',
     ];
 
-    public static function register(Master $master) {
+    public static function register(Master $master)
+    {
         parent::register($master);
         # This registers the plugin and has nothing to do with account creation!
         $master->prependRoute([ '*', 'users/**', 0, 'plugin', 'Users' ]);
     }
 
-    public function legacy_redirect($userID) {
+    public function legacy_redirect($userID)
+    {
         $userID = intval($userID);
         return new Redirect("/user.php?id={$userID}");
     }
@@ -96,13 +99,15 @@ class UsersPlugin extends Plugin {
      *
      * @return Redirect
      */
-    public function generic_redirect() {
+    public function generic_redirect()
+    {
         $userID = $this->request->user->ID;
         $path   = implode('/', array_slice($this->request->path, 1));
         return new Redirect("/users/{$userID}/{$path}");
     }
 
-    public function sessions_form($userID) {
+    public function sessions_form($userID)
+    {
         if ($userID != $this->request->user->ID) {
             $this->auth->checkAllowed('users_mod');
             $this->auth->checkLevel($userID);
@@ -114,7 +119,8 @@ class UsersPlugin extends Plugin {
         return new Rendered('@Users/user_sessions.html.twig', ['Sessions' => $sessions, 'SessionCount' => $sessionCount]);
     }
 
-    public function twofactor_enable($userID) {
+    public function twofactor_enable($userID)
+    {
         if ($userID != $this->request->user->ID) {
             throw new ForbiddenError();
         }
@@ -124,7 +130,8 @@ class UsersPlugin extends Plugin {
         return new Rendered('@Users/twofactor_enable.html.twig', ['user' => $user, 'secret' => $secret, 'protected' => $protected]);
     }
 
-    public function twofactor_confirm($userID) {
+    public function twofactor_confirm($userID)
+    {
         if ($userID != $this->request->user->ID) {
             throw new ForbiddenError();
         }
@@ -143,7 +150,8 @@ class UsersPlugin extends Plugin {
         return new Redirect("/users/{$userID}/security");
     }
 
-    public function twofactor_disable_form($userID) {
+    public function twofactor_disable_form($userID)
+    {
         if ($userID != $this->request->user->ID) {
             $this->auth->checkAllowed('users_edit_2fa');
             $this->auth->checkLevel($userID);
@@ -152,7 +160,8 @@ class UsersPlugin extends Plugin {
         return new Rendered('@Users/twofactor_disable.html.twig', ['user' => $user]);
     }
 
-    public function twofactor_disable($userID) {
+    public function twofactor_disable($userID)
+    {
         if ($userID != $this->request->user->ID) {
             $this->auth->checkAllowed('users_edit_2fa');
             $this->auth->checkLevel($userID);
@@ -170,7 +179,8 @@ class UsersPlugin extends Plugin {
         return new Redirect("/users/{$userID}/security");
     }
 
-    public function security_form($userID) {
+    public function security_form($userID)
+    {
         if ($userID != $this->request->user->ID) {
             $this->auth->checkAllowed('users_view_email');
             $this->auth->checkLevel($userID);
@@ -209,7 +219,8 @@ class UsersPlugin extends Plugin {
         return new Rendered('@Users/user_security.html.twig', $data);
     }
 
-    public function password_recover_form() {
+    public function password_recover_form()
+    {
         if ($this->request->user) {
             return new Redirect('/');
         }
@@ -225,7 +236,8 @@ class UsersPlugin extends Plugin {
         }
     }
 
-    public function password_recover() {
+    public function password_recover()
+    {
         if ($this->request->user) {
             return new Redirect('/');
         }
@@ -339,7 +351,8 @@ class UsersPlugin extends Plugin {
         }
     }
 
-    public function password_change($userID) {
+    public function password_change($userID)
+    {
         if ($userID != $this->request->user->ID) {
             $this->auth->checkAllowed('users_mod');
             $this->auth->checkLevel($userID);
@@ -380,7 +393,8 @@ class UsersPlugin extends Plugin {
      * @param $userID
      * @return Rendered
      */
-    public function invite_form($userID) {
+    public function invite_form($userID)
+    {
         // Owner & staff only
         if ($userID != $this->request->user->ID) {
             $this->auth->checkAllowed('users_view_invites');
@@ -408,7 +422,8 @@ class UsersPlugin extends Plugin {
      * @param $userID
      * @return Redirect
      */
-    public function invite_send($userID) {
+    public function invite_send($userID)
+    {
         // Owner only
         if ($userID != $this->request->user->ID) {
             return new Redirect("/users/{$this->request->user->ID}/invite");
@@ -455,7 +470,8 @@ class UsersPlugin extends Plugin {
      * @param $userID
      * @return Redirect
      */
-    public function invite_delete($userID) {
+    public function invite_delete($userID)
+    {
         // Owner & staff only
         if ($userID != $this->request->user->ID) {
             $this->auth->checkAllowed('users_view_invites');
@@ -486,7 +502,8 @@ class UsersPlugin extends Plugin {
         return new Redirect("/users/{$userID}/invite");
     }
 
-    public function email_add($userID) {
+    public function email_add($userID)
+    {
         if ($userID != $this->request->user->ID) {
             $this->auth->checkAllowed('users_edit_email');
             $this->auth->checkLevel($userID);
@@ -496,7 +513,9 @@ class UsersPlugin extends Plugin {
             $address = $this->request->getString('address');
             $email = $this->emails->get('Address=:address', [':address' => $address]);
             if ($email) {
-                if ($email->UserID != $userID) throw new UserError("This email is already registered");
+                if ($email->UserID != $userID) {
+                    throw new UserError("This email is already registered");
+                }
                 if ($email->getFlag(Email::CANCELLED)) {
                     $email->unsetFlags(Email::CANCELLED);
                     $this->emails->save($email);
@@ -513,7 +532,8 @@ class UsersPlugin extends Plugin {
         }
     }
 
-    public function email_resend($userID) {
+    public function email_resend($userID)
+    {
         try {
             if ($userID != $this->request->user->ID) {
                 $this->auth->checkAllowed('users_edit_email');
@@ -526,8 +546,12 @@ class UsersPlugin extends Plugin {
             $email = $this->emails->load($emailID);
 
             // Checking and validation
-            if ($userID != $email->UserID)  throw new UserError("Email does not belong to user");
-            if (!$email->ready_to_resend()) throw new UserError("Cannot resend so quickly");
+            if ($userID != $email->UserID) {
+                throw new UserError("Email does not belong to user");
+            }
+            if (!$email->ready_to_resend()) {
+                throw new UserError("Cannot resend so quickly");
+            }
 
             $this->emailManager->send_confirmation($email->ID);
 
@@ -538,7 +562,8 @@ class UsersPlugin extends Plugin {
         }
     }
 
-    public function email_confirm($userID) {
+    public function email_confirm($userID)
+    {
         try {
             $token=$this->request->getString('token');
             $fullToken = $this->crypto->decrypt($token, 'default', true);
@@ -561,7 +586,8 @@ class UsersPlugin extends Plugin {
         }
     }
 
-    public function email_restore($userID) {
+    public function email_restore($userID)
+    {
         try {
             $this->auth->checkAllowed('users_edit_email');
             $this->auth->checkLevel($userID);
@@ -572,7 +598,9 @@ class UsersPlugin extends Plugin {
             $email = $this->emails->load($emailID);
 
             // Checking and validation
-            if ($userID != $email->UserID)  throw new UserError("Email does not belong to user");
+            if ($userID != $email->UserID) {
+                throw new UserError("Email does not belong to user");
+            }
 
             $email->unsetFlags(Email::CANCELLED);
             $this->emails->save($email);
@@ -585,7 +613,8 @@ class UsersPlugin extends Plugin {
         }
     }
 
-    public function email_delete($userID) {
+    public function email_delete($userID)
+    {
         try {
             if ($userID != $this->request->user->ID) {
                 $this->auth->checkAllowed('users_edit_email');
@@ -598,8 +627,12 @@ class UsersPlugin extends Plugin {
             $email = $this->emails->load($emailID);
 
             // Checking and validation
-            if ($userID != $email->UserID)  throw new UserError("Email does not belong to user");
-            if ($email->getFlag(Email::IS_DEFAULT)) throw new UserError("Cannot delete default email");
+            if ($userID != $email->UserID) {
+                throw new UserError("Email does not belong to user");
+            }
+            if ($email->getFlag(Email::IS_DEFAULT)) {
+                throw new UserError("Cannot delete default email");
+            }
             if ($this->auth->isAllowed('users_edit_email') && $email->getFlag(Email::CANCELLED)) {
                 $this->emails->delete($email);
                 $this->security->log->deleteEmail((int) $userID, $email->Address);
@@ -616,7 +649,8 @@ class UsersPlugin extends Plugin {
         }
     }
 
-    public function email_default($userID) {
+    public function email_default($userID)
+    {
         try {
             if ($userID != $this->request->user->ID) {
                 $this->auth->checkAllowed('users_edit_email');
@@ -629,9 +663,15 @@ class UsersPlugin extends Plugin {
             $email = $this->emails->load($emailID);
 
             // Checking and validation
-            if ($userID != $email->UserID)  throw new UserError("Email does not belong to user");
-            if ($email->getFlag(Email::CANCELLED)) throw new UserError("Can't set a deleted email to default");
-            if (!$this->auth->isAllowed('users_edit_email') && !$email->getFlag(Email::VALIDATED)) throw new UserError("Can't set an unverified email to default");
+            if ($userID != $email->UserID) {
+                throw new UserError("Email does not belong to user");
+            }
+            if ($email->getFlag(Email::CANCELLED)) {
+                throw new UserError("Can't set a deleted email to default");
+            }
+            if (!$this->auth->isAllowed('users_edit_email') && !$email->getFlag(Email::VALIDATED)) {
+                throw new UserError("Can't set an unverified email to default");
+            }
             // Do the stupid shuffle
             $user = $this->users->load($userID);
             $email_default = $this->emails->load($user->EmailID);
@@ -653,7 +693,8 @@ class UsersPlugin extends Plugin {
         }
     }
 
-    public function user_register_form() {
+    public function user_register_form()
+    {
         if ($this->request->user) {
             return new Redirect('/');
         }
@@ -679,7 +720,8 @@ class UsersPlugin extends Plugin {
         return new Rendered('@Users/user_register.html.twig', []);
     }
 
-    public function user_register() {
+    public function user_register()
+    {
         if ($this->request->user) {
             return new Redirect('/');
         }
@@ -708,7 +750,8 @@ class UsersPlugin extends Plugin {
         return new Redirect("/");
     }
 
-    public function user_create_form() {
+    public function user_create_form()
+    {
         if ($this->request->user) {
             return new Redirect('/');
         }
@@ -723,7 +766,8 @@ class UsersPlugin extends Plugin {
         }
     }
 
-    public function user_create() {
+    public function user_create()
+    {
         $inviter = 0;
         $token   = $this->request->getString('token');
         $fullToken = $this->crypto->decrypt($token, 'default', true);
@@ -755,7 +799,9 @@ class UsersPlugin extends Plugin {
             $this->security->checkPasswordStrength($password);
 
             $user  = $this->auth->createUser($username, $password, $email, $inviter);
-            if ($invite) $this->orm->delete($invite);
+            if ($invite) {
+                $this->orm->delete($invite);
+            }
             return new Redirect("/login");
         } catch (InputError $e) {
             $this->flasher->error($e->public_message);
@@ -766,7 +812,8 @@ class UsersPlugin extends Plugin {
         }
     }
 
-    public function restriction_delete($userID) {
+    public function restriction_delete($userID)
+    {
         $this->auth->checkAllowed('users_disable_any');
         $this->auth->checkLevel($userID);
 
@@ -787,7 +834,8 @@ class UsersPlugin extends Plugin {
         return new Redirect("/user.php?id={$userID}#restrictionsdiv");
     }
 
-    public function restriction_cancel($userID) {
+    public function restriction_cancel($userID)
+    {
         $this->auth->checkAllowed('users_disable_any');
         $this->auth->checkLevel($userID);
 

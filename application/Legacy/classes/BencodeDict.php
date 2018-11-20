@@ -86,7 +86,6 @@ class BencodeDict extends Bencode
     {
         $Length = strlen($this->Str);
         while ($this->Pos<$Length) {
-
             if ($this->Str[$this->Pos] == 'e') { // End of dictionary
                 $this->Pos += 1;
                 unset($this->Str); // Since we're finished parsing the string, we don't need to store it anymore. Benchmarked - this makes the parser run way faster.
@@ -119,7 +118,6 @@ class BencodeDict extends Bencode
             // Decode the bencoded element.
             // This function changes $this->Pos and $this->Val, so you don't have to.
             $this->decode($Type, $Key);
-
         }
 
         return true;

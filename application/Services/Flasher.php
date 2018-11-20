@@ -4,7 +4,8 @@ namespace Luminance\Services;
 use Luminance\Core\Master;
 use Luminance\Core\Service;
 
-class Flasher extends Service {
+class Flasher extends Service
+{
 
     const SEVERITY_SUCCESS  = 1;
     const SEVERITY_NOTICE   = 2;
@@ -16,12 +17,14 @@ class Flasher extends Service {
         'crypto' => 'Crypto',
     ];
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
         $this->request = $master->request;
     }
 
-    public function getFlashes() {
+    public function getFlashes()
+    {
         $encryptedCookie = $this->request->get_cookie('flashes');
         $flashes = null;
         if ($encryptedCookie) {
@@ -40,7 +43,8 @@ class Flasher extends Service {
         return $flashes;
     }
 
-    public function setFlashes($flashes) {
+    public function setFlashes($flashes)
+    {
         if ($flashes) {
             $cookie = json_encode($flashes);
             $encryptedCookie = $this->crypto->encrypt($cookie, 'flashes');
@@ -50,7 +54,8 @@ class Flasher extends Service {
         }
     }
 
-    public function grabFlashes() {
+    public function grabFlashes()
+    {
         # Calling this function creates an obligation to display the returned flashes to the user!
         $flashes = $this->getFlashes();
         if ($flashes) {
@@ -59,7 +64,8 @@ class Flasher extends Service {
         return $flashes;
     }
 
-    public function addFlash($message, $data, $severity = 2) {
+    public function addFlash($message, $data, $severity = 2)
+    {
         $flashes = $this->getFlashes();
         $flash = new \stdClass();
         $flash->message  = $message;
@@ -69,23 +75,28 @@ class Flasher extends Service {
         $this->setFlashes($flashes);
     }
 
-    public function success($message, $data = []) {
+    public function success($message, $data = [])
+    {
         $this->addFlash($message, $data, self::SEVERITY_SUCCESS);
     }
 
-    public function notice($message, $data = []) {
+    public function notice($message, $data = [])
+    {
         $this->addFlash($message, $data, self::SEVERITY_NOTICE);
     }
 
-    public function warning($message, $data = []) {
+    public function warning($message, $data = [])
+    {
         $this->addFlash($message, $data, self::SEVERITY_WARNING);
     }
 
-    public function error($message, $data = []) {
+    public function error($message, $data = [])
+    {
         $this->addFlash($message, $data, self::SEVERITY_ERROR);
     }
 
-    public function critical($message, $data = []) {
+    public function critical($message, $data = [])
+    {
         $this->addFlash($message, $data, self::SEVERITY_CRITICAL);
     }
 }

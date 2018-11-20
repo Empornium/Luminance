@@ -1,6 +1,6 @@
 <?php
 // The "order by x" links on columns headers
-function header_link($SortKey, $DefaultWay="desc", $Anchor="")
+function header_link($SortKey, $DefaultWay = "desc", $Anchor = "")
 {
     global $Document, $OrderBy, $OrderWay;
     if ($SortKey==$OrderBy) {
@@ -24,7 +24,7 @@ function view_link($View, $ViewKey, $LinkCode)
 }
 
 // Very useful function from "phpdotnet at m4tt dot co dot uk" http://php.net/manual/en/function.sort.php
-function array_sort($array, $on, $order=SORT_ASC)
+function array_sort($array, $on, $order = SORT_ASC)
 {
     $new_array = array();
     $sortable_array = array();
@@ -45,10 +45,10 @@ function array_sort($array, $on, $order=SORT_ASC)
         switch ($order) {
             case asc:
                 asort($sortable_array);
-            break;
+                break;
             case desc:
                 arsort($sortable_array);
-            break;
+                break;
         }
 
         foreach ($sortable_array as $k => $v) {
@@ -58,4 +58,3 @@ function array_sort($array, $on, $order=SORT_ASC)
 
     return $new_array;
 }
-?>

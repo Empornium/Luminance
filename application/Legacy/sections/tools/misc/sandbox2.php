@@ -16,7 +16,9 @@ $DB->query("CREATE TABLE IF NOT EXISTS `geoip_country_condensed` (
 
 $DB->query("SELECT Max(StartIP) FROM geoip_country_condensed");
 list($laststartip) = $DB->next_record();
-if(!$laststartip) $laststartip ="0";
+if (!$laststartip) {
+    $laststartip ="0";
+}
 
 $DB->query("SELECT StartIP, EndIP, Code
               FROM geoip_country
@@ -31,30 +33,31 @@ $startrange='';
 $endrange='';
 $lastcode='';
 while (list($startip, $endip, $code) = $DB->next_record()) {
-
     if ($code != $lastcode) {
         if ($lastcode != '') {
-            if (!$endrange)$endrange='0';
+            if (!$endrange) {
+                $endrange='0';
+            }
             $Values[] = "( '$startrange', '$endrange', '$lastcode' )";
         }
         $startrange = $startip;
         $endrange = $endip;
         $lastcode = $code ;
-
     } else {
-
         $endrange = $endip;
     }
 }
 
 if ($code == $lastcode) {
     if ($lastcode != '') {
-        if (!$endrange)$endrange='0';
+        if (!$endrange) {
+            $endrange='0';
+        }
         $Values[] = "( '$startrange', '$endrange', '$lastcode' )";
     }
 }
 
-$DB->query( "INSERT IGNORE INTO geoip_country_condensed VALUES ".implode(',', $Values));
+$DB->query("INSERT IGNORE INTO geoip_country_condensed VALUES ".implode(',', $Values));
 
 $num = count($Values);
 
@@ -76,7 +79,7 @@ show_header('sandbox2');
     </div>
 
     <div class="box pad shadow" id="results">
-         <?=implode(',<br/>', $Values)?>
+            <?=implode(',<br/>', $Values)?>
     </div>
 </div>
 <?php

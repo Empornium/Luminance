@@ -45,7 +45,9 @@ if ($UserID != $LoggedUser['ID'] && !check_perms('users_edit_profiles', $Class))
 }
 
 $Paranoia = unserialize($Paranoia);
-if(!is_array($Paranoia)) $Paranoia = array();
+if (!is_array($Paranoia)) {
+    $Paranoia = array();
+}
 
 function paranoia_level($Setting)
 {
@@ -83,20 +85,22 @@ function get_timezones_list()
 {
     global $Cache;
     $zones = $Cache->get_value('timezones');
-    if ($zones !== false) return $zones;
+    if ($zones !== false) {
+        return $zones;
+    }
     $rawzones = timezone_identifiers_list();
     $Continents = array('Africa', 'America', 'Antarctica', 'Arctic', 'Asia', 'Atlantic','Australia','Europe','Indian','Pacific');
     $i = 0;
-    foreach ($rawzones AS $szone) {
-        $z = explode('/',$szone);
-        if ( in_array($z[0], $Continents )) {
+    foreach ($rawzones as $szone) {
+        $z = explode('/', $szone);
+        if (in_array($z[0], $Continents)) {
             $zones[$i][0] = $szone;
             $zones[$i][1] = -get_timezone_offset($szone);
             $i++;
         }
     }
     usort($zones, "sorttz");
-    foreach ($zones AS &$zone) {
+    foreach ($zones as &$zone) {
         $zone[1] = format_offset($zone[1]);
     }
     $Cache->cache_value('timezones', $zones);
@@ -110,8 +114,10 @@ function format_offset($offset)
         $sign = $hours > 0 ? '+' : '-';
         $hour = (int) abs($hours);
         $minutes = (int) abs(($offset % 3600) / 60); // for stupid half hour timezones
-        if ($hour == 0 && $minutes == 0) $sign = '&nbsp;';
-        return "GMT $sign" . str_pad($hour, 2, '0', STR_PAD_LEFT) .':'. str_pad($minutes,2, '0');
+    if ($hour == 0 && $minutes == 0) {
+        $sign = '&nbsp;';
+    }
+        return "GMT $sign" . str_pad($hour, 2, '0', STR_PAD_LEFT) .':'. str_pad($minutes, 2, '0');
 }
 
 $flags = scandir($master->public_path.'/static/common/flags/64', 0);
@@ -125,7 +131,9 @@ if ($SiteOptions) {
 } else {
     $SiteOptions = array();
 }
-if (!isset($SiteOptions['MaxTags'])) $SiteOptions['MaxTags'] = 100;
+if (!isset($SiteOptions['MaxTags'])) {
+    $SiteOptions['MaxTags'] = 100;
+}
 
 $Text = new Luminance\Legacy\Text;
 
@@ -139,21 +147,23 @@ $RestrictedForums = (array)explode(',', $RestrictedForums);
 $PermittedForums  = (array)explode(',', $PermittedForums);
 
 $ForumsCatsInfo = array();
-foreach ($ForumCats as $ForumCatID => $ForumCatName)
+foreach ($ForumCats as $ForumCatID => $ForumCatName) {
     $ForumsCatsInfo[$ForumCatID] = array('name' => $ForumCatName, 'forums' => array());
+}
 foreach ($Forums as $Forum) {
     if (($Forum['MinClassRead'] <= $Level && !in_array($Forum['ID'], $RestrictedForums)) /* Should we show restricted forums aswell? */
-        || in_array($Forum['ID'], $PermittedForums))
+        || in_array($Forum['ID'], $PermittedForums)) {
         $ForumsCatsInfo[$Forum['CategoryID']]['forums'][] = $Forum;
+    }
 }
 
-show_header($Username.' > Settings','user,validate,bbcode,jquery,jquery.cookie');
+show_header($Username.' > Settings', 'user,validate,bbcode,jquery,jquery.cookie');
 echo $Val->GenerateJS('userform');
 ?>
 
 <div class="thin">
     <h2>User Settings</h2>
-    <div class="head"><?=format_username($UserID,$Username)?> &gt; Settings</div>
+    <div class="head"><?=format_username($UserID, $Username)?> &gt; Settings</div>
     <form id="userform" name="userform" action="" method="post" onsubmit="return formVal();" autocomplete="off">
         <div>
             <input type="hidden" name="action" value="takeedit" />
@@ -171,7 +181,9 @@ echo $Val->GenerateJS('userform');
                 <td>
                     <select name="stylesheet" id="stylesheet">
 <?php  foreach ($master->repos->stylesheets->get_all() as $Style) { ?>
-                        <option value="<?=$Style['ID']?>"<?php  if ($Style['ID'] == $StyleID) { ?>selected="selected"<?php  } ?>><?=$Style['ProperName']?></option>
+                        <option value="<?=$Style['ID']?>"<?php  if ($Style['ID'] == $StyleID) {
+?>selected="selected"<?php
+} ?>><?=$Style['ProperName']?></option>
 <?php  } ?>
                     </select>
                 </td>
@@ -182,10 +194,12 @@ echo $Val->GenerateJS('userform');
                             <select name="timezone" id="timezone">
 <?php
                                     $zones = get_timezones_list();
-                                    foreach ($zones as $tzone) {
-                                        list($zone,$offset)=$tzone;
-                                        //$offset = format_offset($offset);
-?>                              <option value="<?=$zone?>"<?php  if ($zone == $TimeZone) { ?>selected="selected"<?php  } ?>><?="$offset &nbsp;&nbsp;".str_replace(array('_','/'),array(' ',' / '),$zone)?></option>
+foreach ($zones as $tzone) {
+    list($zone,$offset)=$tzone;
+    //$offset = format_offset($offset);
+?>                              <option value="<?=$zone?>"<?php  if ($zone == $TimeZone) {
+?>selected="selected"<?php
+} ?>><?="$offset &nbsp;&nbsp;".str_replace(array('_','/'), array(' ',' / '), $zone)?></option>
 <?php                                   } ?>
                             </select>
                 </td>
@@ -193,9 +207,13 @@ echo $Val->GenerateJS('userform');
             <tr>
                 <td class="label"><strong>Time style</strong></td>
                 <td>
-                    <input type="radio" name="timestyle" value="0" <?php  if (empty($SiteOptions['TimeStyle'])||$SiteOptions['TimeStyle']==0) { ?>checked="checked"<?php  } ?> />
+                    <input type="radio" name="timestyle" value="0" <?php  if (empty($SiteOptions['TimeStyle'])||$SiteOptions['TimeStyle']==0) {
+?>checked="checked"<?php
+} ?> />
                     <label>Display times as time since (date and time is displayed as tooltip)</label><br/>
-                    <input type="radio" name="timestyle" value="1" <?php  if ($SiteOptions['TimeStyle']==1) { ?>checked="checked"<?php  } ?> />
+                    <input type="radio" name="timestyle" value="1" <?php  if ($SiteOptions['TimeStyle']==1) {
+?>checked="checked"<?php
+} ?> />
                     <label>Display times as date and time (time since is displayed as tooltip)</label>
                 </td>
             </tr>
@@ -203,9 +221,15 @@ echo $Val->GenerateJS('userform');
                 <td class="label"><strong>Torrents per page</strong></td>
                 <td>
                     <select name="torrentsperpage" id="torrentsperpage">
-                        <option value="25"<?php  if ($SiteOptions['TorrentsPerPage'] == 25) { ?>selected="selected"<?php  } ?>>25</option>
-                        <option value="50"<?php  if ($SiteOptions['TorrentsPerPage'] == 50) { ?>selected="selected"<?php  } ?>>50 (Default)</option>
-                        <option value="100"<?php  if ($SiteOptions['TorrentsPerPage'] == 100) { ?>selected="selected"<?php  } ?>>100</option>
+                        <option value="25"<?php  if ($SiteOptions['TorrentsPerPage'] == 25) {
+?>selected="selected"<?php
+} ?>>25</option>
+                        <option value="50"<?php  if ($SiteOptions['TorrentsPerPage'] == 50) {
+?>selected="selected"<?php
+} ?>>50 (Default)</option>
+                        <option value="100"<?php  if ($SiteOptions['TorrentsPerPage'] == 100) {
+?>selected="selected"<?php
+} ?>>100</option>
                     </select>
                 </td>
             </tr>
@@ -213,9 +237,15 @@ echo $Val->GenerateJS('userform');
                 <td class="label"><strong>Posts per page (Forum)</strong></td>
                 <td>
                     <select name="postsperpage" id="postsperpage">
-                        <option value="25"<?php  if ($SiteOptions['PostsPerPage'] == 25) { ?>selected="selected"<?php  } ?>>25 (Default)</option>
-                        <option value="50"<?php  if ($SiteOptions['PostsPerPage'] == 50) { ?>selected="selected"<?php  } ?>>50</option>
-                        <option value="100"<?php  if ($SiteOptions['PostsPerPage'] == 100) { ?>selected="selected"<?php  } ?>>100</option>
+                        <option value="25"<?php  if ($SiteOptions['PostsPerPage'] == 25) {
+?>selected="selected"<?php
+} ?>>25 (Default)</option>
+                        <option value="50"<?php  if ($SiteOptions['PostsPerPage'] == 50) {
+?>selected="selected"<?php
+} ?>>50</option>
+                        <option value="100"<?php  if ($SiteOptions['PostsPerPage'] == 100) {
+?>selected="selected"<?php
+} ?>>100</option>
                     </select>
                 </td>
             </tr>
@@ -223,12 +253,24 @@ echo $Val->GenerateJS('userform');
                 <td class="label"><strong>Collage torrent covers to show per page</strong></td>
                 <td>
                     <select name="collagecovers" id="collagecovers">
-                        <option value="10"<?php  if ($SiteOptions['CollageCovers'] == 10) { ?>selected="selected"<?php  } ?>>10</option>
-                        <option value="25"<?php  if (($SiteOptions['CollageCovers'] == 25) || !isset($SiteOptions['CollageCovers'])) { ?>selected="selected"<?php  } ?>>25 (default)</option>
-                        <option value="50"<?php  if ($SiteOptions['CollageCovers'] == 50) { ?>selected="selected"<?php  } ?>>50</option>
-                        <option value="100"<?php  if ($SiteOptions['CollageCovers'] == 100) { ?>selected="selected"<?php  } ?>>100</option>
-                        <option value="1000000"<?php  if ($SiteOptions['CollageCovers'] == 1000000) { ?>selected="selected"<?php  } ?>>All</option>
-                        <option value="0"<?php  if (($SiteOptions['CollageCovers'] === 0) || (!isset($SiteOptions['CollageCovers']) && $SiteOptions['HideCollage'])) { ?>selected="selected"<?php  } ?>>None</option>
+                        <option value="10"<?php  if ($SiteOptions['CollageCovers'] == 10) {
+?>selected="selected"<?php
+} ?>>10</option>
+                        <option value="25"<?php  if (($SiteOptions['CollageCovers'] == 25) || !isset($SiteOptions['CollageCovers'])) {
+?>selected="selected"<?php
+} ?>>25 (default)</option>
+                        <option value="50"<?php  if ($SiteOptions['CollageCovers'] == 50) {
+?>selected="selected"<?php
+} ?>>50</option>
+                        <option value="100"<?php  if ($SiteOptions['CollageCovers'] == 100) {
+?>selected="selected"<?php
+} ?>>100</option>
+                        <option value="1000000"<?php  if ($SiteOptions['CollageCovers'] == 1000000) {
+?>selected="selected"<?php
+} ?>>All</option>
+                        <option value="0"<?php  if (($SiteOptions['CollageCovers'] === 0) || (!isset($SiteOptions['CollageCovers']) && $SiteOptions['HideCollage'])) {
+?>selected="selected"<?php
+} ?>>None</option>
                     </select>
                 </td>
             </tr>
@@ -243,7 +285,9 @@ echo $Val->GenerateJS('userform');
             <tr>
                 <td class="label"><strong>Split Torrents by Days</strong></td>
                 <td>
-                    <input type="checkbox" name="splitbydays" id="splitbydays" <?php  if (!empty($SiteOptions['SplitByDays'])) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="splitbydays" id="splitbydays" <?php  if (!empty($SiteOptions['SplitByDays'])) {
+?>checked="checked"<?php
+} ?> />
                     <label for="splitbydays">display new day header in browse torrents list</label>
                 </td>
             </tr>
@@ -251,8 +295,12 @@ echo $Val->GenerateJS('userform');
                 <td class="label"><strong>Category list in torrent search</strong></td>
                 <td>
                     <select name="hidecats" id="hidecats">
-                        <option value="0"<?php  if ($SiteOptions['HideCats'] == 0) { ?>selected="selected"<?php  } ?>>Open by default.</option>
-                        <option value="1"<?php  if ($SiteOptions['HideCats'] == 1) { ?>selected="selected"<?php  } ?>>Closed by default.</option>
+                        <option value="0"<?php  if ($SiteOptions['HideCats'] == 0) {
+?>selected="selected"<?php
+} ?>>Open by default.</option>
+                        <option value="1"<?php  if ($SiteOptions['HideCats'] == 1) {
+?>selected="selected"<?php
+} ?>>Closed by default.</option>
                     </select>
                 </td>
             </tr>
@@ -260,15 +308,21 @@ echo $Val->GenerateJS('userform');
                 <td class="label"><strong>Tag list in torrent search</strong></td>
                 <td>
                     <select name="showtags" id="showtags">
-                        <option value="1"<?php  if ($SiteOptions['ShowTags'] == 1) { ?>selected="selected"<?php  } ?>>Open by default.</option>
-                        <option value="0"<?php  if ($SiteOptions['ShowTags'] == 0) { ?>selected="selected"<?php  } ?>>Closed by default.</option>
+                        <option value="1"<?php  if ($SiteOptions['ShowTags'] == 1) {
+?>selected="selected"<?php
+} ?>>Open by default.</option>
+                        <option value="0"<?php  if ($SiteOptions['ShowTags'] == 0) {
+?>selected="selected"<?php
+} ?>>Closed by default.</option>
                     </select>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Tags in lists</strong></td>
                 <td>
-                    <input type="checkbox" name="hidetagsinlists" id="hidetagsinlists" <?php  if (!empty($SiteOptions['HideTagsInLists'])) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="hidetagsinlists" id="hidetagsinlists" <?php  if (!empty($SiteOptions['HideTagsInLists'])) {
+?>checked="checked"<?php
+} ?> />
                     <label for="hidetagsinlists">Hide tags in lists</label>
                 </td>
             </tr>
@@ -282,106 +336,142 @@ echo $Val->GenerateJS('userform');
             <tr>
                 <td class="label"><strong>Hover info window</strong></td>
                 <td>
-                    <input type="checkbox" name="hidefloatinfo" id="hidefloatinfo" <?php  if (!empty($SiteOptions['HideFloat'])) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="hidefloatinfo" id="hidefloatinfo" <?php  if (!empty($SiteOptions['HideFloat'])) {
+?>checked="checked"<?php
+} ?> />
                     <label for="hidefloatinfo">Hide floating info window on browse torrents page</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Torrent sidebar</strong></td>
                 <td>
-                    <input type="checkbox" name="hidedetailssidebar" id="hidedetailssidebar" <?php  if (!empty($SiteOptions['HideDetailsSidebar'])) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="hidedetailssidebar" id="hidedetailssidebar" <?php  if (!empty($SiteOptions['HideDetailsSidebar'])) {
+?>checked="checked"<?php
+} ?> />
                     <label for="hidedetailssidebar">Hide the floating sidebar in torrents</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>External link behaviour</strong></td>
                 <td>
-                    <input type="checkbox" name="forcelinks" id="forcelinks" <?php  if (empty($SiteOptions['NotForceLinks'])) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="forcelinks" id="forcelinks" <?php  if (empty($SiteOptions['NotForceLinks'])) {
+?>checked="checked"<?php
+} ?> />
                     <label for="forcelinks">Force external links to open in a new page</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Add tag behaviour</strong></td>
                 <td>
-                    <input type="checkbox" name="voteuptags" id="voteuptags" <?php  if (empty($SiteOptions['NotVoteUpTags'])) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="voteuptags" id="voteuptags" <?php  if (empty($SiteOptions['NotVoteUpTags'])) {
+?>checked="checked"<?php
+} ?> />
                     <label for="voteuptags">Automatically vote up my added tags</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Accept PM's</strong></td>
                 <td>
-                    <input type="radio" name="blockPMs" id="blockPMs" value="0" <?php  if (empty($BlockPms)||$BlockPms==0) { ?>checked="checked"<?php  } ?> />
+                    <input type="radio" name="blockPMs" id="blockPMs" value="0" <?php  if (empty($BlockPms)||$BlockPms==0) {
+?>checked="checked"<?php
+} ?> />
                     <label>All (except blocks)</label><br/>
-                    <input type="radio" name="blockPMs" id="blockPMs" value="1" <?php  if ($BlockPms==1) { ?>checked="checked"<?php  } ?> />
+                    <input type="radio" name="blockPMs" id="blockPMs" value="1" <?php  if ($BlockPms==1) {
+?>checked="checked"<?php
+} ?> />
                     <label>Friends only</label><br/>
-                    <input type="radio" name="blockPMs" id="blockPMs" value="2"  <?php  if ($BlockPms==2) { ?>checked="checked"<?php  } ?> />
+                    <input type="radio" name="blockPMs" id="blockPMs" value="2"  <?php  if ($BlockPms==2) {
+?>checked="checked"<?php
+} ?> />
                     <label>Staff only</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Accept Gifts</strong></td>
                 <td>
-                    <input type="radio" name="blockgifts" id="blockgifts" value="0" <?php  if (empty($BlockGifts)||$BlockGifts==0) { ?>checked="checked"<?php  } ?> />
+                    <input type="radio" name="blockgifts" id="blockgifts" value="0" <?php  if (empty($BlockGifts)||$BlockGifts==0) {
+?>checked="checked"<?php
+} ?> />
                     <label>All (except blocks)</label><br/>
-                    <input type="radio" name="blockgifts" id="blockgifts" value="1" <?php  if ($BlockGifts==1) { ?>checked="checked"<?php  } ?> />
+                    <input type="radio" name="blockgifts" id="blockgifts" value="1" <?php  if ($BlockGifts==1) {
+?>checked="checked"<?php
+} ?> />
                     <label>Friends only</label><br/>
-                    <input type="radio" name="blockgifts" id="blockgifts" value="2"  <?php  if ($BlockGifts==2) { ?>checked="checked"<?php  } ?> />
+                    <input type="radio" name="blockgifts" id="blockgifts" value="2"  <?php  if ($BlockGifts==2) {
+?>checked="checked"<?php
+} ?> />
                     <label>Staff only</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Comments PM</strong></td>
                 <td>
-                    <input type="checkbox" name="commentsnotify" id="commentsnotify" <?php  if (!empty($CommentsNotify)) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="commentsnotify" id="commentsnotify" <?php  if (!empty($CommentsNotify)) {
+?>checked="checked"<?php
+} ?> />
                     <label for="commentsnotify">Notify me by PM when I receive a comment on one of my torrents or requests</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Subscription</strong></td>
                 <td>
-                    <input type="checkbox" name="autosubscribe" id="autosubscribe" <?php  if (!empty($SiteOptions['AutoSubscribe'])) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="autosubscribe" id="autosubscribe" <?php  if (!empty($SiteOptions['AutoSubscribe'])) {
+?>checked="checked"<?php
+} ?> />
                     <label for="autosubscribe">Subscribe to topics when posting</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Page Titles</strong></td>
                 <td>
-                    <input type="checkbox" name="shortpagetitles" id="shortpagetitles" <?php  if (!empty($SiteOptions['ShortTitles'])) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="shortpagetitles" id="shortpagetitles" <?php  if (!empty($SiteOptions['ShortTitles'])) {
+?>checked="checked"<?php
+} ?> />
                     <label for="shortpagetitles">Use short page titles (ie. instead of Forums > Forum-name > Thread-title use just Thread-Title)</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>User Torrents</strong></td>
                 <td>
-                    <input type="checkbox" name="showusertorrents" id="showusertorrents" <?php  if (empty($SiteOptions['HideUserTorrents']) || $SiteOptions['HideUserTorrents']==0) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="showusertorrents" id="showusertorrents" <?php  if (empty($SiteOptions['HideUserTorrents']) || $SiteOptions['HideUserTorrents']==0) {
+?>checked="checked"<?php
+} ?> />
                     <label for="showusertorrents">Show users uploaded torrents on user page (if allowed by that users paranoia settings)</label>
                 </td>
             </tr>
                   <tr>
                 <td class="label"><strong>Smileys</strong></td>
                 <td>
-                    <input type="checkbox" name="disablesmileys" id="disablesmileys" <?php  if (!empty($SiteOptions['DisableSmileys'])) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="disablesmileys" id="disablesmileys" <?php  if (!empty($SiteOptions['DisableSmileys'])) {
+?>checked="checked"<?php
+} ?> />
                     <label for="disablesmileys">Disable smileys</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Avatars</strong></td>
                 <td>
-                    <input type="checkbox" name="disableavatars" id="disableavatars" <?php  if (!empty($SiteOptions['DisableAvatars'])) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="disableavatars" id="disableavatars" <?php  if (!empty($SiteOptions['DisableAvatars'])) {
+?>checked="checked"<?php
+} ?> />
                     <label for="disableavatars">Disable avatars (disabling avatars also hides user badges)</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Signatures</strong></td>
                 <td>
-                    <input type="checkbox" name="disablesignatures" id="disablesignatures" <?php  if (!empty($SiteOptions['DisableSignatures'])) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="disablesignatures" id="disablesignatures" <?php  if (!empty($SiteOptions['DisableSignatures'])) {
+?>checked="checked"<?php
+} ?> />
                     <label for="disablesignatures">Disable Signatures</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Download torrents as text files</strong></td>
                 <td>
-                    <input type="checkbox" name="downloadalt" id="downloadalt" <?php  if ($DownloadAlt) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="downloadalt" id="downloadalt" <?php  if ($DownloadAlt) {
+?>checked="checked"<?php
+} ?> />
                     <label for="downloadalt">For users whose ISP block the downloading of torrent files</label>
                 </td>
             </tr>
@@ -389,7 +479,9 @@ echo $Val->GenerateJS('userform');
             <tr>
                 <td class="label"><strong>Use IPv6 Tracker</strong></td>
                 <td>
-                    <input type="checkbox" name="trackipv6" id="trackipv6" <?php  if ($TrackIPv6) { ?>checked="checked"<?php  } ?> />
+                    <input type="checkbox" name="trackipv6" id="trackipv6" <?php  if ($TrackIPv6) {
+?>checked="checked"<?php
+} ?> />
                     <label for="trackipv6">Allow the tracker to broadcast your IPv6 address to the swarm (if you have one)</label>
                 </td>
             </tr>
@@ -411,21 +503,27 @@ echo $Val->GenerateJS('userform');
             <tr>
                 <td class="label"><strong>Disable alerts for news</strong></td>
                 <td>
-                    <input type="checkbox" name="nonewsalerts" id="nonewsalerts" <?php  if (!empty($SiteOptions['NoNewsAlerts'])) { ?>checked="checked"<?php  } ?>/>
+                    <input type="checkbox" name="nonewsalerts" id="nonewsalerts" <?php  if (!empty($SiteOptions['NoNewsAlerts'])) {
+?>checked="checked"<?php
+} ?>/>
                     <label for="nonewsalerts" title="Disable alerts at the top of the page when a new news post is made">Disable alerts for news</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Disable alerts for blog</strong></td>
                 <td>
-                    <input type="checkbox" name="noblogalerts" id="noblogalerts" <?php  if (!empty($SiteOptions['NoBlogAlerts'])) { ?>checked="checked"<?php  } ?>/>
+                    <input type="checkbox" name="noblogalerts" id="noblogalerts" <?php  if (!empty($SiteOptions['NoBlogAlerts'])) {
+?>checked="checked"<?php
+} ?>/>
                     <label for="noblogalerts" title="Disable alerts at the top of the page when a new blog post is made">Disable alerts for blog</label>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>Disable alerts for contests</strong></td>
                 <td>
-                    <input type="checkbox" name="nocontestalerts" id="nocontestalerts" <?php  if (!empty($SiteOptions['NoContestAlerts'])) { ?>checked="checked"<?php  } ?>/>
+                    <input type="checkbox" name="nocontestalerts" id="nocontestalerts" <?php  if (!empty($SiteOptions['NoContestAlerts'])) {
+?>checked="checked"<?php
+} ?>/>
                     <label for="nocontestalerts" title="Disable alerts at the top of the page when a new contests post is made">Disable alerts for contests</label>
                 </td>
             </tr>
@@ -457,8 +555,8 @@ echo $Val->GenerateJS('userform');
                     <div style="display:inline-block;vertical-align: top;">
                         <select id="flag" name="flag" onchange="change_flag();" style="margin-top: 25px">
                             <option value="" <?=($flag == '' || $flag == '??') ? 'selected="selected"' : '';?>>none</option>
-                   <?php        foreach ($flags as $value) {
-                                $value = substr($value, 0, strlen($value)-4  ); // remove .png extension
+                    <?php        foreach ($flags as $value) {
+                                $value = substr($value, 0, strlen($value)-4); // remove .png extension
                     ?>
                             <option value="<?=display_str($value)?>" <?=($flag == $value) ? 'selected="selected"' : '';?>><?=$value?></option>
                     <?php       }  ?>
@@ -467,7 +565,7 @@ echo $Val->GenerateJS('userform');
                 </td>
             </tr>
 
-<?php       if ( check_perms('site_set_language') ) {  ?>
+<?php       if (check_perms('site_set_language')) {  ?>
 
             <tr>
                 <td class="label"><strong>Language(s)</strong></td>
@@ -475,35 +573,35 @@ echo $Val->GenerateJS('userform');
 <?php
 
                 $Userlangs = $Cache->get_value('user_langs_' .$UserID);
-                if ($Userlangs===false) {
-                    $DB->query("SELECT ul.LangID, l.code, l.flag_cc AS cc, l.language
+if ($Userlangs===false) {
+    $DB->query("SELECT ul.LangID, l.code, l.flag_cc AS cc, l.language
                               FROM users_languages AS ul
                               JOIN languages AS l ON l.ID=ul.LangID
                              WHERE UserID=$UserID");
-                    $Userlangs = $DB->to_array('LangID', MYSQLI_ASSOC);
-                    $Cache->cache_value('user_langs_'.$UserID, $Userlangs);
-                }
-                if ($Userlangs) {
+    $Userlangs = $DB->to_array('LangID', MYSQLI_ASSOC);
+    $Cache->cache_value('user_langs_'.$UserID, $Userlangs);
+}
+if ($Userlangs) {
 ?>
-                    select language to remove it:<br/>
+select language to remove it:<br/>
 <?php
-                    foreach ($Userlangs as $langresult) {
+foreach ($Userlangs as $langresult) {
 ?>
-                    <input type="checkbox" name="del_lang[]" value="<?=$langresult['LangID']?>" />
-                        <img style="vertical-align: bottom" title="<?=$langresult['language']?>" alt="[<?=$langresult['code']?>]" src="//<?=SITE_URL?>/static/common/flags/iso16/<?=$langresult['cc']?>.png" />
+<input type="checkbox" name="del_lang[]" value="<?=$langresult['LangID']?>" />
+<img style="vertical-align: bottom" title="<?=$langresult['language']?>" alt="[<?=$langresult['code']?>]" src="//<?=SITE_URL?>/static/common/flags/iso16/<?=$langresult['cc']?>.png" />
 <?php
-                    }
+}
 ?>
-                     <br/>
+<br/>
 <?php
-                }
+}
 
                 $SiteLanguages = $Cache->get_value('site_languages');
-                if ($SiteLanguages===false) {
-                    $DB->query("SELECT ID, language FROM languages WHERE active='1' ORDER BY language");
-                    $SiteLanguages = $DB->to_array('ID', MYSQLI_ASSOC);
-                    $Cache->cache_value('site_languages', $SiteLanguages);
-                }
+if ($SiteLanguages===false) {
+    $DB->query("SELECT ID, language FROM languages WHERE active='1' ORDER BY language");
+    $SiteLanguages = $DB->to_array('ID', MYSQLI_ASSOC);
+    $Cache->cache_value('site_languages', $SiteLanguages);
+}
 ?>
                     <div style="display:inline-block;vertical-align: top;">
                         add language:
@@ -511,18 +609,18 @@ echo $Val->GenerateJS('userform');
                         </span>
                         <select id="new_lang" name="new_lang" onchange="change_lang_flag();" style="margin-top: 25px">
                             <option value="" selected="selected" >none</option>
-                   <?php        foreach ($SiteLanguages as $key=>$value) {
-                                if (!array_key_exists($key, $Userlangs)  ) { ?>
+                    <?php        foreach ($SiteLanguages as $key => $value) {
+                        if (!array_key_exists($key, $Userlangs)) { ?>
                                     <option value="<?=$key?>"><?=$value['language']?></option>
-                   <?php            }
-                            }  ?>
+                        <?php            }
+}  ?>
                         </select>
                     </div>
                      <br/>(only staff can see your selected language) <br/>
                 </td>
             </tr>
 <?php
-        }
+}
 ?>
 
             <tr>
@@ -539,7 +637,7 @@ echo $Val->GenerateJS('userform');
                 <td colspan="2">
                     <div class="box pad hidden" id="preview_info" style="text-align:left;"></div>
                     <div  class="" id="editor_info" >
-                        <?php  $Text->display_bbcode_assistant("preview_message_info", get_permissions_advtags($UserID, unserialize($CustomPermissions),$Permissions )); ?>
+                        <?php  $Text->display_bbcode_assistant("preview_message_info", get_permissions_advtags($UserID, unserialize($CustomPermissions), $Permissions)); ?>
                         <textarea id="preview_message_info" name="info" class="long" rows="8"><?=display_str($Info)?></textarea>
                     </div>
                     <input type="button" value="Toggle Preview" onclick="Preview_Toggle('info');" />
@@ -556,27 +654,27 @@ echo $Val->GenerateJS('userform');
             </tr>
             <tr>
                 <?php
-                $AdvancedTags = get_permissions_advtags($UserID, unserialize($CustomPermissions),$Permissions );
+                $AdvancedTags = get_permissions_advtags($UserID, unserialize($CustomPermissions), $Permissions);
                 ?>
                 <td colspan="2">
 <?php
-        if ($MaxSigLength > 0 || strlen($Signature) > 0) {
- ?>
-                    <div class="box pad hidden" id="preview_sig" style="text-align:left;"></div>
-                    <div id="editor_sig" >
-                        <?php  $Text->display_bbcode_assistant("preview_message_sig", $AdvancedTags); ?>
-                        <textarea  id="preview_message_sig" name="signature" class="long"  rows="8"><?=display_str($Signature);?></textarea>
-                    </div>
-                    <input type="button" value="Toggle Preview" onclick="Preview_Toggle('sig');" />
- <?php
-        } else {
- ?>
-                    <div style="text-align:left;">
-                        <?=$Text->full_format('You need to get promoted before you can have a signature. see the [url=/articles.php?topic=ranks][b]User Classes[/b][/url] article.', $AdvancedTags ) ?>
-                    </div>
- <?php
-        }
- ?>
+if ($MaxSigLength > 0 || strlen($Signature) > 0) {
+    ?>
+    <div class="box pad hidden" id="preview_sig" style="text-align:left;"></div>
+    <div id="editor_sig" >
+        <?php  $Text->display_bbcode_assistant("preview_message_sig", $AdvancedTags); ?>
+        <textarea  id="preview_message_sig" name="signature" class="long"  rows="8"><?=display_str($Signature);?></textarea>
+    </div>
+    <input type="button" value="Toggle Preview" onclick="Preview_Toggle('sig');" />
+    <?php
+} else {
+    ?>
+    <div style="text-align:left;">
+        <?=$Text->full_format('You need to get promoted before you can have a signature. see the [url=/articles.php?topic=ranks][b]User Classes[/b][/url] article.', $AdvancedTags) ?>
+    </div>
+    <?php
+}
+    ?>
                 </td>
             </tr>
 
@@ -591,23 +689,23 @@ echo $Val->GenerateJS('userform');
             <tr>
                 <td colspan="2">
 <?php
-        if (check_perms('site_torrent_signature')) {
- ?>
-                    <div class="box pad hidden" id="preview_torrentsig" style="text-align:left;"></div>
-                    <div  class="" id="editor_torrentsig" >
-                        <?php  $Text->display_bbcode_assistant("preview_message_torrentsig", get_permissions_advtags($UserID, unserialize($CustomPermissions),$Permissions )); ?>
-                        <textarea  id="preview_message_torrentsig" name="torrentsignature" class="long"  rows="8"><?=display_str($TorrentSignature);?></textarea>
-                    </div>
-                    <input type="button" value="Toggle Preview" onclick="Preview_Toggle('torrentsig');" />
- <?php
-        } else {
- ?>
-                    <div style="text-align:left;">
-                        <?=$Text->full_format('You need to get promoted before you can have a torrent footer. see the [url=/articles.php?topic=ranks][b]User Classes[/b][/url] article.', $AdvancedTags ) ?>
-                    </div>
- <?php
-        }
- ?>
+if (check_perms('site_torrent_signature')) {
+    ?>
+    <div class="box pad hidden" id="preview_torrentsig" style="text-align:left;"></div>
+    <div  class="" id="editor_torrentsig" >
+        <?php  $Text->display_bbcode_assistant("preview_message_torrentsig", get_permissions_advtags($UserID, unserialize($CustomPermissions), $Permissions)); ?>
+        <textarea  id="preview_message_torrentsig" name="torrentsignature" class="long"  rows="8"><?=display_str($TorrentSignature);?></textarea>
+    </div>
+    <input type="button" value="Toggle Preview" onclick="Preview_Toggle('torrentsig');" />
+    <?php
+} else {
+    ?>
+    <div style="text-align:left;">
+        <?=$Text->full_format('You need to get promoted before you can have a torrent footer. see the [url=/articles.php?topic=ranks][b]User Classes[/b][/url] article.', $AdvancedTags) ?>
+    </div>
+    <?php
+}
+    ?>
                 </td>
             </tr>
 
@@ -626,7 +724,9 @@ echo $Val->GenerateJS('userform');
                 <td class="label">&nbsp;</td>
                 <td>
                     <p>Select the forums <strong>you want to show up</strong> in the latest forum threads box. If you tick "Disable latest forum topics", no box will be shown.</p>
-                    <label><input type="checkbox" name="disablelatesttopics" id="disablelatesttopics"<?php if (!empty($SiteOptions['DisableLatestTopics'])) { ?> checked="checked"<?php  } ?>/> Disable latest forum topics</label>
+                    <label><input type="checkbox" name="disablelatesttopics" id="disablelatesttopics"<?php if (!empty($SiteOptions['DisableLatestTopics'])) {
+?> checked="checked"<?php
+} ?>/> Disable latest forum topics</label>
                     <div style="float: right;">
                         <button type="button" id="check_all_disable_lt" onclick="SetAllLatestForumTopicsCheckboxes(true)">(check all)</button>
                         <button type="button" id="uncheck_all_disable_lt" onclick="SetAllLatestForumTopicsCheckboxes(false)">(uncheck all)</button>
@@ -634,33 +734,36 @@ echo $Val->GenerateJS('userform');
                 </td>
             </tr>
 <?php
-        foreach ($ForumsCatsInfo as $ForumCatID => $ForumCat) {
-            if (count($ForumCat['forums']) == 0) continue;
+foreach ($ForumsCatsInfo as $ForumCatID => $ForumCat) {
+    if (count($ForumCat['forums']) == 0) {
+        continue;
+    }
 ?>
-            <tr>
-                <td class="label"><?=$ForumCat['name']?></td>
-                <td>
+<tr>
+<td class="label"><?=$ForumCat['name']?></td>
+<td>
 <?php
-            foreach ($ForumCat['forums'] as $Forum) {
-                if (isset($SiteOptions['DisabledLatestTopics']))
-                    $enabled = !in_array($Forum['ID'], $SiteOptions['DisabledLatestTopics']);
-                else
-                    $enabled = true;
+foreach ($ForumCat['forums'] as $Forum) {
+    if (isset($SiteOptions['DisabledLatestTopics'])) {
+        $enabled = !in_array($Forum['ID'], $SiteOptions['DisabledLatestTopics']);
+    } else {
+        $enabled = true;
+    }
 
-                print '<div class="quarter_width_checkbox_container">';
-                printf('<input type="checkbox" name="disable_lt_%d" id="disable_lt_%d"%s/>', $Forum['ID'], $Forum['ID'], $enabled ? 'checked="checked"' : '');
-                printf('<label for="disable_lt_%d" class="quarter_width_checkbox">%s</label>', $Forum['ID'], display_str($Forum['Name']));
-                print '</div>';
-            }
+    print '<div class="quarter_width_checkbox_container">';
+    printf('<input type="checkbox" name="disable_lt_%d" id="disable_lt_%d"%s/>', $Forum['ID'], $Forum['ID'], $enabled ? 'checked="checked"' : '');
+    printf('<label for="disable_lt_%d" class="quarter_width_checkbox">%s</label>', $Forum['ID'], display_str($Forum['Name']));
+    print '</div>';
+}
 ?>
-                </td>
-            </tr>
-            <tr class="vertical_space_small">
-                <td class="label"></td>
-                <td></td>
-            </tr>
+</td>
+</tr>
+<tr class="vertical_space_small">
+<td class="label"></td>
+<td></td>
+</tr>
 <?php
-        }
+}
 ?>
 
             <tr>

@@ -1,9 +1,10 @@
 <?php
 namespace Luminance\Legacy;
+
 class log_bar_graph extends google_charts
 {
     //TODO: Finish.
-    public function __construct ($Base, $Width, $Height, $Options=array())
+    public function __construct($Base, $Width, $Height, $Options = array())
     {
         parent::__construct('lc', $Width, $Height, $Options);
     }

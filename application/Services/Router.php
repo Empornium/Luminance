@@ -5,9 +5,11 @@ use Luminance\Core\Service;
 use Luminance\Core\Request;
 use Luminance\Errors\InternalError;
 
-class Router extends Service {
+class Router extends Service
+{
 
-    public function resolve($routes, Request $request, $request_path) {
+    public function resolve($routes, Request $request, $request_path)
+    {
         foreach ($routes as $route) {
             if (count($route) < 3) {
                 throw new InternalError("Invalid route.");
@@ -20,7 +22,8 @@ class Router extends Service {
         return null;
     }
 
-    protected function match_route($route, Request $request, $request_path) {
+    protected function match_route($route, Request $request, $request_path)
+    {
         $route_method = $route[0];
         $route_path = (strlen($route[1])) ? explode('/', $route[1]) : [];
         $auth_level = $route[2];
@@ -40,7 +43,8 @@ class Router extends Service {
         }
     }
 
-    protected function match_path($route_path, $request_path) {
+    protected function match_path($route_path, $request_path)
+    {
         $path_matches = [];
         for ($i = 0; $i < count($route_path); $i++) {
             if ($route_path[$i] == '**') {

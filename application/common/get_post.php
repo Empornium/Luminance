@@ -19,11 +19,13 @@ if (!$_GET['post'] || !is_number($_GET['post'])) {
 // Variables for database input
 $PostID = (int) $_GET['post'];
 
-if (!$master->request->user) error(403);
+if (!$master->request->user) {
+    error(403);
+}
 
 // Mainly
 switch ($_REQUEST['section']) {
-    case 'forums' :
+    case 'forums':
         // Is the user allowed to view the post?
         include_once(SERVER_ROOT.'/Legacy/sections/forums/functions.php'); // Forum functions
 
@@ -38,7 +40,7 @@ switch ($_REQUEST['section']) {
         }
         break;
 
-    case 'collages' :
+    case 'collages':
         // Collage comments have no restrictions
         $DB->query("SELECT
             Body
@@ -47,7 +49,7 @@ switch ($_REQUEST['section']) {
         list($Body) = $DB->next_record(MYSQLI_NUM);
         break;
 
-    case 'requests' :
+    case 'requests':
         // Request comments have no restrictions
         $DB->query("SELECT
             Body
@@ -56,7 +58,7 @@ switch ($_REQUEST['section']) {
         list($Body) = $DB->next_record(MYSQLI_NUM);
         break;
 
-    case 'comments' :
+    case 'comments':
         // Torrent comments have no restrictions
         $DB->query("SELECT
             Body
@@ -65,7 +67,7 @@ switch ($_REQUEST['section']) {
         list($Body) = $DB->next_record(MYSQLI_NUM);
         break;
 
-    case 'pm' :
+    case 'pm':
         // Message is selected providing the user quoting is one of the two people in the thread
         $DB->query("SELECT
             m.Body
@@ -76,7 +78,7 @@ switch ($_REQUEST['section']) {
         list($Body) = $DB->next_record(MYSQLI_NUM);
         break;
 
-    case 'staffpm' :
+    case 'staffpm':
         $DB->query("SELECT
             m.Message,
             c.UserID,
@@ -101,7 +103,7 @@ switch ($_REQUEST['section']) {
         }
 
         break;
-    default :
+    default:
         error(0, true);
         break;
 }

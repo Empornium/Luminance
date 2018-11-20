@@ -2,7 +2,7 @@
 
 global $Classes, $DB;
 
-if ( !check_perms('site_give_specialgift') ) {
+if (!check_perms('site_give_specialgift')) {
     error(404);
 }
 $Text = new Luminance\Legacy\Text;
@@ -16,7 +16,7 @@ if ($TotalCredits != $LoggedUser['TotalCredits']) {
 }
 
 enforce_login();
-show_header('Special Gift','specialgift,bonus,bbcode,jquery');
+show_header('Special Gift', 'specialgift,bonus,bbcode,jquery');
 
 $ClassOptions    = ['any', 'Apprentice', 'Perv or lower', 'Good Perv or lower', 'Good Perv or higher', 'Sextreme Perv or higher'];
 $RatioOptions    = ['any', 'very low (below 0.5)', 'low (below 1.0)', 'good (above 1.0)', 'excellent (above 5.0)'];
@@ -51,7 +51,9 @@ if (empty($_GET['activity']) || !in_array($_GET['activity'], $ActivityOptions)) 
             <div class="box pad shadow">
 <?php
                 $creditinfo = get_article('creditsinline');
-                if($creditinfo) echo $Text->full_format($creditinfo, true);
+if ($creditinfo) {
+    echo $Text->full_format($creditinfo, true);
+}
 ?>
             </div>
 <?php       if (!empty($_REQUEST['result'])) {  ?>
@@ -69,7 +71,7 @@ $BonusCredits = $LoggedUser['TotalCredits'];
         </div>
         <div class="box">
             <div class="pad" id="bonusdiv">
-                <h4 class="center">Credits: <?=(!$BonusCredits ? '0.00' : number_format($BonusCredits,2))?></h4>
+                <h4 class="center">Credits: <?=(!$BonusCredits ? '0.00' : number_format($BonusCredits, 2))?></h4>
                 <span style="float:right;"><a href="#" onclick="$('#bonuslogdiv').toggle(); this.innerHTML=(this.innerHTML=='(Show Log)'?'(Hide Log)':'(Show Log)'); return false;">(Show Log)</a></span>&nbsp;
 
                 <div class="hidden" id="bonuslogdiv" style="padding-top: 10px;">
@@ -78,27 +80,26 @@ $BonusCredits = $LoggedUser['TotalCredits'];
                     </div>
 <?php
                     $UserResults = $Cache->get_value('sm_sum_history_'.$UserID);
-                    if ($UserResults === false) {
-                      $DB->query("SELECT Spins, Won, Bet, (Won/Bet)
+if ($UserResults === false) {
+    $DB->query("SELECT Spins, Won, Bet, (Won/Bet)
                                 FROM sm_results WHERE UserID = $UserID");
-                        $UserResults = $DB->next_record();
-                        $Cache->cache_value('sm_sum_history_'.$UserID, $UserResults, 86400);
-                    }
-                    if (is_array($UserResults) && $UserResults[0] > 0) {
-
-                        list($NumSpins, $TotalWon, $TotalBet, $TotalReturn) = $UserResults;
+    $UserResults = $DB->next_record();
+    $Cache->cache_value('sm_sum_history_'.$UserID, $UserResults, 86400);
+}
+if (is_array($UserResults) && $UserResults[0] > 0) {
+    list($NumSpins, $TotalWon, $TotalBet, $TotalReturn) = $UserResults;
 ?>
-                        <div class="box pad" title="<?="spins: $NumSpins | -$TotalBet | +$TotalWon | return: $TotalReturn"?>">
-                            <strong>Slot Machine:</strong> <?= ($TotalWon-$TotalBet)?> credits
-                        </div>
+<div class="box pad" title="<?="spins: $NumSpins | -$TotalBet | +$TotalWon | return: $TotalReturn"?>">
+<strong>Slot Machine:</strong> <?= ($TotalWon-$TotalBet)?> credits
+</div>
 <?php
-                    }
+}
 ?>
                 </div>
            </div>
         </div>
-<?php   if($Classes[$LoggedUser['PermissionID']]['Level'] >= LEVEL_ADMIN) {
-$PMText = get_gift_pm();
+<?php   if ($Classes[$LoggedUser['PermissionID']]['Level'] >= LEVEL_ADMIN) {
+    $PMText = get_gift_pm();
 ?>
             <div class="head">Gift PM</div>
             <div class="box pad">
@@ -175,20 +176,20 @@ $PMText = get_gift_pm();
 
 <?php   $Row = 'b';
 $Gifts = get_shop_items_gifts();
-        foreach($Gifts as $Gift) {
-            list($ItemID, $Title, $Description, $Action, $Value, $Cost) = $Gift;
-            $Row     = ($Row == 'a') ? 'b' : 'a';
-            $CanBuy  = is_float((float) $LoggedUser['TotalCredits']) ? $LoggedUser['TotalCredits'] >= $Cost: false;
-            $BGClass = ($CanBuy?' itembuy' :' itemnotbuy');
+foreach ($Gifts as $Gift) {
+    list($ItemID, $Title, $Description, $Action, $Value, $Cost) = $Gift;
+    $Row     = ($Row == 'a') ? 'b' : 'a';
+    $CanBuy  = is_float((float) $LoggedUser['TotalCredits']) ? $LoggedUser['TotalCredits'] >= $Cost: false;
+    $BGClass = ($CanBuy?' itembuy' :' itemnotbuy');
 ?>
-            <tr class="row<?=$Row.$BGClass?>">
-                <td width="160px"><strong><?=display_str($Title) ?></strong></td>
-                <td style="border-right:none;"><?=display_str($Description)?></td>
-                <td width="60px" style="text-align: center;"><strong><?=number_format($Cost) ?>c</strong></td>
-                <td width="60px" style="text-align: center;">
-                        <button class="shopbutton<?=($CanBuy ? ' itembuy' : ' itemnotbuy')?>" type="submit" name="itemid" value="<?=$ItemID?>" <?=($CanBuy ? '' : ' disabled="disabled"')?>><?=($CanBuy?'Buy':'x')?></button>
-                </td>
-            </tr>
+<tr class="row<?=$Row.$BGClass?>">
+<td width="160px"><strong><?=display_str($Title) ?></strong></td>
+<td style="border-right:none;"><?=display_str($Description)?></td>
+<td width="60px" style="text-align: center;"><strong><?=number_format($Cost) ?>c</strong></td>
+<td width="60px" style="text-align: center;">
+        <button class="shopbutton<?=($CanBuy ? ' itembuy' : ' itemnotbuy')?>" type="submit" name="itemid" value="<?=$ItemID?>" <?=($CanBuy ? '' : ' disabled="disabled"')?>><?=($CanBuy?'Buy':'x')?></button>
+</td>
+</tr>
 <?php   } ?>
         </table>
         </form>

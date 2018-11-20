@@ -8,18 +8,23 @@ use Luminance\Errors\InternalError;
 use IPLib\Factory;
 use IPLib\Range\Type;
 
-class IPRepository extends Repository {
+class IPRepository extends Repository
+{
 
     protected $entityName = 'IP';
 
-    protected function post_load($ID, $IP) {
-        if (!$IP) return null;
+    protected function post_load($ID, $IP)
+    {
+        if (!$IP) {
+            return null;
+        }
         $IP->get_cidr();
         $IP->geoip = geoip((string)$IP);
         return $IP;
     }
 
-    public function get_or_new($address, $netmask = null) {
+    public function get_or_new($address, $netmask = null)
+    {
         $binaryAddress = @inet_pton($address);
         if ($netmask) {
             $IP = new IP($address, $netmask);
@@ -35,7 +40,8 @@ class IPRepository extends Repository {
         return $IP;
     }
 
-    public function newIP($address, $netmask = null) {
+    public function newIP($address, $netmask = null)
+    {
         try {
             $IP = new IP($address, $netmask);
             $IP->Banned = false;
@@ -47,7 +53,8 @@ class IPRepository extends Repository {
         }
     }
 
-    public function search(IP $IP) {
+    public function search(IP $IP)
+    {
         $sql = '((`StartAddress` <= ? AND `EndAddress` >= ?) OR (`StartAddress` = ? AND `EndAddress` IS NULL)) AND Banned = true';
         $parameters[] = $IP->StartAddress;
         if ($IP->EndAddress) {
@@ -62,10 +69,13 @@ class IPRepository extends Repository {
         return $search;
     }
 
-    public function ban($address, $reason, $hours = null) {
+    public function ban($address, $reason, $hours = null)
+    {
         if ($address instanceof IP) {
             $range = $address->get_range();
-            if (empty($range)) return null;
+            if (empty($range)) {
+                return null;
+            }
             if ($range->getRangeType() !== Type::T_PUBLIC) {
                 $type = Type::getName($range->getRangeType());
                 $this->master->flasher->error("{$type} {$address} cannot be banned, public addresses only");
@@ -75,7 +85,9 @@ class IPRepository extends Repository {
         } else {
             $address = (string) $address;
             $range = Factory::rangeFromString($address);
-            if (empty($range)) return null;
+            if (empty($range)) {
+                return null;
+            }
             if ($range->getRangeType() !== Type::T_PUBLIC) {
                 $type = Type::getName($range->getRangeType());
                 $this->master->flasher->error("{$type} {$address} cannot be banned, public addresses only");
@@ -115,13 +127,15 @@ class IPRepository extends Repository {
         return $IP;
     }
 
-    public function unban(IP $IP) {
+    public function unban(IP $IP)
+    {
         $IP->BannedUntil = null;
         $IP->Banned = false;
         $this->save($IP);
     }
 
-    public function check_banned($IP) {
+    public function check_banned($IP)
+    {
 
         if (!$IP instanceof IP) {
             return false;
@@ -132,7 +146,9 @@ class IPRepository extends Repository {
 
         foreach ($Banned as $Ban) {
             // Does the ban really match this IP?
-            if (!$IP->match($Ban)) continue;
+            if (!$IP->match($Ban)) {
+                continue;
+            }
 
             // Was it a timed ban that has expired?
             if (!is_null($Ban->BannedUntil) && $Ban->BannedUntil < $now) {

@@ -6,15 +6,16 @@ function get_votes_array($RequestID)
 
     $RequestVotes = $master->cache->get_value('request_votes_'.$RequestID);
     if (!is_array($RequestVotes)) {
-
-        $votes = $master->db->raw_query("SELECT rv.UserID,
+        $votes = $master->db->raw_query(
+            "SELECT rv.UserID,
                                                 u.Username,
                                                 rv.Bounty
                                            FROM requests_votes as rv
                                       LEFT JOIN users_main AS u ON u.ID=rv.UserID
                                           WHERE rv.RequestID = :requestid
                                        ORDER BY rv.Bounty DESC",
-                                               [':requestid' => $RequestID])->fetchAll(\PDO::FETCH_ASSOC);
+            [':requestid' => $RequestID]
+        )->fetchAll(\PDO::FETCH_ASSOC);
         $RequestVotes = array();
         if (count($votes)>0) {
             $RequestVotes['TotalBounty'] = array_sum(array_column($votes, 'Bounty'));
@@ -37,32 +38,32 @@ function get_votes_html($RequestVotes, $RequestID)
 
     $VoteMax = ($VoteCount < 10 ? $VoteCount : 10);
     $ViewerVote = false;
-    for ($i = 0; $i < $VoteMax; $i++) {
-        $User = array_shift($RequestVotes['Voters']);
-        $Boldify = false;
-        if ($User['UserID'] == $LoggedUser['ID']) {
-            $ViewerVote = true;
-            $Boldify = true;
-        }
+for ($i = 0; $i < $VoteMax; $i++) {
+    $User = array_shift($RequestVotes['Voters']);
+    $Boldify = false;
+    if ($User['UserID'] == $LoggedUser['ID']) {
+        $ViewerVote = true;
+        $Boldify = true;
+    }
 ?>
-                <tr>
-                    <td>
-                        <a href="/user.php?id=<?=$User['UserID']?>"><?=$Boldify?'<strong>':''?><?=display_str($User['Username'])?><?=$Boldify?'</strong>':''?></a>
-                    </td>
-                    <td>
-                        <?=$Boldify?'<strong>':''?><?=get_size($User['Bounty'])?><?=$Boldify?'</strong>':''?>
-                    </td>
+        <tr>
+            <td>
+                <a href="/user.php?id=<?=$User['UserID']?>"><?=$Boldify?'<strong>':''?><?=display_str($User['Username'])?><?=$Boldify?'</strong>':''?></a>
+            </td>
+            <td>
+                <?=$Boldify?'<strong>':''?><?=get_size($User['Bounty'])?><?=$Boldify?'</strong>':''?>
+            </td>
 <?php       if (check_perms("site_moderate_requests")) { ?>
                     <td>
                         <a href="/requests.php?action=delete_vote&amp;id=<?=$RequestID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;voterid=<?=$User['UserID']?>">[-]</a>
                     </td>
                 </tr>
-<?php 	    }
-        }
-    if (!$ViewerVote && !empty($RequestVotes['Voters'])) {
-        reset($RequestVotes['Voters']);
-        foreach ($RequestVotes['Voters'] as $User) {
-            if ($User['UserID'] == $LoggedUser['ID']) { ?>
+<?php       }
+}
+if (!$ViewerVote && !empty($RequestVotes['Voters'])) {
+    reset($RequestVotes['Voters']);
+    foreach ($RequestVotes['Voters'] as $User) {
+        if ($User['UserID'] == $LoggedUser['ID']) { ?>
                 <tr>
                     <td>
                         <a href="/user.php?id=<?=$User['UserID']?>"><strong><?=display_str($User['Username'])?></strong></a>
@@ -71,9 +72,9 @@ function get_votes_html($RequestVotes, $RequestID)
                         <strong><?=get_size($User['Bounty'])?></strong>
                     </td>
                 </tr>
-<?php 			}
-        }
+        <?php           }
     }
+}
 ?>
     </table>
 <?php
@@ -91,8 +92,9 @@ function expired_pm($BountyInfo, $debug = false)
     list($RequestID, $Title, $UserID, $Bounty, $OwnerID, $Description, $CategoryID, $Image) = $BountyInfo;
 
     $Tags = $master->db->raw_query(
-            "SELECT DISTINCT t.Name FROM tags AS t LEFT JOIN requests_tags AS rt ON t.ID = rt.TagID WHERE rt.RequestID = ?",
-            [$RequestID])->fetchAll(\PDO::FETCH_COLUMN);
+        "SELECT DISTINCT t.Name FROM tags AS t LEFT JOIN requests_tags AS rt ON t.ID = rt.TagID WHERE rt.RequestID = ?",
+        [$RequestID]
+    )->fetchAll(\PDO::FETCH_COLUMN);
 
     if (!empty($Tags)) {
         $Tags = implode(" ", $Tags);

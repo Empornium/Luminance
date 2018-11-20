@@ -7,16 +7,16 @@ if (empty($_GET['type']) || empty($_GET['id']) || !is_number($_GET['id'])) {
     error(0);
 }
 
-switch($_GET['type']) {
-    case 'posthistory' :
+switch ($_GET['type']) {
+    case 'posthistory':
         $Short = 'post';
         break;
 
-    case 'torrents_commenthistory' :
+    case 'torrents_commenthistory':
         $Short = 'torrents_comment';
         break;
 
-    default :
+    default:
         $Short = $_GET['type'];
         break;
 }
@@ -29,7 +29,7 @@ $Type = $Types[$Short];
 $ID = $_GET['id'];
 
 switch ($Short) {
-    case "user" :
+    case "user":
         $DB->query("SELECT Username FROM users_main WHERE ID=".$ID);
         if ($DB->record_count() < 1) {
             error(404);
@@ -37,7 +37,7 @@ switch ($Short) {
         list($Username) = $DB->next_record();
         break;
 
-    case "request" :
+    case "request":
         $DB->query("SELECT Title, Description, TorrentID, UserID FROM requests WHERE ID=".$ID);
         if ($DB->record_count() < 1) {
             error(404);
@@ -45,7 +45,7 @@ switch ($Short) {
         list($Name, $Desc, $Filled, $AuthorID) = $DB->next_record();
         break;
 
-    case "collage" :
+    case "collage":
         $DB->query("SELECT Name, Description, UserID FROM collages WHERE ID=".$ID);
         if ($DB->record_count() < 1) {
             error(404);
@@ -53,7 +53,7 @@ switch ($Short) {
         list($Name, $Desc, $AuthorID) = $DB->next_record();
         break;
 
-    case "thread" :
+    case "thread":
         $DB->query("SELECT ft.Title, ft.ForumID, um.Username, um.ID FROM forums_topics AS ft JOIN users_main AS um ON um.ID=ft.AuthorID WHERE ft.ID=".$ID);
         if ($DB->record_count() < 1) {
             error(404);
@@ -61,14 +61,14 @@ switch ($Short) {
         list($Title, $ForumID, $Username, $AuthorID) = $DB->next_record();
         $DB->query("SELECT MinClassRead FROM forums WHERE ID = ".$ForumID);
         list($MinClassRead) = $DB->next_record();
-        if($master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::FORUM) ||
+        if ($master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::FORUM) ||
                 ($MinClassRead > $LoggedUser['Class'] && (!isset($LoggedUser['CustomForums'][$ForumID]) || $LoggedUser['CustomForums'][$ForumID] == 0)) ||
                 (isset($LoggedUser['CustomForums'][$ForumID]) && $LoggedUser['CustomForums'][$ForumID] == 0)) {
             error(403);
         }
         break;
 
-    case "post" :
+    case "post":
         $DB->query("SELECT fp.Body, fp.TopicID, um.Username, um.ID FROM forums_posts AS fp JOIN users_main AS um ON um.ID=fp.AuthorID WHERE fp.ID=".$ID);
         if ($DB->record_count() < 1) {
             error(404);
@@ -78,16 +78,16 @@ switch ($Short) {
         list($ForumID) = $DB->next_record();
         $DB->query("SELECT MinClassRead FROM forums WHERE ID = ".$ForumID);
         list($MinClassRead) = $DB->next_record();
-        if($master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::FORUM) ||
+        if ($master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::FORUM) ||
                 ($MinClassRead > $LoggedUser['Class'] && (!isset($LoggedUser['CustomForums'][$ForumID]) || $LoggedUser['CustomForums'][$ForumID] == 0)) ||
                 (isset($LoggedUser['CustomForums'][$ForumID]) && $LoggedUser['CustomForums'][$ForumID] == 0)) {
             error(403);
         }
         break;
 
-    case "requests_comment" :
-    case "torrents_comment" :
-    case "collages_comment" :
+    case "requests_comment":
+    case "torrents_comment":
+    case "collages_comment":
         $Table = $Short.'s';
         if ($Short == "collages_comment") {
             $Column = "UserID";
@@ -102,7 +102,7 @@ switch ($Short) {
         break;
 }
 
-show_header('Report a '.$Type['title'],'bbcode');
+show_header('Report a '.$Type['title'], 'bbcode');
 ?>
 <div class="thin">
     <h2>Report <?=$Type['title']?></h2>
@@ -115,12 +115,12 @@ show_header('Report a '.$Type['title'],'bbcode');
 $Text = new Luminance\Legacy\Text;
 
 switch ($Short) {
-    case "user" :
+    case "user":
 ?>
     <p>You are reporting the user <strong><?=display_str($Username)?></strong></p>
 <?php
         break;
-    case "request_update" :
+    case "request_update":
 ?>
     <div class="head">You are reporting the request:</div>
     <table>
@@ -159,7 +159,7 @@ switch ($Short) {
     </div>
 <?php
         break;
-    case "request" :
+    case "request":
 ?>
     <div class="head">You are reporting the request:</div>
     <table>
@@ -176,7 +176,7 @@ switch ($Short) {
     </table>
 <?php
         break;
-    case "collage" :
+    case "collage":
 ?>
     <div class="head">You are reporting the collage:</div>
     <table>
@@ -191,7 +191,7 @@ switch ($Short) {
     </table>
 <?php
         break;
-    case "thread" :
+    case "thread":
 ?>
     <div class="head">You are reporting the thread:</div>
     <table>
@@ -206,7 +206,7 @@ switch ($Short) {
     </table>
 <?php
         break;
-    case "post" :
+    case "post":
 ?>
     <div class="head">You are reporting the post:</div>
     <table>
@@ -221,9 +221,9 @@ switch ($Short) {
     </table>
 <?php
         break;
-    case "requests_comment" :
-    case "torrents_comment" :
-    case "collages_comment" :
+    case "requests_comment":
+    case "torrents_comment":
+    case "collages_comment":
 ?>
     <div class="head">You are reporting the <?=$Types[$Short]['title']?>:</div>
     <table>
@@ -237,7 +237,7 @@ switch ($Short) {
         </tr>
     </table>
 <?php
-    break;
+        break;
 }
 if (empty($NoReason)) {
 ?>

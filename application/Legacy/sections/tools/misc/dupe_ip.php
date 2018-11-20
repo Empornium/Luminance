@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('users_view_ips')) { error(403); }
+if (!check_perms('users_view_ips')) {
+    error(403);
+}
 
 include(SERVER_ROOT . '/common/functions.php');
 
@@ -39,9 +41,9 @@ $DupeIPtotals = $DB->to_array();
 $DB->query("SELECT FOUND_ROWS()");
 list($NumResults) = $DB->next_record();
 
-$Pages=get_pages($Page,$NumResults,USERS_PER_PAGE,9);
+$Pages=get_pages($Page, $NumResults, USERS_PER_PAGE, 9);
 
-show_header('Dupe IPs','dupeip');
+show_header('Dupe IPs', 'dupeip');
 
 ?>
 <div class="thin">
@@ -63,32 +65,32 @@ show_header('Dupe IPs','dupeip');
             <td class="center"><a href="/<?=header_link('EndTime') ?>">Last End Time</a></td>
         </tr>
 <?php
-        if ($NumResults==0) {
+if ($NumResults==0) {
 ?>
-                    <tr class="rowb">
-                        <td class="center" colspan="5">no duped ips</td>
-                    </tr>
+    <tr class="rowb">
+        <td class="center" colspan="5">no duped ips</td>
+    </tr>
 <?php       } else {
             $i=0;
-            foreach ($DupeIPtotals as $Record) {
-                list($NumUsers, $IP, $StartTime, $EndTime) = $Record;
-                $Row = ($Row == 'a') ? 'b' : 'a';
-                $i++;
+    foreach ($DupeIPtotals as $Record) {
+        list($NumUsers, $IP, $StartTime, $EndTime) = $Record;
+        $Row = ($Row == 'a') ? 'b' : 'a';
+        $i++;
 ?>
-                <tr class="row<?=$Row?>">
-                    <td><?=display_str($IP)?><span style="float:right;">[<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="User Search on this IP" target="_blank">S</a>]</span></td>
-                    <td class="center"><?=get_host($IP)?></td>
-                    <td class="center"><?=display_str($NumUsers)?> &nbsp;
-                     <span style="float:right;">
-                         <a href="#" id="button_<?=$i?>" onclick="get_users('<?=$i?>', '<?=urlencode($IP)?>');return false;">(show)</a>
-                     </span>&nbsp;
-                    </td>
-                    <td class="center"><?=time_diff($StartTime)?></td>
-                    <td class="center"><?=time_diff($EndTime)?></td>
-                </tr>
-                <tr id="users_<?=$i?>" class="hidden"></tr>
-<?php           }
-        }
+<tr class="row<?=$Row?>">
+    <td><?=display_str($IP)?><span style="float:right;">[<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="User Search on this IP" target="_blank">S</a>]</span></td>
+    <td class="center"><?=get_host($IP)?></td>
+    <td class="center"><?=display_str($NumUsers)?> &nbsp;
+     <span style="float:right;">
+         <a href="#" id="button_<?=$i?>" onclick="get_users('<?=$i?>', '<?=urlencode($IP)?>');return false;">(show)</a>
+     </span>&nbsp;
+    </td>
+    <td class="center"><?=time_diff($StartTime)?></td>
+    <td class="center"><?=time_diff($EndTime)?></td>
+</tr>
+<tr id="users_<?=$i?>" class="hidden"></tr>
+    <?php           }
+}
 ?>
     </table>
     <div class="linkbox"> <?=$Pages; ?> </div>

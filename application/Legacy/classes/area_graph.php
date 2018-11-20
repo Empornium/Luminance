@@ -3,7 +3,7 @@ namespace Luminance\Legacy;
 
 class area_graph extends google_charts
 {
-    public function __construct ($Width, $Height, $Options=array())
+    public function __construct($Width, $Height, $Options = array())
     {
         parent::__construct('lc', $Width, $Height, $Options);
     }

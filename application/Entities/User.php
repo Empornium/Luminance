@@ -3,7 +3,8 @@ namespace Luminance\Entities;
 
 use Luminance\Core\Entity;
 
-class User extends Entity {
+class User extends Entity
+{
 
     public static $table = 'users';
 
@@ -32,11 +33,13 @@ class User extends Entity {
 //        'SecurityFlags' => [ 'columns' => [ 'SecurityFlags' ] ],
     ];
 
-    public function needs_update() {
+    public function needs_update()
+    {
         return (is_null($this->Username) || !strlen($this->Username) || is_null($this->Password));
     }
 
-    public function info() {
+    public function info()
+    {
         $l = $this->legacy;
         $UserInfo = [
             'ID' => $this->ID,
@@ -69,7 +72,8 @@ class User extends Entity {
         return $UserInfo;
     }
 
-    public function heavy_info() {
+    public function heavy_info()
+    {
         $l = $this->legacy;
         $HeavyInfo = [
             'Invites'             => $l['Invites'],
@@ -152,18 +156,21 @@ class User extends Entity {
             $HeavyInfo['Badges'] = array();
         }
 
-        if (empty($HeavyInfo['TimeZone']) || $HeavyInfo['TimeZone'] == '')
+        if (empty($HeavyInfo['TimeZone']) || $HeavyInfo['TimeZone'] == '') {
             $HeavyInfo['TimeOffset'] = 0;
-        else {
+        } else {
             $HeavyInfo['TimeOffset'] = get_timezone_offset($HeavyInfo['TimeZone']);
         }
 
-        if (!isset($HeavyInfo['MaxTags'])) $HeavyInfo['MaxTags'] = 100;
+        if (!isset($HeavyInfo['MaxTags'])) {
+            $HeavyInfo['MaxTags'] = 100;
+        }
 
         return $HeavyInfo;
     }
 
-    public function stats() {
+    public function stats()
+    {
         $l = $this->legacy;
         $UserStats = [];
         $UserStats['BytesUploaded'] = $l['Uploaded'];
@@ -173,7 +180,8 @@ class User extends Entity {
         return $UserStats;
     }
 
-    public function on_ratiowatch() {
+    public function on_ratiowatch()
+    {
         //$LoggedUser['RatioWatch'] as a bool to disable things for users on Ratio Watch
         $l = $this->legacy;
         $OnRatioWatch = (
@@ -183,7 +191,8 @@ class User extends Entity {
         return $OnRatioWatch;
     }
 
-    public function send_email($subject, $template, $variables) {
+    public function send_email($subject, $template, $variables)
+    {
         $email = $this->emails->load($this->EmailID);
         $email->send_email($subject, $template, $variables);
     }
@@ -193,7 +202,8 @@ class User extends Entity {
      * @param null $default The default value to return if the option is not found
      * @return mixed|null
      */
-    public function options($key = null, $default = null) {
+    public function options($key = null, $default = null)
+    {
         $options = @unserialize($this->legacy['SiteOptions']);
 
         if (!$options) {
@@ -216,7 +226,8 @@ class User extends Entity {
      * @param $value
      * @return bool
      */
-    public function setOption(string $key, $value): bool {
+    public function setOption(string $key, $value): bool
+    {
         $options = @unserialize($this->legacy['SiteOptions']);
 
         if (!$options) {
@@ -241,7 +252,8 @@ class User extends Entity {
      * @param string $key
      * @return bool
      */
-    public function unsetOption(string $key) {
+    public function unsetOption(string $key)
+    {
         $options = @unserialize($this->legacy['SiteOptions']);
 
         if (!$options) {

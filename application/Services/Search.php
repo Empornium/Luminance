@@ -5,7 +5,8 @@ use Luminance\Core\Master;
 use Luminance\Core\Service;
 use Luminance\Core\Entity;
 
-class Search extends Service {
+class Search extends Service
+{
     private $Index='*';
     private $SphinxClient = null;
     public $TotalResults = 0;
@@ -20,14 +21,16 @@ class Search extends Service {
         'settings' => 'Settings',
     ];
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
         $this->SphinxClient = new \SphinxClient();
         $this->SetServer($master->settings->sphinx->host, $master->settings->sphinx->port);
         $this->SetMatchMode(SPH_MATCH_EXTENDED2);
     }
 
-    public function __call($func, $params) {
+    public function __call($func, $params)
+    {
         if (method_exists($this->SphinxClient, $func)) {
             return call_user_func_array([$this->SphinxClient, $func], (array)$params);
         } else {
@@ -61,7 +64,8 @@ class Search extends Service {
                       same primary key returned by sphinx!
 
     ****************************************************************/
-    public function search($Query = '', $CachePrefix = '', $CacheLength = 0, $ReturnData = array(), $SQL = '', $IDColumn = 'ID') {
+    public function search($Query = '', $CachePrefix = '', $CacheLength = 0, $ReturnData = array(), $SQL = '', $IDColumn = 'ID')
+    {
         $QueryStartTime=microtime(true);
         $Result = $this->Query($Query, $this->Index);
         $QueryEndTime=microtime(true);
@@ -150,7 +154,8 @@ class Search extends Service {
         return $Matches;
     }
 
-    public function limit($Start, $Length, $MaxMatches = null) {
+    public function limit($Start, $Length, $MaxMatches = null)
+    {
         if (is_null($MaxMatches)) {
             $MaxMatches = $this->settings->sphinx->matches_start;
         }
@@ -161,23 +166,27 @@ class Search extends Service {
         return $MaxMatches;
     }
 
-    public function set_index($Index) {
+    public function set_index($Index)
+    {
         $this->Index = $Index;
     }
 
-    public function set_filter($Name, $Vals, $Exclude = false) {
+    public function set_filter($Name, $Vals, $Exclude = false)
+    {
         foreach ($Vals as $Val) {
             $this->Filters[$Name][] = $Val;
         }
         $this->SetFilter($Name, $Vals, $Exclude);
     }
 
-    public function set_filter_range($Name, $Min, $Max, $Exclude = false) {
+    public function set_filter_range($Name, $Min, $Max, $Exclude = false)
+    {
         $this->Filters[$Name] = array($Min.'-'.$Max);
         $this->SetFilterRange($Name, $Min, $Max, $Exclude);
     }
 
-    public function escape_string($String) {
+    public function escape_string($String)
+    {
         return strtr($String, array('('=>'\(', ')'=>'\)',  '|'=>'\|',  '-'=>'\-',  '@'=>'\@',  '~'=>'\~',  '&'=>'\&',  '/'=>'\/'));
     }
 }

@@ -1,18 +1,21 @@
 <?php
 namespace Luminance\Services\DB;
 
-class LegacyWrapper {
+class LegacyWrapper
+{
 
     public $stmt;
     public $cached_results = [];
     public $cached_done = false;
     public $cached_index = 0;
 
-    public function __construct(\PDOStatement $stmt) {
+    public function __construct(\PDOStatement $stmt)
+    {
         $this->stmt = $stmt;
     }
 
-    public function fetch($type = null) {
+    public function fetch($type = null)
+    {
         if (is_null($type)) {
             $type = MYSQLI_BOTH;
         }
@@ -35,7 +38,8 @@ class LegacyWrapper {
         return $result;
     }
 
-    protected function fill() {
+    protected function fill()
+    {
         if (count($this->cached_results) == 0) {
             $this->cached_results = $this->stmt->fetchAll(\PDO::FETCH_BOTH);
             $this->cached_done = true;
@@ -52,7 +56,8 @@ class LegacyWrapper {
         $this->cached_index = count($this->cached_results);
     }
 
-    public function fetchAll($type = null) {
+    public function fetchAll($type = null)
+    {
         if (is_null($type)) {
             $type = MYSQLI_BOTH;
         }
@@ -63,7 +68,8 @@ class LegacyWrapper {
         return $results;
     }
 
-    public function record_count() {
+    public function record_count()
+    {
         if (!$this->cached_done) {
             $this->fill();
         }
@@ -72,11 +78,13 @@ class LegacyWrapper {
         return $count;
     }
 
-    public function rewind() {
+    public function rewind()
+    {
         $this->cached_index = 0;
     }
 
-    protected function filter_rows($rows, $type) {
+    protected function filter_rows($rows, $type)
+    {
         $filtered_rows = [];
         foreach ($rows as $row) {
             $filtered_rows[] = $this->filter_row($row, $type);
@@ -84,7 +92,8 @@ class LegacyWrapper {
         return $filtered_rows;
     }
 
-    protected function filter_row($row, $type) {
+    protected function filter_row($row, $type)
+    {
         switch ($type) {
             case MYSQLI_BOTH:
                 return $row;

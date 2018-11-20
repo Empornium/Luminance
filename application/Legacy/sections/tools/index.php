@@ -45,8 +45,9 @@ $Feed = new Luminance\Legacy\Feed;
 
 switch ($_REQUEST['action']) {
     case 'phpinfo':
-        if (!check_perms('site_debug'))
+        if (!check_perms('site_debug')) {
             error(403);
+        }
         phpinfo();
         break;
     //Services
@@ -90,50 +91,58 @@ switch ($_REQUEST['action']) {
         break;
 
     case 'ban_zero_cheat':
-        if (!check_perms('admin_manage_cheats')) error(403);
+        if (!check_perms('admin_manage_cheats')) {
+            error(403);
+        }
 
         if ($_REQUEST['banuser'] && is_number($_REQUEST['userid'])) {
-
             $DB->query("SELECT UserID FROM users_not_cheats WHERE UserID='$_REQUEST[userid]' ");
-            if ($DB->record_count()>0) error("This user is in the 'exclude user' list - you must remove them from the list if you want to ban them from this page");
+            if ($DB->record_count()>0) {
+                error("This user is in the 'exclude user' list - you must remove them from the list if you want to ban them from this page");
+            }
 
             disable_users(array($_REQUEST['userid']), "Disabled for cheating (0 stat downloading) by $LoggedUser[Username]", 4);
-
         }
 
         header("Location: tools.php?action=speed_zerocheats");
 
         break;
     case 'ban_pattern_cheat':
-        if (!check_perms('admin_manage_cheats')) error(403);
+        if (!check_perms('admin_manage_cheats')) {
+            error(403);
+        }
 
         if ($_REQUEST['banuser'] && is_number($_REQUEST['userid'])) {
-
             $DB->query("SELECT UserID FROM users_not_cheats WHERE UserID='$_REQUEST[userid]' ");
-            if ($DB->record_count()>0) error("This user is in the 'exclude user' list - you must remove them from the list if you want to ban them from this page");
+            if ($DB->record_count()>0) {
+                error("This user is in the 'exclude user' list - you must remove them from the list if you want to ban them from this page");
+            }
 
             disable_users(array($_REQUEST['userid']), "Disabled for cheating ($_REQUEST[pattern] matching records) by $LoggedUser[Username]", 4);
-
         }
-        if (isset($_REQUEST['returnto']) && $_REQUEST['returnto']=='cheats') $returnto = 'speed_cheats';
-        else $returnto = 'speed_records';
+        if (isset($_REQUEST['returnto']) && $_REQUEST['returnto']=='cheats') {
+            $returnto = 'speed_cheats';
+        } else {
+            $returnto = 'speed_records';
+        }
         header("Location: tools.php?action=$returnto");
 
         break;
     case 'ban_speed_cheat':
-        if (!check_perms('admin_manage_cheats')) error(403);
+        if (!check_perms('admin_manage_cheats')) {
+            error(403);
+        }
 
         if ($_REQUEST['banuser'] && is_number($_REQUEST['userid'])) {
-
             $DB->query("SELECT UserID FROM users_not_cheats WHERE UserID='$_REQUEST[userid]' ");
-            if ($DB->record_count()>0) error("This user is in the 'exclude user' list - you must remove them from the list if you want to ban them from this page");
+            if ($DB->record_count()>0) {
+                error("This user is in the 'exclude user' list - you must remove them from the list if you want to ban them from this page");
+            }
 
             $DB->query("SELECT MAX(upspeed) FROM xbt_peers_history WHERE uid='$_REQUEST[userid]' ");
             list($Maxspeed) = $DB->next_record();
             disable_users(array($_REQUEST['userid']), "Disabled for speeding (maxspeed=" . get_size($Maxspeed) . "/s) by $LoggedUser[Username]", 4);
-
         } elseif ($_POST['banusers'] && is_number($_POST['banspeed']) && $_POST['banspeed'] > 0) {
-
             $DB->query("SELECT GROUP_CONCAT(DISTINCT xbt.uid SEPARATOR '|')
                           FROM xbt_peers_history AS xbt JOIN users_main AS um ON um.ID=xbt.uid
                        LEFT JOIN users_not_cheats AS nc ON nc.UserID=xbt.uid
@@ -142,22 +151,27 @@ switch ($_REQUEST['action']) {
             list($UserIDs) = $DB->next_record();
             if ($UserIDs) {
                 $UserIDs = explode('|', $UserIDs);
-                if ( count($UserIDs)>0 ) {
+                if (count($UserIDs)>0) {
                     //error(print_r($UserIDs, true));
                     disable_users($UserIDs, "Disabled for speeding (mass banned users with speed>" . get_size($_POST['banspeed']) . "/s) by $LoggedUser[Username]", 4);
                 }
             }
         }
-        if (isset($_REQUEST['returnto']) && $_REQUEST['returnto']=='cheats') $returnto = 'speed_cheats';
-        else $returnto = 'speed_records';
+        if (isset($_REQUEST['returnto']) && $_REQUEST['returnto']=='cheats') {
+            $returnto = 'speed_cheats';
+        } else {
+            $returnto = 'speed_records';
+        }
         header("Location: tools.php?action=$returnto&viewspeed=$_POST[banspeed]&banspeed=$_POST[banspeed]");
         break;
 
     case 'edit_userwl':
-        if (!check_perms('users_manage_cheats'))
+        if (!check_perms('users_manage_cheats')) {
             error(403);
-        if (!isset($_POST['userid']) || !is_number($_POST['userid']) || $_POST['userid'] == 0)
+        }
+        if (!isset($_POST['userid']) || !is_number($_POST['userid']) || $_POST['userid'] == 0) {
             error(0);
+        }
         $UserID = (int) $_POST['userid'];
         if ($_POST['submit'] == 'Remove') {
             $DB->query("DELETE FROM users_watch_list WHERE UserID='$UserID'");
@@ -170,16 +184,21 @@ switch ($_REQUEST['action']) {
             $KeepTorrents = $_POST['keeptorrent'] == '1' ? '1' : '0';
             $DB->query("UPDATE users_watch_list SET KeepTorrents='$KeepTorrents' WHERE UserID='$UserID'");
         }
-        if (isset($_REQUEST['returnto']) && $_REQUEST['returnto']=='cheats') $returnto = 'speed_cheats';
-        else $returnto = 'speed_records';
+        if (isset($_REQUEST['returnto']) && $_REQUEST['returnto']=='cheats') {
+            $returnto = 'speed_cheats';
+        } else {
+            $returnto = 'speed_records';
+        }
         header("Location: tools.php?action=$returnto&viewspeed=$_POST[viewspeed]");
         break;
     case 'edit_torrentwl':
-        if (!check_perms('users_manage_cheats'))
+        if (!check_perms('users_manage_cheats')) {
             error(403);
+        }
 
-        if (!isset($_POST['torrentid']) || !is_number($_POST['torrentid']) || $_POST['torrentid'] == 0)
+        if (!isset($_POST['torrentid']) || !is_number($_POST['torrentid']) || $_POST['torrentid'] == 0) {
             error(0);
+        }
         $TorrentID = (int) $_POST['torrentid'];
 
         if ($_POST['submit'] == 'Remove') {
@@ -190,50 +209,65 @@ switch ($_REQUEST['action']) {
                 write_group_log($GroupID, $TorrentID, $LoggedUser['ID'], "Torrent removed from watchlist", '1');
             }
         }
-        if (isset($_REQUEST['returnto']) && $_REQUEST['returnto']=='cheats') $returnto = 'speed_cheats';
-        else $returnto = 'speed_records';
+        if (isset($_REQUEST['returnto']) && $_REQUEST['returnto']=='cheats') {
+            $returnto = 'speed_cheats';
+        } else {
+            $returnto = 'speed_records';
+        }
         header("Location: tools.php?action=$returnto&viewspeed=$_POST[viewspeed]");
         break;
     case 'save_records_options':
-        if (!check_perms('admin_manage_cheats'))
+        if (!check_perms('admin_manage_cheats')) {
             error(403);
+        }
 
         $master->options->DeleteRecordsMins = (int) $_POST['delrecordmins'];
         $master->options->KeepSpeed = (int) $_POST['keepspeed'];
 
-        if (isset($_REQUEST['returnto']) && $_REQUEST['returnto']=='cheats') $returnto = 'speed_cheats';
-        else $returnto = 'speed_records';
+        if (isset($_REQUEST['returnto']) && $_REQUEST['returnto']=='cheats') {
+            $returnto = 'speed_cheats';
+        } else {
+            $returnto = 'speed_records';
+        }
         header("Location: tools.php?action=$returnto&viewspeed=$_POST[viewspeed]");
         break;
     case 'delete_speed_records':
-        if (!check_perms('users_manage_cheats'))
+        if (!check_perms('users_manage_cheats')) {
             error(403);
+        }
 
-        if (!isset($_POST['rid']) || !is_array($_POST['rid']))
+        if (!isset($_POST['rid']) || !is_array($_POST['rid'])) {
             error('You didn\'t select any records to delete.');
+        }
         $recordIDS = $_POST['rid'];
-        foreach ($recordIDS AS $rid) {
+        foreach ($recordIDS as $rid) {
             $rid = trim($rid);
-            if (!is_number($rid))
+            if (!is_number($rid)) {
                 error(0);
+            }
         }
         $recordIDS = implode(',', $recordIDS);
         $DB->query("DELETE FROM xbt_peers_history WHERE ID IN ($recordIDS)");
-        if (isset($_REQUEST['returnto']) && $_REQUEST['returnto']=='cheats') $returnto = 'speed_cheats';
-        else $returnto = 'speed_records';
+        if (isset($_REQUEST['returnto']) && $_REQUEST['returnto']=='cheats') {
+            $returnto = 'speed_cheats';
+        } else {
+            $returnto = 'speed_records';
+        }
         header("Location: tools.php?action=$returnto&viewspeed=$_POST[viewspeed]");
         break;
 
     case 'test_delete_schedule':
-        if (!check_perms('admin_manage_cheats'))
+        if (!check_perms('admin_manage_cheats')) {
             error(403);
+        }
         //------------ Remove unwatched and unwanted speed records
         // as we are deleting way way more than keeping, and to avoid exceeding lockrow size in innoDB we do it another way:
         $master->db->raw_query("DROP TABLE IF EXISTS temp_copy"); // jsut in case!
         $master->db->raw_query("CREATE TABLE `temp_copy` LIKE xbt_peers_history");
 
         // insert the records we want to keep into the temp table
-        $master->db->raw_query("INSERT INTO temp_copy (
+        $master->db->raw_query(
+            "INSERT INTO temp_copy (
                                      SELECT x.*
                                        FROM xbt_peers_history AS x
                                   LEFT JOIN users_watch_list AS uw ON uw.UserID=x.uid
@@ -242,8 +276,9 @@ switch ($_REQUEST['action']) {
                                          OR tw.TorrentID IS NOT NULL
                                          OR x.upspeed >= :keepSpeed
                                          OR x.mtime   >  :keepTime)",
-                                         [':keepSpeed' => $master->options->KeepSpeed,
-                                          ':keepTime' => (time() - ( $master->options->DeleteRecordsMins * 60))]);
+            [':keepSpeed' => $master->options->KeepSpeed,
+            ':keepTime' => (time() - ( $master->options->DeleteRecordsMins * 60))]
+        );
 
         //Use RENAME TABLE to atomically move the original table out of the way and rename the copy to the original name:
         $master->db->raw_query("RENAME TABLE xbt_peers_history TO temp_old, temp_copy TO xbt_peers_history");
@@ -423,12 +458,12 @@ switch ($_REQUEST['action']) {
         enforce_login();
         authorize();
 
-        if (!check_perms('torrents_review_manage'))
+        if (!check_perms('torrents_review_manage')) {
             error(403);
+        }
 
         if (isset($_POST['hours']) && is_number($_POST['hours']) &&
             isset($_POST['autodelete']) && is_number($_POST['autodelete'])) {
-
             $master->options->MFDReviewHours = (int) $_POST['hours'];
             $master->options->MFDAutoDelete  = (int) $_POST['autodelete'] == 1 ? 1 : 0;
         }
@@ -442,8 +477,9 @@ switch ($_REQUEST['action']) {
 
         include 'managers/mfd_functions.php';
 
-        if (!check_perms('torrents_review'))
+        if (!check_perms('torrents_review')) {
             error(403);
+        }
 
         if (isset($_POST['submitdelall'])) {
             $Torrents = get_torrents_under_review('warned', true);
@@ -485,7 +521,6 @@ switch ($_REQUEST['action']) {
         }
 
         if (!empty($_REQUEST['id'])) {
-
             $Values = array();
             if (is_numeric($_REQUEST['id'])) {
                 $DB->query("SELECT p.ID,p.Name,p.Description,p.Level,p.Values,p.DisplayStaff,p.IsUserClass,
@@ -521,8 +556,9 @@ switch ($_REQUEST['action']) {
                     if (!is_numeric($_REQUEST['id'])) {
                         $DB->query("SELECT ID FROM permissions WHERE Level='" . db_string($_REQUEST['level']) . "'");
                         list($DupeCheck) = $DB->next_record();
-                        if ($DupeCheck)
+                        if ($DupeCheck) {
                             $Err = "There is already a user class with that level.";
+                        }
                     }
                     $Level           = $_REQUEST['level'];
                     $DisplayStaff    = $_REQUEST['displaystaff'];
@@ -541,8 +577,9 @@ switch ($_REQUEST['action']) {
                     if (!is_numeric($_REQUEST['id'])) { // new record
                         $DB->query("SELECT ID FROM permissions WHERE Name='" . db_string($_REQUEST['name']) . "'");
                         list($DupeCheck) = $DB->next_record();
-                        if ($DupeCheck)
+                        if ($DupeCheck) {
                             $Err = "There is already a permission class with that name.";
+                        }
                     }
                     $Level = 202;
                     $DisplayStaff = '0';
@@ -552,8 +589,9 @@ switch ($_REQUEST['action']) {
                     $Color = strtolower($_REQUEST['color']);
                     $Values['MaxCollages'] = $_REQUEST['maxcollages'];
                 }
-                if (!$Err)
+                if (!$Err) {
                     $Err = $Val->ValidateForm($_POST);
+                }
 
                 foreach ($_REQUEST as $Key => $Perms) {
                     if (substr($Key, 0, 5) == "perm_") {
@@ -614,7 +652,6 @@ switch ($_REQUEST['action']) {
             include 'managers/permissions_alter.php';
         } else {
             if (!empty($_REQUEST['removeid']) && is_numeric($_REQUEST['removeid'])) {
-
                 $DB->query("SELECT ID, IsUserClass FROM permissions WHERE ID='" . db_string($_REQUEST['removeid']) . "'");
                 list($pID, $IsUserClass) = $DB->next_record(MYSQLI_NUM);
                 if ($pID) {
@@ -646,20 +683,26 @@ switch ($_REQUEST['action']) {
         include(SERVER_ROOT . '/Legacy/sections/tools/data/donation_addresses.php');
         break;
 
-   case 'enter_addresses':
+    case 'enter_addresses':
         // admin submits new unused addresses
         include(SERVER_ROOT . '/Legacy/sections/tools/data/take_btc_addresses.php');
         break;
 
-   case 'delete_addresses':
+    case 'delete_addresses':
         authorize();
-        if (!check_perms('admin_donor_addresses'))  error(403);
+        if (!check_perms('admin_donor_addresses')) {
+            error(403);
+        }
 
         $AddressIDs = $_POST['deleteids'];
-        if (!is_array($AddressIDs)) error("Nothing selected to delete");
+        if (!is_array($AddressIDs)) {
+            error("Nothing selected to delete");
+        }
 
         foreach ($AddressIDs as $addressID) {
-            if (!is_number($addressID))  error(0);
+            if (!is_number($addressID)) {
+                error(0);
+            }
         }
         $AddressIDs = implode(',', $AddressIDs);
 
@@ -671,7 +714,9 @@ switch ($_REQUEST['action']) {
     case 'new_drive':
         authorize();
 
-        if (!check_perms('admin_donor_drives'))  error(403);
+        if (!check_perms('admin_donor_drives')) {
+            error(403);
+        }
 
         $name = db_string($_REQUEST['drivename']);
         $target_euros = (int) ($_REQUEST['target']);

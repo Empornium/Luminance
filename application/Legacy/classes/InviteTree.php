@@ -1,5 +1,6 @@
 <?php
 namespace Luminance\Legacy;
+
 /**************************************************************************/
 /*-- Invite tree class -----------------------------------------------------
 ***************************************************************************/
@@ -36,8 +37,12 @@ class InviteTree
             WHERE t1.UserID=$UserID");
 
         list($TreePosition, $TreeID, $TreeLevel, $MaxPosition) = $DB->next_record();
-        if (!$MaxPosition) { $MaxPosition = 1000000; } // $MaxPermission is null if the user is the last one in that tree on that level
-        if (!$TreeID) { return; }
+        if (!$MaxPosition) {
+            $MaxPosition = 1000000;
+        } // $MaxPermission is null if the user is the last one in that tree on that level
+        if (!$TreeID) {
+            return;
+        }
         $TreeQuery = $DB->query("
             SELECT
             it.UserID,
@@ -88,127 +93,141 @@ class InviteTree
         // We store this in an output buffer, so we can show the summary at the top without having to loop through twice
         ob_start();
         #TODO convert to DB array and foreach loop, while(next_record()) loops are dangerous!
-        while(list($ID, $Username, $Donor, $Enabled, $Class, $Uploaded, $Downloaded, $Paranoia, $TreePosition, $TreeLevel) = $DB->next_record()) {
+while (list($ID, $Username, $Donor, $Enabled, $Class, $Uploaded, $Downloaded, $Paranoia, $TreePosition, $TreeLevel) = $DB->next_record()) {
+    // Do stats
+    $Count++;
 
-            // Do stats
-            $Count++;
+    if ($TreeLevel > $MaxTreeLevel) {
+        $MaxTreeLevel = $TreeLevel;
+    }
 
-            if ($TreeLevel > $MaxTreeLevel) {
-                $MaxTreeLevel = $TreeLevel;
-            }
+    if ($TreeLevel == $BaseTreeLevel) {
+        $Branches++;
+        $TopLevelUpload += $Uploaded;
+        $TopLevelDownload += $Downloaded;
+    }
 
-            if ($TreeLevel == $BaseTreeLevel) {
-                $Branches++;
-                $TopLevelUpload += $Uploaded;
-                $TopLevelDownload += $Downloaded;
-            }
+    $ClassSummary[$Class]++;
+    if ($Enabled == 2) {
+        $DisabledCount++;
+    }
+    if ($Donor) {
+        $DonorCount++;
+    }
 
-            $ClassSummary[$Class]++;
-            if ($Enabled == 2) {
-                $DisabledCount++;
-            }
-            if ($Donor) {
-                $DonorCount++;
-            }
-
-            // Manage tree depth
-            if ($TreeLevel > $PreviousTreeLevel) {
-                for ($i = 0; $i<$TreeLevel-$PreviousTreeLevel; $i++) { echo "<ul class=\"invitetree\">\n"; }
-            } elseif ($TreeLevel < $PreviousTreeLevel) {
-                for ($i = 0; $i<$PreviousTreeLevel-$TreeLevel; $i++) { echo "</ul>\n"; }
-            }
-?>
-            <li>
-                <strong><?=format_username($ID, $Username, $Donor, true, $Enabled, $Class)?></strong>
-<?php
-            if (check_paranoia(array('uploaded', 'downloaded'), $Paranoia, $Classes[$Class]['Level'])) {
-                $TotalUpload += $Uploaded;
-                $TotalDownload += $Downloaded;
-?>
-                &nbsp;Uploaded: <strong><?=get_size($Uploaded)?></strong>
-                &nbsp;Downloaded: <strong><?=get_size($Downloaded)?></strong>
-                &nbsp;Ratio: <strong><?=ratio($Uploaded, $Downloaded)?></strong>
-<?php
-            } else {
-                $ParanoidCount++;
-?>
-                &nbsp;Paranoia: <strong><?=number_format($Paranoia) ?></strong>
-<?php
-            }
-?>
-            </li>
-<?php		$PreviousTreeLevel = $TreeLevel;
-            $DB->set_query_id($TreeQuery);
+    // Manage tree depth
+    if ($TreeLevel > $PreviousTreeLevel) {
+        for ($i = 0; $i<$TreeLevel-$PreviousTreeLevel;
+        $i++) {
+            echo "<ul class=\"invitetree\">\n";
         }
+    } elseif ($TreeLevel < $PreviousTreeLevel) {
+        for ($i = 0; $i<$PreviousTreeLevel-$TreeLevel;
+        $i++) {
+            echo "</ul>\n";
+        }
+    }
+?>
+<li>
+<strong><?=format_username($ID, $Username, $Donor, true, $Enabled, $Class)?></strong>
+<?php
+if (check_paranoia(array('uploaded', 'downloaded'), $Paranoia, $Classes[$Class]['Level'])) {
+    $TotalUpload += $Uploaded;
+    $TotalDownload += $Downloaded;
+?>
+&nbsp;Uploaded: <strong><?=get_size($Uploaded)?></strong>
+&nbsp;Downloaded: <strong><?=get_size($Downloaded)?></strong>
+&nbsp;Ratio: <strong><?=ratio($Uploaded, $Downloaded)?></strong>
+<?php
+} else {
+    $ParanoidCount++;
+?>
+&nbsp;Paranoia: <strong><?=number_format($Paranoia) ?></strong>
+<?php
+}
+?>
+</li>
+<?php	  $PreviousTreeLevel = $TreeLevel;
+$DB->set_query_id($TreeQuery);
+}
         $Tree = ob_get_clean();
-        if ($Count) {
-
-?> 		<p style="font-weight: bold;">
-            This tree has <?=$Count?> entries, <?=$Branches?> branches, and a depth of <?=$MaxTreeLevel - $OriginalTreeLevel?>.
-            It has
+if ($Count) {
+?>      <p style="font-weight: bold;">
+This tree has <?=$Count?> entries, <?=$Branches?> branches, and a depth of <?=$MaxTreeLevel - $OriginalTreeLevel?>.
+It has
 <?php
-            $ClassStrings = array();
-            foreach ($ClassSummary as $ClassID => $ClassCount) {
-                if ($ClassCount == 0) { continue; }
-                $LastClass = make_class_string($ClassID);
-                if ($ClassCount>1) {
-                    if ($LastClass == "Torrent Celebrity") {
-                         $LastClass = 'Torrent Celebrities';
-                    } else {
-                        $LastClass.='s';
-                    }
-                }
-                $LastClass= $ClassCount.' '.$LastClass.' (' . number_format(($ClassCount/$Count)*100) . '%)';
-
-                $ClassStrings []= $LastClass;
-            }
-            if (count($ClassStrings)>1) {
-                array_pop($ClassStrings);
-                echo implode(', ', $ClassStrings);
-                echo ' and '.$LastClass;
-            } else {
-                echo $LastClass;
-            }
-            echo '. ';
-            echo $DisabledCount;
-            echo ($DisabledCount==1)?' user is':' users are';
-            echo ' disabled (';
-            if ($DisabledCount == 0) { echo '0%)'; } else { echo number_format(($DisabledCount/$Count)*100) . '%)';}
-            echo ', and ';
-            echo $DonorCount;
-            echo ($DonorCount==1)?' user has':' users have';
-            echo ' donated (';
-            if ($DonorCount == 0) { echo '0%)'; } else { echo number_format(($DonorCount/$Count)*100) . '%)';}
-            echo '. </p>';
-
-            echo '<p style="font-weight: bold;">';
-            echo 'The total amount uploaded by the entire tree was '.get_size($TotalUpload);
-            echo ', the total amount downloaded was '.get_size($TotalDownload);
-            echo ', and the total ratio is '.ratio($TotalUpload, $TotalDownload).'. ';
-            echo '</p>';
-
-            echo '<p style="font-weight: bold;">';
-            echo 'The total amount uploaded by direct invitees (the top level) was '.get_size($TopLevelUpload);
-            echo ', the total amount downloaded was '.get_size($TopLevelDownload);
-            echo ', and the total ratio is '.ratio($TopLevelUpload, $TopLevelDownload).'. ';
-
-
-            echo 'These numbers include the stats of paranoid users, and will be factored in to the invitation giving script.</p>';
-
-
-            if ($ParanoidCount) {
-                echo '<p style="font-weight: bold;">';
-                echo $ParanoidCount;
-                echo ($ParanoidCount==1)?' user (':' users (';
-                echo number_format(($ParanoidCount/$Count)*100);
-                echo '%) ';
-                echo ($ParanoidCount==1)?'  is':' are';
-                echo ' too paranoid to have their stats shown here, and ';
-                echo ($ParanoidCount==1)?'  was':' were';
-                echo ' not factored into the stats for the total tree.';
-                echo '</p>';
-            }
+$ClassStrings = array();
+foreach ($ClassSummary as $ClassID => $ClassCount) {
+    if ($ClassCount == 0) {
+        continue;
+    }
+    $LastClass = make_class_string($ClassID);
+    if ($ClassCount>1) {
+        if ($LastClass == "Torrent Celebrity") {
+             $LastClass = 'Torrent Celebrities';
+        } else {
+            $LastClass.='s';
         }
+    }
+    $LastClass= $ClassCount.' '.$LastClass.' (' . number_format(($ClassCount/$Count)*100) . '%)';
+
+    $ClassStrings []= $LastClass;
+}
+if (count($ClassStrings)>1) {
+    array_pop($ClassStrings);
+    echo implode(', ', $ClassStrings);
+    echo ' and '.$LastClass;
+} else {
+    echo $LastClass;
+}
+echo '. ';
+echo $DisabledCount;
+echo ($DisabledCount==1)?' user is':' users are';
+echo ' disabled (';
+if ($DisabledCount == 0) {
+    echo '0%)';
+} else {
+    echo number_format(($DisabledCount/$Count)*100) . '%)';
+}
+echo ', and ';
+echo $DonorCount;
+echo ($DonorCount==1)?' user has':' users have';
+echo ' donated (';
+if ($DonorCount == 0) {
+    echo '0%)';
+} else {
+    echo number_format(($DonorCount/$Count)*100) . '%)';
+}
+echo '. </p>';
+
+echo '<p style="font-weight: bold;">';
+echo 'The total amount uploaded by the entire tree was '.get_size($TotalUpload);
+echo ', the total amount downloaded was '.get_size($TotalDownload);
+echo ', and the total ratio is '.ratio($TotalUpload, $TotalDownload).'. ';
+echo '</p>';
+
+echo '<p style="font-weight: bold;">';
+echo 'The total amount uploaded by direct invitees (the top level) was '.get_size($TopLevelUpload);
+echo ', the total amount downloaded was '.get_size($TopLevelDownload);
+echo ', and the total ratio is '.ratio($TopLevelUpload, $TopLevelDownload).'. ';
+
+
+echo 'These numbers include the stats of paranoid users, and will be factored in to the invitation giving script.</p>';
+
+
+if ($ParanoidCount) {
+    echo '<p style="font-weight: bold;">';
+    echo $ParanoidCount;
+    echo ($ParanoidCount==1)?' user (':' users (';
+    echo number_format(($ParanoidCount/$Count)*100);
+    echo '%) ';
+    echo ($ParanoidCount==1)?'  is':' are';
+    echo ' too paranoid to have their stats shown here, and ';
+    echo ($ParanoidCount==1)?'  was':' were';
+    echo ' not factored into the stats for the total tree.';
+    echo '</p>';
+}
+}
 
 ?>
         <br />

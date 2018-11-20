@@ -16,7 +16,8 @@ use Luminance\Responses\Response;
 
 use PHPQRCode\QRcode;
 
-class Master {
+class Master
+{
 
     public $application_path;
     public $superglobals;
@@ -92,7 +93,8 @@ class Master {
     protected $plugins = [];
 
 
-    public function __construct($application_path, array $superglobals, $start_time = null) {
+    public function __construct($application_path, array $superglobals, $start_time = null)
+    {
         $this->start_time = $start_time;
         $this->application_path = $application_path;
         $this->base_path = dirname($this->application_path);
@@ -121,7 +123,8 @@ class Master {
         require_once($this->application_path . '/common/paranoia_functions.php');
     }
 
-    public function &getRepository($name) {
+    public function &getRepository($name)
+    {
         if (!array_key_exists($name, $this->repositories)) {
             $cls = "\\Luminance\\Repositories\\{$name}";
             $this->repositories[$name] = new $cls($this);
@@ -130,7 +133,8 @@ class Master {
         return $this->repositories[$name];
     }
 
-    public function &getService($name) {
+    public function &getService($name)
+    {
         if (!array_key_exists($name, $this->services)) {
             $cls = "\\Luminance\\Services\\{$name}";
             $this->services[$name] = new $cls($this);
@@ -139,7 +143,8 @@ class Master {
         return $this->services[$name];
     }
 
-    public function &getPlugin($name) {
+    public function &getPlugin($name)
+    {
         if (!array_key_exists($name, $this->plugins)) {
             $cls = "\\Luminance\\Plugins\\{$name}\\{$name}Plugin";
             $this->plugins[$name] = new $cls($this);
@@ -148,7 +153,8 @@ class Master {
         return $this->plugins[$name];
     }
 
-    public function run() {
+    public function run()
+    {
         try {
             if ($this->request->method === 'CLI') {
                 $errorTemplate = 'clierror.html.twig';
@@ -181,7 +187,8 @@ class Master {
         $this->process_response($response);
     }
 
-    public function process_response($response) {
+    public function process_response($response)
+    {
         if ($response instanceof Rendered) {
             http_response_code($response->status);
             $this->render->display_page($response->template, $response->variables, $response->block);
@@ -227,11 +234,13 @@ class Master {
         'olddb'        => 'OldDB',
     ];
 
-    public function __isset($name) {
+    public function __isset($name)
+    {
         return array_key_exists($name, self::$repos);
     }
 
-    public function __get($name) {
+    public function __get($name)
+    {
         if ($this->__isset($name)) {
             return $this->getService(self::$repos[$name]);
         } else {
@@ -239,11 +248,13 @@ class Master {
         }
     }
 
-    public function prependRoute($route) {
+    public function prependRoute($route)
+    {
         array_unshift($this->routes, $route);
     }
 
-    protected function registerPlugins() {
+    protected function registerPlugins()
+    {
         foreach ($this->builtinNames as $builtinName) {
             $pluginClass = "\\Luminance\\Plugins\\{$builtinName}\\{$builtinName}Plugin";
             #$plugin = new $pluginClass($this);
@@ -255,7 +266,8 @@ class Master {
         }
     }
 
-    public function handle_request($request) {
+    public function handle_request($request)
+    {
         if (!$this->request->cli) {
             ob_start();
             $this->handle_trivial_cases();
@@ -282,7 +294,8 @@ class Master {
         }
     }
 
-    public function func($func) {
+    public function func($func)
+    {
         $args = array_slice(func_get_args(), 1);
         if (method_exists($this, $func)) {
             return call_user_func_array(array($this, $func), (array)$args);
@@ -291,7 +304,8 @@ class Master {
         }
     }
 
-    public function plugin($pluginName, $path = []) {
+    public function plugin($pluginName, $path = [])
+    {
         $args = func_get_args();
         $pluginName = $args[0];
         $path = array_slice($args, 1);
@@ -300,13 +314,15 @@ class Master {
     }
 
     # Legacy style route handler
-    public function legacy($section) {
+    public function legacy($section)
+    {
         $this->settings->set_legacy_constants();
         $legacy_handler = new LegacyHandler($this);
         return $legacy_handler->handle_legacy_request($section);
     }
 
-    public function handle_trivial_cases() {
+    public function handle_trivial_cases()
+    {
         //Deal with dumbasses
         if (isset($this->request->values['info_hash']) && isset($this->request->values['peer_id'])) {
             die('d14:failure reason40:Invalid .torrent, try downloading again.e');
@@ -335,7 +351,8 @@ class Master {
         }
     }
 
-    public function redirect($target, $parameters = null, $status = 301) {
+    public function redirect($target, $parameters = null, $status = 301)
+    {
         if (is_array($parameters) && count($parameters)) {
             $query_string = '?' . http_build_query($parameters);
         } elseif (strlen($parameters)) {
@@ -347,21 +364,24 @@ class Master {
         exit();
     }
 
-    public function redirect_handler($path) {
+    public function redirect_handler($path)
+    {
         if (is_array($path)) {
             $path = implode('/', $path);
         }
         return $this->redirect('/' . $path);
     }
 
-    public function redirect_handler_params($path) {
+    public function redirect_handler_params($path)
+    {
         if (is_array($path)) {
             $path = implode('/', $path);
         }
         return $this->redirect('/' . $path, $this->request->values);
     }
 
-    public function render_qrcode() {
+    public function render_qrcode()
+    {
         // QR code data to be encoded can contain slashes
         $data = $this->request->uri;
         $prefix = '/render/qr/';
@@ -372,13 +392,15 @@ class Master {
 
         // Skip when $data is empty or false because
         // PHPQRCode returns an inelegant 500 error (Bug: Class not found)
-        if (!empty($data))
+        if (!empty($data)) {
             echo QRcode::svg($data, false, 'H');
+        }
 
         die();
     }
 
-    public function tests() {
+    public function tests()
+    {
         return new Response($this->testing->run());
     }
 }

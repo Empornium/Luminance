@@ -5,7 +5,8 @@ use Luminance\Core\Master;
 use Luminance\Core\Service;
 use Luminance\Entities\Option;
 
-class Options extends Service {
+class Options extends Service
+{
 
     /*
      *  Options array required values:
@@ -53,30 +54,37 @@ class Options extends Service {
 
     protected static $useServices = [];
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
     }
 
-    public function getSections() {
+    public function getSections()
+    {
         $sections = [];
         foreach (static::$defaultOptions as $name => $option) {
-            if (!in_array($option['section'], $sections))
+            if (!in_array($option['section'], $sections)) {
                 $sections[] = $option['section'];
+            }
         }
         sort($sections);
         return $sections;
     }
 
     /* static compare function to sort by display: */
-    private static function compareDisplay($optiona, $optionb) {
+    private static function compareDisplay($optiona, $optionb)
+    {
         if ($optiona['displayRow'] == $optionb['displayRow']) {
-            if ($optiona['displayCol'] == $optionb['displayCol']) return 0;
+            if ($optiona['displayCol'] == $optionb['displayCol']) {
+                return 0;
+            }
             return ($optiona['displayCol'] > $optionb['displayCol']) ? +1 : -1;
         }
         return ($optiona['displayRow'] > $optionb['displayRow']) ? +1 : -1;
     }
 
-    public function getAll($section = null) {
+    public function getAll($section = null)
+    {
         $options = static::$defaultOptions;
         foreach (array_keys($options) as $name) {
             $options[$name]['value'] = $this->__get($name);
@@ -86,20 +94,23 @@ class Options extends Service {
             return $options;
         } else {
             foreach ($options as $name => $option) {
-                if ($option['section'] !== $section)
+                if ($option['section'] !== $section) {
                     unset($options[$name]);
+                }
             }
             uasort($options, ['self', 'compareDisplay']);
             return $options;
         }
     }
 
-    public static function register($pluginOptions) {
+    public static function register($pluginOptions)
+    {
         // defaults last so that framework keys take priority
         static::$defaultOptions = array_merge($pluginOptions, static::$defaultOptions);
     }
 
-    public function reset() {
+    public function reset()
+    {
         $this->master->auth->checkAllowed('admin_manage_site_options');
         foreach (static::$defaultOptions as $option => $default) {
             // use set in case tracker needs poked
@@ -107,7 +118,8 @@ class Options extends Service {
         }
     }
 
-    protected function set_type($option) {
+    protected function set_type($option)
+    {
         $type = static::$defaultOptions[$option->Name]['type'];
         $value = $option->Value;
 
@@ -129,7 +141,8 @@ class Options extends Service {
         return $value;
     }
 
-    public function __get($name) {
+    public function __get($name)
+    {
         if (property_exists($this, $name)) {
             return $this->$name;
         } else {
@@ -146,7 +159,8 @@ class Options extends Service {
         }
     }
 
-    public function get_type($name) {
+    public function get_type($name)
+    {
         if (array_key_exists($name, static::$defaultOptions)) {
             return static::$defaultOptions['type'];
         }
@@ -154,11 +168,13 @@ class Options extends Service {
         return null;
     }
 
-    public function __set($name, $value) {
+    public function __set($name, $value)
+    {
         if (array_key_exists($name, static::$defaultOptions)) {
             $this->master->auth->checkAllowed('admin_manage_site_options');
-            if (static::$defaultOptions[$name]['type'] == 'date')
+            if (static::$defaultOptions[$name]['type'] == 'date') {
                 $value = strtotime($value);
+            }
             if (isset(static::$defaultOptions[$name]['perm'])) {
                 $this->master->auth->checkAllowed(static::$defaultOptions[$name]['perm']);
             }
@@ -186,7 +202,8 @@ class Options extends Service {
         }
     }
 
-    public function __isset($section_name) {
+    public function __isset($section_name)
+    {
         if (is_array(static::$defaultOptions[$section_name])) {
             return true;
         }

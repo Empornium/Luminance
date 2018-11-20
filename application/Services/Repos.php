@@ -4,7 +4,8 @@ namespace Luminance\Services;
 use Luminance\Core\Service;
 use Luminance\Errors\InternalError;
 
-class Repos extends Service {
+class Repos extends Service
+{
 
     protected $repositories = [];
 
@@ -24,16 +25,19 @@ class Repos extends Service {
         'restrictions'     => 'RestrictionRepository',
     ];
 
-    public function __isset($name) {
+    public function __isset($name)
+    {
         return array_key_exists($name, self::$repos);
     }
 
-    public function __get($name) {
+    public function __get($name)
+    {
         $repository = $this->get_repository($name);
         return $repository;
     }
 
-    public function get_repository($name) {
+    public function get_repository($name)
+    {
         if ($this->__isset($name)) {
             return $this->master->getRepository(self::$repos[$name]);
         } else {

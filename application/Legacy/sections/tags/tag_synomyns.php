@@ -13,40 +13,40 @@ show_header('Synonyms');
 
 <?php
     $Synomyns = $Cache->get_value('all_synomyns');
-    if (!$Synomyns) {
-        $DB->query("SELECT ts.ID, Synomyn, TagID, t.Name, Uses
+if (!$Synomyns) {
+    $DB->query("SELECT ts.ID, Synomyn, TagID, t.Name, Uses
                     FROM tag_synomyns AS ts LEFT JOIN tags AS t ON ts.TagID=t.ID
                     ORDER BY Name ASC");
-        $Synomyns = $DB->to_array(false, MYSQLI_BOTH);
-        $Cache->cache_value('all_synomyns', $Synomyns);
-    }
+    $Synomyns = $DB->to_array(false, MYSQLI_BOTH);
+    $Cache->cache_value('all_synomyns', $Synomyns);
+}
     $LastParentTagName ='';
     $Row = 'a';
 
-    foreach ($Synomyns as $Synomyn) {
-        list($SnID, $SnName, $ParentTagID, $ParentTagName, $Uses) = $Synomyn;
+foreach ($Synomyns as $Synomyn) {
+    list($SnID, $SnName, $ParentTagID, $ParentTagName, $Uses) = $Synomyn;
 
-        if ($LastParentTagName != $ParentTagName) {
-            if ($LastParentTagName != '') {  ?>
+    if ($LastParentTagName != $ParentTagName) {
+        if ($LastParentTagName != '') {  ?>
 
             </table></div>
 <?php
-            }   ?>
+        }   ?>
             <div style="display:inline-block;vertical-align: top;">
             <table  class="syntable shadow">
                 <tr>
-                    <td class="colhead" style="width:200px"><a href="/torrents.php?taglist=<?=$ParentTagName?>" ><?=$ParentTagName?></a>&nbsp;(<?=$Uses?>)</td>
+                <td class="colhead" style="width:200px"><a href="/torrents.php?taglist=<?=$ParentTagName?>" ><?=$ParentTagName?></a>&nbsp;(<?=$Uses?>)</td>
                 </tr>
 <?php
-            $LastParentTagName = $ParentTagName;
-       }
-                $Row = $Row == 'b'?'a':'b';
+        $LastParentTagName = $ParentTagName;
+    }
+        $Row = $Row == 'b'?'a':'b';
 ?>
-                <tr class="row<?=$Row?>">
-                    <td ><?=$SnName?></td>
-                </tr>
+        <tr class="row<?=$Row?>">
+            <td ><?=$SnName?></td>
+        </tr>
 <?php   }
-    if ($SnID) { // only finish if something was in list ?>
+if ($SnID) { // only finish if something was in list ?>
             </table></div>
 <?php   }    ?>
     </div>

@@ -13,7 +13,8 @@ use Luminance\Errors\ForbiddenError;
 use Luminance\Errors\UnauthorizedError;
 use Luminance\Entities\Invite;
 
-class InviteManager extends Service {
+class InviteManager extends Service
+{
 
     protected static $useRepositories = [
         'invites' => 'InviteRepository',
@@ -22,7 +23,8 @@ class InviteManager extends Service {
     protected static $useServices = [
     ];
 
-    public function newInvite($userID, $email) {
+    public function newInvite($userID, $email)
+    {
         $inviteKey = $this->master->secretary->getExternalToken($email, 'users.register');
         $expires = new \DateTime('+72 hour');
         $invite = new Invite();
@@ -44,7 +46,8 @@ class InviteManager extends Service {
      *
      * @throws InternalError if no user could be found
      */
-    public function giveInvite($user, $amount = 1, $max = 4) {
+    public function giveInvite($user, $amount = 1, $max = 4)
+    {
         $user   = $this->master->repos->users->load($user);
         $params = [$max, $amount, $user->ID];
         $result = $this->master->db->raw_query("UPDATE users_main SET Invites = LEAST(?, Invites + ?)  WHERE ID = ?", $params);
@@ -63,7 +66,8 @@ class InviteManager extends Service {
      *
      * @throws InternalError if no user could be found
      */
-    public function takeInvite($user, $amount = 1, $min = 0) {
+    public function takeInvite($user, $amount = 1, $min = 0)
+    {
         // Do not decrease if user has unlimited invites
         if ($this->master->auth->isAllowed('site_send_unlimited_invites')) {
             return false;

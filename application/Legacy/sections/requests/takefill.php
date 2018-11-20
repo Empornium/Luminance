@@ -103,14 +103,13 @@ foreach ($UserIDs as $User) {
 $RequestVotes = get_votes_array($RequestID);
 write_log("Request $RequestID ($FullName) was filled by ".$LoggedUser['Username']." with the torrent ".$TorrentID.", uploaded by $UploaderID for a ".get_size($RequestVotes['TotalBounty'])." bounty.");
 
-if ( $UploaderID == $FillerID ) {
+if ($UploaderID == $FillerID) {
     // Give bounty to filler
     $DB->query("UPDATE users_main
                 SET Uploaded = (Uploaded + ".$RequestVotes['TotalBounty'].")
                 WHERE ID = ".$FillerID);
     write_user_log($FillerID, "Added +". get_size($RequestVotes['TotalBounty']). " for filling request [url=/requests.php?action=view&id={$RequestID}]{$Title}[/url] ");
     send_pm($FillerID, 0, db_string("You filled the request '".$FullName."'"), db_string("You filled the request - [url=/requests.php?action=view&id=".$RequestID."]".$FullName."[/url] for a bounty of ".get_size($RequestVotes['TotalBounty'])."\nThis bounty has been added to your upload stats."), '');
-
 } else {
     // Give bounty to filler
     $DB->query("UPDATE users_main

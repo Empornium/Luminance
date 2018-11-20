@@ -29,7 +29,9 @@ if (isset($_GET['userid'])) {
 } else {
     $UserID = $LoggedUser['ID'];
 }
-if (!is_number($UserID)) { error(404); }
+if (!is_number($UserID)) {
+    error(404);
+}
 
 $UserInfo = user_info($UserID);
 $Perms = get_permissions($UserInfo['PermissionID']);
@@ -40,11 +42,15 @@ if ($LoggedUser['ID'] != $UserID && !check_paranoia(false, $User['Paranoia'], $U
 }
 
 if (isset($_GET['expire'])) {
-    if (!check_perms('users_mod')) { error(403); }
+    if (!check_perms('users_mod')) {
+        error(403);
+    }
     $UserID = $_GET['userid'];
     $TorrentID = $_GET['torrentid'];
 
-    if (!is_number($UserID) || !is_number($TorrentID)) { error(403); }
+    if (!is_number($UserID) || !is_number($TorrentID)) {
+        error(403);
+    }
     $InfoHash = $master->db->raw_query("SELECT info_hash FROM torrents where ID = :torrentid", [':torrentid' => $TorrentID])->fetchColumn();
     if (!empty($InfoHash)) {
         $master->db->raw_query("DELETE FROM users_slots WHERE UserID=$UserID AND TorrentID=:torrentid", [':torrentid' => $TorrentID]);
@@ -95,38 +101,40 @@ $Pages=get_pages($Page, $NumResults, 50);
             <td class="center"><a href="/<?=header_link('Doubleseed') ?>">Doubleseed</a></td>
         </tr>
 <?php
-    foreach ($Tokens as $Token) {
-        $GroupIDs[] = $Token['GroupID'];
-    }
+foreach ($Tokens as $Token) {
+    $GroupIDs[] = $Token['GroupID'];
+}
 
     $i = true;
-    foreach ($Tokens as $Token) {
-        $i = !$i;
-        list($TorrentID, $GroupID, $Size, $Time, $FreeLeech, $DoubleSeed, $Name) = $Token;
-        if(empty($Name)) $Name = "(Deleted)";
-        $Name = "<a href=\"details.php?id=$TorrentID\">$Name</a>";
-        if ($FreeLeech == '0000-00-00 00:00:00') {
-            $fl = 'No';
-        } else {
-            $fl = $FreeLeech > sqltime() ?
-                time_diff($FreeLeech) : '<span style="color:red" title="' . time_diff($FreeLeech,2,false,false,1) . '">Expired</span>';
-        }
+foreach ($Tokens as $Token) {
+    $i = !$i;
+    list($TorrentID, $GroupID, $Size, $Time, $FreeLeech, $DoubleSeed, $Name) = $Token;
+    if (empty($Name)) {
+        $Name = "(Deleted)";
+    }
+    $Name = "<a href=\"details.php?id=$TorrentID\">$Name</a>";
+    if ($FreeLeech == '0000-00-00 00:00:00') {
+        $fl = 'No';
+    } else {
+        $fl = $FreeLeech > sqltime() ?
+        time_diff($FreeLeech) : '<span style="color:red" title="' . time_diff($FreeLeech, 2, false, false, 1) . '">Expired</span>';
+    }
 
-        if ($DoubleSeed == '0000-00-00 00:00:00') {
-            $ds = 'No';
-        } else {
-            $ds = time_diff($DoubleSeed,2,true,false,1);
-            $ds = $DoubleSeed > sqltime() ?
-                time_diff($DoubleSeed) : '<span style="color:red" title="' . time_diff($DoubleSeed,2,false,false,1) . '">Expired</span>';
-        }
+    if ($DoubleSeed == '0000-00-00 00:00:00') {
+        $ds = 'No';
+    } else {
+        $ds = time_diff($DoubleSeed, 2, true, false, 1);
+        $ds = $DoubleSeed > sqltime() ?
+        time_diff($DoubleSeed) : '<span style="color:red" title="' . time_diff($DoubleSeed, 2, false, false, 1) . '">Expired</span>';
+    }
 ?>
-        <tr class="<?=($i?'rowa':'rowb')?>">
-            <td><?=$Name?></td>
-            <td><?=get_size($Size)?></td>
-            <td><?=time_diff($Time,2,true,false,1)?></td>
-            <td class="center"><?=$fl?></td>
-            <td class="center"><?=$ds?></td>
-        </tr>
+<tr class="<?=($i?'rowa':'rowb')?>">
+    <td><?=$Name?></td>
+    <td><?=get_size($Size)?></td>
+    <td><?=time_diff($Time, 2, true, false, 1)?></td>
+    <td class="center"><?=$fl?></td>
+    <td class="center"><?=$ds?></td>
+</tr>
 <?php   }       ?>
     </table>
     <div class="linkbox"><?=$Pages?></div>

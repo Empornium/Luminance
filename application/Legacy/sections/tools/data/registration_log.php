@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('users_view_ips') || !check_perms('users_view_email')) { error(403); }
+if (!check_perms('users_view_ips') || !check_perms('users_view_email')) {
+    error(403);
+}
 show_header('Registration log');
 ?>
 <div class="thin">
@@ -46,7 +48,7 @@ if ($DB->record_count()) {
 ?>
     <div class="linkbox">
 <?php
-    $Pages=get_pages($Page,$Results,USERS_PER_PAGE,11) ;
+    $Pages=get_pages($Page, $Results, USERS_PER_PAGE, 11) ;
     echo $Pages;
 ?>
     </div>
@@ -61,34 +63,36 @@ if ($DB->record_count()) {
         </tr>
 <?php
     $Records = $DB->to_array();
-    foreach ($Records as $Record) {
-        list($UserID, $IPID, $Email, $Username, $PermissionID, $Uploaded, $Downloaded, $Enabled, $Donor, $Joined, $InviterID, $InviterIPID, $InviterEmail, $InviterUsername, $InviterPermissionID, $InviterUploaded, $InviterDownloaded, $InviterEnabled, $InviterDonor, $InviterJoined)=$Record;
+foreach ($Records as $Record) {
+    list($UserID, $IPID, $Email, $Username, $PermissionID, $Uploaded, $Downloaded, $Enabled, $Donor, $Joined, $InviterID, $InviterIPID, $InviterEmail, $InviterUsername, $InviterPermissionID, $InviterUploaded, $InviterDownloaded, $InviterEnabled, $InviterDonor, $InviterJoined)=$Record;
 
-        $IP = $master->repos->ips->load($IPID);
-        $InviterIP = $master->repos->ips->load($InviterIPID);
-        $Row = ($IP == $InviterIP) ? 'a' : 'b';
+    $IP = $master->repos->ips->load($IPID);
+    $InviterIP = $master->repos->ips->load($InviterIPID);
+    $Row = ($IP == $InviterIP) ? 'a' : 'b';
 ?>
-        <tr class="row<?=$Row?>">
-            <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?><br /><?=format_username($InviterID, $InviterUsername, $InviterDonor, true, $InviterEnabled, $InviterPermissionID)?></td>
-            <td><?=ratio($Uploaded,$Downloaded)?><br /><?=ratio($InviterUploaded,$InviterDownloaded)?></td>
-            <td>
-                <span style="float:left;"><?=display_str($Email)?></span>
-                <span style="float:right;">[<a href="/userhistory.php?action=email&amp;userid=<?=$UserID?>" title="History">H</a>|<a href="/user.php?action=search&email_history=on&email=<?=display_str($Email)?>" title="Search">S</a>]</span><br />
-                <span style="float:left;"><?=display_str($InviterEmail)?></span>
-                <span style="float:right;">[<a href="/userhistory.php?action=email&amp;userid=<?=$InviterID?>" title="History">H</a>|<a href="/user.php?action=search&amp;email_history=on&amp;email=<?=display_str($InviterEmail)?>" title="Search">S</a>]</span><br />
-            </td>
-            <td>
-                <span style="float:left;"><?php  $CC = geoip($IP);  echo display_ip($IP, $CC); ?></span>
-                <span style="float:right;">[<a href="/userhistory.php?action=ips&amp;userid=<?=$UserID?>" title="History">H</a>|<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="Search">S</a>]</span><br />
-                <span style="float:left;"><?php  $InviterCC = geoip($InviterIP);  echo display_ip($InviterIP, $InviterCC); ?></span>
-                <span style="float:right;">[<a href="/userhistory.php?action=ips&amp;userid=<?=$InviterID?>" title="History">H</a>|<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($InviterIP)?>" title="Search">S</a>]</span><br />
-            </td>
-            <td>
-                <?=get_host($IP)?><br />
-                <?=get_host($InviterIP)?>
-            </td>
-            <td><?=time_diff($Joined)?><br /><?=time_diff($InviterJoined)?></td>
-        </tr>
+<tr class="row<?=$Row?>">
+    <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?><br /><?=format_username($InviterID, $InviterUsername, $InviterDonor, true, $InviterEnabled, $InviterPermissionID)?></td>
+    <td><?=ratio($Uploaded, $Downloaded)?><br /><?=ratio($InviterUploaded, $InviterDownloaded)?></td>
+    <td>
+        <span style="float:left;"><?=display_str($Email)?></span>
+        <span style="float:right;">[<a href="/userhistory.php?action=email&amp;userid=<?=$UserID?>" title="History">H</a>|<a href="/user.php?action=search&email_history=on&email=<?=display_str($Email)?>" title="Search">S</a>]</span><br />
+        <span style="float:left;"><?=display_str($InviterEmail)?></span>
+        <span style="float:right;">[<a href="/userhistory.php?action=email&amp;userid=<?=$InviterID?>" title="History">H</a>|<a href="/user.php?action=search&amp;email_history=on&amp;email=<?=display_str($InviterEmail)?>" title="Search">S</a>]</span><br />
+    </td>
+    <td>
+        <span style="float:left;"><?php  $CC = geoip($IP);
+        echo display_ip($IP, $CC); ?></span>
+        <span style="float:right;">[<a href="/userhistory.php?action=ips&amp;userid=<?=$UserID?>" title="History">H</a>|<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="Search">S</a>]</span><br />
+        <span style="float:left;"><?php  $InviterCC = geoip($InviterIP);
+        echo display_ip($InviterIP, $InviterCC); ?></span>
+        <span style="float:right;">[<a href="/userhistory.php?action=ips&amp;userid=<?=$InviterID?>" title="History">H</a>|<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($InviterIP)?>" title="Search">S</a>]</span><br />
+    </td>
+    <td>
+        <?=get_host($IP)?><br />
+        <?=get_host($InviterIP)?>
+    </td>
+    <td><?=time_diff($Joined)?><br /><?=time_diff($InviterJoined)?></td>
+</tr>
 <?php	} ?>
     </table>
     <div class="linkbox">

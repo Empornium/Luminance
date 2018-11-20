@@ -3,7 +3,8 @@ namespace Luminance\Entities;
 
 use Luminance\Core\Entity;
 
-class Client extends Entity {
+class Client extends Entity
+{
 
     public static $table = 'clients';
 
@@ -32,7 +33,8 @@ class Client extends Entity {
         'TLSVersion'        => [ 'columns' => [ 'TLSVersion' ] ],
     ];
 
-    public function matchCID($matchCID) {
+    public function matchCID($matchCID)
+    {
         $realCID = hex2bin($this->CID);
         $result = (
             strlen($matchCID) == 8 &&

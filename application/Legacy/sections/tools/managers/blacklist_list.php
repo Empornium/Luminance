@@ -85,7 +85,7 @@ $DB->query('SELECT id, vstring, peer_id FROM xbt_client_blacklist ORDER BY peer_
                 </td>
             </form>
             </tr>
-<?php  } ?>
+        <?php  } ?>
     </table>
 </div>
 <?php

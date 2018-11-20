@@ -1,5 +1,6 @@
 <?php
 namespace Luminance\Legacy;
+
 define('PREFIX', 'percentiles_'); // Prefix for memcache keys, to make life easier
 
 class UserRank
@@ -23,7 +24,7 @@ class UserRank
         $Table = $master->db->raw_query("SELECT MIN(Val) FROM temp_stats GROUP BY CEIL(ID/(".(int) $UserCount."/100));")->fetchAll();
 
         // Give a little variation to the cache length, so all the tables don't expire at the same time
-        $master->cache->cache_value($MemKey, $Table, 3600*24*rand(800,1000)*0.001);
+        $master->cache->cache_value($MemKey, $Table, 3600*24*rand(800, 1000)*0.001);
 
         return $Table;
     }
@@ -57,7 +58,9 @@ class UserRank
 
     public function get_rank($TableName, $Value)
     {
-        if ($Value == 0) { return 0; }
+        if ($Value == 0) {
+            return 0;
+        }
         global $master;
 
         $Table = $master->cache->get_value(PREFIX.$TableName);
@@ -86,7 +89,9 @@ class UserRank
     public function overall_score($Rank, $Ratio)
     {
         // We can do this all in 1 line, but it's easier to read this way
-        if ($Ratio>1) { $Ratio = 1; }
+        if ($Ratio>1) {
+            $Ratio = 1;
+        }
         $TotalScore = 0;
         $TotalScore += $Rank->uploaded*15;
         $TotalScore += $Rank->downloaded*8;
@@ -98,7 +103,5 @@ class UserRank
         $TotalScore *= $Ratio;
 
         return $TotalScore;
-
     }
-
 }

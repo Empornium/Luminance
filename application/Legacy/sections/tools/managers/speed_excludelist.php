@@ -17,7 +17,7 @@ if (empty($_GET['order_by']) || !in_array($_GET['order_by'], array('Username', '
     $OrderBy = $_GET['order_by'];
 }
 
-show_header('Exclude list','watchlist');
+show_header('Exclude list', 'watchlist');
 
 ?>
 <div class="thin">
@@ -49,14 +49,19 @@ show_header('Exclude list','watchlist');
     $DB->query("SELECT FOUND_ROWS()");
     list($NumResults) = $DB->next_record();
 
-    $Pages=get_pages($Page,$NumResults,50,9);
+    $Pages=get_pages($Page, $NumResults, 50, 9);
 
 ?>
     <div class="linkbox"><?=$Pages?></div>
 <?php
 
-    print_user_list($Userlist,'excludelist',"Exclude users list ($NumResults users)",'watchedgreen',
-            'Users in this list will be excluded from the multiban function and will not be shown on the cheats page');
+    print_user_list(
+        $Userlist,
+        'excludelist',
+        "Exclude users list ($NumResults users)",
+        'watchedgreen',
+        'Users in this list will be excluded from the multiban function and will not be shown on the cheats page'
+    );
 
 ?>
     <div class="linkbox"><?=$Pages?></div>

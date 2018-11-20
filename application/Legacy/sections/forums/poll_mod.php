@@ -1,8 +1,12 @@
 <?php
 authorize();
 
-if (!check_perms('site_polls_moderate')) { error(403,true); }
-if (!isset($_POST['topicid']) || !is_number($_POST['topicid'])) { error(0,true); }
+if (!check_perms('site_polls_moderate')) {
+    error(403, true);
+}
+if (!isset($_POST['topicid']) || !is_number($_POST['topicid'])) {
+    error(0, true);
+}
 $TopicID = $_POST['topicid'];
 
 //Currently serves as a Featured Toggle
@@ -30,10 +34,10 @@ if (isset($_POST['feature'])) {
     if (($FPollID = $Cache->get_value('polls_featured')) === false) {
         $DB->query("SELECT TopicID FROM forums_polls ORDER BY Featured DESC LIMIT 1");
         list($FPollID) = $DB->next_record();
-        $Cache->cache_value('polls_featured',$FPollID,0);
+        $Cache->cache_value('polls_featured', $FPollID, 0);
     }
     if (!$Featured || $FPollID != $TopicID) {
-        $Cache->cache_value('polls_featured',$TopicID,0);
+        $Cache->cache_value('polls_featured', $TopicID, 0);
         $DB->query('UPDATE forums_polls SET Featured=NOW() WHERE TopicID=\''.$TopicID.'\'');
     }
 }

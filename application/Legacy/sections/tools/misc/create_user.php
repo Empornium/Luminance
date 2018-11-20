@@ -12,7 +12,9 @@ if (!empty($_POST['submit'])) {
     $Val->SetFields('confirm_password', true, 'compare', 'Your passwords do not match.', array('comparefield' => 'password'));
 
     $Err = $Val->ValidateForm($_POST);
-    if ($Err) error($Err);
+    if ($Err) {
+        error($Err);
+    }
 
     //Create variables for all the fields
     $username = trim($_POST['username']);
@@ -27,7 +29,6 @@ if (!empty($_POST['submit'])) {
 
 //Form wasn't sent -- Show form
 } else {
-
     show_header('Create a User');
 
     ?>

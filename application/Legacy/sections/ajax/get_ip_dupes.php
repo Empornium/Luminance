@@ -1,8 +1,10 @@
 <?php
-if (!check_perms('users_view_ips')) error(403,true);
+if (!check_perms('users_view_ips')) {
+    error(403, true);
+}
 
-if (empty($_REQUEST['ip']) || !preg_match('/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/', $_REQUEST['ip']) ) {
-    error("IP error: ".display_str($_REQUEST['ip']),true);
+if (empty($_REQUEST['ip']) || !preg_match('/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/', $_REQUEST['ip'])) {
+    error("IP error: ".display_str($_REQUEST['ip']), true);
 }
 
 $IP = $_REQUEST['ip'];
@@ -50,7 +52,6 @@ foreach ($UserList as $User) {
     $HTML .='<td class="center">'. number_format($Snatched) .'</td>';
     $HTML .='<td class="center">'. get_size($Uploaded) .' \\ '. get_size($Downloaded) .'</td>';
     $HTML .='<td class="center">'. ratio($Uploaded, $Downloaded) .'</td></tr>';
-
 }
 
 $HTML.='</table></div></td>';

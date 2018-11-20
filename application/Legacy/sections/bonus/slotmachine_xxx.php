@@ -1,11 +1,13 @@
 <?php
 enforce_login();
 
-if (!check_perms( 'site_play_slots')) error ("You do not have permission to play the xxx slot machine!");
+if (!check_perms('site_play_slots')) {
+    error("You do not have permission to play the xxx slot machine!");
+}
 
 include(SERVER_ROOT.'/Legacy/sections/bonus/slot_xxx_arrays.php');
 
-show_header('Slot Machine','slotmachine_xxx');
+show_header('Slot Machine', 'slotmachine_xxx');
 
 $BetAmount = 10;
 
@@ -29,17 +31,17 @@ echo "var reelPix = ". json_encode($Reel) . ";\n"; ?>
             <?php
                 $Count=array();
                 $max=0;
-                for ($i=0;$i<4;$i++) {
-                    $Count[$i]= count($Reel[$i]);
-                    $max = max($max,$Count[$i]);
-                }
-                for ($i=$max-1;$i>=0;$i--) { ?>
+            for ($i=0; $i<4; $i++) {
+                $Count[$i]= count($Reel[$i]);
+                $max = max($max, $Count[$i]);
+            }
+            for ($i=$max-1; $i>=0; $i--) { ?>
                     <div class="reelsi">
-            <?php   for ($j=0;$j<4;$j++) {
-                        if ($i<$Count[$j]) { ?>
+            <?php   for ($j=0; $j<4; $j++) {
+                if ($i<$Count[$j]) { ?>
                         <img src="<?=STATIC_SERVER?>common/casino/icon<?=$Reel[$j][$i]?>.png" />
-            <?php       }
-                    } ?>
+                <?php       }
+} ?>
                     </div>
             <?php  } ?>
         </div>
@@ -190,7 +192,7 @@ echo "var reelPix = ". json_encode($Reel) . ";\n"; ?>
                     <td class="noborder center"><?=$Bet?></td>
                     <td class="noborder center"><?=$Won?></td>
                 </tr>
-        <?php  }   ?>
+            <?php  }   ?>
             </table>
         </div>
     </div>

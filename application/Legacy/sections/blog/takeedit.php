@@ -12,27 +12,33 @@ $Validate->SetFields('body', '1', 'desc', 'Description', array('regex' => $white
 
 $err = $Validate->ValidateForm($_POST, $Text); // Validate the form
 
-if (!$err && !$Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']), false)) {
+if (!$err && !$Text->validate_bbcode($_POST['body'], get_permissions_advtags($LoggedUser['ID']), false)) {
         $err = "There are errors in your bbcode (unclosed tags)";
 }
 
 if ($_POST['thread']>0) {
     $test = $master->db->raw_query("SELECT ForumID FROM forums_topics WHERE ID=:threadid", [':threadid' => $_POST['thread']])->fetchColumn();
-    if (!$test) $err = "No such thread exists!";
+    if (!$test) {
+        $err = "No such thread exists!";
+    }
 }
 
-if ($err) error($err);
+if ($err) {
+    error($err);
+}
 
-$master->db->raw_query("UPDATE blog SET Title    = :title,
+$master->db->raw_query(
+    "UPDATE blog SET Title    = :title,
                                         Body     = :body,
                                         ThreadID = :threadid,
                                         Image    = :image
                                   WHERE ID       = :blogid",
-                                        [':title'    => $_POST['title'],
+    [':title'    => $_POST['title'],
                                          ':body'     => $_POST['body'],
                                          ':threadid' => $_POST['thread'],
                                          ':image'    => $_POST['image'],
-                                         ':blogid'   => $_POST['blogid']]);
+    ':blogid'   => $_POST['blogid']]
+);
 
 $master->cache->delete_value(strtolower($blogSection));
 $master->cache->delete_value('feed_blog');

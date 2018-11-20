@@ -5,7 +5,8 @@ use Luminance\Core\Master;
 use Luminance\Core\Service;
 use Luminance\Core\Entity;
 
-class Cache extends Service {
+class Cache extends Service
+{
     public $CacheHits  = array();
     public $CacheTimes = array();
     public $MemcacheDBArray = array();
@@ -24,7 +25,8 @@ class Cache extends Service {
 
     public $CanClear = false;
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
         $host = $master->settings->memcached->host;
         $port = $master->settings->memcached->port;
@@ -55,7 +57,8 @@ class Cache extends Service {
         }
     }
 
-    public function __call($func, $params) {
+    public function __call($func, $params)
+    {
         if (method_exists($this->Memcached, $func)) {
             return call_user_func_array([$this->Memcached, $func], (array)$params);
         } else {
@@ -63,25 +66,30 @@ class Cache extends Service {
         }
     }
 
-    public function disable() {
+    public function disable()
+    {
         $this->enable = false;
     }
 
-    public function enable() {
+    public function enable()
+    {
         if (!is_null($this->Memcached)) {
             $this->enable = true;
         }
     }
 
-    public function enable_debug() {
+    public function enable_debug()
+    {
         $this->enable_debug = true;
     }
 
-    public function disable_debug() {
+    public function disable_debug()
+    {
         $this->enable_debug = false;
     }
 
-    public function getStats($args = null) {
+    public function getStats($args = null)
+    {
         $stats = $this->Memcached->getStats($args);
         if (is_subclass_of($this, '\Memcached')) {
             $servers = array_keys($stats);
@@ -94,15 +102,19 @@ class Cache extends Service {
 
     // Allows us to set an expiration on otherwise perminantly cache'd values
     // Useful for disabled users, locked threads, basically reducing ram usage
-    public function expire_value($Key, $Duration = 2592000) {
+    public function expire_value($Key, $Duration = 2592000)
+    {
         $StartTime=microtime(true);
         $this->Memcached->set($Key, @$this->Memcached->get($Key), $Duration);
         $this->Time+=(microtime(true)-$StartTime)*1000;
     }
 
     // Wrapper for Memcache::set, with the zlib option removed and default duration of 30 days
-    public function cache_value($Key, $Value, $Duration = 2592000) {
-        if (!$this->enable) return;
+    public function cache_value($Key, $Value, $Duration = 2592000)
+    {
+        if (!$this->enable) {
+            return;
+        }
         $StartTime=microtime(true);
         if (empty($Key)) {
             //trigger_error("Cache insert failed for empty key");
@@ -122,8 +134,11 @@ class Cache extends Service {
         $this->Time+=(microtime(true)-$StartTime)*1000;
     }
 
-    public function replace_value($Key, $Value, $Duration = 2592000) {
-        if (!$this->enable) return;
+    public function replace_value($Key, $Value, $Duration = 2592000)
+    {
+        if (!$this->enable) {
+            return;
+        }
         $StartTime=microtime(true);
 
         // Memcached uses only 3 parameters (no flag)
@@ -136,8 +151,11 @@ class Cache extends Service {
         $this->Time+=(microtime(true)-$StartTime)*1000;
     }
 
-    public function get_value($Key, $NoCache = false) {
-        if (!$this->enable) return;
+    public function get_value($Key, $NoCache = false)
+    {
+        if (!$this->enable) {
+            return;
+        }
         $StartTime=microtime(true);
         if (empty($Key)) {
             trigger_error("Cache retrieval failed for empty key");
@@ -192,8 +210,11 @@ class Cache extends Service {
     }
 
     // Wrapper for Memcache::delete. For a reason, see above.
-    public function delete_value($Key) {
-        if (!$this->enable) return;
+    public function delete_value($Key)
+    {
+        if (!$this->enable) {
+            return;
+        }
         $StartTime=microtime(true);
         @$this->Memcached->delete($Key);
         $this->Time+=(microtime(true)-$StartTime)*1000;
@@ -201,8 +222,11 @@ class Cache extends Service {
 
     //---------- memcachedb functions ----------//
 
-    public function begin_transaction($Key) {
-        if (!$this->enable) return;
+    public function begin_transaction($Key)
+    {
+        if (!$this->enable) {
+            return;
+        }
         $Value = @$this->Memcached->get($Key);
         if (!is_array($Value)) {
             $this->InTransaction = false;
@@ -218,15 +242,21 @@ class Cache extends Service {
         return true;
     }
 
-    public function cancel_transaction() {
-        if (!$this->enable) return;
+    public function cancel_transaction()
+    {
+        if (!$this->enable) {
+            return;
+        }
         $this->InTransaction = false;
         $this->MemcacheDBKey = array();
         $this->MemcacheDBKey = '';
     }
 
-    public function commit_transaction($Time = 2592000) {
-        if (!$this->enable) return;
+    public function commit_transaction($Time = 2592000)
+    {
+        if (!$this->enable) {
+            return;
+        }
         if (!$this->InTransaction) {
             return false;
         }
@@ -235,8 +265,11 @@ class Cache extends Service {
     }
 
     // Updates multiple rows in an array
-    public function update_transaction($Rows, $Values) {
-        if (!$this->enable) return;
+    public function update_transaction($Rows, $Values)
+    {
+        if (!$this->enable) {
+            return;
+        }
         if (!$this->InTransaction) {
             return false;
         }
@@ -257,8 +290,11 @@ class Cache extends Service {
 
     // Updates multiple values in a single row in an array
     // $Values must be an associative array with key:value pairs like in the array we're updating
-    public function update_row($Row, $Values) {
-        if (!$this->enable) return;
+    public function update_row($Row, $Values)
+    {
+        if (!$this->enable) {
+            return;
+        }
         if (!$this->InTransaction) {
             return false;
         }
@@ -294,8 +330,11 @@ class Cache extends Service {
 
     // Increments multiple values in a single row in an array
     // $Values must be an associative array with key:value pairs like in the array we're updating
-    public function increment_row($Row, $Values) {
-        if (!$this->enable) return;
+    public function increment_row($Row, $Values)
+    {
+        if (!$this->enable) {
+            return;
+        }
         if (!$this->InTransaction) {
             return false;
         }
@@ -321,8 +360,11 @@ class Cache extends Service {
     }
 
     // Insert a value at the beginning of the array
-    public function insert_front($Key, $Value) {
-        if (!$this->enable) return;
+    public function insert_front($Key, $Value)
+    {
+        if (!$this->enable) {
+            return;
+        }
         if (!$this->InTransaction) {
             return false;
         }
@@ -334,8 +376,11 @@ class Cache extends Service {
     }
 
     // Insert a value at the end of the array
-    public function insert_back($Key, $Value) {
-        if (!$this->enable) return;
+    public function insert_back($Key, $Value)
+    {
+        if (!$this->enable) {
+            return;
+        }
         if (!$this->InTransaction) {
             return false;
         }
@@ -346,8 +391,11 @@ class Cache extends Service {
         }
     }
 
-    public function insert($Key, $Value) {
-        if (!$this->enable) return;
+    public function insert($Key, $Value)
+    {
+        if (!$this->enable) {
+            return;
+        }
         if (!$this->InTransaction) {
             return false;
         }
@@ -358,8 +406,11 @@ class Cache extends Service {
         }
     }
 
-    public function delete_row($Row) {
-        if (!$this->enable) return;
+    public function delete_row($Row)
+    {
+        if (!$this->enable) {
+            return;
+        }
         if (!$this->InTransaction) {
             return false;
         }
@@ -369,8 +420,11 @@ class Cache extends Service {
         unset($this->MemcacheDBArray[$Row]);
     }
 
-    public function update($Key, $Rows, $Values, $Time = 2592000) {
-        if (!$this->enable) return;
+    public function update($Key, $Rows, $Values, $Time = 2592000)
+    {
+        if (!$this->enable) {
+            return;
+        }
         if (!$this->InTransaction) {
             $this->begin_transaction($Key);
             $this->update_transaction($Rows, $Values);

@@ -32,10 +32,12 @@ if (is_number($RequestID) && is_number($VoterID)) {
         $DB->query("DELETE FROM requests_comments WHERE RequestID = ".$RequestID);
         $DB->query("DELETE FROM requests_tags WHERE RequestID = ".$RequestID);
         if ($UploaderID != $LoggedUser['ID']) {
-            send_pm($UploaderID,
-                    0,
-                    db_string("A request you created has been deleted"),
-                    db_string("The request '".$Title."' was deleted (last vote removed) by [url=/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url]\n\nReason: ".$_POST['reason']));
+            send_pm(
+                $UploaderID,
+                0,
+                db_string("A request you created has been deleted"),
+                db_string("The request '".$Title."' was deleted (last vote removed) by [url=/user.php?id=".$LoggedUser['ID']."]".$LoggedUser['Username']."[/url]\n\nReason: ".$_POST['reason'])
+            );
         }
         write_log("Request $RequestID ($Title) was deleted (last vote removed) by ".$LoggedUser['Username']." for the reason: ".$_POST['reason']);
     }
@@ -52,8 +54,6 @@ if (is_number($RequestID) && is_number($VoterID)) {
     } else {
         header("Location: requests.php?action=view&id=".$RequestID);
     }
-
 } else {
     error(404);
 }
-?>

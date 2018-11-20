@@ -54,7 +54,8 @@ foreach ($IPs as $Index => &$IP) {
         continue;
     }
 
-    $Query = $master->db->raw_query("SELECT
+    $Query = $master->db->raw_query(
+        "SELECT
         h1.IP,
         h1.StartTime,
         h1.EndTime,
@@ -66,7 +67,8 @@ foreach ($IPs as $Index => &$IP) {
         WHERE h1.UserID!= :UserID AND h1.IP = :IP
         GROUP BY h1.IP, h1.StartTime, h1.UserID
         ORDER BY h1.StartTime DESC LIMIT 50",
-        [$UserID, $CurrentIP]);
+        [$UserID, $CurrentIP]
+    );
 
     $CurrentDupes = $Query->fetchAll(\PDO::FETCH_ASSOC);
 
@@ -104,7 +106,7 @@ unset($IP);
 
 // Show only IPs with dupes
 if ($UsersOnly === 1) {
-    $IPs = array_filter($IPs, function($IP){
+    $IPs = array_filter($IPs, function ($IP) {
         return $IP['HasDupes'];
     });
 }
@@ -130,14 +132,14 @@ show_header('IP history for '.display_str($Username));
                 <td style="width:20%">Ended</td>
                 <td>Elapsed</td>
             </tr>
-            <?php foreach($IPs as $Index => $IP): ?>
+            <?php foreach ($IPs as $Index => $IP) : ?>
                 <tr class="rowa">
                     <td><?= $IP['Html']; ?></td>
                     <td><?= time_diff($IP['StartTime']) ?></td>
                     <td><?= time_diff($IP['EndTime']) ?></td>
                     <td><?= time_diff(strtotime($IP['StartTime']), strtotime($IP['EndTime'])) ?></td>
                 </tr>
-                <?php foreach($Dupes[$IP['IP']] as $Dupe): ?>
+                <?php foreach ($Dupes[$IP['IP']] as $Dupe) : ?>
                     <tr class="rowb <?= ($IP['DupesCount'] > 10 ? 'hidden' : '') ?>" data-name="<?= $Index ?>">
                         <td>&nbsp;&#187;&nbsp;<?= format_username($Dupe['UserID'], $Dupe['Username'], false, '0000-00-00 00:00:00', $Dupe['Enabled']) ?></td>
                         <td><?= time_diff($Dupe['StartTime']) ?></td>

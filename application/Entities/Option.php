@@ -3,7 +3,8 @@ namespace Luminance\Entities;
 
 use Luminance\Core\Entity;
 
-class Option extends Entity {
+class Option extends Entity
+{
 
     public static $table = 'options';
 

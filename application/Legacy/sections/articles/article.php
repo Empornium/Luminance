@@ -14,7 +14,9 @@ $Body = replace_special_tags($Body);
 
 if ($MinClass>0) { // check permissions
         // should there be a way for FLS to see these... perm setting maybe?
-    if ( $StaffClass < $MinClass ) error(403);
+    if ($StaffClass < $MinClass) {
+        error(403);
+    }
 }
 
 $Articles = $Cache->get_value("articles_$Category");
@@ -40,7 +42,7 @@ if ($TopArticles===false) {
 $PageTitle = empty($LoggedUser['ShortTitles'])?"{$ArticleCats[$Category]} > $Title":$Title ;
 $SubTitle = $ArticleCats[$Category] ." Articles";
 
-show_header( $PageTitle, 'browse,overlib,bbcode');
+show_header($PageTitle, 'browse,overlib,bbcode');
 ?>
 
 <div class="thin">

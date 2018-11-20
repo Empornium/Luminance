@@ -1,14 +1,14 @@
 <?php
 authorize();
-if (!isset($_GET['forumid']) || ($_GET['forumid']!='all' && !is_number($_GET['forumid']))) { error(403); }
+if (!isset($_GET['forumid']) || ($_GET['forumid']!='all' && !is_number($_GET['forumid']))) {
+    error(403);
+}
 
 if ($_GET['forumid']=='all') {
     $DB->query("UPDATE users_info SET CatchupTime='".sqltime()."' WHERE UserID=$LoggedUser[ID]");
     $master->repos->users->uncache($LoggedUser['ID']);
     header('Location: forums.php');
-
 } else {
-
     $DB->query("INSERT INTO forums_last_read_topics (UserID, TopicID, PostID)
                 SELECT '$LoggedUser[ID]', t.ID, t.LastPostID
                 FROM forums_topics AS t

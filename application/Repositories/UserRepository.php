@@ -6,11 +6,13 @@ use Luminance\Entities\User;
 
 use Luminance\Errors\InputError;
 
-class UserRepository extends Repository {
+class UserRepository extends Repository
+{
 
     protected $entityName = 'User';
 
-    protected function post_load($ID, $user) {
+    protected function post_load($ID, $user)
+    {
         // Stop here if we haven't received a valid user (e.g. System)
         if ($user === null) {
             return null;
@@ -35,7 +37,9 @@ class UserRepository extends Repository {
             $user_legacy = $this->db->raw_query("SELECT * FROM users_main AS um LEFT JOIN users_info AS ui ON um.ID = ui.UserID WHERE um.ID = ?", [$ID])->fetch(\PDO::FETCH_ASSOC);
 
             // User has no legacy content
-            if ($this->db->found_rows() == 0) return $user;
+            if ($this->db->found_rows() == 0) {
+                return $user;
+            }
 
             // Fill in some extra bits
             $user_legacy['Class'] = $this->db->raw_query("SELECT Level FROM permissions WHERE ID = ?", [$user_legacy['PermissionID']])->fetch(\PDO::FETCH_COLUMN);
@@ -73,7 +77,8 @@ class UserRepository extends Repository {
         return $user;
     }
 
-    public function uncache($ID) {
+    public function uncache($ID)
+    {
         parent::uncache($ID);
         $this->cache->delete_value('_entity_User_legacy_' . $ID);
         $this->cache->delete_value('enabled_' . $ID);
@@ -82,12 +87,14 @@ class UserRepository extends Repository {
         $this->cache->delete_value('user_stats_' . $ID);
     }
 
-    public function get_by_username($Username) {
+    public function get_by_username($Username)
+    {
         $user = $this->get('`Username` = ?', [$Username]);
         return $user;
     }
 
-    public function isAvailable($username) {
+    public function isAvailable($username)
+    {
         $user = $this->get_by_username($username);
         if ($user) {
             return false;
@@ -101,9 +108,11 @@ class UserRepository extends Repository {
         return true;
     }
 
-    public function checkAvailable($username) {
-        if (!$this->isAvailable($username))
+    public function checkAvailable($username)
+    {
+        if (!$this->isAvailable($username)) {
             throw new InputError("That username is not available.");
+        }
     }
 
     /**
@@ -112,7 +121,8 @@ class UserRepository extends Repository {
      * @param array $ids
      * @return array
      */
-    public function findIn(array $ids) {
+    public function findIn(array $ids)
+    {
         // Invalid SQL if ID list is empty
         if (empty($ids)) {
             return null;
@@ -137,7 +147,8 @@ class UserRepository extends Repository {
      * @param int $userID
      * @return array
      */
-    public function invitedBy($userID, $page = 1) {
+    public function invitedBy($userID, $page = 1)
+    {
         list($page, $limit) = page_limit(50);
         $ids = $this->db->raw_query("SELECT SQL_CALC_FOUND_ROWS UserID FROM users_info WHERE Inviter = ? ORDER BY UserID DESC LIMIT {$limit}", [$userID])->fetchAll(\PDO::FETCH_COLUMN);
         $results = $this->db->found_rows();

@@ -14,7 +14,8 @@ use Luminance\Errors\UserError;
  *
  * @package Luminance\Services
  */
-class Security extends Service {
+class Security extends Service
+{
     protected static $useRepositories = [
         'ips'         => 'IPRepository',
         'log'         => 'SecurityLogRepository',
@@ -34,7 +35,8 @@ class Security extends Service {
      * @param $userID
      * @return mixed
      */
-    public function getLogs($userID) {
+    public function getLogs($userID)
+    {
         $logs = $this->log->find('UserID = :userID', [':userID'=> $userID]);
         foreach ($logs as $log) {
             // Get IP infos
@@ -52,7 +54,8 @@ class Security extends Service {
      * @param $password
      * @throws UserError
      */
-    public function checkPasswordStrength($password) {
+    public function checkPasswordStrength($password)
+    {
         // Make sure the password has the minimum required length
         if (mb_strlen($password) < $this->options->MinPasswordLength) {
             throw new UserError("This password is too short. It must be at least {$this->options->MinPasswordLength} characters.");
@@ -80,7 +83,8 @@ class Security extends Service {
      * @param $password
      * @return bool
      */
-    public function passwordIsPwned($password, $user) {
+    public function passwordIsPwned($password, $user)
+    {
         // No need to check if the option is disabled
         if (!$this->options->HaveIBeenPwned) {
             return false;
@@ -110,7 +114,8 @@ class Security extends Service {
      * @param IP $ip
      * @return bool
      */
-    public function checkDisabledHits(User $user, IP $ip) {
+    public function checkDisabledHits(User $user, IP $ip)
+    {
         if (!$this->options->DisabledHits) {
             return false;
         }

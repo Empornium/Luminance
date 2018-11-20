@@ -1,7 +1,7 @@
 <?php
 authorize();
 
-if (empty($_POST['id']) || !is_number($_POST['id']) || empty($_POST['type']) ) {
+if (empty($_POST['id']) || !is_number($_POST['id']) || empty($_POST['type'])) {
     error(0);
 }
 
@@ -10,16 +10,16 @@ if ($_POST['type'] != "request_update" && empty($_POST['reason'])) {
 }
 
 include(SERVER_ROOT.'/Legacy/sections/reports/array.php');
-switch($_GET['type']) {
-    case 'posthistory' :
+switch ($_GET['type']) {
+    case 'posthistory':
         $Short = 'post';
         break;
 
-    case 'torrents_commenthistory' :
+    case 'torrents_commenthistory':
         $Short = 'torrents_comment';
         break;
 
-    default :
+    default:
         $Short = $_GET['type'];
         break;
 }
@@ -36,23 +36,23 @@ if ($Short == "request_update") {
     $Reason = $_POST['reason'];
 }
 $Text = new Luminance\Legacy\Text;
-$Text->validate_bbcode($Reason,  get_permissions_advtags($LoggedUser['ID']));
+$Text->validate_bbcode($Reason, get_permissions_advtags($LoggedUser['ID']));
 
 switch ($Short) {
-    case "request" :
-    case "request_update" :
+    case "request":
+    case "request_update":
         $Link = 'requests.php?action=view&id='.$ID;
         break;
-    case "user" :
+    case "user":
         $Link = 'user.php?id='.$ID;
         break;
-    case "collage" :
+    case "collage":
         $Link = 'collages.php?id='.$ID;
         break;
-    case "thread" :
+    case "thread":
         $Link = 'forums.php?action=viewthread&threadid='.$ID;
         break;
-    case "post" :
+    case "post":
         $DB->query("SELECT p.ID, p.TopicID, (SELECT COUNT(ID) FROM forums_posts WHERE forums_posts.TopicID = p.TopicID AND forums_posts.ID<=p.ID) AS PostNum FROM forums_posts AS p WHERE ID=".$ID);
         list($PostID,$TopicID,$PostNum) = $DB->next_record();
         if ($_GET['type'] == 'post') {
@@ -61,13 +61,13 @@ switch ($Short) {
             $Link = "userhistory.php?action=posts&group=0&showunread=0#post".$PostID;
         }
         break;
-    case "requests_comment" :
+    case "requests_comment":
         $DB->query("SELECT rc.RequestID, rc.Body, (SELECT COUNT(ID) FROM requests_comments WHERE ID <= ".$ID." AND requests_comments.RequestID = rc.RequestID) AS CommentNum FROM requests_comments AS rc WHERE ID=".$ID);
         list($RequestID, $Body, $PostNum) = $DB->next_record();
         $PageNum = ceil($PostNum / TORRENT_COMMENTS_PER_PAGE);
         $Link = "requests.php?action=view&id=".$RequestID."&page=".$PageNum."#post".$ID."";
         break;
-    case "torrents_comment" :
+    case "torrents_comment":
         $DB->query("SELECT tc.GroupID, tc.Body, (SELECT COUNT(ID) FROM torrents_comments WHERE ID <= ".$ID." AND torrents_comments.GroupID = tc.GroupID) AS CommentNum FROM torrents_comments AS tc WHERE ID=".$ID);
         list($GroupID, $Body, $PostNum) = $DB->next_record();
         $PageNum = ceil($PostNum / TORRENT_COMMENTS_PER_PAGE);
@@ -77,7 +77,7 @@ switch ($Short) {
             $Link = "userhistory.php?action=comments#post".$ID;
         }
         break;
-    case "collages_comment" :
+    case "collages_comment":
         $DB->query("SELECT cc.CollageID, cc.Body, (SELECT COUNT(ID) FROM collages_comments WHERE ID <= ".$ID." AND collages_comments.CollageID = cc.CollageID) AS CommentNum FROM collages_comments AS cc WHERE ID=".$ID);
         list($CollageID, $Body, $PostNum) = $DB->next_record();
         $PerPage = POSTS_PER_PAGE;

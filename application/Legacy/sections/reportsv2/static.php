@@ -38,22 +38,22 @@ $Order = "ORDER BY r.ReportedTime ASC";
 
 if (!$ID) {
     switch ($View) {
-        case "resolved" :
+        case "resolved":
             $Title = "All the old smelly reports";
             $Where = "WHERE r.Status = 'Resolved'";
             $Order = "ORDER BY r.LastChangeTime DESC";
             break;
-        case "unauto" :
+        case "unauto":
             $Title = "New reports (unassigned)";
             $Where = "WHERE r.Status = 'New'";
             break;
-        default :
+        default:
             error(404);
             break;
     }
 } else {
     switch ($View) {
-        case "staff" :
+        case "staff":
             $DB->query("SELECT Username FROM users_main WHERE ID=".$ID);
             list($Username) = $DB->next_record();
             if ($Username) {
@@ -63,7 +63,7 @@ if (!$ID) {
             }
             $Where = "WHERE r.Status = 'InProgress' AND r.ResolverID = ".$ID;
             break;
-        case "resolver" :
+        case "resolver":
             $DB->query("SELECT Username FROM users_main WHERE ID=".$ID);
             list($Username) = $DB->next_record();
             if ($Username) {
@@ -74,19 +74,19 @@ if (!$ID) {
             $Where = "WHERE r.Status = 'Resolved' AND r.ResolverID = ".$ID;
             $Order = "ORDER BY r.LastChangeTime DESC";
             break;
-        case "group" :
+        case "group":
             $Title = "Non resolved reports for the group ".$ID;
             $Where = "WHERE r.Status != 'Resolved' AND tg.ID = ".$ID;
             break;
-        case "torrent" :
+        case "torrent":
             $Title = "All reports for the torrent  ".$ID;
             $Where = "WHERE r.TorrentID = ".$ID;
             break;
-        case "report" :
+        case "report":
             $Title = "Seeing resolution of report ".$ID;
             $Where = "WHERE r.ID = ".$ID;
             break;
-        case "reporter" :
+        case "reporter":
             $DB->query("SELECT Username FROM users_main WHERE ID=".$ID);
             list($Username) = $DB->next_record();
             if ($Username) {
@@ -97,7 +97,7 @@ if (!$ID) {
             $Where = "WHERE r.ReporterID = ".$ID;
             $Order = "ORDER BY r.ReportedTime DESC";
             break;
-        case "uploader" :
+        case "uploader":
             $DB->query("SELECT Username FROM users_main WHERE ID=".$ID);
             list($Username) = $DB->next_record();
             if ($Username) {
@@ -112,7 +112,7 @@ if (!$ID) {
             $Where = "WHERE r.Status = 'New' AND r.Type = '".$ID."'";
             break;
             break;
-        default :
+        default:
             error(404);
             break;
     }
@@ -158,7 +158,7 @@ $Reports = $DB->to_array();
 
 $DB->query('SELECT FOUND_ROWS()');
 list($Results) = $DB->next_record();
-$PageLinks=get_pages($Page,$Results,REPORTS_PER_PAGE,11);
+$PageLinks=get_pages($Page, $Results, REPORTS_PER_PAGE, 11);
 
 show_header('Reports V2!', 'reportsv2,bbcode,inbox,reports,jquery');
 include 'header.php';
@@ -171,7 +171,9 @@ include 'header.php';
         <span title="Resolves *all* checked reports with their respective resolutions"><input type="button" onclick="MultiResolve();" value="Multi-Resolve" /></span>
         <span title="Assigns all of the reports on the page to you!"><input type="button" onclick="Grab();" value="Grab All" /></span>
     <?php  } ?>
-    <?php  if ($View == "staff" && $LoggedUser['ID'] == $ID) { ?>| <span title="Un-In Progress all the reports currently displayed"><input type="button" onclick="GiveBack();" value="Give back all" /></span><?php  } ?>
+    <?php  if ($View == "staff" && $LoggedUser['ID'] == $ID) {
+?>| <span title="Un-In Progress all the reports currently displayed"><input type="button" onclick="GiveBack();" value="Give back all" /></span><?php
+} ?>
 </div>
 <br />
 <div class="linkbox">
@@ -194,7 +196,6 @@ if (count($Reports) == 0) {
 <?php
 } else {
     foreach ($Reports as $Report) {
-
         list($ReportID, $ReporterID, $ReporterName, $TorrentID, $Type, $UserComment, $ResolverID, $ResolverName, $Status, $ReportedTime, $LastChangeTime,
             $ModComment, $Tracks, $Images, $ExtraIDs, $Links, $LogMessage, $GroupName, $GroupID, $Time,
             $Size, $UploaderID, $UploaderName, $Filecount) = display_array($Report, array("ModComment"));
@@ -219,13 +220,13 @@ if (count($Reports) == 0) {
     </div>
 <?php
         } else {
-                        if (array_key_exists($Type, $Types)) {
-                              $ReportType = $Types[$Type];
-                        } else {
-                              //There was a type but it wasn't an option!
-                              $Type = 'other';
-                              $ReportType = $Types['other'];
-                        }
+            if (array_key_exists($Type, $Types)) {
+                $ReportType = $Types[$Type];
+            } else {
+      //There was a type but it wasn't an option!
+                $Type = 'other';
+                $ReportType = $Types['other'];
+            }
                         $RawName = $GroupName." (".get_size($Size).")";
                         $LinkName = "<a href='torrents.php?id=$GroupID'>$GroupName</a> (".get_size($Size).")";
                         $BBName = "[url=torrents.php?id=$GroupID]$GroupName"."[/url] (".get_size($Size).")";
@@ -255,7 +256,7 @@ if (count($Reports) == 0) {
                         <tr>
                             <td class="label"><a href="/reportsv2.php?view=report&amp;id=<?=$ReportID?>">Reported </a>Torrent:</td>
                             <td colspan="4">
-            <?php 	if (!$GroupID) { ?>
+            <?php   if (!$GroupID) { ?>
                                 <a href="/log.php?search=Torrent+<?=$TorrentID?>"><?=$TorrentID?></a> (Deleted)
             <?php   } else {
                                 $PeerInfo = get_peers($TorrentID);
@@ -263,11 +264,10 @@ if (count($Reports) == 0) {
                                 echo $LinkName; ?>
                                 <a href="/torrents.php?action=download&amp;id=<?=$TorrentID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
                                 uploaded by <a href="/user.php?id=<?=$UploaderID?>"><?=$UploaderName?></a> <?=time_diff($Time)?>
-                                &nbsp;(<?=str_plural('file',$Filecount)?>)&nbsp;[ <span title="Seeders"><?=$PeerInfo['Seeders']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="seeders" title="seeders" /></span> | <span title="Leechers"><?=$PeerInfo['Leechers']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="leechers" title="leechers" /></span> ]
+                                &nbsp;(<?=str_plural('file', $Filecount)?>)&nbsp;[ <span title="Seeders"><?=$PeerInfo['Seeders']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="seeders" title="seeders" /></span> | <span title="Leechers"><?=$PeerInfo['Leechers']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="leechers" title="leechers" /></span> ]
                                 &nbsp;[<a href="/torrents.php?action=dupe_check&amp;id=<?=$GroupID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
                                 <br />
-            <?php 	if ($Status != 'Resolved') {
-
+            <?php   if ($Status != 'Resolved') {
                     $DB->query("SELECT r.ID
                                 FROM reportsv2 AS r
                                 LEFT JOIN torrents AS t ON t.ID=r.TorrentID
@@ -275,11 +275,11 @@ if (count($Reports) == 0) {
                                 AND t.GroupID=$GroupID");
                     $GroupOthers = ($DB->record_count() - 1);
 
-                    if ($GroupOthers > 0) { ?>
+                if ($GroupOthers > 0) { ?>
                                 <div style="text-align: right;">
                                     <a href="/reportsv2.php?view=group&amp;id=<?=$GroupID?>">There <?=(($GroupOthers > 1) ? "are $GroupOthers other reports" : "is 1 other report")?> for torrent(s) in this group</a>
                                 </div>
-            <?php  		}
+                <?php       }
 
                     $DB->query("SELECT t.UserID
                                 FROM reportsv2 AS r
@@ -288,11 +288,11 @@ if (count($Reports) == 0) {
                                 AND t.UserID=$UploaderID");
                     $UploaderOthers = ($DB->record_count() - 1);
 
-                    if ($UploaderOthers > 0) { ?>
+                if ($UploaderOthers > 0) { ?>
                                 <div style="text-align: right;">
                                     <a href="/reportsv2.php?view=uploader&amp;id=<?=$UploaderID?>">There <?=(($UploaderOthers > 1) ? "are $UploaderOthers other reports" : "is 1 other report")?> for torrent(s) uploaded by this user</a>
                                 </div>
-            <?php  		}
+                <?php       }
 
                     $DB->query("SELECT DISTINCT req.ID,
                                 req.FillerID,
@@ -306,16 +306,16 @@ if (count($Reports) == 0) {
                                 AND req.TimeFilled > '2010-03-04 02:31:49'
                                 AND req.TorrentID = $TorrentID");
                     $Requests = ($DB->record_count());
-                    if ($Requests > 0) {
-                        while (list($RequestID, $FillerID, $FillerName, $FilledTime) = $DB->next_record()) {
+                if ($Requests > 0) {
+                    while (list($RequestID, $FillerID, $FillerName, $FilledTime) = $DB->next_record()) {
                 ?>
-                                    <div style="text-align: right;">
-                                        <a href="/user.php?id=<?=$FillerID?>"><?=$FillerName?></a> used this torrent to fill <a href="/requests.php?action=view&amp;id=<?=$RequestID?>">this request</a> <?=time_diff($FilledTime)?>
-                                    </div>
-                <?php 		}
-                    }
+                                <div style="text-align: right;">
+                                    <a href="/user.php?id=<?=$FillerID?>"><?=$FillerName?></a> used this torrent to fill <a href="/requests.php?action=view&amp;id=<?=$RequestID?>">this request</a> <?=time_diff($FilledTime)?>
+                                </div>
+                    <?php       }
                 }
-            }
+}
+}
                 ?>
                             </td>
                         </tr>
@@ -334,42 +334,43 @@ if (count($Reports) == 0) {
                         </tr>
             <?php  }
 
-                if ($Links) {
-            ?>
-                        <tr>
-                            <td class="label">Relevant Links:</td>
-                            <td colspan="4">
-            <?php
-                    $Links = explode(" ", $Links);
-                    foreach ($Links as $Link) {
+if ($Links) {
+?>
+<tr>
+<td class="label">Relevant Links:</td>
+<td colspan="4">
+<?php
+$Links = explode(" ", $Links);
+foreach ($Links as $Link) {
+    if ($local_url = $Text->local_url($Link)) {
+        $Link = $local_url;
+    }
+?>
+<a href="<?=$Link?>"><?=$Link?></a>
+<?php
+}
+?>
+</td>
+</tr>
+<?php
+}
 
-                        if ($local_url = $Text->local_url($Link)) {
-                            $Link = $local_url;
-                        }
-            ?>
-                                <a href="<?=$Link?>"><?=$Link?></a>
-            <?php
-                    }
-            ?>
-                            </td>
-                        </tr>
-            <?php
-                }
+if ($ExtraIDs) {
+?>
+<tr>
+<td class="label">Relevant Other Torrents:</td>
+<td colspan="4">
+<input class="hidden" name="extras_id" value="<?=$ExtraIDs?>" />
 
-                if ($ExtraIDs) {
-            ?>
-                        <tr>
-                            <td class="label">Relevant Other Torrents:</td>
-                            <td colspan="4">
-                                <input class="hidden" name="extras_id" value="<?=$ExtraIDs?>" />
+<?php
+$First = true;
+$Extras = explode(" ", $ExtraIDs);
+foreach ($Extras as $ExtraID) {
+    if (!is_number($ExtraID)) {
+        error(0);
+    }
 
-            <?php
-                    $First = true;
-                    $Extras = explode(" ", $ExtraIDs);
-                    foreach ($Extras as $ExtraID) {
-                        if(!is_number($ExtraID)) error(0);
-
-                        $DB->query("SELECT
+    $DB->query("SELECT
                                     tg.Name,
                                     tg.ID,
                                     t.Time,
@@ -383,50 +384,50 @@ if (count($Reports) == 0) {
                                     WHERE t.ID='$ExtraID'
                                     GROUP BY tg.ID");
 
-                        list($ExtraGroupName, $ExtraGroupID, $ExtraTime,
-                            $ExtraSize, $ExtraUploaderID, $ExtraUploaderName, $ExtraFilecount) = display_array($DB->next_record());
+    list($ExtraGroupName, $ExtraGroupID, $ExtraTime,
+    $ExtraSize, $ExtraUploaderID, $ExtraUploaderName, $ExtraFilecount) = display_array($DB->next_record());
 
-                        if ($ExtraGroupName) {
-                            $ExtraLinkName = "<a href='torrents.php?id=$ExtraGroupID'>$ExtraGroupName</a> (". get_size($ExtraSize).")"; // number_format($ExtraSize/(1024*1024), 2)." MB)";
+    if ($ExtraGroupName) {
+        $ExtraLinkName = "<a href='torrents.php?id=$ExtraGroupID'>$ExtraGroupName</a> (". get_size($ExtraSize).")"; // number_format($ExtraSize/(1024*1024), 2)." MB)";
 
-                            $ExtraPeerInfo = get_peers($ExtraID);
-                            echo ($First ? "" : "<br />");
-                            echo $ExtraLinkName;            ?>
-                            <a href="/torrents.php?action=download&amp;id=<?=$ExtraID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
-                            uploaded by <a href="/user.php?id=<?=$ExtraUploaderID?>"><?=$ExtraUploaderName?></a>  <?=time_diff($ExtraTime)?> [<a title="Close this report and create a new dupe report with this torrent as the reported one" href="#" onclick="Switch(<?=$ReportID?>, <?=$ReporterID?>, '<?=urlencode($UserComment)?>', <?=$TorrentID?>, <?=$ExtraID?>); return false;">Switch</a>]
-                            &nbsp;(<?=str_plural('file',$ExtraFilecount)?>)&nbsp;[ <span title="Seeders"><?=$ExtraPeerInfo['Seeders']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="seeders" title="seeders" /></span> | <span title="Leechers"><?=$ExtraPeerInfo['Leechers']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="leechers" title="leechers" /></span> ]
-                            &nbsp;[<a href="/torrents.php?action=dupe_check&amp;id=<?=$ExtraID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
-                <?php
-                            $First = false;
-                        } else {
-?>
-                                <a href="/torrents.php?id=<?=$ExtraID?>">(deleted torrent) #<?=$ExtraID?></a>
+        $ExtraPeerInfo = get_peers($ExtraID);
+        echo ($First ? "" : "<br />");
+        echo $ExtraLinkName;            ?>
+                                <a href="/torrents.php?action=download&amp;id=<?=$ExtraID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
+                                uploaded by <a href="/user.php?id=<?=$ExtraUploaderID?>"><?=$ExtraUploaderName?></a>  <?=time_diff($ExtraTime)?> [<a title="Close this report and create a new dupe report with this torrent as the reported one" href="#" onclick="Switch(<?=$ReportID?>, <?=$ReporterID?>, '<?=urlencode($UserComment)?>', <?=$TorrentID?>, <?=$ExtraID?>); return false;">Switch</a>]
+                                &nbsp;(<?=str_plural('file', $ExtraFilecount)?>)&nbsp;[ <span title="Seeders"><?=$ExtraPeerInfo['Seeders']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="seeders" title="seeders" /></span> | <span title="Leechers"><?=$ExtraPeerInfo['Leechers']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="leechers" title="leechers" /></span> ]
+                                &nbsp;[<a href="/torrents.php?action=dupe_check&amp;id=<?=$ExtraID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
+                    <?php
+                    $First = false;
+    } else {
+    ?>
+    <a href="/torrents.php?id=<?=$ExtraID?>">(deleted torrent) #<?=$ExtraID?></a>
 <?php
-                        }
-                    }
-            ?>
-                            </td>
-                        </tr>
-            <?php
-                }
+    }
+}
+?>
+</td>
+</tr>
+<?php
+}
 
-                if ($Images) {
-            ?>
-                        <tr>
-                            <td class="label">Relevant Images:</td>
-                            <td colspan="4">
-            <?php
-                    $Images = explode(" ", $Images);
-                    foreach ($Images as $Image) {
-            ?>
-                                <img style="max-width: 200px;" onclick="lightbox.init(this,200);" src="<?=$Image?>" alt="<?=$Image?>" />
-            <?php
-                    }
-            ?>
-                            </td>
-                        </tr>
-            <?php
-                }
+if ($Images) {
+?>
+<tr>
+<td class="label">Relevant Images:</td>
+<td colspan="4">
+<?php
+$Images = explode(" ", $Images);
+foreach ($Images as $Image) {
+?>
+<img style="max-width: 200px;" onclick="lightbox.init(this,200);" src="<?=$Image?>" alt="<?=$Image?>" />
+<?php
+}
+?>
+</td>
+</tr>
+<?php
+}
             ?>
                         <tr>
                             <td class="label">User Comment:</td>
@@ -434,110 +435,110 @@ if (count($Reports) == 0) {
                         </tr>
                         <?php  // END REPORTED STUFF :|: BEGIN MOD STUFF ?>
             <?php
-                if ($Status == "InProgress") {
+            if ($Status == "InProgress") {
             ?>
-                        <tr>
-                            <td class="label">In Progress by:</td>
-                            <td colspan="4">
-                                <a href="/user.php?id=<?=$ResolverID?>"><?=$ResolverName?></a>
-                            </td>
-                        </tr>
-            <?php 	}
-                if ($Status != "Resolved") {
+                <tr>
+                    <td class="label">In Progress by:</td>
+                    <td colspan="4">
+                        <a href="/user.php?id=<?=$ResolverID?>"><?=$ResolverName?></a>
+                    </td>
+                </tr>
+            <?php   }
+            if ($Status != "Resolved") {
             ?>
-                        <tr>
-                            <td class="label">Report Comment:</td>
-                            <td colspan="4">
-                                <input type="text" name="comment" id="comment<?=$ReportID?>" size="45" value="<?=$ModComment?>" />
-                                <input type="button" value="Update now" onclick="UpdateComment(<?=$ReportID?>)" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="label">
-                                <a href="javascript:Load('<?=$ReportID?>')" title="Set back to <?=$ReportType['title']?>">Resolve Type</a>
-                            </td>
-                            <td colspan="4">
-                                <select name="resolve_type" id="resolve_type<?=$ReportID?>" onchange="ChangeResolve('<?=$ReportID?>')">
+                <tr>
+                    <td class="label">Report Comment:</td>
+                    <td colspan="4">
+                        <input type="text" name="comment" id="comment<?=$ReportID?>" size="45" value="<?=$ModComment?>" />
+                        <input type="button" value="Update now" onclick="UpdateComment(<?=$ReportID?>)" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">
+                        <a href="javascript:Load('<?=$ReportID?>')" title="Set back to <?=$ReportType['title']?>">Resolve Type</a>
+                    </td>
+                    <td colspan="4">
+                        <select name="resolve_type" id="resolve_type<?=$ReportID?>" onchange="ChangeResolve('<?=$ReportID?>')">
     <?php
-                            $TypeList = $Types;
-                            $Priorities = array();
-                            foreach ($TypeList as $Key => $Value) {
-                                $Priorities[$Key] = $Value['priority'];
-                            }
-                            array_multisort($Priorities, SORT_ASC, $TypeList);
+                    $TypeList = $Types;
+                    $Priorities = array();
+    foreach ($TypeList as $Key => $Value) {
+        $Priorities[$Key] = $Value['priority'];
+    }
+                    array_multisort($Priorities, SORT_ASC, $TypeList);
 
-                            foreach ($TypeList as $Type => $Data) {
+    foreach ($TypeList as $Type => $Data) {
     ?>
-                                    <option value="<?=$Type?>"><?=$Data['title']?></option>
+<option value="<?=$Type?>"><?=$Data['title']?></option>
     <?php                   } ?>
-                                </select>
-                                <span title="Change report type / resolve action">
-                                    <input type="button" name="update_resolve" id="update_resolve<?=$ReportID?>" value="Change report type" onclick="UpdateResolve(<?=$ReportID?>)" />
-                                </span>
-                            </td>
-                        </tr>
-                        <tr class="spacespans">
-                            <td class="label">Resolve Options</td>
-                            <td colspan="4">
-                                <span id="options<?=$ReportID?>" class="">
+                        </select>
+                        <span title="Change report type / resolve action">
+                            <input type="button" name="update_resolve" id="update_resolve<?=$ReportID?>" value="Change report type" onclick="UpdateResolve(<?=$ReportID?>)" />
+                        </span>
+                    </td>
+                </tr>
+                <tr class="spacespans">
+                    <td class="label">Resolve Options</td>
+                    <td colspan="4">
+                        <span id="options<?=$ReportID?>" class="">
 <?php  if (check_perms('users_mod')) { ?>
                                     <span title="Delete Torrent?">
                                         <strong>Delete</strong>
                                         <input type="checkbox" name="delete" id="delete<?=$ReportID?>" onchange="UpdateUFLOption('<?=$ReportID?>');" />
                                     </span>
 <?php  } ?>
-                                    <span title="Warning length in weeks">
-                                        <strong>Warning</strong>
-                                        <select name="warning" id="warning<?=$ReportID?>">
-                                            <option value="0">none</option>
-                                            <option value="1">1 week</option>
+                            <span title="Warning length in weeks">
+                                <strong>Warning</strong>
+                                <select name="warning" id="warning<?=$ReportID?>">
+                                    <option value="0">none</option>
+                                    <option value="1">1 week</option>
 <?php                               for ($i = 2; $i < 9; $i++) {  ?>
                                             <option value="<?=$i?>"><?=$i?> weeks</option>
 <?php                               }       ?>
-                                        </select>
-                                    </span>
-                                    <span title="Remove upload privileges?">
-                                        <strong>Disable Upload</strong>
-                                        <input type="checkbox" name="upload" id="upload<?=$ReportID?>"/>
-                                    </span>
-                                    <span title="Pay bounty to reporter (<?=$ReporterName?>)">
-                                        <strong>Pay Bounty <span id="bounty_amount<?=$ReportID?>">(<?=$ReportType['resolve_options']['bounty']?>)</span></strong>
-                                        <input type="checkbox" name="bounty" id="bounty<?=$ReportID?>"/>
-                                    </span>
-                                    <span title="Refund UFL?">
-                                        <strong>Refund UFL</strong>
-                                        <input type="checkbox" name="refundufl" id="refundufl<?=$ReportID?>"/>
-                                    </span>
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="label">
-                                PM
-                                <select name="pm_type" id="pm_type<?=$ReportID?>">
-                                    <option value="Uploader">Uploader</option>
-                                    <option value="Reporter">Reporter</option>
                                 </select>
-                            </td>
-                            <td colspan="4">A PM is automatically generated for the uploader (and if a bounty is paid to the reporter). Any text here is appended to the uploaders auto PM unless using 'Send Now' to immediately send a message.<br />
-                                <blockquote><strong>uploader pm text:</strong><br/><span id="pm_message<?=$ReportID?>"><?=$ReportType['resolve_options']['pm']?></span></blockquote>
-                                <span title="Uploader: Appended to the regular message unless using send now. Reporter: Must be used with send now">
-                                    <textarea name="uploader_pm" id="uploader_pm<?=$ReportID?>" cols="50" rows="1"></textarea>
-                                </span>
-                                <input type="button" value="Send Now" onclick="SendPM(<?=$ReportID?>)" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="label">SiteLog Message:</td>
-                            <td colspan="2">
-                                <input type="text" name="log_message" id="log_message<?=$ReportID?>" class="long" <?php  if ($ExtraIDs) {
-                                            $Extras = explode(" ", $ExtraIDs);
-                                            $Value = "";
-                                            foreach ($Extras as $ExtraID) {
-                                                $Value .= "/details.php?id={$ExtraID} ";
-                                            }
-                                            echo 'value="'.trim($Value).'"';
-                                        } ?>/>
+                            </span>
+                            <span title="Remove upload privileges?">
+                                <strong>Disable Upload</strong>
+                                <input type="checkbox" name="upload" id="upload<?=$ReportID?>"/>
+                            </span>
+                            <span title="Pay bounty to reporter (<?=$ReporterName?>)">
+                                <strong>Pay Bounty <span id="bounty_amount<?=$ReportID?>">(<?=$ReportType['resolve_options']['bounty']?>)</span></strong>
+                                <input type="checkbox" name="bounty" id="bounty<?=$ReportID?>"/>
+                            </span>
+                            <span title="Refund UFL?">
+                                <strong>Refund UFL</strong>
+                                <input type="checkbox" name="refundufl" id="refundufl<?=$ReportID?>"/>
+                            </span>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">
+                        PM
+                        <select name="pm_type" id="pm_type<?=$ReportID?>">
+                            <option value="Uploader">Uploader</option>
+                            <option value="Reporter">Reporter</option>
+                        </select>
+                    </td>
+                    <td colspan="4">A PM is automatically generated for the uploader (and if a bounty is paid to the reporter). Any text here is appended to the uploaders auto PM unless using 'Send Now' to immediately send a message.<br />
+                        <blockquote><strong>uploader pm text:</strong><br/><span id="pm_message<?=$ReportID?>"><?=$ReportType['resolve_options']['pm']?></span></blockquote>
+                        <span title="Uploader: Appended to the regular message unless using send now. Reporter: Must be used with send now">
+                            <textarea name="uploader_pm" id="uploader_pm<?=$ReportID?>" cols="50" rows="1"></textarea>
+                        </span>
+                        <input type="button" value="Send Now" onclick="SendPM(<?=$ReportID?>)" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">SiteLog Message:</td>
+                    <td colspan="2">
+                        <input type="text" name="log_message" id="log_message<?=$ReportID?>" class="long" <?php  if ($ExtraIDs) {
+                                    $Extras = explode(" ", $ExtraIDs);
+                                    $Value = "";
+                            foreach ($Extras as $ExtraID) {
+                                $Value .= "/details.php?id={$ExtraID} ";
+                            }
+                                    echo 'value="'.trim($Value).'"';
+} ?>/>
                             </td>
                             <td class="label">Extra Staff Notes:</td>
                             <td>
@@ -548,20 +549,20 @@ if (count($Reports) == 0) {
                             <td colspan="5" style="text-align: center;">
                                 <input type="button" value="Invalid Report" onclick="Dismiss(<?=$ReportID?>);" title="Dismiss this as an invalid Report" />
                                 <input type="button" value="Report resolved manually" onclick="ManualResolve(<?=$ReportID?>);" title="Set status to Resolved but take no automatic action" />
-            <?php 		if ($Status == "InProgress" && $LoggedUser['ID'] == $ResolverID) { ?>
+            <?php       if ($Status == "InProgress" && $LoggedUser['ID'] == $ResolverID) { ?>
                                 | <input type="button" value="Give back" onclick="GiveBack(<?=$ReportID?>);" />
-            <?php  		} else { ?>
+            <?php       } else { ?>
                                 | <input id="grab<?=$ReportID?>" type="button" value="Grab!" onclick="Grab(<?=$ReportID?>);" />
-            <?php 		}	?>
+            <?php       }   ?>
                                 | <span  title="If checked then include when multi-resolving">Multi-Resolve <input type="checkbox" name="multi" id="multi<?=$ReportID?>" checked="checked" /></span>
                                 | <input type="button" id="submit_<?=$ReportID?>" value="Resolve Report" onclick="TakeResolve(<?=$ReportID?>);" title="Resolve Report (carry out whatever actions are set)" />
                             </td>
                         </tr>
-                             <?php
+                                <?php
 
                 // get the conversations
-                $Conversations = array();
-                $DB->query("SELECT rc.ConvID, pm.UserID, um.Username,
+                                $Conversations = array();
+                                $DB->query("SELECT rc.ConvID, pm.UserID, um.Username,
                                 (CASE WHEN UserID='$ReporterID' THEN 'Reporter'
                                       WHEN UserID='$UploaderID' THEN 'Offender'
                                       ELSE 'other'
@@ -571,60 +572,60 @@ if (count($Reports) == 0) {
                                 LEFT JOIN users_main AS um ON um.ID=pm.UserID
                             WHERE ReportID=" . $ReportID . "
                                 ORDER BY pm.Date ASC");
-                $Conversations = $DB->to_array();
+                                $Conversations = $DB->to_array();
 
-                if (count($Conversations)>0) {
-                ?>
-                    <tr class="rowa">
-                        <td colspan="5" style="border-right: none">
-                            <?php
-                            foreach ($Conversations as $Conv) {  // if conv has already been started just provide a link to it
-                                list($cID, $cUserID, $cUsername, $cType, $cDate)=$Conv;
-                                ?>
-                                <div style="text-align: right;">
-                                    <em>(<?=  time_diff($cDate)?>)</em> &nbsp;view existing conversation with <a href="/user.php?id=<?= $cUserID ?>"><?= $cUsername ?></a> (<?=$cType?>) about this report: &nbsp;&nbsp
-                                    <a href="/staffpm.php?action=viewconv&id=<?= $cID ?>" target="_blank">[View Message]</a> &nbsp;
-                                </div>
-                                <?php
-                            }
-                            ?>
-                        </td>
-                    </tr>
-                <?php
-                }
+                                if (count($Conversations)>0) {
+                                            ?>
+                                             <tr class="rowa">
+                                                 <td colspan="5" style="border-right: none">
+                                            <?php
+                                            foreach ($Conversations as $Conv) {  // if conv has already been started just provide a link to it
+                                                list($cID, $cUserID, $cUsername, $cType, $cDate)=$Conv;
+                                                ?>
+                                                <div style="text-align: right;">
+                                                    <em>(<?=  time_diff($cDate)?>)</em> &nbsp;view existing conversation with <a href="/user.php?id=<?= $cUserID ?>"><?= $cUsername ?></a> (<?=$cType?>) about this report: &nbsp;&nbsp
+                                           <a href="/staffpm.php?action=viewconv&id=<?= $cID ?>" target="_blank">[View Message]</a> &nbsp;
+                                       </div>
+                                        <?php
+                                            }
+                                            ?>
+                                                 </td>
+                                             </tr>
+                                            <?php
+                                }
                             ?>
                         <tr>
                             <td colspan="5">
 
-                                <span style="float:right;">
-                                    Start staff conversation with <select name="toid" >
-                                        <option value="<?=$UploaderID?>"><?=$UploaderName?> (Uploader)</option>
-                                    <option value="<?=$ReporterID?>"><?=$ReporterName?> (Reporter)</option>
-                                </select> about this report: &nbsp;&nbsp;&nbsp;&nbsp;
-                                    <a href="#report<?= $ReportID ?>" onClick="Open_Compose_Message(<?="'$ReportID'"?>)">[Compose Message]</a>
-                                </span>
+                            <span style="float:right;">
+                            Start staff conversation with <select name="toid" >
+                                <option value="<?=$UploaderID?>"><?=$UploaderName?> (Uploader)</option>
+                            <option value="<?=$ReporterID?>"><?=$ReporterName?> (Reporter)</option>
+                            </select> about this report: &nbsp;&nbsp;&nbsp;&nbsp;
+                            <a href="#report<?= $ReportID ?>" onClick="Open_Compose_Message(<?="'$ReportID'"?>)">[Compose Message]</a>
+                            </span>
 
-                                <br class="clear" />
-                                <div id="compose<?= $ReportID ?>" class="hide">
-                                    <div id="preview<?= $ReportID ?>" class="hidden"></div>
-                                    <div id="common_answers<?= $ReportID ?>" class="hidden">
-                                        <div class="box vertical_space">
-                                            <div class="head">
-                                                <strong>Preview</strong>
-                                            </div>
-                                            <div id="common_answers_body<?= $ReportID ?>" class="body">Select an answer from the dropdown to view it.</div>
-                                        </div>
-                                        <br />
-                                        <div class="center">
-                                            <select id="common_answers_select<?= $ReportID ?>" onChange="Update_Message(<?= $ReportID ?>);">
-                                                <option id="first_common_response<?= $ReportID ?>">Select a message</option>
-                                                <?php
-                                                // List common responses
-                                                $DB->query("SELECT ID, Name FROM staff_pm_responses");
-                                                while (list($crID, $crName) = $DB->next_record()) {
-                                                    ?>
-                                                    <option value="<?= $crID ?>"><?= $crName ?></option>
-                                                <?php  } ?>
+                            <br class="clear" />
+                            <div id="compose<?= $ReportID ?>" class="hide">
+                            <div id="preview<?= $ReportID ?>" class="hidden"></div>
+                            <div id="common_answers<?= $ReportID ?>" class="hidden">
+                                <div class="box vertical_space">
+                                    <div class="head">
+                                        <strong>Preview</strong>
+                                    </div>
+                                    <div id="common_answers_body<?= $ReportID ?>" class="body">Select an answer from the dropdown to view it.</div>
+                                </div>
+                                <br />
+                                <div class="center">
+                                    <select id="common_answers_select<?= $ReportID ?>" onChange="Update_Message(<?= $ReportID ?>);">
+                                        <option id="first_common_response<?= $ReportID ?>">Select a message</option>
+                                        <?php
+                                        // List common responses
+                                        $DB->query("SELECT ID, Name FROM staff_pm_responses");
+                                        while (list($crID, $crName) = $DB->next_record()) {
+                                            ?>
+                                            <option value="<?= $crID ?>"><?= $crName ?></option>
+                                        <?php  } ?>
                                             </select>
                                             <input type="button" value="Set message" onClick="Set_Message(<?=$ReportID?>);" />
                                             <input type="button" value="Create new / Edit" onClick="location.href='staffpm.php?action=responses&convid=<?= $ConvID ?>'" />
@@ -654,42 +655,42 @@ if (count($Reports) == 0) {
                             </td>
                         </tr>
             <?php
-                } else {
+            } else {
             ?>
-                        <tr>
-                            <td class="label">Resolver</td>
-                            <td colspan="3">
-                                <a href="/user.php?id=<?=$ResolverID?>"><?=$ResolverName?></a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="label">Resolve Time</td>
-                            <td colspan="3">
-                                <?=time_diff($LastChangeTime)?>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="label">Report Comments</td>
-                            <td colspan="3">
-                                <?=$ModComment?>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="label">Log Message</td>
-                            <td colspan="3">
-                                <?=$LogMessage?>
-                            </td>
-                        </tr>
+                <tr>
+                    <td class="label">Resolver</td>
+                    <td colspan="3">
+                        <a href="/user.php?id=<?=$ResolverID?>"><?=$ResolverName?></a>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Resolve Time</td>
+                    <td colspan="3">
+                        <?=time_diff($LastChangeTime)?>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Report Comments</td>
+                    <td colspan="3">
+                        <?=$ModComment?>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Log Message</td>
+                    <td colspan="3">
+                        <?=$LogMessage?>
+                    </td>
+                </tr>
             <?php  if ($GroupID) { ?>
                         <tr>
-                            <td	colspan="4" style="text-align: center;">
+                            <td colspan="4" style="text-align: center;">
                                 <input id="grab<?=$ReportID?>" type="button" value="Grab!" onclick="Grab(<?=$ReportID?>);" />
                             </td>
                         </tr>
-            <?php 	}
-            // get the conversations
-                $Conversations = array();
-                $DB->query("SELECT rc.ConvID, pm.UserID, um.Username,
+            <?php   }
+    // get the conversations
+        $Conversations = array();
+        $DB->query("SELECT rc.ConvID, pm.UserID, um.Username,
                                 (CASE WHEN UserID='$ReporterID' THEN 'Reporter'
                                       WHEN UserID='$UploaderID' THEN 'Offender'
                                       ELSE 'other'
@@ -723,7 +724,7 @@ if (count($Reports) == 0) {
 
             ?>
 
-<?php           }
+            <?php           }
             ?>
                     </table>
                 </form>

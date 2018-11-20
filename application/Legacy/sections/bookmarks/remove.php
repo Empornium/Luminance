@@ -1,7 +1,9 @@
 <?php
 authorize();
 
-if (!can_bookmark($_GET['type'])) { error(404); }
+if (!can_bookmark($_GET['type'])) {
+    error(404);
+}
 
 $Type = $_GET['type'];
 
@@ -22,8 +24,8 @@ if ($Type == 'torrent') {
     $DB->query("SELECT COUNT(*) FROM bookmarks_torrents WHERE UserID='$LoggedUser[ID]'");
     list($NumGroups) = $DB->next_record();
     $PageLimit = ceil((float)$NumGroups/(float)$TorrentsPerPage);
-    for($Page = 0; $Page <= $PageLimit; $Page++) {
-      $Cache->delete_value('bookmarks_torrent_'.$LoggedUser['ID'].'_page_'.$Page);
+    for ($Page = 0; $Page <= $PageLimit; $Page++) {
+        $Cache->delete_value('bookmarks_torrent_'.$LoggedUser['ID'].'_page_'.$Page);
     }
     $Cache->delete_value('bookmarks_torrent_'.$UserID.'_full');
 } elseif ($Type == 'request') {

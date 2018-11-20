@@ -76,7 +76,7 @@ show_header('Tags Activity');
         </form>
     </div>
 
-    <?php if(!empty($_GET['tag'])): ?>
+    <?php if (!empty($_GET['tag'])) : ?>
     <div class="linkbox"><?= $Pages ?></div>
     <div class="head">Tags activity</div>
     <table>
@@ -94,7 +94,7 @@ show_header('Tags Activity');
                 <a href="/<?= header_link('TorrentName') ?>" title="sort by number of votes">Torrent</a>
             </td>
         </tr>
-        <?php foreach($TagsVotes as $TagsVote): ?>
+        <?php foreach ($TagsVotes as $TagsVote) : ?>
             <tr>
                 <td>
                     <a href="/torrents.php?taglist=<?= display_str($TagsVote['TagName']) ?>"><?= display_str($TagsVote['TagName']) ?></a>
@@ -106,12 +106,12 @@ show_header('Tags Activity');
                     <?= display_way($TagsVote['Way']) ?>
                 </td>
                 <td>
-                    <a href="/torrents.php?id=<?= $TagsVote['GroupID'] ?>" title="<?= display_str($TagsVote['TorrentName']) ?>"><?= display_str(cut_string($TagsVote['TorrentName'],50)) ?></a>
+                    <a href="/torrents.php?id=<?= $TagsVote['GroupID'] ?>" title="<?= display_str($TagsVote['TorrentName']) ?>"><?= display_str(cut_string($TagsVote['TorrentName'], 50)) ?></a>
                 </td>
             </tr>
         <?php endforeach; ?>
     </table>
-    <?php else: ?>
+    <?php else : ?>
         <div class="head">Tags activity</div>
         <div class="box pad center shadow"><p>Search something first!</p></div>
     <?php endif; ?>

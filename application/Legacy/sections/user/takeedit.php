@@ -19,19 +19,24 @@ if ($UserID != $LoggedUser['ID'] && !check_perms('users_edit_profiles', $Permiss
     error(403);
 }
 $whitelistregex = get_whitelist_regex();
-$Val->SetFields('stylesheet',1,"number","You forgot to select a stylesheet.");
-$Val->SetFields('timezone',1,"inarray","Invalid TimeZone.",array('inarray'=>timezone_identifiers_list()));
-$Val->SetFields('postsperpage',1,"inarray","You forgot to select your posts per page option.",array('inarray'=>array(25,50,100)));
-$Val->SetFields('torrentsperpage',1,"inarray","You forgot to select your torrents per page option.",array('inarray'=>array(25,50,100)));
+$Val->SetFields('stylesheet', 1, "number", "You forgot to select a stylesheet.");
+$Val->SetFields('timezone', 1, "inarray", "Invalid TimeZone.", array('inarray'=>timezone_identifiers_list()));
+$Val->SetFields('postsperpage', 1, "inarray", "You forgot to select your posts per page option.", array('inarray'=>array(25,50,100)));
+$Val->SetFields('torrentsperpage', 1, "inarray", "You forgot to select your torrents per page option.", array('inarray'=>array(25,50,100)));
 //$Val->SetFields('hidecollage',1,"number","You forgot to select your collage option.",array('minlength'=>0,'maxlength'=>1));
-$Val->SetFields('collagecovers',1,"number","You forgot to select your collage option.");
-$Val->SetFields('showtags',1,"number","You forgot to select your show tags option.",array('minlength'=>0,'maxlength'=>1));
-$Val->SetFields('maxtags',1,"number","You forgot to select your maximum tags to show in lists option.",array('minlength'=>0,'maxlength'=>10000));
-$Val->SetFields('avatar',0,'image', 'Avatar: The image URL you entered was not valid.',
-                 array('regex' => $whitelistregex, 'maxlength' => 255, 'minlength' => 6, 'maxfilesizeKB'=>$master->options->AvatarSizeKiB, 'dimensions'=>array(300,500)));
-$Val->SetFields('info',0,'desc','Info',array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>20000));
-$Val->SetFields('signature',0,'desc','Signature',array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>$Permissions['MaxSigLength'], 'dimensions'=>array(SIG_MAX_WIDTH, SIG_MAX_HEIGHT)));
-$Val->SetFields('torrentsignature',0,'desc','Signature',array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>$Permissions['MaxSigLength']));
+$Val->SetFields('collagecovers', 1, "number", "You forgot to select your collage option.");
+$Val->SetFields('showtags', 1, "number", "You forgot to select your show tags option.", array('minlength'=>0,'maxlength'=>1));
+$Val->SetFields('maxtags', 1, "number", "You forgot to select your maximum tags to show in lists option.", array('minlength'=>0,'maxlength'=>10000));
+$Val->SetFields(
+    'avatar',
+    0,
+    'image',
+    'Avatar: The image URL you entered was not valid.',
+    array('regex' => $whitelistregex, 'maxlength' => 255, 'minlength' => 6, 'maxfilesizeKB'=>$master->options->AvatarSizeKiB, 'dimensions'=>array(300,500))
+);
+$Val->SetFields('info', 0, 'desc', 'Info', array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>20000));
+$Val->SetFields('signature', 0, 'desc', 'Signature', array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>$Permissions['MaxSigLength'], 'dimensions'=>array(SIG_MAX_WIDTH, SIG_MAX_HEIGHT)));
+$Val->SetFields('torrentsignature', 0, 'desc', 'Signature', array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>$Permissions['MaxSigLength']));
 
 $Err = $Val->ValidateForm($_POST);
 
@@ -174,11 +179,13 @@ require_once(SERVER_ROOT.'/Legacy/sections/forums/functions.php');
 $Forums = get_forums_info();
 $DisabledLatestTopics = array();
 foreach ($Forums as $Forum) {
-    if (empty($_POST['disable_lt_'.$Forum['ID']]))
+    if (empty($_POST['disable_lt_'.$Forum['ID']])) {
         $DisabledLatestTopics[] = $Forum['ID'];
+    }
 }
-if (count($DisabledLatestTopics) > 0)
+if (count($DisabledLatestTopics) > 0) {
     $Options['DisabledLatestTopics'] = $DisabledLatestTopics;
+}
 
 //TODO: Remove the following after a significant amount of time
 unset($Options['ShowQueryList']);
@@ -193,9 +200,13 @@ if ($DownloadAlt != $LoggedUser['DownloadAlt']) {
     $Cache->delete_value('user_'.$LoggedUser['torrent_pass']);
 }
 $BlockPMs = (!empty($_POST['blockPMs']) ? (int) $_POST['blockPMs'] : 0);
-if (!in_array($BlockPMs,array(0,1,2))) $BlockPMs =0;
+if (!in_array($BlockPMs, array(0,1,2))) {
+    $BlockPMs =0;
+}
 $BlockGifts = (!empty($_POST['blockgifts']) ? (int) $_POST['blockgifts'] : 0);
-if (!in_array($BlockGifts,array(0,1,2))) $BlockGifts =0;
+if (!in_array($BlockGifts, array(0,1,2))) {
+    $BlockGifts =0;
+}
 $CommentsNotify = (isset($_POST['commentsnotify']))? 1:0;
 
 
@@ -256,17 +267,17 @@ $DB->query($SQL);
 
 
 if (check_perms('site_set_language')) {
-
     $DelLangs = $_POST['del_lang'];
-    if (is_array($DelLangs) ) {
-
+    if (is_array($DelLangs)) {
           $Div = '';
           $SQL_IN ='';
-          foreach ($DelLangs as $langID) { //
-                $SQL_IN .= "$Div " . (int) $langID ;
-                $Div = ',';
-          }
-          if ($SQL_IN) $DB->query("DELETE FROM users_languages WHERE UserID='$UserID' AND LangID IN ( $SQL_IN )");
+        foreach ($DelLangs as $langID) { //
+            $SQL_IN .= "$Div " . (int) $langID ;
+            $Div = ',';
+        }
+        if ($SQL_IN) {
+            $DB->query("DELETE FROM users_languages WHERE UserID='$UserID' AND LangID IN ( $SQL_IN )");
+        }
     }
 
     if (isset($_POST['new_lang']) && is_number($_POST['new_lang'])) {

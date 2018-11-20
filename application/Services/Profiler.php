@@ -7,7 +7,8 @@ use Luminance\Core\Entity;
 
 use Luminance\Errors\InternalError;
 
-class Profiler extends Service {
+class Profiler extends Service
+{
 
     public $start_time = null;
     public $profile_log = [];
@@ -15,7 +16,8 @@ class Profiler extends Service {
     protected $disabled = false;
 
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         parent::__construct($master);
         $this->master = $master;
         $real_start_time = $master->start_time;
@@ -28,21 +30,25 @@ class Profiler extends Service {
         $this->enter_state('profiler_running');
     }
 
-    public function get_timestamp() {
+    public function get_timestamp()
+    {
         $timestamp = microtime(true) - $this->start_time;
         return $timestamp;
     }
 
-    public function disable() {
+    public function disable()
+    {
         # Once disabled, we can't enable again, as that could lead to an inconsistent set of states
         $this->disabled = true;
     }
 
-    protected function add_log($timestamp, $state_text) {
+    protected function add_log($timestamp, $state_text)
+    {
         $this->profile_log[] = [$timestamp, $state_text];
     }
 
-    public function enter_state($state_name) {
+    public function enter_state($state_name)
+    {
         if ($this->disabled) {
             return;
         }
@@ -64,7 +70,8 @@ class Profiler extends Service {
         $this->info("+{$state_name}");
     }
 
-    public function leave_state($state_name) {
+    public function leave_state($state_name)
+    {
         if ($this->disabled) {
             return;
         }
@@ -80,7 +87,8 @@ class Profiler extends Service {
         $this->info("-{$state}");
     }
 
-    public function info($message) {
+    public function info($message)
+    {
         if ($this->disabled) {
             return;
         }
@@ -88,7 +96,8 @@ class Profiler extends Service {
         $this->add_log($timestamp, $message);
     }
 
-    public function finish_and_log() {
+    public function finish_and_log()
+    {
         if ($this->disabled) {
             return;
         }

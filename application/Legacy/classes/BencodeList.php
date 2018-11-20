@@ -1,5 +1,6 @@
 <?php
 namespace Luminance\Legacy;
+
 /*******************************************************************************
 |~~~~ Gazelle bencode parser											   ~~~~|
 --------------------------------------------------------------------------------
@@ -68,7 +69,9 @@ class BencodeList extends Bencode
 {
     public function enc()
     {
-        if (is_null($this->Val)) return 'le';
+        if (is_null($this->Val)) {
+            return 'le';
+        }
         $Str = 'l';
         reset($this->Val);
         foreach ($this->Val as $Value) {

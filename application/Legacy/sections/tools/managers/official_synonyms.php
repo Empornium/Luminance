@@ -10,7 +10,7 @@ $UseMultiInterface= true;
 $DB->query("SELECT ID, Name, Uses FROM tags WHERE TagType='genre' ORDER BY Name ASC");
 $Tags = $DB->to_array();
 
-show_header('Official Synonyms Manager','tagmanager,bbcode');
+show_header('Official Synonyms Manager', 'tagmanager,bbcode');
 
 printRstMessage();
 ?>
@@ -71,7 +71,7 @@ printRstMessage();
                     </tr>
                     </table>
                 </form></div>
-<?php           } ?>
+                <?php           } ?>
             <div style="display:inline-block">
                 <form class="tagtable" id="tt_<?=$ParentTagID?>" action="tools.php" method="post">
                     <table class="syntable shadow" style="width:220px;">
@@ -94,26 +94,26 @@ printRstMessage();
                     <?php
         }
 
-                if ($SnID) { // only finish if something was in list
-                    $Row = $Row == 'b' ? 'a' : 'b';
-                    ?>
-                        <tr class="row<?= $Row ?>">
-                            <td class="tag_add" style="text-align:left" colspan="2" >
-                                <input type="submit" name="delsynomyns" value="del selected" title="delete selected synonyms for <?= $ParentTagName ?>" />
-                            </td>
-                        </tr>
+        if ($SnID) { // only finish if something was in list
+            $Row = $Row == 'b' ? 'a' : 'b';
+            ?>
+        <tr class="row<?= $Row ?>">
+            <td class="tag_add" style="text-align:left" colspan="2" >
+                <input type="submit" name="delsynomyns" value="del selected" title="delete selected synonyms for <?= $ParentTagName ?>" />
+            </td>
+        </tr>
     <?php               $Row = $Row == 'b' ? 'a' : 'b'; ?>
-                        <tr class="row<?= $Row ?>">
-                            <td class="tag_add" colspan="2" >
-                                <input type="text" name="newsynname" size="10" />
-                                <input type="submit" name="addsynomyn" value="+" title="add new synonym for <?= $ParentTagName ?>" />
+        <tr class="row<?= $Row ?>">
+            <td class="tag_add" colspan="2" >
+                <input type="text" name="newsynname" size="10" />
+                <input type="submit" name="addsynomyn" value="+" title="add new synonym for <?= $ParentTagName ?>" />
 
-                            </td>
-                        </tr>
-                    </table>
-                </form>
+            </td>
+        </tr>
+            </table>
+        </form>
             </div>
-<?php           } ?>
+        <?php           } ?>
     </div>
 </div>
 <?php

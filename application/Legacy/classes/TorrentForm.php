@@ -1,5 +1,6 @@
 <?php
 namespace Luminance\Legacy;
+
 /********************************************************************************
  ************ Torrent form class *************** upload.php and torrents.php ****
  ********************************************************************************
@@ -46,42 +47,46 @@ class TorrentForm
         Your personal announce url is:<br />
         <input type="text" value="<?= ANNOUNCE_URL.'/'.$LoggedUser['torrent_pass'].'/announce'?>" size="71" onfocus="this.select()" />
     </p>
-<?php		}
+<?php	  }
 
             //for testing form vars set action="http://www.tipjar.com/cgi-bin/test"
 ?>
-      <div id="messagebar" class="messagebar alert<?php if(!$this->Error) echo ' hidden'?>"><?php if($this->Error) echo ($this->Error) ; ?></div><br />
+      <div id="messagebar" class="messagebar alert<?php if (!$this->Error) {
+            echo ' hidden';
+                                                  }?>"><?php if ($this->Error) {
+    echo ($this->Error) ;
+} ?></div><br />
       <div id="uploadpreviewbody" class="hidden">
             <div id="contentpreview" style="text-align:left;"></div>
     </div>
     <form action="" enctype="multipart/form-data" method="post" id="upload_table" onsubmit="$('#post').raw().disabled = 'disabled'">
 <?php
-    if (is_array($DupeResults)) {
-
-        if ($DupeResults['DupeResults']) {
-            $INLINE = true;
-            $DupeResults['Title'] = $this->Torrent['Title'];
-            $DupeResults['SearchTags'] = $this->Torrent['TagList'];
-            include(SERVER_ROOT . '/Legacy/sections/upload/display_dupes.php');
+if (is_array($DupeResults)) {
+    if ($DupeResults['DupeResults']) {
+        $INLINE = true;
+        $DupeResults['Title'] = $this->Torrent['Title'];
+        $DupeResults['SearchTags'] = $this->Torrent['TagList'];
+        include(SERVER_ROOT . '/Legacy/sections/upload/display_dupes.php');
 ?>
-            <div class="box pad shadow center rowa">
-                If you have checked and are certain these are not dupes check this box to ignore the dupe check
-                <div style="margin-top:6px"><strong style="font-size:1.2em;">Skip Dupe Check:</strong> <input type="checkbox" name="ignoredupes" value="1"
-                <?php                           if (isset($this->Torrent['IgnoreDupes']) && $this->Torrent['IgnoreDupes']==1) {
-                                                    echo ' checked="checked"'; }   ?> /> </div>
+        <div class="box pad shadow center rowa">
+            If you have checked and are certain these are not dupes check this box to ignore the dupe check
+            <div style="margin-top:6px"><strong style="font-size:1.2em;">Skip Dupe Check:</strong> <input type="checkbox" name="ignoredupes" value="1"
+            <?php                           if (isset($this->Torrent['IgnoreDupes']) && $this->Torrent['IgnoreDupes']==1) {
+                                                    echo ' checked="checked"';
+            }   ?> /> </div>
             </div>
 <?php
-        } else {
-?>
-            <div class="box pad shadow center rowa">
-                Checked <?=$DupeResults['NumChecked']?> file<?=($DupeResults['NumChecked']>1?'s':'')?>.<br/>There are no exact size dupes in this torrent file <?=$Text->full_format(":gjob:", true)?>
-            </div>
-<?php
-        }
-?>
-        <br/>
+    } else {
+    ?>
+    <div class="box pad shadow center rowa">
+        Checked <?=$DupeResults['NumChecked']?> file<?=($DupeResults['NumChecked']>1?'s':'')?>.<br/>There are no exact size dupes in this torrent file <?=$Text->full_format(":gjob:", true)?>
+    </div>
 <?php
     }
+?>
+<br/>
+<?php
+}
 ?>
         <div>
             <input type="hidden" name="submit" value="true" />
@@ -90,19 +95,19 @@ class TorrentForm
             <input type="hidden" name="action" value="takeedit" />
             <input type="hidden" name="torrentid" value="<?=display_str($this->TorrentID)?>" />
 <?php	} else {
-            if ($this->Torrent && $this->Torrent['GroupID']) { ?>
+    if ($this->Torrent && $this->Torrent['GroupID']) { ?>
             <input type="hidden" name="groupid" value="<?=display_str($this->Torrent['GroupID'])?>" />
-<?php		}
-            if ($this->Torrent && $this->Torrent['RequestID']) { ?>
+    <?php	  }
+    if ($this->Torrent && $this->Torrent['RequestID']) { ?>
             <input type="hidden" name="requestid" value="<?=display_str($this->Torrent['RequestID'])?>" />
-<?php			}
-            if ($this->Torrent && $this->Torrent['TemplateID']) { ?>
+    <?php	      }
+    if ($this->Torrent && $this->Torrent['TemplateID']) { ?>
             <input type="hidden" name="templateid" value="<?=display_str($this->Torrent['TemplateID'])?>" />
-<?php			}
-            if ($this->Torrent && $this->Torrent['TemplateFooter']) { ?>
+    <?php	      }
+    if ($this->Torrent && $this->Torrent['TemplateFooter']) { ?>
             <input type="hidden" name="templatefooter" value="<?=display_str($this->Torrent['TemplateFooter'])?>" />
-<?php			}
-        } ?>
+    <?php	      }
+} ?>
         </div>
           <div class="head">Upload torrent</div>
         <table cellpadding="3" cellspacing="1" border="0" class="border" width="100%">
@@ -114,7 +119,7 @@ class TorrentForm
                 <td>
 <?php                  if (isset($this->Torrent['tempfileid'])
                             && is_number($this->Torrent['tempfileid'])
-                            && $this->Torrent['tempfileid']>0)  {     ?>
+                            && $this->Torrent['tempfileid']>0) {     ?>
                         <input type="hidden" name="tempfileid" value="<?=display_str($this->Torrent['tempfileid'])?>" />
                         <input type="hidden" name="tempfilename" value="<?=display_str($this->Torrent['tempfilename'])?>" />
                         <input id="file" type="text" size="70" disabled="disabled" value="<?=display_str($this->Torrent['tempfilename'])?>" />
@@ -138,17 +143,17 @@ class TorrentForm
                                         <option value="0">---</option>
                                     <?php foreach ($this->OpenCategories as $category) { ?>
                                         <option value="<?=$category['id']?>"<?php
-                                            if (isset($this->Torrent['Category']) && $this->Torrent['Category']==$category['id']) {
-                                                echo ' selected="selected"';
-                                            }   ?>><?=$category['name']?></option>
+                                        if (isset($this->Torrent['Category']) && $this->Torrent['Category']==$category['id']) {
+                                            echo ' selected="selected"';
+                                        }   ?>><?=$category['name']?></option>
                                     <?php } ?>
                                     </select>
                                 </td>
             </tr>
 
-<?php		}//if ?>
+<?php	  }//if ?>
 
-<?php	} // function head
+    <?php	} // function head
 
     public function simple_form()
     {
@@ -164,14 +169,14 @@ class TorrentForm
             </tr>
 <?php
                 $taginfo = get_article('tagrulesinline');
-                if ($taginfo) {
+if ($taginfo) {
 ?>
-                <tr class="uploadbody">
-                    <td class="label"></td>
-                    <td><?=$Text->full_format($taginfo, true)?></td>
-                </tr>
+<tr class="uploadbody">
+<td class="label"></td>
+<td><?=$Text->full_format($taginfo, true)?></td>
+</tr>
 <?php
-                }
+}
 ?>
             <tr class="uploadbody">
                 <td class="label">Tags</td>
@@ -179,17 +184,17 @@ class TorrentForm
                     <div>
 <?php
        $GenreTags = $Cache->get_value('genre_tags_upload');
-       if (!$GenreTags) {
-           $DB->query("(SELECT Name, Uses FROM tags WHERE TagType='genre' ORDER BY Uses DESC LIMIT 80) ORDER BY Name");
-           $GenreTags = $DB->to_array();
-           $Cache->cache_value('genre_tags_upload', $GenreTags, 3600 * 24);
-       }
+if (!$GenreTags) {
+    $DB->query("(SELECT Name, Uses FROM tags WHERE TagType='genre' ORDER BY Uses DESC LIMIT 80) ORDER BY Name");
+    $GenreTags = $DB->to_array();
+    $Cache->cache_value('genre_tags_upload', $GenreTags, 3600 * 24);
+}
 
-       if ($GenreTags) { ?>
+if ($GenreTags) { ?>
 
                         <br/>&nbsp; popular tags:
                         <select id="genre_tags" name="genre_tags" title="select popular tags from the drop down"
-                               onchange="add_tag();return false;"  <?=$this->Disabled?>>
+                        onchange="add_tag();return false;"  <?=$this->Disabled?>>
                             <option>---</option>
 <?php       foreach ($GenreTags as $Tag) { ?>
                             <option value="<?=$Tag['Name']?>"><?="$Tag[Name] ($Tag[Uses])"?></option>
@@ -198,9 +203,11 @@ class TorrentForm
                         <div style="display:inline-block" id="tagtext"></div>
                         <br/>
 <?php
-        }  ?>
+}  ?>
                         <div style="vertical-align:middle;display:inline-block;" title="Toggle Autocomplete mode on/off (when off you can access browser form history)">
-                            <input id="autocomplete_toggle" onclick="ToggleAutoComplete();" type="checkbox" value="1" name="autocomplete_toggle" <?php if($Torrent['Autocomplete']==1) echo ' checked="checked"'; ?> />
+                            <input id="autocomplete_toggle" onclick="ToggleAutoComplete();" type="checkbox" value="1" name="autocomplete_toggle" <?php if ($Torrent['Autocomplete']==1) {
+                                echo ' checked="checked"';
+                                                                                                                                                 } ?> />
                                                     Autocomplete Tags
                         </div>
                         <br/>
@@ -235,7 +242,7 @@ class TorrentForm
             </tr>
 <?php	} ?>
 
-<?php	}//function simple_form
+    <?php	}//function simple_form
 
     public function foot()
     {
@@ -248,11 +255,15 @@ class TorrentForm
                         <td class="label">Upload Anonymously</td>
                         <td>
 
-                            <input onclick="$('#warnbox').hide();"  name="anonymous" value="0" type="radio"<?php if($Torrent['Anonymous']!=1) echo ' checked="checked"';?>/> Show uploader name&nbsp;&nbsp;
-                            <input onclick="$('#warnbox').show();" name="anonymous" value="1" type="radio"<?php if($Torrent['Anonymous']==1) echo ' checked="checked"';?>/> Hide uploader name (Upload Anonymously)&nbsp;&nbsp;
+                            <input onclick="$('#warnbox').hide();"  name="anonymous" value="0" type="radio"<?php if ($Torrent['Anonymous']!=1) {
+                                echo ' checked="checked"';
+                                                                                                           }?>/> Show uploader name&nbsp;&nbsp;
+                            <input onclick="$('#warnbox').show();" name="anonymous" value="1" type="radio"<?php if ($Torrent['Anonymous']==1) {
+                                echo ' checked="checked"';
+                                                                                                          }?>/> Hide uploader name (Upload Anonymously)&nbsp;&nbsp;
                             <br/><em><strong>note:</strong> uploader names are always hidden from lower ranked users, see user classes article in help for more info</em>
 <?php
-                            if (check_paranoia('tags', $LoggedUser['Paranoia'], 10000 )) {  ?>
+if (check_paranoia('tags', $LoggedUser['Paranoia'], 10000)) {  ?>
                                 <div id="warnbox" class="warnbox hidden" >
                                     NOTE: Your paranoia settings for tags is <strong>Tags: Show List</strong>. This will allow other users to see tags you have added to your own uploads in a list from which
                                     it might be possible to deduce your uploaded torrents. [<strong><a target="_blank" href="userhistory.php?action=tag_history&amp;type=added&amp;way=DESC&amp;order=AddedBy&amp;include=own&amp;userid=<?=$LoggedUser['ID']?>" title="list of tags you have added">view your tag list</a></strong>]
@@ -272,7 +283,7 @@ class TorrentForm
                 <td>
                     <select name="freeleech">
 <?php       $FL = array("Normal", "Free");
-            foreach ($FL as $Key => $Name) {     ?>
+foreach ($FL as $Key => $Name) {     ?>
                         <option value="<?=$Key?>" <?=($Key == $Torrent['FreeLeech'] ? ' selected="selected"' : '')?>><?=$Name?></option>
 <?php          }       ?>
                     </select>
@@ -288,13 +299,16 @@ class TorrentForm
                     <p>After uploading the torrent, you will have a one hour grace period during which no one other than you can fill requests with this torrent. Make use of this time wisely, and search the requests. </p>
 
                               <input id="post_preview" type="button" value="Preview" onclick="if (this.preview) {Upload_Quick_Edit();} else {Upload_Quick_Preview();}" />
-    <?php	} ?>
-                    <input id="post" name="submit" type="submit" <?php if ($this->NewTorrent) { echo "value=\"Upload torrent\""; } else { echo "value=\"Edit torrent\"";} ?> />
+<?php	} ?>
+                    <input id="post" name="submit" type="submit" <?php if ($this->NewTorrent) {
+                        echo "value=\"Upload torrent\"";
+                                                                 } else {
+    echo "value=\"Edit torrent\"";
+} ?> />
                 </td>
             </tr>
         </table>
     </form>
 
-<?php	} //function foot
-
+    <?php	} //function foot
 }//class

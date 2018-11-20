@@ -1,5 +1,5 @@
 <?php
-function print_articles($Articles, $StaffClass=0, $SkipSubArticle = -1)
+function print_articles($Articles, $StaffClass = 0, $SkipSubArticle = -1)
 {
     global $ArticleCats, $ArticleSubCats, $ClassLevels;
 
@@ -10,8 +10,12 @@ function print_articles($Articles, $StaffClass=0, $SkipSubArticle = -1)
     foreach ($Articles as $Article) {
         list($TopicID, $ATitle, $Description, $SubCat, $MinClass) = $Article;
 
-        if($MinClass>$StaffClass) continue;
-        if($SubCat==$SkipSubArticle) continue;
+        if ($MinClass>$StaffClass) {
+            continue;
+        }
+        if ($SubCat==$SkipSubArticle) {
+            continue;
+        }
 
         $Row = ($Row == 'a') ? 'b' : 'a';
 
@@ -20,7 +24,7 @@ function print_articles($Articles, $StaffClass=0, $SkipSubArticle = -1)
             $LastSubCat = $SubCat;
             if ($OpenTable) {  ?>
         </table><br/>
-<?php           }  ?>
+            <?php           }  ?>
 
         <div class="head"><?=($SubCat==1?"Other $ArticleCats[$Category] articles":$ArticleSubCats[$SubCat])?></div>
         <table width="100%" class="topic_list">
@@ -46,7 +50,7 @@ function print_articles($Articles, $StaffClass=0, $SkipSubArticle = -1)
 <?php               } ?>
                     </td>
             </tr>
-<?php  } ?>
+    <?php  } ?>
         </table><br/>
 <?php
 }
@@ -59,8 +63,8 @@ function replace_special_tags($Body)
     if (preg_match("/\[clientlist\]/i", $Body)) {
         if (!$BlacklistedClients = $Cache->get_value('blacklisted_clients')) {
             $DB->query('SELECT vstring FROM xbt_client_blacklist WHERE vstring NOT LIKE \'//%\' ORDER BY vstring ASC');
-            $BlacklistedClients = $DB->to_array(false,MYSQLI_NUM,false);
-            $Cache->cache_value('blacklisted_clients',$BlacklistedClients,604800);
+            $BlacklistedClients = $DB->to_array(false, MYSQLI_NUM, false);
+            $Cache->cache_value('blacklisted_clients', $BlacklistedClients, 604800);
         }
 
         $list = '<table cellpadding="5" cellspacing="1" border="0" class="border" width="100%">
@@ -83,9 +87,8 @@ function replace_special_tags($Body)
 
     // imagehost whitelist
     if (preg_match("/\[whitelist\]/i", $Body)) {
-
         $ImageWhitelist = $Cache->get_value('imagehost_whitelist');
-        if ($ImageWhitelist === FALSE) {
+        if ($ImageWhitelist === false) {
                 $DB->query("SELECT
                     Imagehost,
                     Link,
@@ -106,14 +109,13 @@ function replace_special_tags($Body)
 
         $Row = 'a';
         foreach ($ImageWhitelist as $ImageHost) {
-
             list($Host, $Link, $Comment, $Updated) = $ImageHost;
             $Row = ($Row == 'a') ? 'b' : 'a';
             $list .= "<tr class=row$Row>
                             <td>".$Text->full_format($Host);
-             if ( !empty($Link) && $Text->valid_url($Link)) {
-                     $list .=   "<a href=\"$Link\"  target=\"_blank\"><img src=\"". STATIC_SERVER .'common/symbols/offsite.gif" width="16" height="16" alt="Goto '.$Host."\" /></a>\n";
-             }
+            if (!empty($Link) && $Text->valid_url($Link)) {
+                   $list .=   "<a href=\"$Link\"  target=\"_blank\"><img src=\"". STATIC_SERVER .'common/symbols/offsite.gif" width="16" height="16" alt="Goto '.$Host."\" /></a>\n";
+            }
 
              $list .=   "</td>
                             <td>".$Text->full_format($Comment)."</td>
@@ -126,9 +128,8 @@ function replace_special_tags($Body)
 
     // DNU list
     if (preg_match("/\[dnulist\]/i", $Body)) {
-
         $DNUlist = $Cache->get_value('do_not_upload_list');
-        if ($DNUlist === FALSE) {
+        if ($DNUlist === false) {
                 $DB->query("SELECT  Name, Comment, Time FROM do_not_upload ORDER BY Time");
                 $DNUlist = $DB->to_array();
                 $Cache->cache_value('do_not_upload_list', $DNUlist);
@@ -141,7 +142,6 @@ function replace_special_tags($Body)
 
         $Row = 'a';
         foreach ($DNUlist as $BadUpload) {
-
             list($Name, $Comment, $Updated) = $BadUpload;
             $Row = ($Row == 'a') ? 'b' : 'a';
             $list .= "<tr class=row$Row>

@@ -12,12 +12,16 @@ $Validate->SetFields('body', '1', 'desc', 'Description', array('regex' => $white
 
 $err = $Validate->ValidateForm($_POST, $Text); // Validate the form
 
-if (!$err && !$Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']), false)) {
+if (!$err && !$Text->validate_bbcode($_POST['body'], get_permissions_advtags($LoggedUser['ID']), false)) {
         $err = "There are errors in your bbcode (unclosed tags)";
 }
-if (!in_array($blogSection,['Blog', 'Contests'])) $err = 'The section id was not valid, section: '.$blogSection;
+if (!in_array($blogSection, ['Blog', 'Contests'])) {
+    $err = 'The section id was not valid, section: '.$blogSection;
+}
 
-if ($err) error($err);
+if ($err) {
+    error($err);
+}
 
 $threadID = (int)$_POST['thread'];
 
@@ -36,38 +40,48 @@ if ($threadID && is_number($threadID)) {
     $threadID=0;
 }
 
-$master->db->raw_query("INSERT INTO blog (UserID, Title, Body, Time, ThreadID, Section, Image)
+$master->db->raw_query(
+    "INSERT INTO blog (UserID, Title, Body, Time, ThreadID, Section, Image)
                 VALUES (:userid, :title, :body, :time, :threadid, :section, :image)",
-                    [':userid'   => $LoggedUser['ID'],
+    [':userid'   => $LoggedUser['ID'],
                      ':title'    => $_POST['title'],
                      ':body'     => $_POST['body'],
                      ':time'     => sqltime(),
                      ':threadid' => $threadID,
                      ':section'  => $blogSection,
-                     ':image'    => $_POST['image']]);
+    ':image'    => $_POST['image']]
+);
 
 $newblogID = $master->db->last_insert_id();
-if ($newblogID < 1) error("Error creating post");
+if ($newblogID < 1) {
+    error("Error creating post");
+}
 
 // if thread==0 then we need to create the thread in forumid
 if ($threadID==0 && $forumID > 0) {
     $body = "[url=/".lcfirst($blogSection).".php#blog{$newblogID}][i]View the post in the {$blogSection} section[/i][/url]\n".$_POST['body'];
 
     $threadID = create_thread($forumID, $LoggedUser['ID'], db_string($_POST['title']), db_string($body));
-    if ($threadID < 1) error("Error creating thread");
+    if ($threadID < 1) {
+        error("Error creating thread");
+    }
 
-    $master->db->raw_query("UPDATE blog SET ThreadID = :threadid WHERE ID=:blogid",
-                            [':threadid' => $threadID,
-                             ':blogid'   => $newblogID]);
+    $master->db->raw_query(
+        "UPDATE blog SET ThreadID = :threadid WHERE ID=:blogid",
+        [':threadid' => $threadID,
+        ':blogid'   => $newblogID]
+    );
 }
 
 $master->cache->delete_value(strtolower($blogSection));
 $master->cache->delete_value(strtolower($blogSection.'_latest_id'));
 
 if (isset($_POST['subscribe'])) {
-    $master->db->raw_query("INSERT IGNORE INTO users_subscriptions VALUES (:userid, :threadid)",
-                            [':userid'   => $LoggedUser['ID'],
-                             ':threadid' => $threadID]);
+    $master->db->raw_query(
+        "INSERT IGNORE INTO users_subscriptions VALUES (:userid, :threadid)",
+        [':userid'   => $LoggedUser['ID'],
+        ':threadid' => $threadID]
+    );
     $master->cache->delete_value('subscriptions_user_'.$LoggedUser['ID']);
 }
 

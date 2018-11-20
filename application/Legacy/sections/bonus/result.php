@@ -16,19 +16,19 @@ show_header('Shop result');
 
 <?php           if (isset($_REQUEST['retu']) && is_number($_REQUEST['retu'])) {
                     $DB->query("SELECT Username From users_main WHERE ID='".db_string($_REQUEST['retu'])."'");
-                    if (($DB->record_count()) > 0) {
-                        list($Uname) = $DB->next_record();    ?>
+    if (($DB->record_count()) > 0) {
+        list($Uname) = $DB->next_record();    ?>
                         <a href="/user.php?id=<?=$_REQUEST['retu']?>" title="Return to user profile">Return to <?=$Uname?>'s profile</a><br />
-<?php               }
-                }
-                if (isset($_REQUEST['rett']) && is_number($_REQUEST['rett'])) {
-                    $DB->query("SELECT Name From torrents_group WHERE ID='".db_string($_REQUEST['rett'])."'");
-                    if (($DB->record_count()) > 0) {
-                        list($Tname) = $DB->next_record();    ?>
+    <?php               }
+}
+if (isset($_REQUEST['rett']) && is_number($_REQUEST['rett'])) {
+    $DB->query("SELECT Name From torrents_group WHERE ID='".db_string($_REQUEST['rett'])."'");
+    if (($DB->record_count()) > 0) {
+        list($Tname) = $DB->next_record();    ?>
                         <a href="/torrents.php?id=<?=$_REQUEST['rett']?>" title="Bonus Shop">Return to <?=$Tname?></a><br />
-<?php               }
-                }
-                if (isset($_REQUEST['retsg'])) { ?>
+    <?php               }
+}
+if (isset($_REQUEST['retsg'])) { ?>
                         <a href="/bonus.php?action=gift">Return to Special Gift Page</a><br />
 <?php           } ?>
         </div>

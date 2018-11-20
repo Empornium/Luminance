@@ -47,41 +47,49 @@ $UserA['Emails'] = $master->db->raw_query("SELECT Address FROM emails WHERE User
 $UserB['Emails'] = $master->db->raw_query("SELECT Address FROM emails WHERE UserID = :UserID", [':UserID' => $UserB['ID']])->fetchAll(PDO::FETCH_COLUMN);
 
 # Shared IPs
-$SharedIPs = $master->db->raw_query("SELECT uh.IP
+$SharedIPs = $master->db->raw_query(
+    "SELECT uh.IP
                                      FROM users_history_ips AS uh
                                      INNER JOIN (SELECT IP FROM users_history_ips WHERE UserID = :UserA_ID) AS me ON uh.IP = me.IP
                                      WHERE uh.IP != '127.0.0.1' AND uh.IP !='' AND uh.UserID = :UserB_ID
                                      GROUP BY uh.IP",
-                                     [':UserA_ID' => $UserA['ID'], ':UserB_ID' => $UserB['ID']])->fetchAll(PDO::FETCH_COLUMN);
+    [':UserA_ID' => $UserA['ID'], ':UserB_ID' => $UserB['ID']]
+)->fetchAll(PDO::FETCH_COLUMN);
 
 # Shared Torrents
 // Users' downloads count
 $UserA['Downloads'] = $master->db->raw_query("SELECT COUNT(*) FROM users_downloads WHERE UserID = :UserID", [':UserID' => $UserA['ID']])->fetch(PDO::FETCH_COLUMN);
 $UserB['Downloads'] = $master->db->raw_query("SELECT COUNT(*) FROM users_downloads WHERE UserID = :UserID", [':UserID' => $UserB['ID']])->fetch(PDO::FETCH_COLUMN);
 
-$SharedTorrents = $master->db->raw_query("SELECT ud.TorrentID AS ID, tg.Name, t.Size, t.Time
+$SharedTorrents = $master->db->raw_query(
+    "SELECT ud.TorrentID AS ID, tg.Name, t.Size, t.Time
                                           FROM users_downloads AS ud
                                           INNER JOIN (SELECT TorrentID FROM users_downloads WHERE UserID = :UserA_ID) AS ud2 ON ud.TorrentID = ud2.TorrentID
                                           LEFT JOIN torrents_group AS tg ON ud.TorrentID = tg.ID
                                           LEFT JOIN torrents AS t ON tg.ID = t.GroupID
                                           WHERE ud.UserID = :UserB_ID
                                           GROUP BY ud.TorrentID",
-                                          [':UserA_ID' => $UserA['ID'], ':UserB_ID' => $UserB['ID']])->fetchAll(PDO::FETCH_ASSOC);
+    [':UserA_ID' => $UserA['ID'], ':UserB_ID' => $UserB['ID']]
+)->fetchAll(PDO::FETCH_ASSOC);
 
 # Shared Categories
-$UserA['CategoriesAll'] = $master->db->raw_query("SELECT NewCategoryID
+$UserA['CategoriesAll'] = $master->db->raw_query(
+    "SELECT NewCategoryID
                                                FROM users_downloads AS ud
                                                LEFT JOIN torrents_group AS tg ON ud.TorrentID = tg.ID
                                                LEFT JOIN torrents AS t ON tg.ID = t.GroupID
                                                WHERE ud.UserID = :UserID AND NewCategoryID IS NOT NULL",
-                                               [':UserID' => $UserA['ID']])->fetchAll(PDO::FETCH_COLUMN);
+    [':UserID' => $UserA['ID']]
+)->fetchAll(PDO::FETCH_COLUMN);
 
-$UserB['CategoriesAll'] = $master->db->raw_query("SELECT NewCategoryID
+$UserB['CategoriesAll'] = $master->db->raw_query(
+    "SELECT NewCategoryID
                                                FROM users_downloads AS ud
                                                LEFT JOIN torrents_group AS tg ON ud.TorrentID = tg.ID
                                                LEFT JOIN torrents AS t ON tg.ID = t.GroupID
                                                WHERE ud.UserID = :UserID AND NewCategoryID IS NOT NULL",
-                                               [':UserID' => $UserB['ID']])->fetchAll(PDO::FETCH_COLUMN);
+    [':UserID' => $UserB['ID']]
+)->fetchAll(PDO::FETCH_COLUMN);
 
 // Remove duplicate categories
 $UserA['CategoriesUnique'] = array_unique($UserA['CategoriesAll']);
@@ -98,19 +106,23 @@ $SharedCategories = array_intersect($UserA['CategoriesUnique'], $UserB['Categori
 // Set how "rare" a tag should be
 $MaxUses = isset($_GET['maxuses']) ? (int) $_GET['maxuses'] : 50;
 
-$UserA['RareTagsAll'] = $master->db->raw_query("SELECT t.Name
+$UserA['RareTagsAll'] = $master->db->raw_query(
+    "SELECT t.Name
                                            FROM tags AS t
                                            INNER JOIN torrents_tags AS tt ON tt.TagID = t.ID
                                            INNER JOIN users_downloads AS ud ON ud.TorrentID = tt.GroupID
                                            WHERE t.Uses <= :MaxUses AND ud.UserID = :UserID",
-                                           [':MaxUses' => $MaxUses, ':UserID' => $UserA['ID']])->fetchAll(PDO::FETCH_COLUMN);
+    [':MaxUses' => $MaxUses, ':UserID' => $UserA['ID']]
+)->fetchAll(PDO::FETCH_COLUMN);
 
-$UserB['RareTagsAll'] = $master->db->raw_query("SELECT t.Name
+$UserB['RareTagsAll'] = $master->db->raw_query(
+    "SELECT t.Name
                                            FROM tags AS t
                                            INNER JOIN torrents_tags AS tt ON tt.TagID = t.ID
                                            INNER JOIN users_downloads AS ud ON ud.TorrentID = tt.GroupID
                                            WHERE t.Uses <= :MaxUses AND ud.UserID = :UserID",
-                                           [':MaxUses' => $MaxUses, ':UserID' => $UserB['ID']])->fetchAll(PDO::FETCH_COLUMN);
+    [':MaxUses' => $MaxUses, ':UserID' => $UserB['ID']]
+)->fetchAll(PDO::FETCH_COLUMN);
 
 // Remove duplicate tags
 $UserA['RareTagsUnique'] = array_unique($UserA['RareTagsAll']);
@@ -148,10 +160,10 @@ show_header('Users comparison'); ?>
 
     <div class="head">Shared IPs (<?= count($SharedIPs) ?>)</div>
     <div class="box pad shadow">
-        <?php if (empty($SharedIPs)): ?>
+        <?php if (empty($SharedIPs)) : ?>
             <p>These users have never shared the same IP.</p>
-        <?php else: ?>
-            <?php foreach($SharedIPs as $SharedIP): ?>
+        <?php else : ?>
+            <?php foreach ($SharedIPs as $SharedIP) : ?>
                 <?= display_ip($SharedIP, geoip($SharedIP)) ?><br>
             <?php endforeach; ?>
         <?php endif; ?>
@@ -172,9 +184,9 @@ show_header('Users comparison'); ?>
             <strong><?= display_str($UserB['Username']) ?></strong> has grabbed <?= (int) $UserB['Downloads'] ?> torrent(s).
         </p>
 
-        <?php if (empty($SharedTorrents)): ?>
+        <?php if (empty($SharedTorrents)) : ?>
             <p>These users have never downloaded the same torrent.</p>
-        <?php else: ?>
+        <?php else : ?>
                 <table class="torrent_table">
                     <tr class="colhead">
                         <td></td>
@@ -182,7 +194,7 @@ show_header('Users comparison'); ?>
                         <td>Time</td>
                         <td>Size</td>
                     </tr>
-                    <?php foreach($SharedTorrents as $SharedTorrent): ?>
+                    <?php foreach ($SharedTorrents as $SharedTorrent) : ?>
                     <tr class="torrent">
                         <td class="center cats_col"><div title="CATEGORY"></div></td>
                         <td><a href="/torrents.php?id=<?= $SharedTorrent['ID'] ?>"><?= display_str($SharedTorrent['Name']) ?></a></td>
@@ -197,9 +209,9 @@ show_header('Users comparison'); ?>
     <div class="head">Shared Categories (<?= count($SharedCategories) ?>)</div>
     <div class="box pad shadow">
         <p><em>You can find here the niches the two users share.</em></p>
-        <?php if (empty($SharedCategories)): ?>
+        <?php if (empty($SharedCategories)) : ?>
             <p>These users do not share any categories.</p>
-        <?php else: ?>
+        <?php else : ?>
             <table class="torrent_table">
                 <tr class="colhead">
                     <td></td>
@@ -207,7 +219,7 @@ show_header('Users comparison'); ?>
                     <td><?= display_str($UserA['Username']) ?>'s uses</td>
                     <td><?= display_str($UserB['Username']) ?>'s uses</td>
                 </tr>
-                <?php foreach($SharedCategories as $SharedCategory): ?>
+                <?php foreach ($SharedCategories as $SharedCategory) : ?>
                     <tr class="torrent">
                         <td><img src="static/common/caticons/<?= $NewCategories[$SharedCategory]['image'] ?>" /></td>
                         <td><?= display_str($NewCategories[$SharedCategory]['name']) ?></td>
@@ -222,16 +234,16 @@ show_header('Users comparison'); ?>
     <div class="head">Shared <abbr title="Used in less than <?= (int) $MaxUses ?> torrents">uncommon</abbr> Tags (<?= count($SharedRareTags) ?>)</div>
     <div class="box pad shadow">
         <p><em>You can find here all the "rare" tags the two users share. You can change the rarity of usage by adding a maxuses parameter in the URL.</em></p>
-        <?php if (empty($SharedRareTags)): ?>
+        <?php if (empty($SharedRareTags)) : ?>
             <p>These users do not share uncommon tags.</p>
-        <?php else: ?>
+        <?php else : ?>
             <table class="torrent_table">
                 <tr class="colhead">
                     <td>Tags name</td>
                     <td><?= display_str($UserA['Username']) ?>'s uses</td>
                     <td><?= display_str($UserB['Username']) ?>'s uses</td>
                 </tr>
-                <?php foreach($SharedRareTags as $SharedRareTag): ?>
+                <?php foreach ($SharedRareTags as $SharedRareTag) : ?>
                     <tr class="torrent">
                         <td><?= display_str($SharedRareTag) ?></td>
                         <td class="nobr"><?= (int) $UserA['RareTagsCount'][$SharedRareTag] ?></td>

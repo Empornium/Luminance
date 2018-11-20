@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('admin_email_blacklist')) { error(403); }
+if (!check_perms('admin_email_blacklist')) {
+    error(403);
+}
 
 show_header('Manage email blacklist');
 $DB->query("SELECT
@@ -53,29 +55,29 @@ $DB->query("SELECT
         </tr>
 <?php
     $Row = 'a';
-    while (list($ID, $UserID, $Time, $Email, $Comment, $Username) = $DB->next_record()) {
-        $Row = ($Row === 'a' ? 'b' : 'a');
+while (list($ID, $UserID, $Time, $Email, $Comment, $Username) = $DB->next_record()) {
+    $Row = ($Row === 'a' ? 'b' : 'a');
 ?>
-        <tr class="row<?=$Row?>">
-        <form action="tools.php" method="post">
-            <td>
-                <input type="hidden" name="action" value="eb_alter" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-                <input type="hidden" name="id" value="<?=$ID?>" />
-                <input  class="long" type="text" name="email" value="<?=display_str($Email)?>" />
-            </td>
-            <td>
-                <input  class="long" type="text" name="comment" value="<?=display_str($Comment)?>" />
-            </td>
-            <td>
-                <?=format_username($UserID, $Username)?><br />
-                <?=time_diff($Time, 1)?></td>
-            <td>
-                <input type="submit" name="submit" value="Edit" />
-                <input type="submit" name="submit" value="Delete" />
-            </td>
-        </form>
-        </tr>
+<tr class="row<?=$Row?>">
+<form action="tools.php" method="post">
+    <td>
+        <input type="hidden" name="action" value="eb_alter" />
+        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+        <input type="hidden" name="id" value="<?=$ID?>" />
+        <input  class="long" type="text" name="email" value="<?=display_str($Email)?>" />
+    </td>
+    <td>
+        <input  class="long" type="text" name="comment" value="<?=display_str($Comment)?>" />
+    </td>
+    <td>
+        <?=format_username($UserID, $Username)?><br />
+        <?=time_diff($Time, 1)?></td>
+    <td>
+        <input type="submit" name="submit" value="Edit" />
+        <input type="submit" name="submit" value="Delete" />
+    </td>
+</form>
+</tr>
 <?php   } ?>
     </table>
 </div>

@@ -2,7 +2,7 @@
 if (!isset($_GET['torrentid']) || !is_number($_GET['torrentid'])) {
     error(404);
 }
-if ( !check_perms('site_view_torrent_snatchlist')) {
+if (!check_perms('site_view_torrent_snatchlist')) {
     error(403);
 }
 $TorrentID = $_GET['torrentid'];

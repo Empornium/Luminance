@@ -1,5 +1,7 @@
 <?php
-if (!check_perms('site_torrents_notify')) { error(403); }
+if (!check_perms('site_torrents_notify')) {
+    error(403);
+}
 authorize();
 
 $TagList = '';
@@ -45,8 +47,8 @@ if ($Err) {
     die();
 }
 
-$TagList = str_replace('||','|',$TagList);
-$NotTagList = str_replace('||','|',$NotTagList);
+$TagList = str_replace('||', '|', $TagList);
+$NotTagList = str_replace('||', '|', $NotTagList);
 
 if ($_POST['id'] && is_number($_POST['id'])) {
     $DB->query("UPDATE users_notify_filters SET

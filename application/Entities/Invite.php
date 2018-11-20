@@ -3,7 +3,8 @@ namespace Luminance\Entities;
 
 use Luminance\Core\Entity;
 
-class Invite extends Entity {
+class Invite extends Entity
+{
 
     public static $table = 'invites';
 

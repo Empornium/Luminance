@@ -29,7 +29,8 @@ class HaveIBeenPwned extends Service
      * @param $password
      * @return int
      */
-    public function check($password) {
+    public function check($password)
+    {
         $this->init($password);
 
         // Avoid any API call if it's cached
@@ -53,7 +54,8 @@ class HaveIBeenPwned extends Service
     /**
      * @param $password
      */
-    private function init($password) {
+    private function init($password)
+    {
         $this->password = $password;
         $this->hash();
     }
@@ -62,7 +64,8 @@ class HaveIBeenPwned extends Service
      * @param $pwned
      * @return bool
      */
-    private function cache($pwned) {
+    private function cache($pwned)
+    {
         if (!$this->cache) {
             return false;
         }
@@ -75,7 +78,8 @@ class HaveIBeenPwned extends Service
     /**
      * @return int
      */
-    private function checkCache() {
+    private function checkCache()
+    {
         if (!$this->cache) {
             return 0;
         }
@@ -87,11 +91,13 @@ class HaveIBeenPwned extends Service
      * Returns the cache key we'll use
      * @return string
      */
-    private function cacheKey() {
+    private function cacheKey()
+    {
         return "hibp_{$this->hash}";
     }
 
-    private function hash() {
+    private function hash()
+    {
         $this->hash   = sha1($this->password);
         $this->prefix = substr($this->hash, 0, self::LEN);
         $this->suffix = substr($this->hash, self::LEN);
@@ -100,7 +106,8 @@ class HaveIBeenPwned extends Service
     /**
      * @return bool|string
      */
-    private function api() {
+    private function api()
+    {
         $http = new Client();
 
         try {
@@ -116,7 +123,8 @@ class HaveIBeenPwned extends Service
     /**
      * @return string
      */
-    private function createUri() {
+    private function createUri()
+    {
         return self::API.$this->prefix;
     }
 
@@ -124,7 +132,8 @@ class HaveIBeenPwned extends Service
      * @param $response
      * @return bool
      */
-    private function processResponse($response) {
+    private function processResponse($response)
+    {
         return (bool) preg_match("/{$this->suffix}:\d+/i", $response);
     }
 }

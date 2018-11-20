@@ -15,7 +15,8 @@ use Luminance\Entities\Permission;
 use Luminance\Entities\Stylesheet;
 use Luminance\Entities\Restriction;
 
-class SetupPlugin extends Plugin {
+class SetupPlugin extends Plugin
+{
 
     public $routes = [
         [ 'CLI',  'configure/**',     0, 'configure'   ], // Configure can take a path to a script
@@ -47,7 +48,8 @@ class SetupPlugin extends Plugin {
         'auth'          => 'Auth',
     ];
 
-    public static function register(Master $master) {
+    public static function register(Master $master)
+    {
         $master->prependRoute([ 'CLI', 'setup/**',     0, 'plugin', 'Setup'              ]);
         $master->prependRoute([ 'CLI', 'configure/**', 0, 'plugin', 'Setup', 'configure' ]);
         $master->prependRoute([ 'CLI', 'install',      0, 'plugin', 'Setup', 'install'   ]);
@@ -56,14 +58,16 @@ class SetupPlugin extends Plugin {
         $master->prependRoute([ 'CLI', 'decrypt/*',    0, 'plugin', 'Setup', 'decrypt'   ]);
     }
 
-    protected function readline($prompt) {
+    protected function readline($prompt)
+    {
         echo $prompt;
         $handle = fopen("php://stdin", "r");
         $line = fgets($handle);
         return trim($line);
     }
 
-    public function configure() {
+    public function configure()
+    {
         $filename = implode('/', func_get_args());
         // Convert Gazelle config to Luminance
         if (!empty($filename)) {
@@ -71,27 +75,28 @@ class SetupPlugin extends Plugin {
             @include($filename); // Ignore errors
         } else {
             // Important site related stuff
-            define('SITE_NAME',          $this->readline("Site name: "));
-            define('NONSSL_SITE_URL',    $this->readline("Site FQDN: "));
-            define('SSL_SITE_URL',       $this->readline("Site TLS FQDN: "));
+            define('SITE_NAME', $this->readline("Site name: "));
+            define('NONSSL_SITE_URL', $this->readline("Site FQDN: "));
+            define('SSL_SITE_URL', $this->readline("Site TLS FQDN: "));
 
             // Database credentials
-            define('SQLDB',              $this->readline("Database name: "));
-            define('SQLLOGIN',           $this->readline("Database username: "));
-            define('SQLPASS',            $this->readline("Database password: "));
+            define('SQLDB', $this->readline("Database name: "));
+            define('SQLLOGIN', $this->readline("Database username: "));
+            define('SQLPASS', $this->readline("Database password: "));
 
             // Auto generated keys
-            define('ENCKEY',             $this->crypto->random_string(32));
-            define('RSS_HASH',           $this->crypto->random_string(32));
-            define('TRACKER_SECRET',     $this->crypto->random_string(32));
-            define('TRACKER_REPORTKEY',  $this->crypto->random_string(32));
+            define('ENCKEY', $this->crypto->random_string(32));
+            define('RSS_HASH', $this->crypto->random_string(32));
+            define('TRACKER_SECRET', $this->crypto->random_string(32));
+            define('TRACKER_REPORTKEY', $this->crypto->random_string(32));
         }
         $settings = $this->settings->get_legacy_constants();
         $this->settings->generateConfig($settings);
         print("Please open settings.ini and manually check its contents.\n\n");
     }
 
-    public function install() {
+    public function install()
+    {
         print_r("Initializing legacy database table schemas\n");
         $this->updateLegacyTables();
         print_r("Initializing ORM database table schemas\n");
@@ -102,14 +107,16 @@ class SetupPlugin extends Plugin {
         $this->createInitialUser();
     }
 
-    public function remove() {
+    public function remove()
+    {
         # Debug only!
         if ($this->settings->site->debug_mode) {
             $this->orm->drop_tables();
         }
     }
 
-    public function update() {
+    public function update()
+    {
         $this->cache->disable();
         $this->cache->disable_debug();
         $this->db->disable_debug();
@@ -117,7 +124,8 @@ class SetupPlugin extends Plugin {
         $this->updateLegacyTables();
     }
 
-    public function upgrade() {
+    public function upgrade()
+    {
         $this->update();
         //$this->deduplicate();
         foreach ($this->table_migrations as $name => $migration) {
@@ -125,13 +133,15 @@ class SetupPlugin extends Plugin {
         }
     }
 
-    protected function deduplicate() {
+    protected function deduplicate()
+    {
         $this->db->raw_query("set session old_alter_table=1");
         $this->db->raw_query("ALTER IGNORE TABLE xbt_snatched ADD UNIQUE INDEX `dedupe` (`fid`, `uid`)");
         $this->db->raw_query("ALTER TABLE xbt_snatched DROP INDEX `dedupe`");
     }
 
-    protected function updateLegacyTables() {
+    protected function updateLegacyTables()
+    {
         foreach (glob($this->master->application_path."/../tablespecs/*.sql") as $tablespec) {
             # Fetch the SQL and pass to ORM to do the heavy lifting
             $sql = file_get_contents($tablespec);
@@ -139,7 +149,8 @@ class SetupPlugin extends Plugin {
         }
     }
 
-    protected function createInitialUser() {
+    protected function createInitialUser()
+    {
         // Initial user creation
         $adminUsername = $this->readline("Admin Username: ");
         $adminPassword = $this->readline("Admin Password: ");
@@ -153,7 +164,8 @@ class SetupPlugin extends Plugin {
         $this->users->save($adminAccount);
     }
 
-    protected function populateTables() {
+    protected function populateTables()
+    {
         foreach (glob($this->master->application_path."/../public/static/styles/*/meta.ini") as $stylespec) {
             $stylespec = parse_ini_file($stylespec);
             if ($this->db->raw_query("SELECT COUNT(*) FROM stylesheets WHERE Name = :name", [':name' => $stylespec['name']])->fetchColumn() == 0) {
@@ -226,7 +238,8 @@ class SetupPlugin extends Plugin {
         ],
     ];
 
-    public function performMigration($name, $migration) {
+    public function performMigration($name, $migration)
+    {
         try {
             list($rowCount) = $this->db->raw_query($migration['count_query'])->fetch();
         } catch (\PDOException $e) {
@@ -261,7 +274,8 @@ class SetupPlugin extends Plugin {
         }
     }
 
-    public function migrateEntity($name, $migration, $result) {
+    public function migrateEntity($name, $migration, $result)
+    {
         switch ($name) {
             case 'users':
                 list($ID) = $result;
@@ -302,7 +316,8 @@ class SetupPlugin extends Plugin {
         }
     }
 
-    public function migrateUser($ID) {
+    public function migrateUser($ID)
+    {
         print("Migrating user ID {$ID}\r");
         $user = $this->users->get('ID = :id', [':id' => $ID]);
         $oldUser = $this->db->raw_query("SELECT * FROM `users_main` AS um WHERE um.`ID` = ?", [$ID])->fetch();
@@ -397,10 +412,12 @@ class SetupPlugin extends Plugin {
                 $user->EmailID = $email->ID;
                 $this->users->save($user);
             }
-        } catch (UserError $e) {}
+        } catch (UserError $e) {
+        }
     }
 
-    public function migrateEmail($Email) {
+    public function migrateEmail($Email)
+    {
         print("Migrating email historical address {$Email}              \r");
         $oldEmail = $this->db->raw_query("SELECT uhe.`UserID`, uhe.`Email`, uhe.`Time`, uhe.`IP` FROM `users_history_emails` AS uhe WHERE uhe.`Email` = ? ORDER BY Time ASC LIMIT 1", [$Email])->fetch();
         try {
@@ -420,7 +437,8 @@ class SetupPlugin extends Plugin {
     }
 
     // Super hacky
-    public function migrateTorrent($ID) {
+    public function migrateTorrent($ID)
+    {
         print("Migrating torrent ID {$ID}\r");
         $this->db->raw_query(
             "UPDATE torrents_files
@@ -441,17 +459,20 @@ class SetupPlugin extends Plugin {
         );
     }
 
-    public function migratePeers($ID) {
+    public function migratePeers($ID)
+    {
         print("Migrating peer record ID {$ID}\r");
         $this->db->raw_query("UPDATE xbt_peers_history SET ipv4=INET6_ATON(ip) WHERE id=:id", [':id' => $ID]);
     }
 
-    public function migrateSnatches($uid, $fid) {
+    public function migrateSnatches($uid, $fid)
+    {
         print("Migrating snatch record UserID {$uid}, TorrentID {$fid}\r");
         $this->db->raw_query("UPDATE xbt_snatched SET ipv4=INET6_ATON(IP) WHERE uid=:uid AND fid=:fid AND ipv4 IS NULL and ipv6 IS NULL AND INET6_ATON(IP) IS NOT NULL", [':uid' => $uid, ':fid' => $fid]);
     }
 
-    public function migrateIPBan($ID) {
+    public function migrateIPBan($ID)
+    {
         $oldBan = $this->db->raw_query("SELECT INET_NTOA(`FromIP`) AS `FromIP`, INET_NTOA(`ToIP`) AS `ToIP`, `UserID`, `StaffID`, `EndTime`, `Reason` FROM `ip_bans` WHERE `ID` = ?", [$ID])->fetch();
         $range = \IPLib\Factory::rangeFromBoundaries($oldBan['FromIP'], $oldBan['ToIP']);
         print("Migrating IP ban {$ID}: {$range}                  \r");
@@ -466,7 +487,8 @@ class SetupPlugin extends Plugin {
         return true;
     }
 
-    public function updateEmailTime($ID) {
+    public function updateEmailTime($ID)
+    {
         print("Update Email Record {$ID}                  \r");
         try {
             $email = $this->emails->load($ID);
@@ -479,7 +501,8 @@ class SetupPlugin extends Plugin {
         }
     }
 
-    public function updateWarnings($ID) {
+    public function updateWarnings($ID)
+    {
         print("Update User Warning Record {$ID}                  \r");
         list($Warned) = $this->db->raw_query("SELECT Warned FROM users_info WHERE UserID = ?", [$ID])->fetch();
         $restriction = new Restriction;
@@ -493,7 +516,8 @@ class SetupPlugin extends Plugin {
         $this->db->raw_query("UPDATE users_info SET Warned=NULL WHERE UserID = ?", [$ID]);
     }
 
-    public function updateRestrictions($ID) {
+    public function updateRestrictions($ID)
+    {
         print("Update User Restriction Record {$ID}                  \r");
         $oldRestrictions = $this->db->raw_query("SELECT DisableAvatar, DisableInvites, DisablePosting, DisableForums, DisableTagging, DisableUpload, DisablePM, DisableTorrentSig, DisableSignature FROM users_info WHERE UserID = ?", [$ID])->fetch(\PDO::FETCH_ASSOC);
 
@@ -524,7 +548,8 @@ class SetupPlugin extends Plugin {
         $oldRestrictions = $this->db->raw_query("UPDATE users_info SET DisableAvatar='0', DisableInvites='0', DisablePosting='0', DisableForums='0', DisableTagging='0', DisableUpload='0', DisablePM='0', DisableTorrentSig='0', DisableSignature='0' WHERE UserID = ?", [$ID])->fetch(\PDO::FETCH_ASSOC);
     }
 
-    public function fixForums() {
+    public function fixForums()
+    {
         $threadIDs = $this->db->raw_query("SELECT ID FROM forums_topics")->fetchAll(\PDO::FETCH_COLUMN);
         foreach ($threadIDs as $threadID) {
             print("Updating thread ${threadID}\n");
@@ -533,9 +558,9 @@ class SetupPlugin extends Plugin {
         }
     }
 
-    public function decrypt($data) {
+    public function decrypt($data)
+    {
         var_dump($data);
         var_dump($this->crypto->decrypt($data, 'default', true));
     }
-
 }

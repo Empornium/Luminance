@@ -7,7 +7,8 @@ use Delight\Cookie\Cookie;
 use Luminance\Errors\SystemError;
 use Luminance\Responses\Redirect;
 
-class Request {
+class Request
+{
 
     public $method;
     public $get;
@@ -26,7 +27,8 @@ class Request {
     public $authLevel = null;
     public $session = null;
 
-    public function __construct(Master $master) {
+    public function __construct(Master $master)
+    {
         $this->master = $master;
         $this->reference = bin2hex(pack('Nnn', time(), mt_rand(0, 65535), mt_rand(0, 65535)));
         $this->cli = (php_sapi_name() === "cli");
@@ -53,7 +55,9 @@ class Request {
                 $this->url_parts = [];
             }
 
-            if (!array_key_exists('path', $this->url_parts)) $this->url_parts['path'] = '/';
+            if (!array_key_exists('path', $this->url_parts)) {
+                $this->url_parts['path'] = '/';
+            }
             $this->raw_path = ltrim($this->url_parts['path'], '/');
             $this->path = ($this->raw_path == '') ? [] : explode('/', $this->raw_path);
             $this->ip = $master->repos->ips->get_or_new($master->server['REMOTE_ADDR']);
@@ -64,7 +68,8 @@ class Request {
         $this->cookie = $master->superglobals['cookie'];
     }
 
-    public function getString($name, $default = '') {
+    public function getString($name, $default = '')
+    {
         if ($this->method === 'GET') {
             return $this->getGetString($name, $default);
         } elseif ($this->method === 'POST') {
@@ -74,7 +79,8 @@ class Request {
         }
     }
 
-    public function getGetString($name, $default = '') {
+    public function getGetString($name, $default = '')
+    {
         if (array_key_exists($name, $this->get)) {
             return strval($this->get[$name]);
         } else {
@@ -82,7 +88,8 @@ class Request {
         }
     }
 
-    public function getPostString($name, $default = '') {
+    public function getPostString($name, $default = '')
+    {
         if (array_key_exists($name, $this->post)) {
             return strval($this->post[$name]);
         } else {
@@ -90,7 +97,8 @@ class Request {
         }
     }
 
-    public function get_int($Name, $Default = 0) {
+    public function get_int($Name, $Default = 0)
+    {
         if ($this->method === 'GET') {
             return $this->get_get_int($Name, $Default);
         } elseif ($this->method === 'POST') {
@@ -100,7 +108,8 @@ class Request {
         }
     }
 
-    public function get_get_int($Name, $Default = 0) {
+    public function get_get_int($Name, $Default = 0)
+    {
         if (array_key_exists($Name, $this->get)) {
             return intval($this->get[$Name]);
         } else {
@@ -108,7 +117,8 @@ class Request {
         }
     }
 
-    public function get_post_int($Name, $Default = 0) {
+    public function get_post_int($Name, $Default = 0)
+    {
         if (array_key_exists($Name, $this->post)) {
             return intval(intval($this->post[$Name]));
         } else {
@@ -116,7 +126,8 @@ class Request {
         }
     }
 
-    public function get_bool($Name, $Default = false) {
+    public function get_bool($Name, $Default = false)
+    {
         if ($this->method === 'GET') {
             return $this->get_get_bool($Name, $Default);
         } elseif ($this->method === 'POST') {
@@ -126,7 +137,8 @@ class Request {
         }
     }
 
-    public function get_get_bool($Name, $Default = false) {
+    public function get_get_bool($Name, $Default = false)
+    {
         if (array_key_exists($Name, $this->get)) {
             return boolval(intval($this->get[$Name]));
         } else {
@@ -134,7 +146,8 @@ class Request {
         }
     }
 
-    public function get_post_bool($Name, $Default = false) {
+    public function get_post_bool($Name, $Default = false)
+    {
         if (array_key_exists($Name, $this->post)) {
             return boolval(intval($this->post[$Name]));
         } else {
@@ -142,7 +155,8 @@ class Request {
         }
     }
 
-    public function get_cookie($name, $default = null) {
+    public function get_cookie($name, $default = null)
+    {
         if (array_key_exists($name, $this->cookie)) {
             return $this->cookie[$name];
         } else {
@@ -150,7 +164,8 @@ class Request {
         }
     }
 
-    public function set_cookie($name, $value, $expire = 0, $httponly = false) {
+    public function set_cookie($name, $value, $expire = 0, $httponly = false)
+    {
         //$result = setcookie($name, $value, $expire, '/', '', $this->ssl, $httponly);
         $result = Cookie::setcookie($name, $value, $expire, '/', '', $this->ssl, $httponly, 'Lax');
 
@@ -164,7 +179,8 @@ class Request {
         }
     }
 
-    public function delete_cookie($name) {
+    public function delete_cookie($name)
+    {
         setcookie($name, '', time() - 86400, '/', '', $this->ssl);
     }
 
@@ -173,7 +189,8 @@ class Request {
      *
      * @return void
      */
-    public function saveIntendedRoute() {
+    public function saveIntendedRoute()
+    {
         $encrypted = $this->master->crypto->encrypt($this->uri, 'intendedRoute');
         $this->set_cookie('intendedRoute', $encrypted);
     }
@@ -183,7 +200,8 @@ class Request {
      *
      * @return string|null
      */
-    public function getIntendedRoute() {
+    public function getIntendedRoute()
+    {
         $encrypted = $this->get_cookie('intendedRoute');
 
         if ($encrypted === null) {
@@ -201,7 +219,8 @@ class Request {
      *
      * @return Redirect
      */
-    public function back($fallback = '/', $referer = true) {
+    public function back($fallback = '/', $referer = true)
+    {
         // Try to get a saved route first
         if ($sessionRoute = $this->getIntendedRoute()) {
             return new Redirect($sessionRoute);
@@ -221,7 +240,8 @@ class Request {
      *
      * @return bool
      */
-    public function checkReferer() {
+    public function checkReferer()
+    {
         if (!empty($_SERVER['HTTP_REFERER'])) {
             $referer = $_SERVER['HTTP_REFERER'];
 
@@ -240,7 +260,8 @@ class Request {
     /**
      * Set the HTTP headers for this request's reponse
      */
-    public function setHttpHeaders() {
+    public function setHttpHeaders()
+    {
         // For now, we only have CSP
         $this->setContentSecurityPolicy();
     }
@@ -250,7 +271,8 @@ class Request {
      * Note: Google is required for the charts api, we need to kill that off soon
      * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
      */
-    public function setContentSecurityPolicy() {
+    public function setContentSecurityPolicy()
+    {
         $imagehosts = $this->master->db->raw_query("SELECT Imagehost FROM imagehost_whitelist")->fetchAll();
         $imagehosts = implode(' ', array_column($imagehosts, 'Imagehost'));
 

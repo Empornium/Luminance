@@ -5,7 +5,8 @@ use Luminance\Core\Master;
 use Luminance\Core\Service;
 use Luminance\Errors\SystemError;
 
-class OldDB extends Service {
+class OldDB extends Service
+{
 
     public $LinkID = false;
     protected $QueryID = false;
@@ -21,12 +22,14 @@ class OldDB extends Service {
         'newdb' => 'DB',
     ];
 
-    public function connect() {
+    public function connect()
+    {
         $this->newdb->connect();
         $this->LinkID = true;
     }
 
-    public function query($Query, $AutoHandle = 1) {
+    public function query($Query, $AutoHandle = 1)
+    {
         global $Debug;
         $QueryStartTime=microtime(true);
         $this->connect();
@@ -56,20 +59,23 @@ class OldDB extends Service {
         }
     }
 
-    public function query_unb($Query) {
+    public function query_unb($Query)
+    {
         error_log("OldDB::query_unb() no longer works, sorry");
         exit;
         $this->connect();
         mysqli_real_query($this->LinkID, $Query);
     }
 
-    public function inserted_id() {
+    public function inserted_id()
+    {
         if ($this->LinkID) {
             return $this->newdb->pdo->lastInsertId();
         }
     }
 
-    public function next_record($Type = MYSQLI_BOTH, $Escape = true) {
+    public function next_record($Type = MYSQLI_BOTH, $Escape = true)
+    {
  // $Escape can be true, false, or an array of keys to not escape
         if ($this->QueryID) {
             $this->Record = $this->QueryID->fetch($Type);
@@ -84,30 +90,35 @@ class OldDB extends Service {
         }
     }
 
-    public function close() {
+    public function close()
+    {
         if ($this->LinkID) {
             $this->LinkID = false;
         }
     }
 
-    public function record_count() {
+    public function record_count()
+    {
         if ($this->QueryID) {
             return $this->QueryID->record_count();
         }
     }
 
-    public function affected_rows() {
+    public function affected_rows()
+    {
         if ($this->QueryID) {
             return $this->QueryID->stmt->rowCount();
         }
     }
 
-    public function info() {
+    public function info()
+    {
         return mysqli_get_host_info($this->LinkID);
     }
 
     // You should use db_string() instead.
-    public function escape_str($Str) {
+    public function escape_str($Str)
+    {
         $this->connect();
         if (is_array($Str)) {
             trigger_error('Attempted to escape array.');
@@ -121,7 +132,8 @@ class OldDB extends Service {
     // Creates an array from a result set
     // If $Key is set, use the $Key column in the result set as the array key
     // Otherwise, use an integer
-    public function to_array($Key = false, $Type = MYSQLI_BOTH, $Escape = true, $KeepKeys = true) {
+    public function to_array($Key = false, $Type = MYSQLI_BOTH, $Escape = true, $KeepKeys = true)
+    {
         $Return = array();
         while ($Row = $this->QueryID->fetch($Type)) {
             if ($Escape!==false) {
@@ -142,7 +154,8 @@ class OldDB extends Service {
     }
 
     //  Loops through the result set, collecting the $Key column into an array
-    public function collect($Key, $Escape = true) {
+    public function collect($Key, $Escape = true)
+    {
         $Return = array();
         while ($Row = $this->QueryID->fetch()) {
             $Return[] = $Escape ? db_display_str($Row[$Key]) : $Row[$Key];
@@ -152,12 +165,14 @@ class OldDB extends Service {
         return $Return;
     }
 
-    public function set_query_id(&$ResultSet) {
+    public function set_query_id(&$ResultSet)
+    {
         $this->QueryID = $ResultSet;
         $this->Row = 0;
     }
 
-    public function beginning() {
+    public function beginning()
+    {
         $this->QueryID->rewind();
     }
 }
