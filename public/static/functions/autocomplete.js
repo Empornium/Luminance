@@ -119,6 +119,11 @@ var autocomp = {
             }
             // replace searched on word with selected word & rebuild input string
             words[this.wordindex] = prefix + tag;
+            // add space if we appended at the end of wordlist
+            if (this.wordindex == words.length - 1) {
+                words[this.wordindex] += " ";
+            }
+            
             inputtext = words.join(" ");
             // to find the caret position of the end of the inserted word we loop through and add whole word lengths
             var count = 0;
