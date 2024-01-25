@@ -1,5 +1,3 @@
-
-
 function change_flag() {
     var flag = $('#flag').raw().value;
     if (flag == '' || flag == '??') flag = '';
@@ -16,8 +14,7 @@ function change_lang_flag() {
 }
 
 function delete_conn_record(elem_id, user_id, ip) {
-
-  ajax.get('ajax.php?action=delete_conn_record&ip=' + ip + '&userid=' + user_id, function (response) {
+  ajax.get('/ajax.php?action=delete_conn_record&ip=' + ip + '&userid=' + user_id, function (response) {
         var x = json.decode(response);
         if ( is_array(x)){
             if ( x[0] == true){
@@ -31,10 +28,8 @@ function delete_conn_record(elem_id, user_id, ip) {
   });
 }
 
-
 function unset_conn_status(elemstatus_id, elemlink_id, user_id, ip) {
-
-  ajax.get('ajax.php?action=remove_conn_status&ip=' + ip + '&userid=' + user_id, function (response) {
+  ajax.get('/ajax.php?action=remove_conn_status&ip=' + ip + '&userid=' + user_id, function (response) {
         var x = json.decode(response);
         if ( is_array(x)){
             if ( x[0] == true){
@@ -53,7 +48,6 @@ function unset_conn_status(elemstatus_id, elemlink_id, user_id, ip) {
 }
 
 function Toggle_view(elem_id) {
-
     jQuery('#'+elem_id+'div').toggle();
 
     if (jQuery('#'+elem_id+'div').is(':hidden'))
@@ -87,27 +81,12 @@ function Toggle_view(elem_id) {
     return false;
 }
 
-
-
 function get_hidden_value(elem_id){
 
     if (!in_array(elem_id, cookieitems, false))
         return 'not';
     else
         return ( jQuery('#'+elem_id+'div').is(':hidden') )?'0':'1';
-
-    /*
-    var element =  document.getElementById(elem_id);
-
-    if (typeof(element) != 'undefined' && element != null)
-    {
-      // exists.
-      return ( jQuery('#'+elem_id).is(':hidden') )?'0':'1';
-    }
-    return '0';
-    //if (jQuery('#'+elem_id).length == 0) alert("un: "+elem_id);
-    if (jQuery('#'+elem_id).length == 0) return '0';
-    else return ( jQuery('#'+elem_id).is(':hidden') )?'0':'1'; */
 }
 
 function set_hidden_value(elem_id, state){
@@ -124,7 +103,7 @@ function set_hidden_value(elem_id, state){
     }
 }
 
-function Load_User_Cookie()  {
+function Load_User_Cookie() {
 
   if(jQuery.cookie('userPageState') == undefined) {
     jQuery.cookie('userPageState', json.encode(['0', '1', '1', '0', '0', '0', '0', '0', '0', '1', '0', '1', '0', '1', '1', '1', '1', '1']));
@@ -154,24 +133,22 @@ function Load_User_Cookie()  {
       set_hidden_value('reports', state[20]);
 }
 
-
-
 function ChangeTo(to) {
   if(to == "text") {
     $('#admincommentlinks').hide();
     $('#admincomment').show();
     resize('admincomment');
     var buttons = document.getElementsByName('admincommentbutton');
-    for(var i = 0; i < buttons.length; i++) {
+    for (var i = 0; i < buttons.length; i++) {
       buttons[i].setAttribute('onclick',"ChangeTo('links'); return false;");
     }
   } else if(to == "links") {
-    ajax.post("ajax.php?action=preview","form", function(response){
+    ajax.post("/ajax.php?action=preview","form", function(response){
       $('#admincommentlinks').raw().innerHTML = response;
       $('#admincomment').hide();
       $('#admincommentlinks').show();
       var buttons = document.getElementsByName('admincommentbutton');
-      for(var i = 0; i < buttons.length; i++) {
+      for (var i = 0; i < buttons.length; i++) {
         buttons[i].setAttribute('onclick',"ChangeTo('text'); return false;");
       }
     });
@@ -183,7 +160,7 @@ function Preview_Toggle(id) {
   if ($(preview_div).has_class('hidden')) {
     var ToPost = [];
     ToPost['body'] = $('#preview_message_'+id).raw().value;
-    ajax.post('ajax.php?action=preview', ToPost, function (data) {
+    ajax.post('/ajax.php?action=preview', ToPost, function (data) {
       $(preview_div).raw().innerHTML = data;
       $(preview_div).toggle();
       $('#editor_'+id).toggle();
@@ -201,7 +178,7 @@ function CalculateAdjustUpload(name, radioObj, currentvalue){
     if (adjustamount != 0){
         var mul = 1;
     var radioLength = radioObj.length;
-    for(var i = 0; i < radioLength; i++) {
+    for (var i = 0; i < radioLength; i++) {
     if(radioObj[i].checked) {
                 if (radioObj[i].value == 'mb') mul = 1024 * 1024;
                  else if (radioObj[i].value == 'gb') mul = 1024 * 1024 * 1024;

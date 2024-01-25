@@ -12,11 +12,11 @@ show_header("Manipulate Invite Tree");
 if ($_POST['id']) {
     authorize();
 
-    if (!is_number($_POST['id'])) { error(403); }
+    if (!is_integer_string($_POST['id'])) { error(403); }
     if (!$_POST['comment']) { error('Please enter a comment to add to the users affected.');
-    } else { $Comment = db_string($_POST['comment']); }
-    $UserID = $_POST['id'];
-    $DB->query("SELECT
+    } else { $Comment = $_POST['comment']; }
+    $userID = $_POST['id'];
+    list($TreePosition, $TreeID, $TreeLevel, $MaxPosition) = $master->db->rawQuery("SELECT
         t1.TreePosition,
         t1.TreeID,
         t1.TreeLevel,
@@ -26,77 +26,88 @@ if ($_POST['id']) {
             ORDER BY TreePosition LIMIT 1
         ) AS MaxPosition
         FROM invite_tree AS t1
-        WHERE t1.UserID=$UserID");
-    list($TreePosition, $TreeID, $TreeLevel, $MaxPosition) = $DB->next_record();
+        WHERE t1.UserID = ?",
+        [$userID]
+    )->fetch(\PDO::FETCH_NUM);
     if (!$MaxPosition) { $MaxPosition = 1000000; } // $MaxPermission is null if the user is the last one in that tree on that level
     if (!$TreeID) { return; }
-        $DB->query("
+        $BanList = $master->db->rawQuery("
             SELECT
             UserID
             FROM invite_tree
-            WHERE TreeID=$TreeID
-            AND TreePosition>$TreePosition
-            AND TreePosition<$MaxPosition
-            AND TreeLevel>$TreeLevel
-            ORDER BY TreePosition");
-    $BanList = array();
+            WHERE TreeID = ?
+            AND TreePosition > ?
+            AND TreePosition < ?
+            AND TreeLevel > ?
+            ORDER BY TreePosition",
+        [$TreeID, $TreePosition, $MaxPosition, $TreeLevel]
+    )->fetchAll(\PDO::FETCH_COLUMN);
 
-    while (list($Invitee) = $DB->next_record()) {
-        $BanList[]=$Invitee;
-    }
+    if ($BanList) {
+        foreach ($BanList as $Key => $InviteeID) {
+            if ($_POST['perform']=='nothing') {
+                $AdminComment = $master->db->rawQuery("SELECT
+                        AdminComment
+                        FROM users_info
+                        WHERE UserID = ?",
+                    [$InviteeID]
+                )->fetchColumn();
+                $DBComment = "{$Comment}\n\n{$AdminComment}";
+                $master->db->rawQuery("UPDATE
+                        users_info
+                        SET AdminComment = ?
+                        WHERE UserID = ?",
+                    [$DBComment, $InviteeID]
+                );
+                $Msg = "Successfully commented on entire invite tree!";
+            } elseif ($_POST['perform']=='disable') {
+                $AdminComment = $master->db->rawQuery("SELECT
+                        AdminComment
+                        FROM users_info
+                        WHERE UserID = ?",
+                    [$InviteeID]
+                )->fetchColumn();
+                $DBComment = "{$Comment}\n\n{$AdminComment}";
+                $master->db->rawQuery("UPDATE
+                        users_info
+                        SET AdminComment = ?
+                        WHERE UserID = ?",
+                    [$DBComment, $InviteeID]
+                );
+                $master->db->rawQuery("UPDATE
+                        users_main
+                        SET Enabled = '2'
+                        WHERE ID = ?",
+                    [$InviteeID]
+                );
+                $Msg = "Successfully banned entire invite tree!";
+            } elseif ($_POST['perform']=='inviteprivs') {
 
-    foreach ($BanList as $Key => $InviteeID) {
-        if ($_POST['perform']=='nothing') {
-            $DB->query("SELECT
-                    AdminComment
-                    FROM users_info
-                    WHERE UserID='".$InviteeID."'");
-            list($AdminComment)=$DB->next_record();
-            $DBComment = $Comment."\n\n".$AdminComment;
-            $DB->query("UPDATE
-                    users_info
-                    SET AdminComment='".$DBComment."'
-                    WHERE UserID='".$InviteeID."'");
-            $Msg = "Successfully commented on entire invite tree!";
-        } elseif ($_POST['perform']=='disable') {
-            $DB->query("SELECT
-                    AdminComment
-                    FROM users_info
-                    WHERE UserID='".$InviteeID."'");
-            list($AdminComment)=$DB->next_record();
-            $DBComment = $Comment."\n\n".$AdminComment;
-            $DB->query("UPDATE
-                    users_info
-                    SET AdminComment='".$DBComment."'
-                    WHERE UserID='".$InviteeID."'");
-            $DB->query("UPDATE
-                    users_main
-                    SET Enabled='2'
-                    WHERE ID='".$InviteeID."'");
-            $Msg = "Successfully banned entire invite tree!";
-        } elseif ($_POST['perform']=='inviteprivs') {
+                $restriction = new Restriction;
+                $restriction->setFlags(Restriction::INVITE);
+                $restriction->UserID  = $InviteeID;
+                $restriction->StaffID = $activeUser['ID'];
+                $restriction->Created = new \DateTime();
+                $restriction->Comment = $Comment;
+                $master->repos->restrictions->save($restriction);
 
-            $restriction = new Restriction;
-            $restriction->setFlags(Restriction::INVITE);
-            $restriction->UserID  = $InviteeID;
-            $restriction->StaffID = $LoggedUser['ID'];
-            $restriction->Created = new \DateTime();
-            $restriction->Comment = $Comment;
-            $master->repos->restrictions->save($restriction);
-
-            $DB->query("SELECT
-                    AdminComment
-                    FROM users_info
-                    WHERE UserID='".$InviteeID."'");
-            list($AdminComment)=$DB->next_record();
-            $DBComment = $Comment."\n\n".$AdminComment;
-            $DB->query("UPDATE
-                    users_info
-                    SET AdminComment='".$DBComment."'
-                    WHERE UserID='".$InviteeID."'");
-            $Msg = "Successfully removed invite privileges from entire tree!";
-        } else {
-            error(403);
+                $AdminComment = $master->db->rawQuery("SELECT
+                        AdminComment
+                        FROM users_info
+                        WHERE UserID = ?",
+                    [$InviteeID]
+                )->fetchColumn();
+                $DBComment = "{$Comment}\n\n{$AdminComment}";
+                $master->db->rawQuery("UPDATE
+                        users_info
+                        SET AdminComment = ?
+                        WHERE UserID = ?",
+                    [$DBComment, $InviteeID]
+                );
+                $Msg = "Successfully removed invite privileges from entire tree!";
+            } else {
+                error(403);
+            }
         }
     }
 }
@@ -111,7 +122,7 @@ if ($_POST['id']) {
     <?php  } ?>
     <form action="" method="post">
         <input type="hidden" id="action" name="action" value="manipulate_tree" />
-        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
         <table>
             <tr>
                 <td class="label"><strong>UserID</strong></td>

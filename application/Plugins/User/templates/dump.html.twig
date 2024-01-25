@@ -1,0 +1,82 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% block title %}Dump User - <a href="/user.php?id={{ user.ID }}">{{ user.Username }}</a>{% endblock %}
+
+{% block main_content %}
+    <div class="thin">
+        <table>
+            <tr>
+                <td>Username: </td>
+                <td>{{ user.Username }}</td>
+            </tr><tr>
+                <td>UserID: </td>
+                <td> {{ user.ID }}</td>
+            </tr><tr>
+                <td>Joined: </td>
+                <td> {{ time_diff(user.legacy.JoinDate)|raw }}</td>
+            </tr><tr>
+                <td>Last Seen: </td>
+                <td> {{ time_diff(user.legacy.LastAccess)|raw }}</td>
+            </tr><tr>
+                <td>Notes: </td>
+                <td> REPLACE THIS WITH NOTABLE FROM PROFILE </td>
+            </tr><tr>
+                <td>Emails: </td><td></td>
+            </tr>
+            {% for email in emails %}
+                <tr style="min-height: 2em;">
+                    <td></td>
+                    <td style="vertical-align: middle;">
+                    <span style="float: left;">{{ email.Address }}</span>
+                    {% if email.isCancelled() %}
+                        [Deleted]
+                    {% endif %}
+                    {% if email.isQuiet() %}
+                        [Staff Added]
+                    {% endif %}
+                    {% if email.isDefault() %}
+                        [Default]
+                    {% endif %}
+                    {% if auth.isAllowed('users_view_ips') %}
+                        <span>&nbsp;{{ email.ip }} {{ email.ip.geoip }}</span>
+                    {% endif %}
+                </td>
+                </tr>
+            {% endfor %}
+            <tr><td>Clients:</td><td>
+                    {% for torrentClient in user.torrentClients %}
+                        <span title=\"{{ torrentClient.clientid }} on {{ torrentClient.ip }}\">{{ torrentClient.useragent }}</span>
+                    {% endfor %}</td>
+            <tr><td>Tracker IPs:</td><td>
+                    {% for connectable in user.connectable %}
+                        {{ connectable.ip }}
+                    {% endfor %}
+                </td>
+        </table>
+
+        <table>
+            <tr class="colhead">
+                <td style="width:30%">IP address</td>
+                <td style="width:20%">Started</td>
+                <td style="width:20%">Ended</td>
+                <td style="width:30%">Host</td>
+            </tr>
+            {% for history in ips %}
+                <tr>
+                    {#<td>{{ history.ip }}</td>#}
+                    {#<td>{{ display_ip(history.ip)|raw }}</td>#}
+                    <td>{{ render.geoip(history.ip)|raw }}</td>
+                    <td>{{ history.StartTime|date('Y-m-d H:i:s') }}</td>
+                    <td>{{ history.EndTime|date('Y-m-d H:i:s') }}</td>
+                    <td>{{ get_host(history.ip)|raw }}<td>
+                </tr>
+            {% endfor %}
+        </table>
+        <div class="linkbox pager">
+            {{ render.pagelinks(page, results, pageSize, 9) }}
+        </div>
+    </div>
+
+{% endblock %}

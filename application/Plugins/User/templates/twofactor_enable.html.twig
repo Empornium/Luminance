@@ -1,0 +1,21 @@
+<div id="modal_content">
+    <div class="thin">
+        <h2>Enable Two Factor Authentication</h2>
+        <div class="twofa_code box pad center">
+            Scan the QR code below or manually enter the secret key to initiate two factor authentication pairing.
+            <br/>
+            <img src="/render/qr/otpauth://totp/{{ settings.main.site_name }}:{{ user.Username }}?secret={{ secret }}" class="qrcode_svg">
+            <br/>
+            <span class="twofa_code">{{ secret }}</span>
+            <br/><br/>
+            <form id="twofactor_confirm_form" action="/user/{{ user.ID }}/twofactor/confirm" method="POST">
+                <input type="hidden" name="token" value="{{ secretary.getToken("user.twofactor.enable") }}" />
+                <input type="hidden" name="protected" value="{{ protected }}" />
+                <input class="password" name="confirm_code" placeholder="Confirm Code">
+            </form>
+            <br/><br/>
+            <button type="submit" form="twofactor_confirm_form" value="Submit">Enable</button>
+            <div class="clear"></div>
+        </div>
+    </div>
+</div>

@@ -5,6 +5,8 @@ use Luminance\Core\Master;
 use Luminance\Core\Service;
 use Luminance\Entities\Option;
 
+use Luminance\Errors\InternalError;
+
 class Options extends Service {
 
     /*
@@ -22,36 +24,14 @@ class Options extends Service {
      * validation     - optional additional validation
      */
 
-    protected static $defaultOptions = [
-        'ErrorLoggingFreqS'     => ['value' => 3600, 'section' => 'tracker', 'displayRow' => 1, 'displayCol' => 2, 'type' => 'int',                                        'description' => 'Tracker errors log freq'],
-        'MFDReviewHours'        => ['value' => 24,   'section' => 'legacy',  'displayRow' => 1, 'displayCol' => 1, 'type' => 'int',  'perm' => 'torrents_review_manage',   'description' => 'MFD fix time (hours)'],
-        'MFDAutoDelete'         => ['value' => true, 'section' => 'legacy',  'displayRow' => 1, 'displayCol' => 2, 'type' => 'bool', 'perm' => 'torrents_review_manage',   'description' => 'Auto Delete MFD Torrents'],
-        'DeleteRecordsMins'     => ['value' => 360,  'section' => 'legacy',  'displayRow' => 2, 'displayCol' => 1, 'type' => 'int',  'perm' => 'admin_manage_cheats',      'description' => 'Speedrecord keep time (mins)'],
-        'KeepSpeed'             => ['value' => 512,  'section' => 'legacy',  'displayRow' => 2, 'displayCol' => 2, 'type' => 'int',  'perm' => 'admin_manage_cheats',      'description' => 'Speedcheat threshold (bytes/s)'],
-        'AvatarWidth'           => ['value' => 150,  'section' => 'legacy',  'displayRow' => 3, 'displayCol' => 1, 'type' => 'int',                                        'description' => 'Default Avatar Width (pix)'],
-        'AvatarHeight'          => ['value' => 250,  'section' => 'legacy',  'displayRow' => 3, 'displayCol' => 2, 'type' => 'int',                                        'description' => 'Default Avatar Height (pix)'],
-        'AvatarSizeKiB'         => ['value' => 1024, 'section' => 'legacy',  'displayRow' => 3, 'displayCol' => 3, 'type' => 'int',                                        'description' => 'Max Avatar Size (KiB)'],
-        'MinTagLength'          => ['value' => 3,    'section' => 'legacy',  'displayRow' => 4, 'displayCol' => 1, 'type' => 'int',                                        'description' => 'Minimum length of tags'],
-        'MaxTagLength'          => ['value' => 32,   'section' => 'legacy',  'displayRow' => 4, 'displayCol' => 2, 'type' => 'int',                                        'description' => 'Maximum length of tags'],
-        'MinTagNumber'          => ['value' => 1,    'section' => 'legacy',  'displayRow' => 4, 'displayCol' => 3, 'type' => 'int',                                        'description' => 'Minimum number of tags'],
-        'IntroPMArticle'        => ['value' => '',   'section' => 'legacy',  'displayRow' => 5, 'displayCol' => 1, 'type' => 'string', 'validation' => ['minlength' => 0], 'description' => 'Tag link for article with intro PM'],
-        'EnableUploads'         => ['value' => true, 'section' => 'legacy',  'displayRow' => 5, 'displayCol' => 2, 'type' => 'bool',                                       'description' => 'Global enable for uploads'],
-        'EnableDownloads'       => ['value' => true, 'section' => 'legacy',  'displayRow' => 5, 'displayCol' => 3, 'type' => 'bool',                                       'description' => 'Global enable for downloads'],
-        'LeakingClients'        => ['value' => 3,    'section' => 'legacy',  'displayRow' => 6, 'displayCol' => 1, 'type' => 'int',                                        'description' => 'Passkey leak detection client threshold'],
-        'LeakingIPs'            => ['value' => 10,   'section' => 'legacy',  'displayRow' => 6, 'displayCol' => 2, 'type' => 'int',                                        'description' => 'Passkey leak detection IP threshold'],
-        'MinCreateBounty'       => ['value' => 1024*1024*1024,    'section' => 'legacy',  'displayRow' => 7, 'displayCol' => 1, 'type' => 'int',                           'description' => 'Minimum request starting bounty'],
-        'MinVoteBounty'         => ['value' => 100*1024*1024,     'section' => 'legacy',  'displayRow' => 7, 'displayCol' => 2, 'type' => 'int',                           'description' => 'Minimum request voting bounty'],
-        'ImagesCheck'           => ['value' => true, 'section' => 'legacy',  'displayRow' => 8, 'displayCol' => 1, 'type' => 'bool',                                       'description' => 'Enable images checking in posts'],
-        'MaxImagesCount'        => ['value' => 10,   'section' => 'legacy',  'displayRow' => 8, 'displayCol' => 2, 'type' => 'int',                                        'description' => 'Max. number of images in posts'],
-        'MaxImagesWeight'       => ['value' => 10,   'section' => 'legacy',  'displayRow' => 8, 'displayCol' => 3, 'type' => 'int',                                        'description' => 'Max. size for images in posts (MB)'],
-        'ImagesCheckMinClass'   => ['value' => 0,    'section' => 'legacy',  'displayRow' => 8, 'displayCol' => 4, 'type' => 'int',                                        'description' => 'Disable for users above this rank'],
+    protected static $defaultOptions = [];
+
+    protected static $useServices = [
+        'repos' => 'Repos',
     ];
 
-    protected static $useRepositories = [
-        'options'   => 'OptionRepository',
-    ];
-
-    protected static $useServices = [];
+    private $sitewideFreeleech = null;
+    private $sitewideDoubleseed = null;
 
     public function __construct(Master $master) {
         parent::__construct($master);
@@ -67,10 +47,54 @@ class Options extends Service {
         return $sections;
     }
 
+    public function getSitewideFreeleech() {
+        if ($this->sitewideFreeleech === null) {
+            if ($this->SitewideFreeleechMode === 'perma') {
+                $sitewideFreeleech = true;
+            } elseif ($this->SitewideFreeleechMode === 'timed') {
+                $freeleechStarted = $this->SitewideFreeleechStartTime < strtotime(sqltime());
+                $freeleechEnded   = $this->SitewideFreeleechEndTime < strtotime(sqltime());
+                if ($freeleechStarted === true && $freeleechEnded === false && $this->SitewideFreeleechMode === 'timed') {
+                    $sitewideFreeleech = $this->SitewideFreeleechEndTime;
+                } else {
+                    $sitewideFreeleech = false;
+                }
+            } else {
+                $sitewideFreeleech = false;
+            }
+
+            $this->sitewideFreeleech = $sitewideFreeleech;
+        }
+
+        return $this->sitewideFreeleech;
+    }
+
+    public function getSitewideDoubleseed() {
+        if ($this->sitewideDoubleseed === null) {
+            if ($this->SitewideDoubleseedMode === 'perma') {
+                $sitewideDoubleseed = true;
+            } elseif ($this->SitewideDoubleseedMode === 'timed') {
+                $doubleseedStarted = $this->SitewideDoubleseedStartTime < strtotime(sqltime());
+                $doubleseedEnded   = $this->SitewideDoubleseedEndTime < strtotime(sqltime());
+                if ($doubleseedStarted === true && $doubleseedEnded === false && $this->SitewideDoubleseedMode === 'timed') {
+                    $sitewideDoubleseed = $this->SitewideDoubleseedEndTime;
+                } else {
+                    $sitewideDoubleseed = false;
+                }
+            } else {
+                $sitewideDoubleseed = false;
+            }
+
+            $this->sitewideDoubleseed = $sitewideDoubleseed;
+        }
+
+        return $this->sitewideDoubleseed;
+    }
+
     /* static compare function to sort by display: */
     private static function compareDisplay($optiona, $optionb) {
-        if ($optiona['displayRow'] == $optionb['displayRow']) {
-            if ($optiona['displayCol'] == $optionb['displayCol']) return 0;
+        if ($optiona['displayRow'] === $optionb['displayRow']) {
+            if ($optiona['displayCol'] === $optionb['displayCol']) return 0;
             return ($optiona['displayCol'] > $optionb['displayCol']) ? +1 : -1;
         }
         return ($optiona['displayRow'] > $optionb['displayRow']) ? +1 : -1;
@@ -86,28 +110,32 @@ class Options extends Service {
             return $options;
         } else {
             foreach ($options as $name => $option) {
-                if ($option['section'] !== $section)
+                if (!($option['section'] === $section))
                     unset($options[$name]);
             }
-            uasort($options, ['self', 'compareDisplay']);
+            uasort($options, [self::class, 'compareDisplay']);
             return $options;
         }
     }
 
     public static function register($pluginOptions) {
-        // defaults last so that framework keys take priority
+        # defaults last so that framework keys take priority
         static::$defaultOptions = array_merge($pluginOptions, static::$defaultOptions);
     }
 
     public function reset() {
         $this->master->auth->checkAllowed('admin_manage_site_options');
         foreach (static::$defaultOptions as $option => $default) {
-            // use set in case tracker needs poked
+            # use set in case tracker needs poked
             $this->__set($option, $default['value']);
         }
     }
 
-    protected function set_type($option) {
+    protected function setType($option) {
+        if (!array_key_exists($option->Name, static::$defaultOptions)) {
+            throw new InternalError("Unknown Option: {$option->Name}");
+        }
+
         $type = static::$defaultOptions[$option->Name]['type'];
         $value = $option->Value;
 
@@ -116,7 +144,7 @@ class Options extends Service {
                 $value = (string) $value;
                 break;
             case 'date':
-                //$value = new \DateTime($value);
+                #$value = new \DateTime($value);
                 break;
             case 'int':
             case 'bool':
@@ -134,11 +162,13 @@ class Options extends Service {
             return $this->$name;
         } else {
             try {
-                $option = $this->options->load($name);
+                $option = $this->repos->options->load($name);
                 if ($option instanceof Option) {
-                    return $this->set_type($option);
-                } else {
+                    return $this->setType($option);
+                } else if (array_key_exists($name, static::$defaultOptions)) {
                     return static::$defaultOptions[$name]['value'];
+                } else {
+                    throw new InternalError("Unknown Option: {$name}");
                 }
             } catch (\PDOException $e) {
                 return static::$defaultOptions[$name]['value'];
@@ -146,7 +176,7 @@ class Options extends Service {
         }
     }
 
-    public function get_type($name) {
+    public function getType($name) {
         if (array_key_exists($name, static::$defaultOptions)) {
             return static::$defaultOptions['type'];
         }
@@ -157,15 +187,15 @@ class Options extends Service {
     public function __set($name, $value) {
         if (array_key_exists($name, static::$defaultOptions)) {
             $this->master->auth->checkAllowed('admin_manage_site_options');
-            if (static::$defaultOptions[$name]['type'] == 'date')
+            if (static::$defaultOptions[$name]['type'] === 'date')
                 $value = strtotime($value);
             if (isset(static::$defaultOptions[$name]['perm'])) {
                 $this->master->auth->checkAllowed(static::$defaultOptions[$name]['perm']);
             }
-            $option = $this->options->load($name);
-            if (static::$defaultOptions[$name]['value'] == $value) {
+            $option = $this->repos->options->load($name);
+            if (static::$defaultOptions[$name]['value'] === $value) {
                 if ($option instanceof Option) {
-                    $this->options->delete($option);
+                    $this->repos->options->delete($option);
                 }
             } else {
                 if (!($option instanceof Option)) {
@@ -173,22 +203,25 @@ class Options extends Service {
                     $option->Name = $name;
                 }
                 $option->Value = $value;
-                $this->options->save($option);
+                $this->repos->options->save($option);
             }
 
-            if (static::$defaultOptions[$name]['updateTracker']) {
-                // Cludge, we can't use tracker service in the normal way or
-                // it will introduce a circular dependency
-                $this->master->tracker->options($name, $value);
+            if (array_key_exists('updateTracker', static::$defaultOptions[$name])) {
+                if (static::$defaultOptions[$name]['updateTracker']) {
+                    # Cludge, we can't use tracker service in the normal way or
+                    # it will introduce a circular dependency
+                    $this->master->tracker->options($name, $value);
+                }
             }
         } else {
             $this->$name = $value;
         }
     }
 
-    public function __isset($section_name) {
-        if (is_array(static::$defaultOptions[$section_name])) {
+    public function __isset($sectionName) {
+        if (is_array(static::$defaultOptions[$sectionName])) {
             return true;
         }
+        return false;
     }
 }

@@ -1,5 +1,5 @@
 {% if options.useSpan == false %}
-    {{ class.Name }}
+    {{ class.Name|striptags|raw }}
 {% else %}
-    (<span alt="{{ class.ID }}" class="rank" style="color:#{{ class.Color }}">{{ class.Name }}</span>)
+    (<span alt="{{ class.ID }}" class="rank" style="color:#{{ class.Color }}">{{ class.Name|striptags|raw }}</span>)
 {% endif %}

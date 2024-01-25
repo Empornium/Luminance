@@ -1,0 +1,84 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : true,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : true,
+    'noGroup'   : true,
+    'noClass'   : true,
+    'noTitle'   : true,
+} %}
+
+{% block title %}Invite Log{% if total is not null %} - {{ total }} Total{% endif %}{% endblock %}
+{#
+        Filter by Entity: user or mass
+        Filter by Action: sent, resent, cancel, grant, remove
+        Filter by AuthorID
+        Filter by Date
+#}
+
+{% block main_content %}
+    <div class="thin">
+        <div class="box pad">
+            <div class="center"><h4>Invites Log Search</h4></div><br>
+            <form action="/user/invite/log" method="get">
+                <input type="hidden" name="search" value="1">
+                {#<input type="hidden" name="token" value="{{ secretary.getToken('user.invite.log') }}" />#}
+                <table>
+                    <tr>
+                        <td><select name="entity">
+                            <option value="">Select Entity</option>
+                            <option value="user" {{ request.getGetString('entity') == 'user' ? 'selected="selected"' }}>Users</option>
+                            <option value="mass" {{ request.getGetString('entity') == 'mass' ? 'selected="selected"' }}>Mass</option>
+                        </select></td>
+                        <td><select name="action">
+                            <option value="">Select Action</option>
+                            <option value="sent" {{ request.getGetString('action') == 'sent' ? 'selected="selected"' }}>sent</option>
+                            <option value="resent" {{ request.getGetString('action') == 'resent' ? 'selected="selected"' }}>resent</option>
+                            <option value="cancel" {{ request.getGetString('action') == 'cancel' ? 'selected="selected"' }}>cancel</option>
+                            <option value="grant" {{ request.getGetString('action') == 'grant' ? 'selected="selected"' }}>grant</option>
+                            <option value="remove" {{ request.getGetString('action') == 'remove' ? 'selected="selected"' }}>remove</option>
+                        </select></td>
+                    </tr><tr>
+                        <td><input type="text" name="userid" size="10" value="{{ request.getGetString('userid') }}" placeholder="UserID"></td>
+                        <td><input type="text" name="author" size="10" value="{{ request.getGetString('author') }}" placeholder="AuthorID / StaffID"></td>
+                    </tr><tr>
+                        <td><input type="datetime" name="date" value="{{ request.getGetString('date') }}" placeholder="Date YYYY-MM-DD"></td>
+                        <td><input type="submit" value="Search Log" /></td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+    <div class="thin">
+        <table>
+            <tr><th>Date</th>
+                {% if not ('user' in view or 'mass' in view) %}<th>Entity</th>{% endif %}
+                <th>Action</th>
+                {% if not ('mass' in view) %}<th>UserID</th>{% endif %}
+                <th>Author</th>
+                {% if ('sent' in view or 'resent' in view or 'cancel' in view) %}<th>Address</th>{% endif %}
+                <th>Event</th>
+                <th>Reason</th>
+            </tr>
+            {% for log in logs %}
+                <tr>
+                    <td>{{ trimDate(log.Date) }}</td>
+                     {% if not ('user' in view or 'mass' in view) %}<td>{{ log.Entity }}</td>{% endif %}
+                     <td>{{ log.Action }}</td>
+                    <td>{% if not ('mass' in view) %}{{ render.username(log.UserID, usernameOptions) }}{% endif %}</td>
+                    <td>{{ render.username(log.AuthorID, usernameOptions) }}</td>
+                    {% if ('sent' in view or 'resent' in view or 'cancel' in view) %}<td>{{ log.Address }}</td>{% endif %}
+                    <td>{{ log.Event }}</td>
+                    <td>{{ log.Reason }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+{% endblock %}

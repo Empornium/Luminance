@@ -1,0 +1,20 @@
+<div class="thin">
+    <h2>Latest Torrent Comments</h2>
+    <div class="linkbox">
+        [<a href="/requests.php?action=allcomments">Latest Request Comments</a>]&nbsp;
+        [<a href="/collage/recent">Latest Collage Comments</a>]&nbsp;
+        [<a href="/forums/recent">Latest Forum Posts</a>]
+    </div>
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9) }}
+    </div>
+    {% for comment in comments if comments is not empty %}
+        <div class="head">
+            <a class="post_id" href="/torrents.php?id={{ comment.group.ID }}&postid={{ comment.ID }}#post{{ comment.ID }}">{{ comment.group.Name }}</a>
+        </div>
+        {{ render.post('torrent comment', comment) }}
+    {% endfor %}
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9) }}
+    </div>
+</div>

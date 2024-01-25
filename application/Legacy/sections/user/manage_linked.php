@@ -6,9 +6,9 @@ if (!check_perms('users_mod')) {
     error(403);
 }
 
-if (!$UserID || !is_number($UserID)) error(0);
+if (!$userID || !is_integer_string($userID)) error(0);
 
-$UserID = (int)$_REQUEST['userid'];
+$userID = (int)$_REQUEST['userid'];
 
 switch ($_REQUEST['dupeaction']) {
     case 'remove':
@@ -18,7 +18,7 @@ switch ($_REQUEST['dupeaction']) {
     case 'link':
         if ($_REQUEST['targetid']) {
             $TargetID = $_REQUEST['targetid'];
-            link_users($UserID, $TargetID);
+            link_users($userID, $TargetID);
         }
         break;
 
@@ -27,9 +27,14 @@ switch ($_REQUEST['dupeaction']) {
 
             if ($_REQUEST['target']) {
                 $Target = $_REQUEST['target'];
-                $DB->query("SELECT ID FROM users_main WHERE Username LIKE '" . db_string($Target) . "'");
-                if (list($TargetID) = $DB->next_record()) {
-                    link_users($UserID, $TargetID);
+                $targetID = $master->db->rawQuery(
+                    "SELECT ID
+                       FROM users
+                      WHERE Username LIKE ?",
+                    [$Target]
+                )->fetchColumn();
+                if (!($targetID === false)) {
+                    link_users($userID, $targetID);
                 } else {
                     error("User '".display_str($Target)."' not found.");
                 }
@@ -38,16 +43,20 @@ switch ($_REQUEST['dupeaction']) {
 
         if (isset($_REQUEST['submitcomment'])) {
 
-            $DB->query("SELECT GroupID FROM users_dupes WHERE UserID = '$UserID'");
-            list($GroupID) = $DB->next_record();
+            $groupID = $master->db->rawQuery(
+                "SELECT GroupID
+                   FROM users_dupes
+                  WHERE UserID = ?",
+                [$userID]
+            )->fetchColumn();
 
-            if ($_REQUEST['dupecomments'] && $GroupID) {
-                dupe_comments($GroupID, $_REQUEST['dupecomments']);
+            if ($_REQUEST['dupecomments'] && $groupID) {
+                dupe_comments($groupID, $_REQUEST['dupecomments']);
             }
         }
         break;
     default:
         error(403);
 }
-echo '\o/';
-header("Location: user.php?id=$UserID");
+
+header('Location: /user.php?id='.$userID);

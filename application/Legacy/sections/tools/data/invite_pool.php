@@ -2,43 +2,58 @@
 if (!check_perms('users_view_invites')) { error(403); }
 show_header('Invite Pool');
 define('INVITES_PER_PAGE', 50);
-list($Page,$Limit) = page_limit(INVITES_PER_PAGE);
+list($Page, $Limit) = page_limit(INVITES_PER_PAGE);
 
-if (!empty($_POST['invitekey']) && check_perms('users_edit_invites')) {
+if (!empty($_POST['submit']) && check_perms('users_edit_invites')) {
     authorize();
+    if (is_integer_string($_POST['id'])) {
+        $invite = $master->repos->invites->load($_POST['id']);
 
-    $DB->query("DELETE FROM invites WHERE InviteKey='".db_string($_POST['invitekey'])."'");
+        if (!$invite instanceof Luminance\Entities\Invite) {
+            error(0);
+        }
+    }
+
+    switch($_POST['submit']) {
+        case 'Delete':
+            $master->repos->invites->delete($invite);
+            break;
+        case 'Resend':
+            $master->emailManager->sendInviteEmail($invite);
+            break;
+    }
 }
 
 if (!empty($_GET['search'])) {
-    $Search = db_string($_GET['search']);
+    $Search = $_GET['search'];
 } else {
     $Search = "";
 }
 
 $sql = "SELECT
     SQL_CALC_FOUND_ROWS
-    um.ID,
-    um.Username,
+    u.ID,
+    u.Username,
     um.PermissionID,
     um.Enabled,
     ui.Donor,
-    i.InviteKey,
+    i.ID,
+    i.Anon,
     i.Expires,
     i.Email
     FROM invites as i
+    JOIN users AS u ON u.ID=i.InviterID
     JOIN users_main AS um ON um.ID=i.InviterID
     JOIN users_info AS ui ON ui.UserID=um.ID ";
+$params = [];
 if ($Search) {
-    $sql .= "WHERE i.Email LIKE '%$Search%' ";
+    $sql .= "WHERE i.Email LIKE ? ";
+    $params[] = "%{$Search}%";
 }
-$sql .= "ORDER BY i.Expires DESC LIMIT $Limit";
-$RS = $DB->query($sql);
+$sql .= "ORDER BY i.Expires DESC LIMIT {$Limit}";
+$invites = $master->db->rawQuery($sql, $params)->fetchAll(\PDO::FETCH_NUM);
 
-$DB->query("SELECT FOUND_ROWS()");
-list($Results) = $DB->next_record();
-
-$DB->set_query_id($RS);
+$Results = $master->db->foundRows();
 ?>
     <div class="box pad">
         <p><?=number_format($Results)?> unused invites have been sent. </p>
@@ -61,7 +76,7 @@ $DB->set_query_id($RS);
     </div>
     <div class="linkbox">
 <?php
-    $Pages=get_pages($Page,$Results,INVITES_PER_PAGE,11) ;
+    $Pages = get_pages($Page, $Results, INVITES_PER_PAGE, 11);
     echo $Pages;
 ?>
     </div>
@@ -69,7 +84,7 @@ $DB->set_query_id($RS);
         <tr class="colhead">
             <td>Inviter</td>
             <td>Email</td>
-            <td>InviteCode</td>
+            <td>Anon</td>
             <td>Expires</td>
 <?php  if (check_perms('users_edit_invites')) { ?>
             <td>Controls</td>
@@ -77,21 +92,29 @@ $DB->set_query_id($RS);
         </tr>
 <?php
     $Row = 'b';
-    while (list($UserID, $Username, $PermissionID, $Enabled, $Donor, $InviteKey, $Expires, $Email)=$DB->next_record()) {
-    $Row = ($Row == 'b') ? 'a' : 'b';
+    foreach ($invites AS $invite) {
+        list($userID, $Username, $PermissionID, $enabled, $Donor, $InviteID, $Anon, $Expires, $Email) = $invite;
+        $Row = ($Row == 'b') ? 'a' : 'b';
 ?>
         <tr class="row<?=$Row?>">
-            <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?></td>
+            <td><?=format_username($userID, $Donor, true, $enabled, $PermissionID)?></td>
             <td><?=display_str($Email)?></td>
-            <td><?=display_str($InviteKey)?></td>
+            <td><?=display_str($Anon)?></td>
             <td><?=time_diff($Expires)?></td>
 <?php  if (check_perms('users_edit_invites')) { ?>
             <td>
                 <form action="" method="post">
                     <input type="hidden" name="action" value="invite_pool" />
-                    <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-                    <input type="hidden" name="invitekey" value="<?=display_str($InviteKey)?>" />
-                    <input type="submit" value="Delete" />
+                    <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
+                    <input type="hidden" name="id" value="<?=$InviteID?>" />
+                    <input type="submit" name="submit" value="Delete" />
+                </form>
+
+                <form action="" method="post">
+                    <input type="hidden" name="action" value="invite_pool" />
+                    <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
+                    <input type="hidden" name="id" value="<?=$InviteID?>" />
+                    <input type="submit" name="submit" value="Resend" />
                 </form>
             </td>
 <?php  } ?>

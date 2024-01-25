@@ -1,4 +1,3 @@
-
 function submitOnEnter(e) {
     e = e || event;
     if (e.keyCode === 13 && !e.shiftKey) {
@@ -17,7 +16,7 @@ function add_tag(tag) {
     CursorToEnd($('#taginput').raw());
 }
 
-function CursorToEnd(textarea){
+function CursorToEnd(textarea) {
      // set the cursor to the end of the text already present
     if (textarea.setSelectionRange) { // ff/chrome/opera
         var len = textarea.value.length * 2; //(*2 for opera stupidness)
@@ -27,13 +26,12 @@ function CursorToEnd(textarea){
     }
 }
 
-function Load_Cookie()  {
-
-	if(jQuery.cookie('searchPanelState') == undefined) {
+function Load_Cookie() {
+	if (jQuery.cookie('searchPanelState') == undefined) {
 		jQuery.cookie('searchPanelState', 'expanded', { expires: 100 });
 	}
 
-	if(jQuery.cookie('searchPanelState') == 'collapsed') {
+	if (jQuery.cookie('searchPanelState') == 'collapsed') {
 		jQuery('#search_box').hide();
 		jQuery('#search_button').text('Open Search Center');
 	} else {
@@ -43,7 +41,7 @@ function Load_Cookie()  {
 
 function Panel_Toggle() {
     jQuery('#search_box').slideToggle('slow', function() {
-        if(jQuery.cookie('searchPanelState') == 'expanded') {
+        if (jQuery.cookie('searchPanelState') == 'expanded') {
             jQuery.cookie('searchPanelState', 'collapsed', { expires: 100 });
             jQuery('#search_button').text('Open Search Center');
         } else {

@@ -1,0 +1,51 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/collage/{{ collage.ID }}">Manage collage {{ collage.Name }}</a>
+{% endblock %}
+
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : true,
+    'noGroup'   : true,
+    'noClass'   : true,
+    'noTitle'   : true,
+} %}
+
+{% block main_content %}
+    <table>
+        <tr class="colhead">
+            <td>Sort</td>
+            <td>Torrent</td>
+            <td>User</td>
+            <td>Submit</td>
+        </tr>
+        {% for torrent in collage.torrents %}
+        <tr>
+                <form method="post">
+                    <input type="hidden" name="token" value="{{ secretary.getToken("collage.manage") }}" />
+                    <td>
+                        <input type="text" name="sort" value="{{ torrent.Sort }}" size="4" title="The collage is sorted order of this number" />
+                    </td>
+                    <td>
+                        {{ loop.index }} - <a href="/torrents.php?id={{ torrent.GroupID }}" title="View Torrent">{{ torrent.group.Name }}</a>
+                    </td>
+                    <td>
+                        {{ render.username(torrent.user, usernameOptions) }}
+                    </td>
+                    <td>
+                        <input type="submit" name="submit" formaction="/collage/{{ collage.ID }}/manage/{{ torrent.GroupID }}/edit" value="Edit" />
+                        <input type="submit" name="submit" formaction="/collage/{{ collage.ID }}/manage/{{ torrent.GroupID }}/remove" value="Remove" />
+                    </td>
+                </form>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

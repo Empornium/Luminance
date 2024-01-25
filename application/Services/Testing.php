@@ -10,8 +10,7 @@ use PHPUnit\TextUI\TestRunner;
  * Luminance's wrapper for unit testing *
  * @package Luminance\Services
  */
-class Testing extends Service
-{
+class Testing extends Service {
     /**
      * @var TestSuite
      */
@@ -48,7 +47,8 @@ class Testing extends Service
             return 'No test to run';
         }
 
-        TestRunner::run($this->suite, ['verbose' => true]);
+        $runner = new TestRunner();
+        $runner->run($this->suite, ['verbose' => true]);
         return "Ran {$this->loadedTests} tests";
     }
 
@@ -81,7 +81,7 @@ class Testing extends Service
      * @return bool|mixed|string
      */
     private function setDirectory() {
-        $this->directory = $this->master->application_path . "/../tests";
+        $this->directory = $this->master->applicationPath . "/../tests";
     }
 
     /**

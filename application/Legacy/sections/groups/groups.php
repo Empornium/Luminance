@@ -10,20 +10,19 @@ much.
 // Number of users per page
 define('FRIENDS_PER_PAGE', '20');
 
-show_header("User Groups",'jquery');
+show_header("User Groups", 'jquery');
 
-list($Page,$Limit) = page_limit(FRIENDS_PER_PAGE);
+list($Page, $Limit) = page_limit(FRIENDS_PER_PAGE);
 
 // Main query
-$DB->query("SELECT
-    g.ID,
-    g.Name,
-    g.Comment,
-    g.Log,
-    Count(u.ID)
-    FROM groups AS g
-    LEFT JOIN users_groups AS u ON u.GroupID=g.ID
-    GROUP BY g.ID");
+$groups = $master->db->rawQuery(
+    "SELECT g.ID,
+            g.Name,
+            Count(u.ID) AS Count
+       FROM groups AS g
+  LEFT JOIN users_groups AS u ON u.GroupID=g.ID
+   GROUP BY g.ID"
+)->fetchAll(\PDO::FETCH_OBJ);
 
 // Start printing stuff
 ?>
@@ -47,7 +46,7 @@ $DB->query("SELECT
             <form action="groups.php" method="post">
                 <input type="hidden" name="applyto" value="group" />
                 <input type="hidden" name="action" value="add" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <td>
                       <input class="long" type="text" name="name" />
                 </td>
@@ -64,27 +63,27 @@ $DB->query("SELECT
                 <td width="120px"></td>
         </tr>
 <?php
-if ($DB->record_count()==0) {
+if ($master->db->foundRows() == 0) {
 ?>
         <tr>
             <td colspan="3">No groups</td>
         </tr>
 <?php
 } else {
-    while (list($ID, $Name, $Comment, $Log, $Count) = $DB->next_record()) {
-        $Row = ($Row === 'a' ? 'b' : 'a');
+    foreach ($groups as $group) {
+        $Row = (($Row ?? 'b') === 'a' ? 'b' : 'a');
 ?>
         <tr class="row<?=$Row?>">
             <form action="groups.php" method="post" onsubmit="return confirm('Are you sure you want to delete this group and all its members?');">
                 <input type="hidden" name="applyto" value="group" />
-                <input type="hidden" name="groupid" value="<?=$ID?>" />
+                <input type="hidden" name="groupid" value="<?= $group->ID ?>" />
                 <input type="hidden" name="action" value="delete" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <td class="center" width="70%">
-                    <h3><a href="/groups.php?groupid=<?=$ID?>"><?=display_str($Name)?></a></h3>
+                    <h3><a href="/groups.php?groupid=<?= $group->ID ?>"><?= display_str($group->Name) ?></a></h3>
                 </td>
                 <td width="20%">
-                    <?=$Count?> members
+                    <?= $group->Count ?> members
                 </td>
                 <td width="120px">
                     <input type="submit" value="Delete" />

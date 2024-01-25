@@ -1,38 +1,36 @@
 <?php
 if (!check_perms('admin_staffpm_stats')) { error(403); }
 
-include(SERVER_ROOT.'/Legacy/sections/staffpm/functions.php');
-include(SERVER_ROOT.'/Legacy/sections/staff/functions.php');
-include(SERVER_ROOT.'/common/functions.php');
+include_once(SERVER_ROOT.'/Legacy/sections/staffpm/functions.php');
 
 show_header('Staff Inbox');
 
 $View   = isset($_REQUEST['view'])?$_REQUEST['view']:'staff';
 $Action = isset($_REQUEST['action'])?$_REQUEST['action']:'stats';
 
-list($NumMy, $NumUnanswered, $NumOpen) = get_num_staff_pms($LoggedUser['ID'], $LoggedUser['Class']);
+list($NumMy, $NumUnanswered, $NumOpen) = get_num_staff_pms($activeUser['ID'], $activeUser['Class']);
 
 ?>
     <div class="thin">
         <div class="linkbox" >
 <?php   if ($IsStaff) {
-            echo view_link($View, 'my',         "<a href='staffpm.php?view=my'>My unanswered". ($NumMy > 0 ? "($NumMy)":"") ."</a>");
+            echo view_link($View, 'my',         "<a href='/staffpm.php?view=my'>My unanswered". ($NumMy > 0 ? "($NumMy)":"") ."</a>");
         }
-            echo view_link($View, 'unanswered', "<a href='staffpm.php?view=unanswered'>All unanswered". ($NumUnanswered > 0 ? " ($NumUnanswered)":"") ."</a>");
-            echo view_link($View, 'open',       "<a href='staffpm.php?view=open'>Open" . ($NumOpen > 0 ? " ($NumOpen)":"") ."</a>");
-            echo view_link($View, 'resolved',   "<a href='staffpm.php?view=resolved'>Resolved</a>");
+            echo view_link($View, 'unanswered', "<a href='/staffpm.php?view=unanswered'>All unanswered". ($NumUnanswered > 0 ? " ($NumUnanswered)":"") ."</a>");
+            echo view_link($View, 'open',       "<a href='/staffpm.php?view=open'>Open" . ($NumOpen > 0 ? " ($NumOpen)":"") ."</a>");
+            echo view_link($View, 'resolved',   "<a href='/staffpm.php?view=resolved'>Resolved</a>");
         if (check_perms('admin_stealth_resolve')) {
-            echo view_link($View, 'stealthresolved', "<a href='staffpm.php?view=stealthresolved'>Stealth Resolved</a>");
+            echo view_link($View, 'stealthresolved', "<a href='/staffpm.php?view=stealthresolved'>Stealth Resolved</a>");
         }
-            echo view_link($Action, 'responses',     "<a href='staffpm.php?action=responses'>Common Answers</a>");
+            echo view_link($Action, 'responses',     "<a href='/staffpm.php?action=responses'>Common Answers</a>");
         if (check_perms('admin_staffpm_stats')) {
-            echo view_link($Action, 'stats',         "<a href='staffpm.php?action=stats'>StaffPM Stats</a>");
+            echo view_link($Action, 'stats',         "<a href='/staffpm.php?action=stats'>StaffPM Stats</a>");
         } ?>
         <br />
         <br />
 <?php
-          echo view_link($View, 'staff', "<a href='staffpm.php?action=stats&amp;view=staff'> View Staff Stats </a>");
-          echo view_link($View, 'users', "<a href='staffpm.php?action=stats&amp;view=users'> View User Stats </a>");
+          echo view_link($View, 'staff', "<a href='/staffpm.php?action=stats&amp;view=staff'> View Staff Stats </a>");
+          echo view_link($View, 'users', "<a href='/staffpm.php?action=stats&amp;view=users'> View User Stats </a>");
 ?>
         <br />
 
@@ -41,44 +39,44 @@ list($NumMy, $NumUnanswered, $NumOpen) = get_num_staff_pms($LoggedUser['ID'], $L
         <div class="box pad">
         <table>
         <tr>
-            <td style="width: 50%;">
+            <td style="width: 50%; vertical-align: top;">
 <?php
 
-$SupportStaff = get_support();
+$SupportStaff = $master->getPlugin('Staff')->getSupport();
 list($FrontLineSupport, $Staff, $Admins) = $SupportStaff;
 $SupportStaff = array_merge($FrontLineSupport, $Staff, $Admins);
 $SupportStaff = array_column($SupportStaff, 'ID');
-$SupportStaff = implode(',', $SupportStaff);
+$inQuery = implode(',', array_fill(0, count($SupportStaff), '?'));
+$params = $SupportStaff;
 
-if($View!='staff') {
+if ($View != 'staff') {
     $IN    = "NOT IN";
     $COL   = "PMs";
     $EXTRA = "(SELECT Count(spc.ID)
                       FROM staff_pm_conversations AS spc
-                     WHERE spc.UserID=um.ID
-                       AND spc.Date > [TIMECLAUSE] )";
+                     WHERE spc.UserID=u.ID
+                       AND spc.Date > [TIMECLAUSE])";
 } else {
     $IN    = "IN";
     $COL   = "Resolved";
     $EXTRA = "(SELECT Count(spc.ID)
                       FROM staff_pm_conversations AS spc
-                     WHERE spc.ResolverID=um.ID
+                     WHERE spc.ResolverID=u.ID
                        AND spc.Status = 'Resolved'
-                       AND spc.Date > [TIMECLAUSE] )";
+                       AND spc.Date > [TIMECLAUSE])";
 }
 
-$BaseSQL = "SELECT um.ID,
-                   um.Username,
-                   COUNT(spm.ID) AS Num ,
-                   $EXTRA AS Extra
+$BaseSQL = "SELECT u.ID,
+                   u.Username,
+                   COUNT(spm.ID) AS Num,
+                   {$EXTRA} AS Extra
              FROM staff_pm_messages AS spm
-             JOIN users_main AS um ON um.ID=spm.UserID
-             WHERE um.ID $IN ($SupportStaff) AND spm.SentDate > [TIMECLAUSE]
+             JOIN users AS u ON u.ID=spm.UserID
+             WHERE u.ID {$IN} ({$inQuery}) AND spm.SentDate > [TIMECLAUSE]
           GROUP BY spm.UserID
           ORDER BY Num DESC";
 
-$DB->query(str_replace('[TIMECLAUSE]', 'NOW() - INTERVAL 24 HOUR', $BaseSQL));
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(str_replace('[TIMECLAUSE]', 'NOW() - INTERVAL 24 HOUR', $BaseSQL), $params)->fetchAll(\PDO::FETCH_NUM);
 
 ?>
             <strong>Inbox actions in the last 24 hours</strong>
@@ -89,10 +87,10 @@ $Results = $DB->to_array();
                     <td><?=$COL?></td>
                 </tr>
 <?php  foreach ($Results as $Result) {
-    list($UserID, $Username, $Num, $Extra) = $Result;
+    list($userID, $Username, $Num, $Extra) = $Result;
 ?>
                 <tr>
-                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                    <td><a href="/staffpm.php?view=resolved&ResolverID=<?=$userID?>"><?=$Username?></a></td>
                     <td><?=$Num?></td>
                     <td><?=$Extra?></td>
                 </tr>
@@ -101,8 +99,7 @@ $Results = $DB->to_array();
             <br /><br />
 <?php
 
-$DB->query(str_replace('[TIMECLAUSE]', 'NOW() - INTERVAL 1 WEEK', $BaseSQL));
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(str_replace('[TIMECLAUSE]', 'NOW() - INTERVAL 1 WEEK', $BaseSQL), $params)->fetchAll(\PDO::FETCH_NUM);
 
 ?>
             <strong>Inbox actions in the last week</strong>
@@ -113,10 +110,10 @@ $Results = $DB->to_array();
                     <td><?=$COL?></td>
                 </tr>
 <?php  foreach ($Results as $Result) {
-    list($UserID, $Username, $Num, $Extra) = $Result;
+    list($userID, $Username, $Num, $Extra) = $Result;
 ?>
                 <tr>
-                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                    <td><a href="/staffpm.php?view=resolved&ResolverID=<?=$userID?>"><?=$Username?></a></td>
                     <td><?=$Num?></td>
                     <td><?=$Extra?></td>
                 </tr>
@@ -126,8 +123,7 @@ $Results = $DB->to_array();
         <td>
 <?php
 
-$DB->query(str_replace('[TIMECLAUSE]', 'NOW() - INTERVAL 1 MONTH', $BaseSQL));
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(str_replace('[TIMECLAUSE]', 'NOW() - INTERVAL 1 MONTH', $BaseSQL), $params)->fetchAll(\PDO::FETCH_NUM);
 
 ?>
         <strong>Inbox actions in the last month</strong>
@@ -138,10 +134,10 @@ $Results = $DB->to_array();
                 <td><?=$COL?></td>
             </tr>
 <?php  foreach ($Results as $Result) {
-    list($UserID, $Username, $Num, $Extra) = $Result;
+    list($userID, $Username, $Num, $Extra) = $Result;
 ?>
             <tr>
-                <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                <td><a href="/staffpm.php?view=resolved&ResolverID=<?=$userID?>"><?=$Username?></a></td>
                 <td><?=$Num?></td>
                 <td><?=$Extra?></td>
             </tr>
@@ -150,8 +146,7 @@ $Results = $DB->to_array();
         <br /><br />
 <?php
 
-$DB->query(str_replace('[TIMECLAUSE]', "'0000-00-00 00:00:00'", $BaseSQL));
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(str_replace('[TIMECLAUSE]', "'0000-00-00 00:00:00'", $BaseSQL), $params)->fetchAll(\PDO::FETCH_NUM);
 
 ?>
             <strong>Inbox actions total</strong>
@@ -162,10 +157,10 @@ $Results = $DB->to_array();
                     <td><?=$COL?></td>
                 </tr>
 <?php  foreach ($Results as $Result) {
-    list($UserID, $Username, $Num, $Extra) = $Result;
+    list($userID, $Username, $Num, $Extra) = $Result;
 ?>
                 <tr>
-                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                    <td><a href="/staffpm.php?view=resolved&ResolverID=<?=$userID?>"><?=$Username?></a></td>
                     <td><?=$Num?></td>
                     <td><?=$Extra?></td>
                 </tr>

@@ -1,4 +1,8 @@
-
+svg {
+    /* Default to "invisible" to prevent weird glitching during slow load */
+    stroke: none;
+    fill: none;
+}
 
 .taglabel {
     font-family: monospace;
@@ -62,74 +66,6 @@ div.blog {
 @keyframes dsbar { 100% { background-color: yellow; }}
 @-webkit-keyframes dsbar { 100% { background-color: yellow; }}
 
-
-#forcediv {
-    position:fixed;
-    background-color: rgba(82, 50, 50, 0.84);
-    top: 0px;
-    left: 0px;
-    width:100%;
-    height:100%;
-    z-index: 1000;
-}
-
-#forcediv .urgent_container {
-    position: relative;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.urgent_container {
-  background-color: #f2dede;
-  border-color: #ebccd1;
-  border-radius: 6px;
-  padding-left: 60px;
-  padding-right: 60px;
-  width:80%;
-  margin:  0 auto;
-}
-
-.urgent_container div {
-  padding-top: 48px;
-  padding-bottom: 48px
-}
-
-div.urgent {
-    font-size: 14pt;
-    min-height: 22px;
-    padding: 2px 2px 2px;
-    /*background-color: #000;
-    text-align: center;*/
-    color: #a94442;
-    margin: 4px auto;
-}
-
-div.urgentbar {
-    font-size: 12pt;
-    min-height: 22px;
-    padding: 2px 20px 2px;
-    text-align: center;
-    font-weight: bold;
-    color: #fff;
-    margin: 4px auto;
-    background-color: #161d29;
-    background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(238,0,0,1) 10%, rgba(34,34,34,1) 25%, rgba(34,34,34,1) 75%, rgba(238,0,0,1) 90%, rgba(0,0,0,0) 100%);/* W3C */
-    padding: 10px;
-}
-
-.urgent_surround .urgent:first-child a, .urgent_surround .urgent:first-child a:visited {
-    font-weight: 700;
-    font-size: 150%;
-    color: #a94442;
-}
-
-.urgent a:hover {
-    text-decoration: underline;
-    text-decoration-color: #f00;
-    text-decoration-style: double;
-    color:#f00;
-}
-
 .btn, .btn:visited {
   color: #fff;
   background-color: #337ab7;
@@ -190,9 +126,21 @@ span.label.label-disabled {
     background-color: #999;
 }
 
+span.label.label-sadd {
+    background-color: rgb(231, 95, 17);
+}
+
 pre br {
     line-height:0px;
     display:none;
+}
+
+pre.bbcodeblock {
+    white-space: pre-wrap;       /* Since CSS 2.1 */
+    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+    white-space: -pre-wrap;      /* Opera 4-6 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
 }
 
 ul.collage_images {
@@ -390,30 +338,6 @@ div#AddArtists a {
     height: 40px;
 }
 
-.nav_icons {
-    width: 16px;
-    height: 16px;
-    vertical-align: middle;
-    padding-right: 3px;
-    padding-bottom: 2px;
-}
-.misc_icons {
-    width: 16px;
-    height: 16px;
-    vertical-align: middle;
-}
-/*
-#torrents .scale_image, #upload .scale_image {
-      max-width: 100%;
-}
-
-*/
-.rippywrap { z-index:25; display: block; position: fixed; background: transparent url('../rippy/rippy.png') no-repeat bottom center; color: black; text-align: center; width: 190px; height: 180px; bottom: 0px; right: 0px; }
-.rippywrap div.rippy { z-index: 25; height: 111px; width: 190px; position: fixed; bottom: 0px; right: 0px; }
-span.rbt { display: block; padding: 8px 0 0; background: url('../rippy/rippy_top.gif') no-repeat top; }
-span.rbm { display: block; background: url('../rippy/rippy_middle.gif') repeat bottom; padding: 2px; }
-span.rbb { display: block; padding: 4px 0px 18px; margin-bottom: 5px; background: url('../rippy/rippy_bottom.gif') no-repeat bottom; }
-
 .breadcrumbs { font-weight: bold; text-align: right; }
 
 
@@ -427,7 +351,8 @@ span.rbb { display: block; padding: 4px 0px 18px; margin-bottom: 5px; background
     margin-bottom: 10px;*/
 }
 
-#site_debug {
+#debug_table {
+    height: 100%
     overflow-y: scroll;
 }
 
@@ -592,8 +517,6 @@ div.mediainfo {
     background-image: -ms-linear-gradient(top, #5579e6, #4260b3);
     background-image: -o-linear-gradient(top, #5579e6, #4260b3);
     background-image: linear-gradient(to bottom, #5579e6, #4260b3);
-    -webkit-border-radius: 3;
-    -moz-border-radius: 3;
     border-radius: 3px;
     color: #c5c5c5;
     padding: 5px 10px 5px 10px;
@@ -604,17 +527,17 @@ div.mediainfo {
     -webkit-text-security: disc;
 }
 
-#details-sidebar.visible {
+#admin-sidebar > form > *, #user-sidebar > * {
+    display: inline-block;
+}
+
+#hidebar.visible {
     visibility: visible;
     opacity: 1;
     transition: visibility 0s, opacity 0.5s linear;
 }
 
-#admin-sidebar > form > *, #user-sidebar > * {
-    display: inline-block;
-}
-
-#details-sidebar {
+#hidebar {
     position: fixed;
     opacity: 0;
     top: 0px;
@@ -684,9 +607,7 @@ div.mediainfo {
     text-align: center;
     font-weight: bold;
     color: white;
-    border-radius: 10px;       /* FF9+ IE9+ */
-    -moz-border-radius: 10px; /* for FF5 */
-    -webkit-border-radius: 10px; /* for opera */
+    border-radius: 10px;
     border: 1px solid #151;
 }
 
@@ -699,3 +620,96 @@ div.mediainfo {
     background-color: white;
     color: black;
 }
+
+.bold {
+    font-weight: bold;
+}
+
+.bolder {
+    font-weight: bolder;
+}
+
+.thinner {
+    width: 40%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.long {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+}
+
+.box {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+}
+
+li {
+    list-style-position: inside;
+}
+
+.post_content li {
+    margin: 0px;
+}
+
+.tag_inner {
+    word-wrap: normal;
+}
+
+td.sig {
+    max-width: 100px;
+}
+
+/* Ratio Colors */
+
+.r00 { color: #FF0000; }
+.r01 { color: #FF1300; }
+.r02 { color: #FF1300; }
+.r03 { color: #FF2600; }
+.r04 { color: #FF4C00; }
+.r05 { color: #FF5E00; }
+.r06 { color: #FF5E00; }
+.r07 { color: #FF7100; }
+.r08 { color: #FF9700; }
+.r09 { color: #FFAA00; }
+.r10 { color: #74C42E; }
+.r20 { color: #41bB00; }
+.r50 { color: #41dB00; }
+.r99 { color: #41eB00; }
+
+/* Styles generated by the BBCode parser */
+
+span.size0  { font-size:0.75em; }
+span.size1  { font-size:1em;    }
+span.size2  { font-size:1.25em; }
+span.size3  { font-size:1.5em;  }
+span.size4  { font-size:1.75em; }
+span.size5  { font-size:2em;    }
+span.size6  { font-size:2.25em; }
+span.size7  { font-size:2.5em;  }
+span.size8  { font-size:2.75em; }
+span.size9  { font-size:3em;    }
+span.size10 { font-size:3.25em; }
+
+
+code {
+    font-family: "PT Mono", "Courier New", "Courier", "Lucida Sans Typewriter", "Lucida Typewriter", monospace;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+.warnstrip {
+    background-color: #b39770;
+    padding: 0px;
+    text-align: center;
+    text-decoration: none;
+    color: black;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Proxima Nova','Lato','Segoe UI',sans-serif;
+}
+#warnstrip a { color: #0c1a69; }

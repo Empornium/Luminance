@@ -2,57 +2,62 @@
 
 include_once(SERVER_ROOT.'/Legacy/sections/torrents/functions.php');
 
-$Queries = array();
+$Queries = [];
 
-$OrderWays = array('votes', 'bounty', 'created', 'lastvote', 'filled');
-list($Page,$Limit) = page_limit(REQUESTS_PER_PAGE);
+$orderWays = ['votes', 'bounty', 'created', 'lastvote', 'filled'];
+list($Page, $Limit) = page_limit(REQUESTS_PER_PAGE);
 $Submitted = !empty($_GET['submitted']);
 
-//Paranoia
-$UserInfo = user_info((int) $_GET['userid']);
-$Perms = get_permissions($UserInfo['PermissionID']);
-$UserClass = $Perms['Class'];
-
+$type = $_GET['type'] ?? null;
+$userID = $_GET['userid'] ?? null;
 $BookmarkView = false;
 
-if (empty($_GET['type'])) {
+if (empty($type)) {
     $Title = 'Search Requests';
     if (!check_perms('site_see_old_requests') || empty($_GET['showall'])) {
-        $SS->set_filter('visible', array(1));
+        $search->setFilter('visible', [1]);
     }
 } else {
-    switch ($_GET['type']) {
+    switch ($type) {
         case 'created':
             $Title = 'My requests';
-            $SS->set_filter('userid', array($LoggedUser['ID']));
+            $search->setFilter('userid', [$activeUser['ID']]);
             break;
         case 'voted':
-            if (!empty($_GET['userid'])) {
-                if (is_number($_GET['userid'])) {
-                    if (!check_force_anon($_GET['userid']) || !check_paranoia('requestsvoted_list', $UserInfo['Paranoia'], $Perms['Class'], $_GET['userid'])) { error(PARANOIA_MSG); }
+            if (!empty($userID)) {
+                if (is_integer_string($userID)) {
+                    //Paranoia
+                    $UserInfo = user_info((int) $userID);
+                    $Perms = get_permissions($UserInfo['PermissionID']);
+
+                    if (!check_force_anon($userID) || !check_paranoia('requestsvoted_list', $UserInfo['Paranoia'], $Perms['Class'], $userID)) { error(PARANOIA_MSG); }
                     $Title = "Requests voted for by ".$UserInfo['Username'];
-                    $SS->set_filter('voter', array($_GET['userid']));
+                    $search->setFilter('voter', [$userID]);
                 } else {
                     error(404);
                 }
             } else {
                 $Title = "Requests I've voted on";
-                $SS->set_filter('voter', array($LoggedUser['ID']));
+                $search->setFilter('voter', [$activeUser['ID']]);
             }
             break;
         case 'filled':
-            if (empty($_GET['userid']) || !is_number($_GET['userid'])) {
+            if (empty($userID) || !is_integer_string($userID)) {
                 error(404);
             } else {
-                if (!check_force_anon($_GET['userid']) || !check_paranoia('requestsfilled_list', $UserInfo['Paranoia'], $Perms['Class'], $_GET['userid'])) { error(PARANOIA_MSG); }
+                //Paranoia
+                $UserInfo = user_info((int) $userID);
+                $Perms = get_permissions($UserInfo['PermissionID']);
+
+                if (!check_force_anon($userID) || !check_paranoia('requestsfilled_list', $UserInfo['Paranoia'], $Perms['Class'], $userID)) { error(PARANOIA_MSG); }
                 $Title = "Requests filled by ".$UserInfo['Username'];
-                $SS->set_filter('fillerid', array($_GET['userid']));
+                $search->setFilter('fillerid', [$userID]);
             }
             break;
         case 'bookmarks':
             $Title = 'Your bookmarked requests';
             $BookmarkView = true;
-            $SS->set_filter('bookmarker', array($LoggedUser['ID']));
+            $search->setFilter('bookmarker', [$activeUser['ID']]);
             break;
         default:
             error(404);
@@ -60,21 +65,24 @@ if (empty($_GET['type'])) {
 }
 
 if ($Submitted && empty($_GET['show_filled'])) {
-    $SS->set_filter('torrentid', array(0));
+    $search->setFilter('torrentid', [0]);
 }
 
 if (!empty($_GET['search'])) {
     $Words = explode(' ', $_GET['search']);
     foreach ($Words as $Key => &$Word) {
         $Word = trim($Word);
+        if (empty($Word)) {
+            continue;
+        }
         if ($Word[0] == '!' && strlen($Word) > 2) {
-            if (strpos($Word,'!',1) === false) {
-                $Word = '!'.$SS->EscapeString(substr($Word,1));
+            if (strpos($Word, '!', 1) === false) {
+                $Word = '!'.$search->escapeString(substr($Word, 1));
             } else {
-                $Word = $SS->EscapeString($Word);
+                $Word = $search->escapeString($Word);
             }
         } elseif (strlen($Word) >= 2) {
-            $Word = $SS->EscapeString($Word);
+            $Word = $search->escapeString($Word);
         } else {
             unset($Words[$Key]);
         }
@@ -87,7 +95,7 @@ if (!empty($_GET['search'])) {
 if (!empty($_GET['taglist'])) {
         $Tags = cleanup_tags($_GET['taglist']);
     $Tags = array_unique(explode(' ', $Tags));
-    $TagNames = array();
+    $TagNames = [];
     foreach ($Tags as $Tag) {
         $Tag = sanitize_tag($Tag);
         if (!empty($Tag)) {
@@ -99,37 +107,37 @@ if (!empty($_GET['taglist'])) {
 
 if (empty($_GET['tags_type']) && !empty($Tags)) {
     $_GET['tags_type'] = '0';
-    $SS->set_filter('tagid', array_keys($Tags));
+    $search->setFilter('tagid', array_keys($Tags));
 } elseif (!empty($Tags)) {
     foreach (array_keys($Tags) as $Tag) {
-        $SS->set_filter('tagid', array($Tag));
+        $search->setFilter('tagid', [$Tag]);
     }
 } elseif (!empty($_GET['taglist']) && empty($Tags)) {
     // We're searching for tags but couldn't find any of them -> we should return an empty result
-    $SS->set_filter('tagid', array(0));
+    $search->setFilter('tagid', [0]);
 } else {
     $_GET['tags_type'] = '1';
 }
 
 if (!empty($_GET['filter_cat'])) {
     $Keys = array_keys($_GET['filter_cat']);
-    $SS->set_filter('categoryid', $Keys);
+    $search->setFilter('categoryid', $Keys);
 }
 
 if (!empty($_GET['requestor']) && check_perms('site_see_old_requests')) {
-    if (is_number($_GET['requestor'])) {
-        $SS->set_filter('userid', array($_GET['requestor']));
+    if (is_integer_string($_GET['requestor'])) {
+        $search->setFilter('userid', [$_GET['requestor']]);
     } else {
         error(404);
     }
 }
 
-if (!empty($_GET['page']) && is_number($_GET['page'])) {
+if (!empty($_GET['page']) && is_integer_string($_GET['page'])) {
     $Page = min($_GET['page'], 50000/REQUESTS_PER_PAGE);
-    $SS->limit(($Page - 1) * REQUESTS_PER_PAGE, REQUESTS_PER_PAGE, 50000);
+    $search->limit(($Page - 1) * REQUESTS_PER_PAGE, REQUESTS_PER_PAGE, 50000);
 } else {
     $Page = 1;
-    $SS->limit(0, REQUESTS_PER_PAGE, 50000);
+    $search->limit(0, REQUESTS_PER_PAGE, 50000);
 }
 
 if (empty($_GET['order'])) {
@@ -138,7 +146,7 @@ if (empty($_GET['order'])) {
     $Way = SPH_SORT_ATTR_DESC;
     $NewSort = 'asc';
 } else {
-    if (in_array($_GET['order'], $OrderWays)) {
+    if (in_array($_GET['order'], $orderWays)) {
         $CurrentOrder = $_GET['order'];
         if ($_GET['sort'] == 'asc' || $_GET['sort'] == 'desc') {
             $CurrentSort = $_GET['sort'];
@@ -154,62 +162,62 @@ if (empty($_GET['order'])) {
 
 switch ($CurrentOrder) {
     case 'votes' :
-        $OrderBy = "Votes";
+        $orderBy = "Votes";
         break;
     case 'bounty' :
-        $OrderBy = "Bounty";
+        $orderBy = "Bounty";
         break;
     case 'created' :
-        $OrderBy = "TimeAdded";
+        $orderBy = "TimeAdded";
         break;
     case 'lastvote' :
-        $OrderBy = "LastVote";
+        $orderBy = "LastVote";
         break;
     case 'filled' :
-        $OrderBy = "TimeFilled";
+        $orderBy = "TimeFilled";
         break;
     default :
-        $OrderBy = "TimeAdded";
+        $orderBy = "TimeAdded";
         break;
 }
 
-$SS->SetSortMode($Way, $OrderBy);
+$search->setSortMode($Way, $orderBy);
 
 if (count($Queries) > 0) {
-    $Query = implode(' ',$Queries);
+    $Query = implode(' ', $Queries);
 } else {
     $Query='';
 }
 
-$SS->set_index('requests requests_delta');
-$SphinxResults = $SS->search($Query, '', 0, array(), '', '');
-$NumResults = $SS->TotalResults;
+$search->setIndex('requests requests_delta');
+$searchResults = $search->search($Query, '', 0, [], '', '');
+$NumResults = $search->totalResults;
 //We don't use sphinxapi's default cache searcher, we use our own functions
 
-if (!empty($SphinxResults['notfound'])) {
-    $SQLResults = get_requests($SphinxResults['notfound']);
+if (!empty($searchResults['notfound'])) {
+    $SQLResults = get_requests($searchResults['notfound']);
     if (is_array($SQLResults['notfound'])) {
         //Something wasn't found in the db, remove it from results
         reset($SQLResults['notfound']);
         foreach ($SQLResults['notfound'] as $ID) {
             unset($SQLResults['matches'][$ID]);
-            unset($SphinxResults['matches'][$ID]);
+            unset($searchResults['matches'][$ID]);
         }
     }
 
     // Merge SQL results with memcached results
     foreach ($SQLResults['matches'] as $ID => $SQLResult) {
-        $SphinxResults['matches'][$ID] = $SQLResult;
+        $searchResults['matches'][$ID] = $SQLResult;
     }
 }
 
-$PageLinks = get_pages($Page, $NumResults, REQUESTS_PER_PAGE);
+$Pages = get_pages($Page, $NumResults, REQUESTS_PER_PAGE);
 
-$Requests = $SphinxResults['matches'];
+$Requests = $searchResults['matches'] ?? [];
 
-$CurrentURL = get_url(array('order', 'sort'));
+$CurrentURL = get_url(['order', 'sort']);
 
-show_header($Title, 'requests,jquery,jquery.cookie,tag_autocomplete,autocomplete,overlib');
+show_header($Title, 'requests,jquery,jquery.cookie,overlib');
 
 ?>
 <div class="thin">
@@ -226,15 +234,15 @@ show_header($Title, 'requests,jquery,jquery.cookie,tag_autocomplete,autocomplete
             <a href="/requests.php?type=voted">[Requests I've voted on]</a>
 <?php 		}
         if (!check_perms('site_submit_requests')) {
-            $Class = $master->repos->permissions->getMinClassPermission('site_submit_requests');
-            if ($Class !== false) {
+            $class = $master->repos->permissions->getMinClassPermission('site_submit_requests');
+            if ($class !== false) {
 ?>
-            <br/><em> <a href="/articles.php?topic=requests">You must be a <?=$Class->Name?> with a ratio of at least 1.05 to be able to make a Request.</a></em>
+            <br/><em> <a href="/articles/view/requests">You must be a <?=$class->Name?> with a ratio of at least 1.05 to be able to make a Request.</a></em>
 <?php       }
         }
     } else { ?>
         <a href="/bookmarks.php?type=torrents">[Torrents]</a>
-        <a href="/bookmarks.php?type=collages">[Collages]</a>
+        <a href="/collage/bookmarks">[Collages]</a>
         <a href="/bookmarks.php?type=requests">[Requests]</a>
 <?php 	} ?>
     </div>
@@ -246,11 +254,11 @@ show_header($Title, 'requests,jquery,jquery.cookie,tag_autocomplete,autocomplete
             <input type="hidden" name="action" value="view" />
             <input type="hidden" name="type" value="requests" />
 <?php 	} else { ?>
-            <input type="hidden" name="type" value="<?=$_GET['type']?>" />
+            <input type="hidden" name="type" value="<?=$type?>" />
 <?php 	} ?>
             <input type="hidden" name="submitted" value="true" />
-<?php 	if (!empty($_GET['userid']) && is_number($_GET['userid'])) { ?>
-            <input type="hidden" name="userid" value="<?=$_GET['userid']?>" />
+<?php 	if (!empty($userID) && is_integer_string($userID)) { ?>
+            <input type="hidden" name="userid" value="<?=$userID?>" />
 <?php 	} ?>
             <table cellpadding="6" cellspacing="1" border="0" class="" width="100%">
                 <tr>
@@ -262,31 +270,18 @@ show_header($Title, 'requests,jquery,jquery.cookie,tag_autocomplete,autocomplete
                 <tr>
                     <td class="label">Tags:</td>
                     <td>
-                        <div style="vertical-align:middle;display:inline-block;" title="Toggle Autocomplete mode on/off (when off you can access browser form history)">
-                            <input id="autocomplete_toggle" onclick="ToggleAutoComplete();" type="checkbox" value="1" name="autocomplete_toggle" checked/>
-                            Autocomplete Tags
-                        </div>
-                        <br>
-                        <div style="max-width: 500px">
-                        <div id="autoresults" class="autoresults">
-                            <ul id="tagdropdown"></ul>
-                        </div>
-                        <br>
-                        <!-- we have to insert the font here for js to be able to grab it (js bug?) -->
-                        <textarea id="taginput" name="taglist" class="medium" style="font: 10pt monospace;"
-                                  onkeyup="resize('taginput'); return autocomp.keyup(event); "
-                                  onkeydown="return autocomp.keydown(event);"
-                                  onchange="resize('taginput');"
-                                  autocomplete="off"><?=(!empty($TagNames) ? display_str(implode(' ', $TagNames)) : '')?></textarea>
-                        </div>
-                        <input type="radio" name="tags_type" id="tags_type0" value="0" <?php selected('tags_type',0,'checked')?> /><label for="tags_type0"> Any</label>&nbsp;&nbsp;
-                        <input type="radio" name="tags_type" id="tags_type1" value="1"  <?php selected('tags_type',1,'checked')?> /><label for="tags_type1"> All</label>
+                        <textarea id="taginput" name="taglist" class="medium" title="Search Tags"><?=(!empty($TagNames) ? display_str(implode(' ', $TagNames)) : '')?></textarea>
+                        <br/>
+                        <label class="checkbox_label" title="Toggle autocomplete mode on or off.&#10;When turned off, you can access your browser's form history.">
+                            <input id="autocomplete_toggle" type="checkbox" name="autocomplete_toggle" checked="checked" />
+                            Autocomplete tags
+                        </label>
                     </td>
                 </tr>
                 <tr>
                     <td class="label">Include filled:</td>
                     <td>
-                        <input type="checkbox" name="show_filled" <?php  if (!$Submitted || !empty($_GET['show_filled']) || (!$Submitted && !empty($_GET['type']) && $_GET['type'] == "filled")) { ?>checked="checked"<?php  } ?> />
+                        <input type="checkbox" name="show_filled" <?php  if (!$Submitted || !empty($_GET['show_filled']) || (!$Submitted && !empty($type) && $type == "filled")) { ?>checked="checked"<?php  } ?> />
                     </td>
                 </tr>
 <?php 	if (check_perms('site_see_old_requests')) { ?>
@@ -301,9 +296,9 @@ show_header($Title, 'requests,jquery,jquery.cookie,tag_autocomplete,autocomplete
             <table class="cat_list">
 <?php
 $x=0;
-reset($NewCategories);
+reset($newCategories);
 $row = 'a';
-foreach ($NewCategories as $Cat) {
+foreach ($newCategories as $Cat) {
     if ($x%7==0) {
         if ($x > 0) {
 ?>
@@ -335,7 +330,7 @@ foreach ($NewCategories as $Cat) {
         </form>
 
     <div class="linkbox">
-        <?=$PageLinks?>
+        <?=$Pages?>
     </div>
     <div class="head">Requests</div>
     <table id="request_table" cellpadding="6" cellspacing="1" border="0" class="shadow" width="100%">
@@ -376,16 +371,44 @@ foreach ($NewCategories as $Cat) {
         $Row = 'a';
             foreach ($Requests as $RequestID => $Request) {
 
-            list($RequestID, $RequestorID, $RequestorName, $TimeAdded, $LastVote, $CategoryID, $Title, $Image, $Description,
-                             $FillerID, $FillerName, $TorrentID, $TimeFilled, $GroupID, $UploaderID, $UploaderName, $IsAnon) = $Request;
+            list(
+                'ID'          => $RequestID,
+                'UserID'      => $RequestorID,
+                'TimeAdded'   => $timeAdded,
+                'LastVote'    => $LastVote,
+                'CategoryID'  => $CategoryID,
+                'Title'       => $Title,
+                'Image'       => $Image,
+                'Description' => $Description,
+                'FillerID'    => $FillerID,
+                'TorrentID'   => $torrentID,
+                'TimeFilled'  => $timeFilled,
+                'GroupID'     => $GroupID,
+                'UploaderID'  => $UploaderID,
+                'Anonymous'   => $IsAnon,
+                'Tags'        => $Tags
+            ) = $Request;
+
+            $usernameOptions = [
+                'drawInBox' => false,
+                'colorname' => false,
+                'dropDown'  => false,
+                'useSpan'   => false,
+                'noIcons'   => true,
+                'noGroup'   => true,
+                'noClass'   => true,
+                'noTitle'   => true,
+                'noLink'    => true,
+            ];
+            $RequestorName = $master->render->username($RequestorID, $usernameOptions);
 
             $RequestVotes = get_votes_array($RequestID);
 
             $VoteCount = count($RequestVotes['Voters']);
 
-            $IsFilled = ($TorrentID != 0);
+            $IsFilled = ($torrentID != 0);
 
-            $FullName ='<a href="requests.php?action=view&amp;id='.$RequestID.'" onmouseover="return overlib(overlay'.$RequestID.', FULLHTML);" onmouseout="return nd();">'.$Title.'</a>';
+            $FullName ='<a href="/requests.php?action=view&amp;id='.$RequestID.'" onmouseover="return overlib(overlay'.$RequestID.', FULLHTML);" onmouseout="return nd();">'.$Title.'</a>';
             $Overlay = get_request_overlay_html(
                     $Title,
                     $RequestorName,
@@ -401,8 +424,8 @@ foreach ($NewCategories as $Cat) {
 ?>
         <tr class="row<?=$Row?>">
             <td class="center ">
-                <?php  $CatImg = 'static/common/caticons/' . $NewCategories[$CategoryID]['image']; ?>
-                <div title="<?= $NewCategories[$CategoryID]['tag'] ?>">
+                <?php  $CatImg = '/static/common/caticons/' . $newCategories[$CategoryID]['image']; ?>
+                <div title="<?= $newCategories[$CategoryID]['tag'] ?>">
                     <a href="/requests.php?filter_cat[<?=$CategoryID?>]=1"><img src="<?= $CatImg ?>" /></a>
                 </div>
             </td>
@@ -411,10 +434,10 @@ foreach ($NewCategories as $Cat) {
                     var overlay<?=$RequestID?> = <?=json_encode($Overlay)?>
                 </script>
                 <?=$FullName?>
-                                <?php  if ($LoggedUser['HideTagsInLists'] !== 1) { ?>
+                                <?php  if ($activeUser['HideTagsInLists'] !== 1) { ?>
                 <div class="tags">
 <?php
-            $TagList = array();
+            $TagList = [];
             foreach ($Tags as $TagID => $TagName) {
                 $TagList[] = "<a href='?taglist=".$TagName.($BookmarkView ? "&amp;type=requests" : "")."'>".display_str($TagName)."</a>";
             }
@@ -429,7 +452,7 @@ foreach ($NewCategories as $Cat) {
                     <span id="vote_count_<?=$RequestID?>"><?=$VoteCount?></span>
 <?php   	 	if (!$IsFilled && check_perms('site_vote')) { ?>
                     <input type="hidden" id="requestid_<?=$RequestID?>" name="requestid" value="<?=$RequestID?>" />
-                    <input type="hidden" id="auth" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                    <input type="hidden" id="auth" name="auth" value="<?=$activeUser['AuthKey']?>" />
                     &nbsp;&nbsp; <a href="javascript:VotePromptMB(<?=$RequestID?>)"><strong>(+)</strong></a>
 <?php   		} ?>
                 </form>
@@ -439,14 +462,14 @@ foreach ($NewCategories as $Cat) {
             </td>
             <td>
 <?php    		if ($IsFilled) { ?>
-                <a href="/torrents.php?id=<?=$TorrentID?>"><strong><?=time_diff($TimeFilled)?></strong></a>
+                <a href="/torrents.php?id=<?=$torrentID?>"><strong><?=time_diff($timeFilled)?></strong></a>
 <?php    		} else { ?>
                 <strong>No</strong>
 <?php    		} ?>
             </td>
             <td>
 <?php           if ($IsFilled) {
-                    echo torrent_username($FillerID, $FillerName, $FillerID==$UploaderID?$IsAnon:false);
+                    echo torrent_username($FillerID, $FillerID==$UploaderID?$IsAnon:false);
                 } else {
                     echo "--";
                 } ?>
@@ -455,7 +478,7 @@ foreach ($NewCategories as $Cat) {
                 <a href="/user.php?id=<?=$RequestorID?>"><?=$RequestorName?></a>
             </td>
             <td>
-                <?=time_diff($TimeAdded)?>
+                <?=time_diff($timeAdded)?>
             </td>
             <td>
                 <?=time_diff($LastVote)?>
@@ -467,7 +490,7 @@ foreach ($NewCategories as $Cat) {
 ?>
     </table>
     <div class="linkbox">
-        <?=$PageLinks?>
+        <?=$Pages?>
     </div>
 </div>
 <?php

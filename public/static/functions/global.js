@@ -1,8 +1,7 @@
-
 // set all checkboxes in formElem by val of checkbox passed
 function toggleChecks(formElem,masterElem) {
 	if (masterElem.checked) { checked=true; } else { checked=false; }
-	for(s=0; s<$('#'+formElem).raw().elements.length; s++) {
+	for (s=0; s<$('#'+formElem).raw().elements.length; s++) {
 		if ($('#'+formElem).raw().elements[s].type=="checkbox") {
 			$('#'+formElem).raw().elements[s].checked=checked;
 		}
@@ -11,7 +10,7 @@ function toggleChecks(formElem,masterElem) {
 
 // return true if any checkboxes in the passed form are checked
 function anyChecks(formElem) {
-	for(s=0; s<$('#'+formElem).raw().elements.length; s++) {
+	for (s=0; s<$('#'+formElem).raw().elements.length; s++) {
 		if ($('#'+formElem).raw().elements[s].type=="checkbox") {
 			if ($('#'+formElem).raw().elements[s].checked==true) return true;
 		}
@@ -20,9 +19,31 @@ function anyChecks(formElem) {
     return false;
 }
 
+function toggle_visible(name) {
+    var radioInputs = document.getElementsByName(name);
+    var value = false;
+    for (var i=0; i < radioInputs.length; i++) {
+      if (radioInputs[i].checked) {
+        value = radioInputs[i].value;
+      }
+    }
+    var elements = document.getElementsByClassName(name);
+    for (var i=0; i < elements.length; i++) {
+      if (elements[i].attributes[0].value === value) {
+        elements[i].classList.remove("hidden");
+      } else {
+        elements[i].classList.add("hidden");
+      }
+    }
+  
+ }
+
 //Lightbox stuff
 var lightbox = {
-	init: function (image, size) {
+	init: function (image, size, src=null) {
+		if (src !== null) {
+			image.src = src;
+		}
 		if (image.naturalWidth === undefined) {
 			var tmp = document.createElement('img');
 			tmp.style.visibility = 'hidden';
@@ -35,7 +56,7 @@ var lightbox = {
 		}
 	},
 	box: function (image) {
-		if(image.parentNode.tagName.toUpperCase() != 'A') {
+		if (image.parentNode.tagName.toUpperCase() != 'A') {
 			$('#lightbox').show().listen('click',lightbox.unbox).raw().innerHTML = '<img src="' + image.src + '" />';
 			$('#curtain').show().listen('click',lightbox.unbox);
 		}
@@ -45,23 +66,6 @@ var lightbox = {
 		$('#lightbox').hide().raw().innerHTML = '';
 	}
 };
-
-/* Still some issues
-function caps_check(e) {
-	if (e === undefined) {
-		e = window.event;
-	}
-	if (e.which === undefined) {
-		e.which = e.keyCode;
-	}
-	if (e.which > 47 && e.which < 58) {
-		return;
-	}
-	if ((e.which > 64 && e.which <  91 && !e.shiftKey) || (e.which > 96 && e.which < 123 && e.shiftKey)) {
-		$('#capslock').show();
-	}
-}
-*/
 
 function hexify(str) {
    str = str.replace(/rgb\(|\)/g, "").split(",");
@@ -103,7 +107,7 @@ function remove_selection(index) {
 }
 
 function Stats(stat) {
-	ajax.get("ajax.php?action=stats&stat=" + stat);
+	ajax.get("/ajax.php?action=stats&stat=" + stat);
 }
 
 

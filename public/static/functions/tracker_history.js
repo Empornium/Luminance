@@ -1,17 +1,5 @@
-// ==UserScript==
-// @name  Empornium tracker history graph
-// @namespace	http://localhost
-// @description Adds a graph showing the tracker history
-// @include	https://www.empornium.me/user.php?id=*
-// @include	https://www.empornium.sx/user.php?id=*
-// @include	https://pornbay.org/user.php?id=*
-// @version     1.7
-// @grant	none
-// ==/UserScript==
-
 // Convert string with common suffix into bytes numerical(float)
-function getBytes(bytes_text)
-{
+function getBytes(bytes_text) {
   bytes_text = bytes_text.replace(/,/g,'');
   var bytes_scale = 1;
 
@@ -28,9 +16,7 @@ function getBytes(bytes_text)
   return (parseFloat(bytes_text)*bytes_scale);
 }
 
-
-function makePane()
-{
+function makePane() {
   // Generate array of links to table cells
   var THistory     = document.getElementById("historydiv");
   var THistories   = document.getElementsByClassName("box pad seedhistory scrollbox");
@@ -91,7 +77,7 @@ function makePane()
   var Month = "";
 
   // Clean the scraped stats and get Max up and down for scaling
-  for(i=0; i<TrackerUpStats.length;i++)
+  for (i=0; i<TrackerUpStats.length;i++)
   {
     var newMonth = TrackerStatsDates[i].match(/-[\d]+-/)[0];
     if (Month != newMonth)
@@ -126,7 +112,7 @@ function makePane()
   // Calculate the scale factors
   var VMax = Math.max(ULMax, DLMax);
   var VScale = GHeight/VMax;
-  for(i=0; i<4;i++)
+  for (i=0; i<4;i++)
   {
     var THVAxisGrid = document.createElementNS("http://www.w3.org/2000/svg", "line");
     var Vpos = (GHeight-((GHeight/4)*(i+1)));
@@ -149,7 +135,7 @@ function makePane()
 
   // Calculate the total and build the graph points strings.
   // Also calculate ratio per day, if NaN is reported then log it.
-  for(i=0; i<TrackerUpStats.length;i++)
+  for (i=0; i<TrackerUpStats.length;i++)
   {
     TrackerUpTotal   += TrackerUpStats[i];
     TrackerDownTotal += TrackerDownStats[i];
@@ -169,7 +155,7 @@ function makePane()
 
   // Append ratios to the end of daily logs.
   var THLog = THistories[1].getElementsByTagName("br");
-  for(i=0; i<THLog.length; i++)
+  for (i=0; i<THLog.length; i++)
   {
     var THRatio = document.createElement("span");
     THRatio.setAttribute("style", "color:grey");
@@ -180,20 +166,20 @@ function makePane()
   // Get the alignment positions of each element
   THistory = THistories[1].innerHTML.split('\n');
   var alignments = [0, 0, 0, 0, 0];
-  for(i=0; i<THistory.length; i++)
+  for (i=0; i<THistory.length; i++)
   {
     var this_line=THistory[i].split('|');
-    for(j=0; j<this_line.length; j++)
+    for (j=0; j<this_line.length; j++)
     {
         alignments[j]=Math.max(this_line[j].length, alignments[j]);
     }
   }
 
   // Align the elements
-  for(i=0; i<THistory.length; i++)
+  for (i=0; i<THistory.length; i++)
   {
     var this_line=THistory[i].split('|');
-    for(j=0; j<this_line.length-1; j++)
+    for (j=0; j<this_line.length-1; j++)
     {
         this_line[j]=Array((alignments[j] - this_line[j].length) + 1).join('\xA0').concat(this_line[j]);
         if(~this_line[j].indexOf("up:")) {

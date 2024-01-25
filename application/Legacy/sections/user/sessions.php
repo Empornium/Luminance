@@ -1,31 +1,42 @@
 <?php
 //TODO: restrict to viewing bellow class, username in h2
 if (isset($_GET['userid']) && check_perms('users_view_ips') && check_perms('users_logout')) {
-        if (!is_number($_GET['userid'])) { error(404); }
-        $UserID = $_GET['userid'];
+        if (!is_integer_string($_GET['userid'])) { error(404); }
+        $userID = $_GET['userid'];
 } else {
-        $UserID = $LoggedUser['ID'];
+        $userID = $activeUser['ID'];
 }
 
 if (isset($_POST['all'])) {
         authorize();
 
-        $DB->query("DELETE FROM sessions WHERE UserID='$UserID' AND ID<>'$SessionID'");
-        $Cache->delete_value('users_sessions_'.$UserID);
+        $master->db->rawQuery(
+            "DELETE
+               FROM sessions
+              WHERE UserID = ?
+                AND ID <> ?",
+            [$userID, $master->request->session->ID]
+        );
+        $master->cache->deleteValue('users_sessions_'.$userID);
 }
 
 if (isset($_POST['session'])) {
         authorize();
 
-        $DB->query("DELETE FROM sessions WHERE UserID='$UserID' AND ID='".db_string($_POST['session'])."'");
-        $Cache->delete_value('users_sessions_'.$UserID);
+        $master->db->rawQuery(
+            "DELETE
+               FROM sessions
+              WHERE UserID = ?
+                AND ID = ?",
+            [$userID, $_POST['session']]
+        );
+        $master->cache->deleteValue('users_sessions_'.$userID);
 }
 
-$UserSessions = $Cache->get_value('users_sessions_'.$UserID);
+$UserSessions = $master->cache->getValue('users_sessions_'.$userID);
 if (!is_array($UserSessions)) {
-        $UserSessions = $master->db->raw_query("
-              SELECT
-                s.ID,
+    $UserSessions = $master->db->rawQuery(
+        "SELECT s.ID,
                 s.ID,
                 s.Updated,
                 ca.Browser,
@@ -36,24 +47,27 @@ if (!is_array($UserSessions)) {
                 cs.ColorDepth,
                 c.TimezoneOffset,
                 c.TLSVersion,
+                ca.String,
                 ips.StartAddress
-                FROM sessions AS s
-           LEFT JOIN clients AS c ON s.ClientID=c.ID
-           LEFT JOIN client_user_agents AS ca ON c.ClientUserAgentID=ca.ID
-           LEFT JOIN client_screens AS cs ON c.ClientScreenID=cs.ID
-           LEFT JOIN ips ON s.IPID=ips.ID
-                WHERE UserID=:userid
-                ORDER BY Updated DESC", [':userid' => $UserID])->fetchAll(\PDO::FETCH_UNIQUE | \PDO::FETCH_ASSOC);
-        $Cache->cache_value('users_sessions_'.$UserID, $UserSessions, 0);
+           FROM sessions AS s
+      LEFT JOIN clients AS c ON s.ClientID = c.ID
+      LEFT JOIN client_user_agents AS ca ON c.ClientUserAgentID = ca.ID
+      LEFT JOIN client_screens AS cs ON c.ClientScreenID = cs.ID
+      LEFT JOIN ips ON s.IPID=ips.ID
+          WHERE s.UserID = ?
+       ORDER BY s.Updated DESC",
+        [$userID]
+    )->fetchAll(\PDO::FETCH_UNIQUE | \PDO::FETCH_ASSOC);
+    $master->cache->cacheValue('users_sessions_'.$userID, $UserSessions, 0);
 }
 
-$PermissionsInfo = get_permissions_for_user($UserID);
+$permissionsInfo = get_permissions_for_user($userID);
 
-list($UserID, $Username) = array_values(user_info($UserID));
+list($userID, $Username) = array_values(user_info($userID));
 show_header($Username.' &gt; Sessions');
 ?>
 <div class="thin">
-<h2><?=format_username($UserID,$Username)?> &gt; Sessions</h2>
+<h2><?=format_username($userID)?> &gt; Sessions</h2>
         <div class="box pad">
                 <p>Note: Clearing cookies can result in ghost sessions which are automatically removed after 30 days.</p>
         </div>
@@ -67,10 +81,13 @@ show_header($Username.' &gt; Sessions');
                                 <td><strong>Timezone</strong></td>
                                 <td><strong>TLS Version</strong></td>
                                 <td><strong>Last Activity</strong></td>
+                                <?php if (check_perms('site_debug') || check_perms('users_view_keys')) { ?>
+                                <td><strong>User Agent</strong></td>
+                                <?php } ?>
                                 <td>
                                         <form action="" method="post">
                                                 <input type="hidden" name="action" value="sessions" />
-                                                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                                                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                                                 <input type="hidden" name="all" value="1" />
                                                 <input type="submit" value="Logout All" />
                                         </form>
@@ -80,24 +97,27 @@ show_header($Username.' &gt; Sessions');
         $Row = 'a';
         foreach ($UserSessions as $Session) {
                 $Row = ($Row == 'a') ? 'b' : 'a';
-                if(empty($Session['StartAddress'])) {
+                if (empty($Session['StartAddress'])) {
                     $Session['StartAddress'] = '0.0.0.0';
                 } else {
                     $Session['StartAddress'] = inet_ntop($Session['StartAddress']);
                 }
 ?>
                         <tr class="row<?=$Row?>">
-                                <td><?=$PermissionsInfo['site_disable_ip_history'] ? "127.0.0.1" : $Session['StartAddress'] ?></td>
+                                <td><?=array_key_exists('site_disable_ip_history', $permissionsInfo) ? "127.0.0.1" : $Session['StartAddress'] ?></td>
                                 <td><?=$Session['Browser']?> <?=!empty($Session['Version']) ? "({$Session['Version']})" : '' ?></td>
                                 <td><?=$Session['Platform']?></td>
                                 <td><?=$Session['Width']?>x<?=$Session['Height']?>, <?=$Session['ColorDepth']?> bit</td>
                                 <td><?=$Session['TimezoneOffset']?></td>
                                 <td><?=$Session['TLSVersion']?></td>
                                 <td><?=time_diff($Session['Updated'])?></td>
+                                <?php if (check_perms('site_debug') || check_perms('users_view_keys')) { ?>
+                                <td><?=$Session['String']?></td>
+                                <?php } ?>
                                 <td>
                                         <form action="" method="post">
                                                 <input type="hidden" name="action" value="sessions" />
-                                                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                                                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                                                 <input type="hidden" name="session" value="<?=$Session['ID']?>" />
                                                 <input type="submit" value="<?=(($master->request->session->ID === $Session['ID'])?'Current" disabled="disabled':'Logout')?>" />
                                         </form>

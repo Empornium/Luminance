@@ -1,23 +1,22 @@
 <?php
 
-$Text = new Luminance\Legacy\Text;
-
-require_once(SERVER_ROOT.'/Legacy/sections/forums/functions.php');
+$bbCode = new \Luminance\Legacy\Text;
 
 if (!in_array($blogSection,['Blog', 'Contests'])) $blogSection = 'Blog';
 
+show_header($blogSection, 'bbcode');
 
-show_header($blogSection,'bbcode');
-
-$ForumCats = get_forum_cats();
-//This variable contains all our lovely forum data
-$Forums = get_forums_info();
-
-
-if (is_number($_GET['id'])) {
+if (is_integer_string($_GET['id'] ?? null)) {
     $BlogID = $_GET['id'];
-    $item = $master->db->raw_query("SELECT Title, Body, ThreadID, Image FROM blog WHERE ID=:blogid",
-                                          [':blogid' => $BlogID] )->fetch(\PDO::FETCH_ASSOC);
+    $item = $master->db->rawQuery(
+        "SELECT Title,
+                Body,
+                ThreadID,
+                Image
+           FROM blog
+          WHERE ID = ?",
+        [$BlogID]
+    )->fetch(\PDO::FETCH_ASSOC);
 }
 
 $Editing = !empty($_GET['action']) && $_GET['action'] == 'editpost';
@@ -27,7 +26,7 @@ $lcSection = lcfirst($blogSection);
     <div class="thin">
         <h2><?=(!$Editing ? "Add post to $lcSection" : "Edit $lcSection post #$BlogID")?></h2>
         <div id="quickreplypreview">
-            <div id="contentpreview" style="text-align:left;"></div>
+            <div id="contentpreview" class="preview_content" style="text-align:left;"></div>
         </div>
     </div>
 
@@ -44,7 +43,7 @@ $lcSection = lcfirst($blogSection);
                 <div class="pad">
                     <div id="quickreplytext">
                         <input type="hidden" name="action" value="<?=(!$Editing ? 'takenewpost' : 'takeeditpost')?>" />
-                        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
 <?php               if ($Editing) { ?>
                         <input type="hidden" name="blogid" value="<?=$BlogID?>" />
 <?php               } ?>
@@ -53,13 +52,13 @@ $lcSection = lcfirst($blogSection);
                         <br/><h3>Image</h3>
                         <input type="text" name="image" class="long" <?php if (!empty($item['Image'])) { echo 'value="'.display_str($item['Image']).'"'; } ?> /><br />
                         <br/><h3>Body</h3>
-<?php                   $Text->display_bbcode_assistant('textbody', true)  ?>
+<?php                   $bbCode->display_bbcode_assistant('textbody', true)  ?>
                         <textarea id="textbody" name="body" class="long" rows="15"><?php if (!empty($item['Body'])) { echo display_str($item['Body']); } ?></textarea> <br />
                         <br/><h3>Discussion Thread</h3>
 <?php               if (!$Editing) {   ?>
                         <input type="radio" name="autothread" value="0" <?=(!($Editing && $item['ThreadID'])?'checked="checked" ':'')?>title="if selected a forum must be supplied" />
                         Automatically create thread in forum:
-                        <?= print_forums_select($Forums, $ForumCats, ANNOUNCEMENT_FORUM_ID) ?> &nbsp;(creates thread using blog title)
+                        <?= $master->repos->forums->printForumSelect(null, null, ANNOUNCEMENT_FORUM_ID) ?> &nbsp;(creates thread using blog title)
                         <br/>
                         <input type="radio" name="autothread" value="1" <?=($Editing && $item['ThreadID']?'checked="checked" ':'')?>title="if selected a valid threadid must be supplied" />
 <?php               }          ?>
@@ -68,7 +67,7 @@ $lcSection = lcfirst($blogSection);
                         &nbsp;(must be a valid thread id)
                         <br /><br />
 <?php               if (!$Editing) {   ?>
-                        <input id="subscribebox" type="checkbox" name="subscribe" title="add the thread to my subscribed topics"<?=!empty($HeavyInfo['AutoSubscribe'])?' checked="checked"':''?> tabindex="2" />
+                        <input id="subscribebox" type="checkbox" name="subscribe" title="add the thread to my subscribed topics"<?=!empty($heavyInfo['AutoSubscribe'])?' checked="checked"':''?> tabindex="2" />
                         <label for="subscribebox">Subscribe</label>
 <?php               }          ?>
                     </div>

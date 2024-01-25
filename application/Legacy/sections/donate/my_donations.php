@@ -1,25 +1,26 @@
 <?php
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
-if (!empty($_REQUEST['userid']) && is_numeric($_REQUEST['userid']))
-    $UserID = $_REQUEST['userid'];
-else
-    $UserID = $LoggedUser['ID'];
+if (!empty($_REQUEST['userid']) && is_numeric($_REQUEST['userid'])) {
+    $userID = $_REQUEST['userid'];
+} else {
+    $userID = $activeUser['ID'];
+}
 
-$OwnProfile = $UserID == $LoggedUser['ID'];
+$OwnProfile = $userID == $activeUser['ID'];
 
-if(!$OwnProfile && !check_perms('users_view_donor')) error(403);
+if (!$OwnProfile && !check_perms('users_view_donor')) error(403);
 
 $eur_rate = get_current_btc_rate();
 
 $Title = "My Donations";
 
 if (!$OwnProfile) {
-    $UserInfo = user_info($UserID);
-    $Title .= " " . format_username($UserID, $UserInfo['Username'], $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID'], false, true);
+    $UserInfo = user_info($userID);
+    $Title .= " " . format_username($userID, $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID'], false, true);
 }
 
-show_header('My Donations','bitcoin,bbcode');
+show_header('My Donations', 'bitcoin,bbcode');
 
 ?>
 <!-- Donate -->
@@ -33,8 +34,8 @@ show_header('My Donations','bitcoin,bbcode');
     <div class="box pad">
         <form action="donate.php" method="post" >
             <input type="hidden" name="action" value="submit_donate_manual" />
-            <input type="hidden" name="userid" value="<?=$UserID?>" />
-            <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+            <input type="hidden" name="userid" value="<?=$userID?>" />
+            <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
 
             Amount: <strong style="font-size:19px;">&euro; </strong><input type="text" name="amount" value="" /> &nbsp; &nbsp; &nbsp;
             <input type="submit" name="donategb" value="donate for -GB" />
@@ -49,39 +50,29 @@ show_header('My Donations','bitcoin,bbcode');
     <?php
         $Err=false;
         //usually any user will only have one 'open' address - but list them all just in case
-        $DB->query("SELECT ID, public, time FROM bitcoin_donations WHERE state='unused' AND userID='$UserID'");
+        $user_addresses = $master->db->rawQuery(
+            "SELECT SQL_CALC_FOUND_ROWS
+                    ID,
+                    public,
+                    time
+               FROM bitcoin_donations
+              WHERE state = 'unused'
+                AND userID = ?",
+            [$userID]
+        )->fetchAll(\PDO::FETCH_NUM);
         // existing 'open' (unused) addresses assigned to this user
-        $user_addresses = $DB->to_array(false, MYSQLI_NUM);
+        $user_address_count = $master->db->foundRows();
 
-        if ($_REQUEST['new']=='1' && count($user_addresses)==0) {
-            // only assign a new address if they dont already have one
-            $DB->query("SELECT ID, public, userID FROM bitcoin_addresses ORDER BY ID LIMIT 1");
-            if ($DB->record_count() < 1) {
-                // no addresses!!
-                $Err = "Failed to get an address, if this error persists we probably need to add some addresses, please contact an admin";
-            } else {
-                // got an unused address
-                list($addID, $public, $staffID) = $DB->next_record();
 
-                $DB->query("DELETE FROM bitcoin_addresses WHERE ID=$addID");
-                if ($DB->affected_rows()==1) { // delete succeeded - we can issue this address
-                    $time = sqltime();
-                    $DB->query("INSERT INTO bitcoin_donations (public, time, userID, staffID)
-                                                    VALUES ( '$public', '$time', '$UserID', '$staffID')");
-                    $ID = $DB->inserted_id();
-                    $user_addresses = array( array($ID, $public, $time) );
-                } else {
-                    // maybe another user grabbed it at the same time? try again...
-                    $Err = "Address was already used! - please reload the page, if this error persists please contact an admin";
-                }
-            }
+        if (($_REQUEST['new'] ?? '0') == '1' && $user_address_count === 0) {
+            list($Err, $user_addresses) = get_btc_addresses($userID);
         }
 
         if ($Err) {
     ?>
             <p><span class="warning"><?=$Err?></span></p>
     <?php
-        } elseif (count($user_addresses)==0) {
+        } elseif ($user_address_count === 0) {
 
     ?>
             <p><a style="font-weight: bold;" href="/donate.php?action=my_donations&new=1">click here to get a personal donation address</a></p>
@@ -89,7 +80,7 @@ show_header('My Donations','bitcoin,bbcode');
         } else {
     ?>
         This page queries the balance at the donation address in realtime.<br/>
-        Once you have transferred some bitcoin to your donation address it can take a few hours for the transfer to be fully verified on the bitcoin network (6 transactions).<br/>
+        Once you have transferred some bitcoin to your donation address it can take a few hours for the transfer to be fully verified on the bitcoin network (6 confirmations).<br/>
         When your transfer is verified you must return to this page and choose how to submit your donation (for -gb or <img src="<?= STATIC_SERVER ?>common/symbols/donor.png" alt="love" />)<br/><br/>
     <?php
         if ($eur_rate=='0') {   ?>
@@ -123,7 +114,7 @@ show_header('My Donations','bitcoin,bbcode');
                         <td>bc amount deposited</td><td>&euro; <em>(estimated)</em></td>
                     </tr>
                     <tr>
-                        <td><?=$Text->full_format("[font=Courier New][b]{$public}[/b][/font]", true)?></td><td><?=($activetime?time_diff($activetime):'')?></td>
+                        <td><?=$bbCode->full_format("[font=Courier New][b]{$public}[/b][/font]", true)?></td><td><?=($activetime?time_diff($activetime):'')?></td>
                         <td><?=$balance1; if ($balance1>0) echo ($verified?' (verified)':' (pending)')?></td><td><?=$amount_euro?></td>
                     </tr>
                     <?php
@@ -135,15 +126,15 @@ show_header('My Donations','bitcoin,bbcode');
                         </td>
                         <td style="width:100px" rowspan="2">
                             <?php
-                            if ($LoggedUser['ID']==$UserID || check_perms('admin_donor_log')) {
+                            if ($activeUser['ID']==$userID || check_perms('admin_donor_log')) {
                                 ?>
                                 <form action="donate.php" method="post" <?php
-                                    if ($LoggedUser['ID']!=$UserID)
+                                    if ($activeUser['ID']!=$userID)
                                     echo "onsubmit=\"return confirm('Are you sure you want to submit this users donation for them?\\n(usually this should be done by the user)');\" "; ?> >
                                     <input type="hidden" name="action" value="submit_donate" />
                                     <input type="hidden" name="donateid" value="<?=$ID?>" />
-                                    <input type="hidden" name="userid" value="<?=$UserID?>" />
-                                    <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                                    <input type="hidden" name="userid" value="<?=$userID?>" />
+                                    <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                                     <input type="submit" name="donategb" value="donate for -GB" <?=$disabled_html?>/><br/>
                                     <input type="submit" name="donatelove" value="donate for love" <?=$disabled_html?>/>
                                 </form>
@@ -155,9 +146,16 @@ show_header('My Donations','bitcoin,bbcode');
                     <tr>
                         <td colspan="3" style="text-align:right;">
                         <?php
-                            $DB->query("SELECT Title FROM badges WHERE Type='Donor' AND Cost<='".(int) round($amount_euro)."' ORDER BY Cost DESC LIMIT 1");
-                            if ($DB->record_count()>0) {
-                                list($title) = $DB->next_record();
+                            $title = $master->db->rawQuery(
+                                "SELECT Title
+                                   FROM badges
+                                  WHERE Type = 'Donor'
+                                    AND Cost <= ?
+                               ORDER BY Cost DESC
+                                  LIMIT 1",
+                                [(int) round($amount_euro)]
+                            )->fetchColumn();
+                            if ($master->db->foundRows()>0) {
                                 echo "&euro;$amount_euro => $title";
                             }
                         ?>  <img src="<?= STATIC_SERVER ?>common/symbols/donor.png" alt="Donor" />
@@ -179,14 +177,27 @@ show_header('My Donations','bitcoin,bbcode');
     <div class="box pad">
 
     <?php
-        $DB->query("SELECT ID, state, public, time, userID, bitcoin_rate, received, amount_bitcoin, amount_euro, comment
-                        FROM bitcoin_donations
-                        WHERE state !='unused' AND userID='$UserID'
-                    ORDER BY received DESC");
+        $donation_records = $master->db->rawQuery(
+            "SELECT SQL_CALC_FOUND_ROWS
+                    ID,
+                    state,
+                    public,
+                    time,
+                    userID,
+                    bitcoin_rate,
+                    received,
+                    amount_bitcoin,
+                    amount_euro,
+                    comment
+               FROM bitcoin_donations
+              WHERE state != 'unused'
+                AND userID = ?
+           ORDER BY received DESC",
+            [$userID]
+        )->fetchAll(\PDO::FETCH_NUM);
+        $donation_record_count = $master->db->foundRows();
 
-        $donation_records = $DB->to_array(false, MYSQLI_NUM);
-
-        if (count($donation_records)==0) {
+        if ($donation_record_count == 0) {
     ?>
             <p><span style="font-size:1.0em;font-weight: bold;">no records found</span></p>
     <?php
@@ -203,7 +214,7 @@ show_header('My Donations','bitcoin,bbcode');
                         <td>address</td><td>bc rate</td><td>date</td><td>bc amount</td><td></td>
                     </tr>
                     <tr>
-                        <td title="Do not reuse old donation addresses. If you want to make a new donation please use a new address (issued above)"><?=$Text->full_format($addybbcode, true)?></td><td><?=$bitcoin_rate?></td><td><?=time_diff($received)?></td><td><?=$amount_bitcoin?></td><td>&euro;<?=$amount_euro?></td>
+                        <td title="Do not reuse old donation addresses. If you want to make a new donation please use a new address (issued above)"><?=$bbCode->full_format($addybbcode, true)?></td><td><?=$bitcoin_rate?></td><td><?=time_diff($received)?></td><td><?=$amount_bitcoin?></td><td>&euro;<?=$amount_euro?></td>
                     </tr>
                     <tr>
                         <td colspan="4"><?=$comment?></td><td colspan="1"><?php if (check_perms('admin_donor_log'))echo "<em>$state</em>";?></td>

@@ -5,15 +5,21 @@
  */
 
 //If we're not coming from torrents.php, check we're being returned because of an error.
-if (!isset($_GET['id']) || !is_number($_GET['id'])) {
+if (!isset($_GET['id']) || !is_integer_string($_GET['id'])) {
     if (!isset($Err)) {
         error(0);
     }
 } else {
-    $TorrentID = (int) $_GET['id'];
-    $DB->query("SELECT GroupID, Name FROM torrents_group AS tg JOIN torrents AS t ON t.GroupID=tg.ID WHERE t.ID=$TorrentID");
-    if ($DB->record_count()==0) error("Not a valid torrentid! ($TorrentID)");
-    list($GroupID, $TorrentName) = $DB->next_record();
+    $torrentID = (int) $_GET['id'];
+    list($GroupID, $TorrentName) = $master->db->rawQuery(
+        "SELECT tg.ID,
+                tg.Name
+           FROM torrents_group AS tg
+           JOIN torrents AS t ON t.GroupID = tg.ID
+          WHERE t.ID = ?",
+        [$torrentID]
+    )->fetchColumn();
+    if ($master->db->foundRows() == 0) error("Not a valid torrentid! ($torrentID)");
 }
 
 show_header('Report Torrent', 'reportsv2');
@@ -27,8 +33,8 @@ show_header('Report Torrent', 'reportsv2');
     <form action="reportsv2.php?action=takereport" enctype="multipart/form-data" method="post" id="report_table">
         <div>
             <input type="hidden" name="submit" value="true" />
-            <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-            <input type="hidden" name="torrentid" value="<?=$TorrentID?>" />
+            <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
+            <input type="hidden" name="torrentid" value="<?=$torrentID?>" />
         </div>
         <table>
             <tr>
@@ -40,8 +46,8 @@ show_header('Report Torrent', 'reportsv2');
                 <td>
                     <select id="type" name="type" onchange="ChangeReportType()">
 <?php
-        $TypeList = $Types;
-        $Priorities = array();
+        $TypeList = $types;
+        $Priorities = [];
         foreach ($TypeList as $Key => $Value) {
             $Priorities[$Key] = $Value['priority'];
         }
@@ -68,7 +74,11 @@ show_header('Report Torrent', 'reportsv2');
                 <input id="link" type="hidden" name="link" size="50" value="<?=(!empty($_POST['link']) ? display_str($_POST['link']) : '')?>" />
                 <input id="extra" type="hidden" name="extra" value="<?=(!empty($_POST['extra']) ? display_str($_POST['extra']) : '')?>" />
 
-                <script type="text/javascript">ChangeReportType();</script>
+                <script type="text/javascript">
+                    document.addEventListener('LuminanceLoaded', function() {
+                        ChangeReportType();
+                    });
+                </script>
             </div>
 
         <div class="pad center">

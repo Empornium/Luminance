@@ -1,0 +1,429 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% block title %}User Security{% endblock %}
+
+{% block scripts %}
+    {{ parent() }}
+    {% if (master.options.HaveIBeenPwned) %}
+        <script defer src="/static/libraries/jquery.js" type="text/javascript"></script>
+        <script defer src="/static/libraries/sha1.js" type="text/javascript"></script>
+        <script defer src="/static/functions/hibp.js" type="text/javascript"></script>
+        <script type="text/javascript">
+              document.addEventListener('LuminanceLoaded', function() {
+                  sendSelector = 'input[type=submit][name=submit][value=Save]';
+              });
+        </script>
+    {% endif %}
+{% endblock %}
+
+{% block main_content %}
+    <div>
+        {% set securityinfo = get_article('securityinline') %}
+        {% if securityinfo is not empty %}
+            <div id="tutorial" class="hidden">
+                <div class="head">Tutorial</div>
+                <div class="box pad shadow">
+                    {{ bbcode.full_format(securityinfo, true)|raw }}
+                </div>
+                <br/>
+            </div>
+        {% endif %}
+        <div class="head"><a href="/user.php?id={{ user.ID }}">{{ user.Username }}</a> &gt; Security</div>
+        <div class="box">
+            <table cellpadding="6" cellspacing="1" border="0" width="100%" class="border">
+            <tbody>
+                {% if securityinfo is not empty %}
+                    <tr class="colhead">
+                        <td colspan="6">
+                            <strong>Tutorial</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                    <tr>
+                        <td class="label"><strong>View Tutorial: </strong></td>
+                        <td>
+                            <input type="button" value="Show"  style="margin-right: 10px;" onClick="$('#tutorial').toggle();" />
+                        </td>
+                        <td colspan="2"></td>
+                    </tr>
+                {% endif %}
+                <tr class="colhead">
+                    <td colspan="6">
+                        <strong>E-mails</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label"><strong>Current e-mails:</strong></td><td colspan="3"></td>
+                </tr>
+                {% for email in emails %}
+                    {% if not email.isCancelled or auth.isAllowed('users_view_email') %}
+                        <tr style="min-height: 2em;">
+                            <td></td>
+                            <td style="vertical-align: middle;">
+                                <span style="float: left;">{{ email.Address }}</span>
+                                {% if email.isCancelled() %}
+                                    <span class="label label-error">deleted</span>
+                                {% endif %}
+                                {% if email.isQuiet() and auth.isAllowed('users_view_email') %}
+                                    <span class="label label-sadd">silent add</span>
+                                {% endif %}
+                                {% if email.isDefault() %}
+                                    <span class="label label-default">default</span>
+                                {% endif %}
+                                {% if email.isEncrypted() %}
+                                    <span class="label label-warning">encrypted</span>
+                                {% endif %}
+                                {% if email.isConfirmed() %}
+                                    <span class="label label-success">confirmed</span>
+                                {% endif %}
+                                {% if auth.isAllowed('users_view_ips') %}
+                                    <span>&nbsp;{{ email.ip }} {{ email.ip.geoip }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: right; width: 64px">
+                                {% if controls.email %}
+                                    {% if email.isCancelled() and auth.isAllowed('users_edit_email') %}
+                                        <form style="display: inline-block;" action="/user/{{ user.ID }}/email/restore" method="POST">
+                                            <input type="hidden" name="token" value="{{ secretary.getToken('user.email.restore') }}" />
+                                            <input type="hidden" name="emailID" value="{{ email.ID }}">
+                                            <button style="all: unset" type="submit" value="Restore" title="Restore">
+                                                {{ icon.render('misc_icons', ['misc_restore']) }}
+                                            </button>
+                                        </form>
+                                        <form style="display: inline-block;" action="/user/{{ user.ID }}/email/delete" method="POST">
+                                            <input type="hidden" name="token" value="{{ secretary.getToken('user.email.delete') }}" />
+                                            <input type="hidden" name="emailID" value="{{ email.ID }}">
+                                            <button style="all: unset" type="submit" value="Delete" title="Permenatly Delete">
+                                                {{ icon.render('misc_icons', ['misc_cancel']) }}
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    {% if (email.isConfirmed() or auth.isAllowed('users_edit_email')) and not email.isCancelled() and not email.isDefault() and not email.isQuiet() %}
+                                        <form style="display: inline-block;" action="/user/{{ user.ID }}/email/default" method="POST">
+                                            <input type="hidden" name="token" value="{{ secretary.getToken('user.email.default') }}" />
+                                            <input type="hidden" name="emailID" value="{{ email.ID }}">
+                                            <button style="all: unset" type="submit" value="Default" title="Default">
+                                                {{ icon.render('misc_icons', ['misc_favorite']) }}
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    {% if email.readyToResend() and not email.isConfirmed() %}
+                                        <form style="display: inline-block;" action="/user/{{ user.ID }}/email/resend" method="POST">
+                                            <input type="hidden" name="token" value="{{ secretary.getToken('user.email.resend') }}" />
+                                            <input type="hidden" name="emailID" value="{{ email.ID }}">
+                                            <button style="all: unset" type="submit" value="Resend" title="Resend">
+                                                {{ icon.render('misc_icons', ['misc_send']) }}
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    {% if not email.isDefault() and not email.isCancelled %}
+                                        <form style="display: inline-block;" action="/user/{{ user.ID }}/email/delete" method="POST">
+                                            <input type="hidden" name="token" value="{{ secretary.getToken('user.email.delete') }}" />
+                                            <input type="hidden" name="emailID" value="{{ email.ID }}">
+                                            <button style="all: unset" type="submit" value="Delete" title="Delete">
+                                                {{ icon.render('misc_icons', ['misc_trash']) }}
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>&nbsp;</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            <tr>
+            {% if ownProfile or auth.isAllowed('users_edit_email') %}
+                <td></td>
+                <td colspan="4">
+                    <form action="/user/{{ user.ID }}/email/add" method="POST">
+                        <input type="hidden" name="token" value="{{ secretary.getToken('user.email.add') }}" />
+                        <input type="email" name="address" placeholder="Enter new e-mail address" />
+                        {% if auth.isAllowed('users_edit_email') %}
+                            Stealth: <input type="checkbox" value="1" title="This allows staff to add a user's email incognito. User will NOT receive confirmation or see this email on the account." name="stealth" value="stealth" />
+                            {# TODO ADD COMMENT? Where email came from or should we keep this in AdminComments #}
+                        {% endif %}
+                        <input type="submit" name="submit" value="Add" />
+                    </form>
+                </td>
+            {% endif %}
+            <tr><td colspan="4">&nbsp;</td></tr>
+            {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::API')) %}
+                {% if controls.api %}
+                    <tr class="colhead">
+                        <td colspan="6">
+                            <strong>API Keys</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label"><strong>Current API keys:</strong></td><td colspan="3"></td>
+                    </tr>
+                    {% for apiKey in apiKeys %}
+                        {% if not apiKey.isCancelled or auth.isAllowed('users_edit_apikey') %}
+                            <tr style="min-height: 2em;">
+                                <td></td>
+                                <td style="vertical-align: middle;">
+                                    <span style="float: left;">{{ apiKey.Key }}</span>
+                                    {% if apiKey.isCancelled() %}
+                                        <span class="label label-error">deleted</span>
+                                    {% else %}
+                                        <span class="label label-success">active</span>
+                                    {% endif %}
+                                    <span> <b>Desc:</b> {{ apiKey.Description }}</span>
+                                    {% if auth.isAllowed('users_view_ips') %}
+                                        <span>&nbsp;{{ apiKey.ip }} {{ apiKey.ip.geoip }}</span>
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: right; width: 64px">
+                                    {% if apiKey.isCancelled() and auth.isAllowed('users_edit_apikey') %}
+                                        <form style="display: inline-block;" action="/user/{{ user.ID }}/apikey/restore" method="POST">
+                                            <input type="hidden" name="token" value="{{ secretary.getToken('user.apikey.restore') }}" />
+                                            <input type="hidden" name="apikeyID" value="{{ apiKey.ID }}">
+                                            <button style="all: unset" type="submit" value="Restore" title="Restore">
+                                                {{ icon.render('misc_icons', ['misc_restore']) }}
+                                            </button>
+                                        </form>
+                                        <form style="display: inline-block;" action="/user/{{ user.ID }}/apikey/delete" method="POST">
+                                        <input type="hidden" name="token" value="{{ secretary.getToken('user.apikey.delete') }}" />
+                                        <input type="hidden" name="apikeyID" value="{{ apiKey.ID }}">
+                                        <button style="all: unset" type="submit" value="Delete" title="Permenantly Delete">
+                                            {{ icon.render('misc_icons', ['misc_cancel']) }}
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    {% if not apiKey.isCancelled() %}
+                                    <form style="display: inline-block;" action="/user/{{ user.ID }}/apikey/delete" method="POST">
+                                        <input type="hidden" name="token" value="{{ secretary.getToken('user.apikey.delete') }}" />
+                                        <input type="hidden" name="apikeyID" value="{{ apiKey.ID }}">
+                                        <button style="all: unset" type="submit" value="Delete" title="Delete">
+                                            {{ icon.render('misc_icons', ['misc_trash']) }}
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                                <td>&nbsp;</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                    <tr>
+                        {% if ownProfile or auth.isAllowed('users_edit_apikey') %}
+                            <td></td>
+                            <td colspan="4">
+                                <form action="/user/{{ user.ID }}/apikey/add" method="POST">
+                                    <input type="hidden" name="token" value="{{ secretary.getToken('user.apikey.add') }}" />
+                                    <input type="text" name="description" placeholder="New API Key Description" />
+                                    <input type="submit" name="submit" value="Generate" />
+                                </form>
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% endif %}
+            {% endif %}
+            <tr><td colspan="4">&nbsp;</td></tr>
+            {% if controls.tfa %}
+                <tr class="colhead">
+                        <td colspan="4">
+                            <strong>Enhanced Security</strong>
+                        </td>
+                </tr>
+                <tr>
+                    <td class="label">Two Factor Authentication</td>
+                    <td colspan="3">
+                        {% if not user.isTwoFactorEnabled() %}
+                            {% if ownProfile %}
+                                <a href="/user/{{ user.ID }}/twofactor/enable" rel="modal:open"><button>Enable</button></a>
+                            {% else %}
+                                <button disabled>Enable</button>
+                            {% endif %}
+                        {% else %}
+                            {% if ownProfile %}
+                                <a href="/user/{{ user.ID }}/twofactor/disable" rel="modal:open"><button>Disable</button></a>
+                                {#<a href="/user/{{ user.ID }}/twofactor/view" rel="modal:open"><button>View Secret</button></a>#}
+                            {% else %}
+                                <form id="twofactor_confirm_form" action="/user/{{ user.ID }}/twofactor/disable" method="POST">
+                                    <input type="hidden" name="token" value="{{ secretary.getToken("user.twofactor.disable") }}" />
+                                </form>
+                                <button type="submit" form="twofactor_confirm_form" value="Submit">Disable</button>
+                                {#<button disabled>View Secret</button>#}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endif %}
+            {% if controls.irc and master.options.AuthUserEnable %}
+                <tr class="colhead">
+                        <td colspan="4">
+                            <strong>IRC</strong>
+                        </td>
+                </tr>
+                <tr>
+                    <td class="label">Registered IRC Nick</td>
+                    {% if user.IRCNick is null %}
+                        <td colspan="3">
+                          <form id="irc_auth_form" action="/user/{{ user.ID }}/irc/auth" method="POST">
+                              <hr style="height:5px; visibility:hidden;" />
+                              <input type="hidden" name="token" value="{{ secretary.getToken("user.irc.auth") }}" />
+                              {% if auth.isAllowed('users_edit_irc') %}
+                                  <input type="text" name="irc_nick" placeholder="Enter registered IRC nick" />
+                              {% else %}
+                                  <input type="text" name="irc_nick" value="{{ user.Username }}" disabled />
+                              {% endif %}
+                              <input type="submit" name="submit" value="Auth" />
+                          </form>
+                            <hr style="height:5px; visibility:hidden;" />
+                            Ensure the user is registered with Nickserv prior to continuing - You can use this IRC auth to enter user bot nicks.</a>
+                            <hr style="height:5px; visibility:hidden;" />
+                        </td>
+                    {% else %}
+                        <td colspan="3">
+                            <form id="irc_deauth_form" action="/user/{{ user.ID }}/irc/deauth" method="POST">
+                            <input type="hidden" name="token" value="{{ secretary.getToken("user.irc.deauth") }}" />
+                                <input type="text" name="irc_nick" value="{{ user.IRCNick }}" disabled />
+                                <input type="submit" name="submit" value="Deauth" />
+                            </form>
+                        </td>
+                    {% endif %}
+                </tr>
+            {% endif %}
+            {% if controls.password %}
+                <tr class="colhead">
+                    <td colspan="4">
+                        <strong>Change password</strong>
+                    </td>
+                </tr>
+                <form action="/user/{{ user.ID }}/password/change" method="POST">
+                    <input type="hidden" name="token" value="{{ secretary.getToken('user.password.change') }}" />
+
+                    <tr>
+                        <td class="label">Old password</td>
+                        <td><input type="password" name="old_password" placeholder="Enter old password" /></td>
+                        <td colspan="2"></td>
+                    </tr>
+                    <tr>
+                        <td class="label">New password</td>
+                        <td>
+                            <input type="password" name="password" placeholder="Enter new password" />
+                            <input type="password" name="check_password" placeholder="Enter new password again" />
+                        </td>
+                        <td colspan="2">
+                            {% if (master.options.HaveIBeenPwned) %}
+                                <input style="float: right;" type="submit" name="submit" value="Save" disabled class="disabled" />
+                                <input style="float: right;" type="submit" name="submit" value="Check" class="hidden" onclick="event.preventDefault();return haveibeenpwned();" />
+                            {% else %}
+                                <input style="float: right;" type="submit" name="submit" value="Save" />
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if (master.options.HaveIBeenPwned) %}
+                        <tr>
+                            <td class="label"></td>
+                            <td id="password-help" class="hidden"></td>
+                            <td colspan="2"></td>
+                        </tr>
+                    {% endif %}
+                </form>
+            {% endif %}
+        </tbody>
+    </table>
+    </div>
+
+    {% if auth.isAllowed('users_view_ips') %}
+        <div class="head">Security logs</div>
+        <div class="box">
+            <table cellpadding="6" cellspacing="1" border="0" width="100%" class="border">
+                <tbody>
+                <tr class="colhead">
+                    <td><strong>Event</strong></td>
+                    <td><strong>Date</strong></td>
+                    <td><strong>IP</strong></td>
+                    <td><strong>By</strong></td>
+                </tr>
+                {% for log in logs %}
+                    <tr>
+                        <td>{{ log.Event }}</td>
+                        <td>{{ time_diff(log.Date)|raw }}</td>
+                        <td>{{ log.IP|raw }}</td>
+                        <td>{{ render.username(log.AuthorID, {'useSpan': true, 'noTitle': true}) }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="head">Security info</div>
+        <div class="box">
+            <table cellpadding="6" cellspacing="1" border="0" width="100%" class="border">
+            <tbody>
+                <tr>
+                    <td class="label">Last IP</td>
+                    <td>{{ render.geoip(user.ip) }} [<a href="/userhistory.php?action=ips&userid={{ user.ID }}">history</a>]</td>
+                    <td colspan="2"></td>
+                </tr>
+                <tr>
+                    <td class="label">ISP</td>
+                    <td>{{ user.ip.network.ISP }}</td>
+                    <td colspan="2"></td>
+                </tr>
+                <tr>
+                    <td class="label">Passkey</td>
+                    <td>{{ user.legacy['torrent_pass'] }}</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tbody>
+        </table>
+        </div>
+    {% endif %}
+
+    {% if ownProfile or auth.isAllowed('users_mod') %}
+        <div class="head">Torrent Client info</div>
+        <div class="box">
+            <table cellpadding="6" cellspacing="1" border="0" width="100%" class="border">
+            <tbody>
+                <tr>
+                    <td class="label" colspan="2" style="text-align: left; width: 64px">Clients:</td>
+                </tr>
+                    {% for torrentClient in user.torrentClients %}
+                        <tr>
+                            <td>
+                                <span title=\"{{ torrentClient.clientid }} on {{ torrentClient.ip }}\">
+                                    {{ torrentClient.useragent }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                <tr>
+                    <td class="label" colspan="2" style="text-align: left; width: 64px">Connectable:</td>
+                </tr>
+                {% set elemid = 0 %}
+                {% for connectable in user.connectable %}
+                    {% if connectable.status == 'yes' %}
+                        {% set color = 'green' %}
+                        {% set show = 'Yes' %}
+                    {% elseif connectable.status == 'no' %}
+                        {% set color = 'red' %}
+                        {% set show = 'No' %}
+                    {% else %}
+                        {% set color = 'grey' %}
+                        {% set show = '?' %}
+                    {% endif %}
+                    <tr><td>
+                        <span id="statuscont{{ elemid }}" title="status last checked at {{ time_diff(connectable.timeChecked,2,false,false,0) }}">
+                        <span id="status{{ elemid }}" class="{{ color }}">{{ show }}</span> &nbsp; {{ connectable.ip }} &nbsp;&nbsp;
+                            {% if connectable.status != unset %}
+                                <a id="unset{{ elemid }}" style="cursor: pointer;" onclick="unset_conn_status('status{{ elemid }}', 'unset{{ elemid }}', '{{ user.ID }}','{{ connectable.ip }}')" title="Set this connectable record to status=unset">[U]</a>
+                            {% endif %}
+                            <a style="cursor: pointer;" onclick="delete_conn_record('statuscont{{ elemid }}','{{ user.ID }}','{{ connectable.ip }}')" title="Remove this connectable record">[X]</a>
+                            {% if connectable.port is not empty %}
+                                [<a href="/user.php?action=connchecker&amp;checkuser={{ user.ID }}&amp;checkip={{ connectable.ip }}&amp;checkport={{ connectable.port }}" title="check now">check</a>]
+                            {% endif %}
+                        </span>
+                    </td></tr>
+                    {% set elemid = elemid +1 %}
+                {% endfor %}
+            </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

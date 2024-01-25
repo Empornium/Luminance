@@ -1,0 +1,67 @@
+{% import "macros/icon.html.twig" as icon %}
+
+{% block content %}
+    <div class="thin">
+        <h2>
+            {% set usernameOptions = {
+                'drawInBox' : false,
+                'colorname' : false,
+                'dropDown'  : false,
+                'useSpan'   : true,
+                'noIcons'   : true,
+                'noGroup'   : true,
+                'noClass'   : true,
+                'noTitle'   : true,
+            } %}
+            {% if myTorrents %}
+                Torrent comments left on your uploads
+            {% else %}
+                Torrent comment history for {{ render.username(user.ID, usernameOptions) }}
+            {% endif %}
+        </h2>
+        {{ render.latestForumThreads() }}
+        <div class="linkbox">
+            {% if myTorrents %}
+                {% if viewingOwn %}
+                    <a href="/userhistory.php?action=comments">Display comments you've made</a>
+                {% endif %}
+            {% else %}
+                {% if viewingOwn %}
+                    <a href="/userhistory.php?action=comments&amp;my_torrents=1">Display comments left on your uploads</a>
+                {% endif %}
+            {% endif %}
+            &nbsp;&nbsp;&nbsp;
+            {% if not viewingOwn %}
+                <a href="/userhistory.php?action=posts&amp;userid=<?=$userID?>&amp;group=0">Go to post history</a>
+            {% else %}
+                <a href="/userhistory.php?action=subscriptions">Go to forum subscriptions</a>&nbsp;&nbsp;&nbsp;
+                <a href="/userhistory.php?action=subscribed_collages">Go to collage subscriptions</a>&nbsp;&nbsp;&nbsp;
+                <a href="/userhistory.php?action=posts&amp;group=0&amp;showunread=0">Go to post history</a>
+            {% endif %}
+        </div>
+        <br />
+        <br />
+        {% if comments is empty %}
+            <tr>
+                <td colspan="3">
+                    <p class="center">
+                        No torrent comments
+                    </p>
+                </td>
+            </tr>
+        {% else %}
+            <div class="linkbox pager">
+                {{ render.pagelinks(page, results, pageSize, 11) }}
+            </div>
+            {% for comment in comments if comments is not empty %}
+                <div class="head">
+                    <a class="post_id" href="/torrents.php?id={{ comment.group.ID }}&postid={{ comment.ID }}#post{{ comment.ID }}">{{ comment.group.Name }}</a>
+                </div>
+                {{ render.post('torrent comment', comment) }}
+            {% endfor %}
+            <div class="linkbox pager">
+                {{ render.pagelinks(page, results, pageSize, 11) }}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

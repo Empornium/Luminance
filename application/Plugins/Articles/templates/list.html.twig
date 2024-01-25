@@ -1,0 +1,54 @@
+{% macro print(master, articles, staffClass = 0, articleCats, subCats, skip = -1) %}
+    {% import "macros/icon.html.twig" as icon %}
+    {% set lastSubCat = -1 %}
+    {% set tableOpen = false %}
+    {% for article in articles if (article.MinClass <= staffClass and article.SubCat != skip) %}
+        {% if article.SubCat != lastSubCat %}
+            {% set lastSubCat = article.SubCat %}
+            {% if tableOpen == true %}
+                </table><br/>
+            {% endif %}
+            {% set tableOpen = true %}
+            <div class="head">
+                {% if article.SubCat == 1 %}
+                    Other {{ articleCats[article.Category] }} articles
+                {% else %}
+                    {{ subCats[article.SubCat] }}
+                {% endif %}
+            </div>
+            <table width="100%" class="topic_list">
+                <tr class="colhead">
+                    <td style="width:300px;">Title</td>
+                    <td>Additional Info</td>
+                </tr>
+        {% endif %}
+            <tr class="row{{ loop.index0 is divisible by(2) ? 'b' : 'a' }}">
+                <td class="topic_link">
+                    <a href="/articles/view/{{ article.TopicID }}">{{ article.Title }}</a>
+                </td>
+                <td>
+                    {{ article.Description }}
+                    <span style="float:right">
+                        {% if article.MinClass and auth.isAllowed('admin_edit_articles')%}
+                                [{{ master.repos.permissions.getClassByLevel(article.MinClass)['Name'] }}+]
+                        {% endif %}
+                        {% if auth.isAllowed('admin_edit_articles') %}
+                            <a href="/articles/edit/{{ article.ID }}">
+                                {{ icon.render("forum_icon", ['forum_edit']) }}
+                            </a>
+                        {% endif %}
+                        {% if auth.isAllowed('admin_delete_articles') %}
+                            <form style="display: inline-block;" action="/articles/delete" method="POST" onSubmit="return confirm('Are you sure you want to delete this article?');">
+                                <input type="hidden" name="token" value="{{ master.secretary.getToken('article.delete') }}" />
+                                <input type="hidden" name="id" value="{{ article.ID }}">
+                                <button style="all: unset" type="submit" value="Delete" title="Delete">
+                                    {{ icon.render("forum_icon", ['misc_trash']) }}
+                                </button>
+                            </form>
+                        {% endif %}
+                    </span>
+                </td>
+            </tr>
+    {% endfor %}
+    </table><br/>
+{% endmacro %}

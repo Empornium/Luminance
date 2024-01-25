@@ -1,17 +1,37 @@
 <?php
-authorize();
-if (($UserSubscriptions = $Cache->get_value('subscriptions_user_'.$LoggedUser['ID'])) === false) {
-    $DB->query('SELECT TopicID FROM users_subscriptions WHERE UserID = '.db_string($LoggedUser['ID']));
-    if ($UserSubscriptions = $DB->collect(0)) {
-        $Cache->cache_value('subscriptions_user_'.$LoggedUser['ID'],$UserSubscriptions,0);
+use Luminance\Entities\ForumThread;
+use Luminance\Entities\ForumLastRead;
+use Luminance\Entities\ForumSubscription;
+
+$user = $master->repos->users->load($activeUser['ID']);
+$subscriptions = $master->repos->forumsubscriptions->find('UserID = ?', [$user->ID]);
+
+if (!empty($subscriptions)) {
+    foreach ($subscriptions as $subscription) {
+        if (!($subscription instanceof ForumSubscription)) {
+            continue;
+        }
+        # Load the thread and lastRead objects first.
+        $thread = $master->repos->forumthreads->load($subscription->ThreadID);
+
+        if (!($thread instanceof ForumThread)) {
+            $master->repos->forumsubscriptions->delete($subscription);
+            continue;
+        }
+
+        $lastRead = $master->repos->forumlastreads->load([$thread->ID, $user->ID]);
+
+        # If it doesn't already exist then fill in the blanks.
+        if (!($lastRead instanceof ForumLastRead)) {
+            $lastRead = new ForumLastRead;
+            $lastRead->UserID = $user->ID;
+            $lastRead->ThreadID = $thread->ID;
+        }
+
+        # Update the PostID and save it.
+        $lastRead->PostID = $thread->lastPost->ID;
+        $master->repos->forumlastreads->save($lastRead);
     }
 }
-if (!empty($UserSubscriptions)) {
-    $DB->query("INSERT INTO forums_last_read_topics (UserID, TopicID, PostID)
-        SELECT '$LoggedUser[ID]', ID, LastPostID FROM
-        forums_topics
-        WHERE ID IN (".implode(',',$UserSubscriptions).")
-        ON DUPLICATE KEY UPDATE PostID=LastPostID");
-}
-$Cache->delete_value('subscriptions_user_new_'.$LoggedUser['ID']);
+$master->cache->deleteValue("subscriptions_user_new_{$user->ID}");
 header('Location: userhistory.php?action=subscriptions');

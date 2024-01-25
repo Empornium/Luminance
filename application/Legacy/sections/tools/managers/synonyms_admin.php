@@ -3,14 +3,13 @@ if (!check_perms('admin_convert_tags')) {
     error(403);
 }
 
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
 $UseMultiInterface= true;
 
-$DB->query("SELECT ID, Name, Uses FROM tags WHERE TagType='genre' ORDER BY Name ASC");
-$Tags = $DB->to_array();
+$Tags = $master->db->rawQuery("SELECT ID, Name, Uses FROM tags WHERE TagType='genre' ORDER BY Name ASC")->fetchAll(\PDO::FETCH_NUM);
 
-show_header('Official Synonyms Manager','tagmanager,bbcode');
+show_header('Official Synonyms Manager', 'tagmanager,bbcode');
 
 printRstMessage();
 ?>
@@ -28,15 +27,15 @@ printRstMessage();
                 <div class="pad " style="text-align:left">
                     <h3>Convert Tag to Synonym</h3>
                     This section allows you to add a tag as a synonym for another tag.
-                    <br />If the checkbox is unchecked then it will simply add the tag as a synonym for the parent tag and leave the tag and its current associations with torrents as is in the database. This will prevent it being added as a new tag and searches on it will search on the synomyn as expected, but the original tags already present will show up with the torrents.
-                    <br /><br />If you check the 'convert' option it will remove the old tag from the database, inserting the tag this is now a synomyn for instead (where it is not already present for that torrent). This might be a preferable state for the database to be in but it is an irreversible operation and you should be certain you want the old tag removed from the torrents it is associated with before proceeding.
+                    <br />If the checkbox is unchecked then it will simply add the tag as a synonym for the parent tag and leave the tag and its current associations with torrents as is in the database. This will prevent it from being added as a new tag and searches on it will search on the synonym as expected, but the original tags already present will show up with the torrents.
+                    <br /><br />If you check the 'convert' option it will remove the old tag from the database, inserting the tag this is now a synonym for instead (where it is not already present for that torrent). This might be a preferable state for the database to be in but it is an irreversible operation and you should be certain you want the old tag removed from the torrents it is associated with before proceeding.
                 </div>
 
                 <input type="hidden" name="action" value="official_synonyms_alter" />
-                <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
-                <input type="checkbox" name="converttag" value="1" checked="checked" />
+                <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
+                <input type="checkbox" id="converttag" name="converttag" value="1" checked="checked" />
 
-                <label for="movetag" title="if this is checked then you can select an existing tag to convert into a synonym for another tag">convert tag to synonym</label>&nbsp;&nbsp;&nbsp;
+                <label for="converttag" title="if this is checked then you can select an existing tag to convert into a synonym for another tag">convert tag to synonym</label>&nbsp;&nbsp;&nbsp;
 
                 <br/><br/>
                 Select tag(s) to convert to synonyms: (selected tags are listed below)
@@ -53,7 +52,35 @@ printRstMessage();
 
                     <table class="noborder">
 <?php
-                    $AtoZ = array('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','other');
+                    $AtoZ = [
+                        'a',
+                        'b',
+                        'c',
+                        'd',
+                        'e',
+                        'f',
+                        'g',
+                        'h',
+                        'i',
+                        'j',
+                        'k',
+                        'l',
+                        'm',
+                        'n',
+                        'o',
+                        'p',
+                        'q',
+                        'r',
+                        's',
+                        't',
+                        'u',
+                        'v',
+                        'w',
+                        'x',
+                        'y',
+                        'z',
+                        'other'
+                    ];
                     foreach ($AtoZ as $char) {
 ?>
                       <tr>
@@ -61,7 +88,7 @@ printRstMessage();
                         <td style="width:90%;text-align:left;">
                         <select id="movetagid_<?=$char?>" name="movetagid[<?=$char?>]"
                                 onclick="Get_Taglist('movetagid_<?=$char?>', '<?=$char?>')"
-                                  onchange="Select_Tag('<?=$char?>', this.value, this.options[this.selectedIndex].text );" >
+                                  onchange="Select_Tag('<?=$char?>', this.value, this.options[this.selectedIndex].text);" >
                             <option value="0" selected="selected">tags beginning with <?=$char?>&nbsp;</option>
                         </select>
                         </td>
@@ -97,7 +124,7 @@ printRstMessage();
                 </select>
                 <br/>
                 <strong class="important_text">Note: Use With Caution!</strong> Please only use this function if you know what you are doing.
-                <input type="submit" name="tagtosynomyn" value="Convert Tag(s)" title="add new synonym" />&nbsp;&nbsp;
+                <input type="submit" name="tagtosynonym" value="Convert Tag(s)" title="add new synonym" />&nbsp;&nbsp;
             </div>
         </form>
     </div>
@@ -115,10 +142,10 @@ printRstMessage();
                 <?php
                 $example = "[spoiler=format example][code]+parent.tag\ntag.to.convert1\ntag.t0.convert2\ntag.t0.convert3\n\n+second.parent.tag\nanother.tag.to.convert[/code][/spoiler]";
 
-                echo $Text->full_format($example);
+                echo $bbCode->full_format($example);
                 ?>
                 <br/><br/>
-                If a parent tag is not yet an official tag it is automatically set to be one. Tags to be converted cannot be official tags. Neither the parent tag or tags to be converted can already exist as synonyms.
+                If a parent tag is not yet an official tag it is automatically set to be one. Tags to be converted cannot be official tags. Neither the parent tag nor tags to be converted can already exist as synonyms.
                 <br/>
                 <strong>note:</strong> converting tags with a high number of uses is an intensive task, although this interface can take a long list it might be best to break multiple parent-tags sections into batches.
             </div>
@@ -135,12 +162,14 @@ printRstMessage();
             <br/>
             <strong class="important_text">Note: Use With EXTREME Caution!</strong> Please only use this function if you know what you are doing.<br/>
             (You must check the input before converting)
-            <input type="button" name="taglisttosynomyn" id="taglisttosynomyn" onclick="Process_Taglist();"  value="Convert Taglist" title="add new synonym" disabled="disabled" />&nbsp;&nbsp;
+            <input type="button" name="taglisttosynonym" id="taglisttosynonym" onclick="Process_Taglist();"  value="Convert Taglist" title="add new synonym" disabled="disabled" />&nbsp;&nbsp;
 
         </div>
     </div>
     <script type="text/javascript">
-        addDOMLoadEvent(Dirty_Taglist);
+        document.addEventListener('LuminanceLoaded', function() {
+            addDOMLoadEvent(Dirty_Taglist);
+        });
     </script>
 </div>
 <?php

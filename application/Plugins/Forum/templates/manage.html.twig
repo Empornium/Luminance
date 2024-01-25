@@ -1,0 +1,192 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/forum/manage">Forum Management</a>
+{% endblock %}
+
+{% block main_content %}
+    <table width="150px">
+        <tr class="colhead">
+            <td>Sort</td>
+            <td>Name</td>
+            <td>Submit</td>
+        </tr>
+        {% for category in categories %}
+            <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                <form id="form_category_{{ category.ID }}_edit" action="/forum/category/edit" method="post">
+                    <input type="hidden" name="id" value="{{ category.ID }}" />
+                    <input type="hidden" name="token" value="{{ secretary.getToken("forum.category.edit") }}" />
+                </form>
+                <form id="form_category_{{ category.ID }}_delete" action="/forum/category/delete" method="post">
+                    <input type="hidden" name="id" value="{{ category.ID }}" />
+                    <input type="hidden" name="token" value="{{ secretary.getToken("forum.category.delete") }}" />
+                </form>
+                <td>
+                    <input type="text" size="3" name="sort" value="{{ category.Sort }}" form="form_category_{{ category.ID }}_edit" />
+                </td>
+                <td>
+                    <input type="text" size="10" name="name" value="{{ category.Name }}" form="form_category_{{ category.ID }}_edit" />
+                </td>
+                <td>
+                    <input type="submit" name="submit" value="Edit" form="form_category_{{ category.ID }}_edit" />
+                    <input type="submit" name="submit" value="Delete" form="form_category_{{ category.ID }}_delete"/>
+                </td>
+            </tr>
+        {% endfor %}
+        <tr>
+            <td colspan="3" class="colhead">Create category</td>
+        </tr>
+        <tr class="rowa">
+            <form action="/forum/category/create" method="post">
+                <input type="hidden" name="token" value="{{ secretary.getToken("forum.category.create") }}" />
+                <td>
+                    <input type="text" size="3" name="sort" value="" />
+                </td>
+                <td>
+                    <input type="text" size="10" name="name" value="" />
+                </td>
+                <td>
+                    <input type="submit" name="submit" value="Create" />
+                </td>
+            </form>
+        </tr>
+    </table>
+    <br/>
+    <table width="100%">
+        <tr class="colhead">
+            <td>Category</td>
+            <td>Sort</td>
+            <td>Name</td>
+            <td>Description</td>
+            <td>Min class read</td>
+            <td>Min class write</td>
+            <td>Min class create</td>
+            <td>Autolock</td>
+            <td>Submit</td>
+        </tr>
+        {% for forum in forums %}
+            <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                <form id="form_forum_{{ forum.ID }}_edit" action="/forum/edit" method="post">
+                    <input type="hidden" name="id" value="{{ forum.ID }}" />
+                    <input type="hidden" name="token" value="{{ secretary.getToken("forum.edit") }}" />
+                </form>
+                <form id="form_forum_{{ forum.ID }}_delete" action="/forum/delete" method="post">
+                    <input type="hidden" name="id" value="{{ forum.ID }}" />
+                    <input type="hidden" name="token" value="{{ secretary.getToken("forum.delete") }}" />
+                </form>
+                <td>
+                    <select name="categoryid" form="form_forum_{{ forum.ID }}_edit">
+                        {% for category in categories %}
+                            <option value="{{ category.ID }}" {{ forum.CategoryID == category.ID ? 'selected="selected"' }}>{{ category.Name }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <input type="text" size="3" name="sort" value="{{ forum.Sort}}" form="form_forum_{{ forum.ID }}_edit" />
+                </td>
+                <td>
+                    <input type="text" size="10" name="name" value="{{ forum.Name }}" form="form_forum_{{ forum.ID }}_edit" />
+                </td>
+                <td>
+                    <input type="text" size="20" name="description" value="{{ forum.Description }}" form="form_forum_{{ forum.ID }}_edit" />
+                </td>
+                <td>
+                    <select name="minclassread" form="form_forum_{{ forum.ID }}_edit">
+                        {% for class in classes if class.IsUserClass == '1' %}
+                            <option value="{{ class.Level }}" {{ forum.MinClassRead == class.Level ? 'selected="selected"' }}>
+                                {{ class.Name|truncate(20)}}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <select name="minclasswrite" form="form_forum_{{ forum.ID }}_edit">
+                        {% for class in classes if class.IsUserClass == '1' %}
+                            <option value="{{ class.Level }}" {{ forum.MinClassWrite == class.Level ? 'selected="selected"' }}>
+                                {{ class.Name|truncate(20)}}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <select name="minclasscreate" form="form_forum_{{ forum.ID }}_edit">
+                        {% for class in classes if class.IsUserClass == '1' %}
+                            <option value="{{ class.Level }}" {{ forum.MinClassCreate == class.Level ? 'selected="selected"' }}>
+                                {{ class.Name|truncate(20)}}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <input type="checkbox" name="autolock" {{ forum.AutoLock == '1' ? 'checked' }} form="form_forum_{{ forum.ID }}_edit" value="1"/>
+                </td>
+                <td>
+                    <input type="submit" name="submit" value="Edit" form="form_forum_{{ forum.ID }}_edit" />
+                    <input type="submit" name="submit" value="Delete" form="form_forum_{{ forum.ID }}_delete" />
+                </td>
+            </tr>
+        {% endfor %}
+        <tr>
+            <td colspan="9" class="colhead">Create forum</td>
+        </tr>
+        <tr class="rowa">
+            <form action="/forum/create" method="post">
+                <input type="hidden" name="token" value="{{ secretary.getToken("forum.create") }}" />
+                <td>
+                    <select name="categoryid">
+                        {% for category in categories %}
+                            <option value="{{ category.ID }}">{{ category.Name }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <input type="text" size="3" name="sort" />
+                </td>
+                <td>
+                    <input type="text" size="10" name="name" />
+                </td>
+                <td>
+                    <input type="text" size="20" name="description" />
+                </td>
+                <td>
+                    <select name="minclassread">
+                        {% for class in classes if class.IsUserClass == '1' %}
+                            <option value="{{ class.Level }}">
+                                {{ class.Name|truncate(20)}}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <select name="minclasswrite">
+                        {% for class in classes if class.IsUserClass == '1' %}
+                            <option value="{{ class.Level }}">
+                                {{ class.Name|truncate(20)}}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <select name="minclasscreate">
+                        {% for class in classes if class.IsUserClass == '1' %}
+                            <option value="{{ class.Level }}">
+                                {{ class.Name|truncate(20)}}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <input type="checkbox" name="autolock" checked value="1"/>
+                </td>
+                <td>
+                    <input type="submit" value="Create" />
+                </td>
+            </form>
+        </tr>
+    </table>
+    </div>
+{% endblock %}

@@ -2,16 +2,16 @@
 if (!check_perms('admin_email_blacklist')) { error(403); }
 
 show_header('Manage email blacklist');
-$DB->query("SELECT
+$records = $master->db->rawQuery("SELECT
     eb.ID,
     eb.UserID,
     eb.Time,
     eb.Email,
     eb.Comment,
-    um.Username
+    u.Username
     FROM email_blacklist AS eb
-    LEFT JOIN users_main AS um ON um.ID=eb.UserID
-    ORDER BY eb.Email");
+    LEFT JOIN users AS u ON u.ID=eb.UserID
+    ORDER BY eb.Email")->fetchAll(\PDO::FETCH_NUM);
 ?>
 <div class="thin">
 <h2>Email Blacklist</h2>
@@ -27,7 +27,7 @@ $DB->query("SELECT
         <tr class="rowa">
             <form action="tools.php" method="post">
                 <input type="hidden" name="action" value="eb_alter" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <td>
                       <input class="long" type="text" name="email" />
                 </td>
@@ -53,14 +53,15 @@ $DB->query("SELECT
         </tr>
 <?php
     $Row = 'a';
-    while (list($ID, $UserID, $Time, $Email, $Comment, $Username) = $DB->next_record()) {
+    foreach ($records as $record) {
+        list($ID, $userID, $time, $Email, $Comment, $Username) = $record;
         $Row = ($Row === 'a' ? 'b' : 'a');
 ?>
         <tr class="row<?=$Row?>">
         <form action="tools.php" method="post">
             <td>
                 <input type="hidden" name="action" value="eb_alter" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <input type="hidden" name="id" value="<?=$ID?>" />
                 <input  class="long" type="text" name="email" value="<?=display_str($Email)?>" />
             </td>
@@ -68,8 +69,8 @@ $DB->query("SELECT
                 <input  class="long" type="text" name="comment" value="<?=display_str($Comment)?>" />
             </td>
             <td>
-                <?=format_username($UserID, $Username)?><br />
-                <?=time_diff($Time, 1)?></td>
+                <?=format_username($userID)?><br />
+                <?=time_diff($time, 1)?></td>
             <td>
                 <input type="submit" name="submit" value="Edit" />
                 <input type="submit" name="submit" value="Delete" />

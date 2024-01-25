@@ -1,0 +1,203 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/manage/requests/stats">Public Requests Stats</a>
+{% endblock %}
+
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : true,
+    'noGroup'   : true,
+    'noClass'   : false,
+    'noTitle'   : true,
+} %}
+
+{% block main_content %}
+    <div class="linkbox">
+        <a href="/manage/requests/new">New</a>
+        &nbsp;|&nbsp;
+        <a href="/manage/requests/old">Old</a>
+        {% if auth.isAllowed('admin_reports') %}
+            &nbsp;|&nbsp;
+            <a href="/manage/requests/stats">Stats</a>
+        {% endif %}
+    </div>
+    <br />
+    <div class="box pad thin" style="padding: 0px 0px 0px 20px; margin-left: auto; margin-right: auto">
+        <table>
+            <tr>
+                <td class="label"><strong>Requests resolved in the last 24h</strong></td>
+                <td>
+                    <table style="width: 75%; margin-left: auto; margin-right: auto;" class="border">
+                        <tr>
+                            <td class="head colhead_dark">Username</td>
+                            <td class="head colhead_dark">Requests</td>
+                        </tr>
+                        {% for stat in stats['Day'] %}
+                            <tr>
+                                <td>{{ render.username(stat.StaffID, usernameOptions) }}{% if stat.StaffID is not null %}<a href="/manage/requests/old?staffid={{ stat.StaffID }}" title="View Requests"> [R]</a>{% endif %}</td>
+                                <td>{{ stat.Count}}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </td>
+                <td class="label"><strong>Requests resolved in the last Week</strong></td>
+                <td>
+                    <table style="width: 75%; margin-left: auto; margin-right: auto;" class="border">
+                        <tr>
+                            <td class="head colhead_dark">Username</td>
+                            <td class="head colhead_dark">Requests</td>
+                        </tr>
+                        {% for stat in stats['Week'] %}
+                            <tr>
+                                <td>{{ render.username(stat.StaffID, usernameOptions) }}{% if stat.StaffID is not null %}<a href="/manage/requests/old?staffid={{ stat.StaffID }}" title="View Requests"> [R]</a>{% endif %}</td>
+                                <td>{{ stat.Count}}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td class="label"><strong>Requests resolved in the last Month</strong></td>
+                <td>
+                    <table style="width: 75%; margin-left: auto; margin-right: auto;" class="border">
+                        <tr>
+                            <td class="head colhead_dark">Username</td>
+                            <td class="head colhead_dark">Requests</td>
+                        </tr>
+                        {% for stat in stats['Month'] %}
+                            <tr>
+                                <td>{{ render.username(stat.StaffID, usernameOptions) }}{% if stat.StaffID is not null %}<a href="/manage/requests/old?staffid={{ stat.StaffID }}" title="View Requests"> [R]</a>{% endif %}</td>
+                                <td>{{ stat.Count}}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </td>
+                <td class="label"><strong>Requests resolved Total</strong></td>
+                <td>
+                    <table style="width: 75%; margin-left: auto; margin-right: auto;" class="border">
+                        <tr>
+                            <td class="head colhead_dark">Username</td>
+                            <td class="head colhead_dark">Requests</td>
+                        </tr>
+                        {% for stat in stats['Total'] %}
+                            <tr>
+                                <td>{{ render.username(stat.StaffID, usernameOptions) }}{% if stat.StaffID is not null %}<a href="/manage/requests/old?staffid={{ stat.StaffID }}" title="View Requests"> [R]</a>{% endif %}</td>
+                                <td>{{ stat.Count}}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td class="label"><strong>Request Stats</strong></td>
+                <td>
+                    <table style="width: 75%; margin-left: auto; margin-right: auto;" class="border">
+                        <tr>
+                            <td class="head colhead_dark">Status</td>
+                            <td class="head colhead_dark">Requests</td>
+                        </tr>
+                        {% for stat in stats['Status'] %}
+                            <tr>
+                                <td>{{ stat.Status|raw }}</td>
+                                <td>{{ stat.Count}}</td>
+                            </tr>
+                        {% endfor %}
+                        <tr>
+                            <td><b>Total</b></td> <td><b> {{ stats['All'] }} </b></td>
+                        </tr>
+                    </table>
+                </td>
+                <td class="label"><strong>Requests Percentages</strong></td>
+                <td>
+                    <table style="width: 75%; margin-left: auto; margin-right: auto;" class="border">
+                        <tr>
+                            <td class="head colhead_dark">Status</td>
+                            <td class="head colhead_dark">Percent</td>
+                        </tr>
+                        {% set total = stats['All']|trim %}
+                        {% for stat in stats['Status'] %}
+                            <tr>
+                                <td><a href="/manage/requests/old?status={{ stat.Status|raw }}">{{ stat.Status|raw }}</a></td>
+                                <td>{{ ((stat.Count / stats['All'])*100)|number_format(2) }}%</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td class="label"><strong>Request Type Stats</strong></td>
+                <td>
+                    <table style="width: 75%; margin-left: auto; margin-right: auto;" class="border">
+                        <tr>
+                            <td class="head colhead_dark">Type</td>
+                            <td class="head colhead_dark">Requests</td>
+                        </tr>
+                        {% for stat in stats['Type'] %}
+                            <tr>
+                                <td><a href="/manage/requests/old?type={{ stat.Type }}">{{ stat.Type }}</a></td>
+                                <td><a href="/manage/requests/old?type={{ stat.Type }}">{{ stat.Count}}</a></td>
+                            </tr>
+                        {% endfor %}
+                        <tr>
+                            <td><b>Total</b></td> <td><b> {{ stats['All'] }} </b></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td class="label"><strong>Application Request Stats</strong></td>
+                <td>
+                    <table style="width: 75%; margin-left: auto; margin-right: auto;" class="border">
+                        <tr>
+                            <td class="head colhead_dark">Status</td>
+                            <td class="head colhead_dark">Percent</td>
+                            <td class="head colhead_dark">Requests</td>
+                        </tr>
+                        {% set totalApp = stats['TtlApp']|trim %}
+                        {% if totalApp == 0 %}
+                            <tr><td>No applications submitted</td></tr>
+                        {% else %}
+                            {% for stat in stats['AllApp'] %}
+                                <tr>
+                                    <td><a href="/manage/requests/old?type=Application&status={{ stat.Status|raw }}">{{ stat.Status|raw }}</a></td>
+                                    <td>{{ ((stat.Count / stats['TtlApp'])*100)|number_format(2) }}%</td>
+                                    <td>{{ stat.Count }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </table>
+                </td>
+                <td class="label"><strong>Reactivation Request Stats</strong></td>
+                <td>
+                    <table style="width: 75%; margin-left: auto; margin-right: auto;" class="border">
+                        <tr>
+                            <td class="head colhead_dark">Status</td>
+                            <td class="head colhead_dark">Percent</td>
+                            <td class="head colhead_dark">Requests</td>
+                        </tr>
+                        {% set totalReac = stats['TtlReac']|trim %}
+                        {% if totalReac == 0 %}
+                        <tr><td>No reactivations submitted</td></tr>
+                        {% else %}
+                            {% for stat in stats['AllReact'] %}
+                                <tr>
+                                    <td><a href="/manage/requests/old?type=Reactivate&status={{ stat.Status|raw }}">{{ stat.Status|raw }}</a></td>
+                                    <td>{{ ((stat.Count / stats['TtlReac'])*100)|number_format(2) }}%</td>
+                                    <td>{{ stat.Count }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+{% endblock %}

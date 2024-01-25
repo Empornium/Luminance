@@ -1,5 +1,5 @@
 <?php
-if(!check_perms('admin_manage_events')) { error(403); }
+if (!check_perms('admin_manage_events')) { error(403); }
 
 
 show_header('Manage Upload Events');
@@ -23,7 +23,7 @@ show_header('Manage Upload Events');
     <tr class="rowa">
   <form action="tools.php" method="post">
     <input type="hidden" name="action" value="events_alter" />
-    <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+    <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
     <td>
       <input class="medium" type="text" name="title" placeholder="title" />
     </td>
@@ -49,10 +49,10 @@ show_header('Manage Upload Events');
       <input class="medium" type="text" name="credits" value="0" />
     </td>
     <td>
-      <input class="medium" type="text" name="starttime" value="<?=date('Y-m-d H:i:s', time() - (int) $LoggedUser['TimeOffset'])?>" />
+      <input class="medium" type="text" name="starttime" value="<?=date('Y-m-d H:i:s', time() - (int) $activeUser['TimeOffset'])?>" />
     </td>
     <td>
-      <input class="medium" type="text" name="endtime" value="<?=date('Y-m-d H:i:s', time() - (int) $LoggedUser['TimeOffset'] + (24*60*60))?>" />
+      <input class="medium" type="text" name="endtime" value="<?=date('Y-m-d H:i:s', time() - (int) $activeUser['TimeOffset'] + (24*60*60))?>" />
     </td>
     <td>
       <input type="submit" value="Create" />
@@ -77,7 +77,7 @@ show_header('Manage Upload Events');
     </tr>
 <?php
 
-$DB->query("SELECT ID,
+$Events = $master->db->rawQuery("SELECT ID,
                    Title,
                    Comment,
                    UFL,
@@ -86,20 +86,18 @@ $DB->query("SELECT ID,
                    Credits,
                    StartTime,
                    EndTime
-              FROM events");
+              FROM events")->fetchAll(\PDO::FETCH_NUM);
 $Row = 'b';
 
-$Events = $DB->to_array(MYSQLI_ASSOC);
-foreach($Events as $Event) {
+foreach ($Events as $Event) {
     list($ID, $Title, $Comment, $UFL, $PFL, $Tokens, $Credits, $StartTime, $EndTime) = $Event;
-    $DB->query("SELECT COUNT(*) FROM torrents_events WHERE EventID=$ID");
-    list($Uploads)=$DB->next_record();
+    $Uploads = $master->db->rawQuery("SELECT COUNT(*) FROM torrents_events WHERE EventID = ?", [$ID])->fetchColumn();
     $Row = ($Row === 'a' ? 'b' : 'a');
 ?>
     <tr class="row<?=$Row?>">
     <form action="tools.php" method="post">
                 <input type="hidden" name="action" value="events_alter" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <input type="hidden" name="id" value="<?=$ID?>" />
 
     <td>
@@ -127,10 +125,10 @@ foreach($Events as $Event) {
       <input class="medium" type="text" name="credits" value="<?=display_str($Credits)?>" />
     </td>
     <td>
-      <input class="medium" type="text" name="starttime" value="<?=date('Y-m-d H:i:s', strtotime($StartTime) - (int) $LoggedUser['TimeOffset'])?>" />
+      <input class="medium" type="text" name="starttime" value="<?=date('Y-m-d H:i:s', strtotime($StartTime) - (int) $activeUser['TimeOffset'])?>" />
     </td>
     <td>
-      <input class="medium" type="text" name="endtime" value="<?=date('Y-m-d H:i:s', strtotime($EndTime) - (int) $LoggedUser['TimeOffset'])?>" />
+      <input class="medium" type="text" name="endtime" value="<?=date('Y-m-d H:i:s', strtotime($EndTime) - (int) $activeUser['TimeOffset'])?>" />
     </td>
     <td>
       <input class="medium" type="text" style="text-align:right"  name="uploads" value="<?=$Uploads?>" disabled/>

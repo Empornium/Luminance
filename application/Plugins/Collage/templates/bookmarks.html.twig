@@ -1,0 +1,48 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : true,
+    'noGroup'   : true,
+    'noClass'   : true,
+    'noTitle'   : true,
+} %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/collage/bookmarks">Your bookmarked collages</a>
+{% endblock %}
+
+{% block main_content %}
+    <div class="linkbox">
+            <a href="/bookmarks.php?type=torrents">[Torrents]</a>
+            <a href="/collage/bookmarks">[Collages]</a>
+            <a href="/bookmarks.php?type=requests">[Requests]</a>
+    </div>
+
+
+    <br />
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9) }}
+    </div>
+
+    <div class="head">Your bookmarked collages</div>
+    {% if collages is empty %}
+        <div class="box pad" align="center">
+            <h2>You have not bookmarked any collages.</h2>
+        </div>
+    {% else %}
+        {% include '@Collage/snippets/collage_table.html.twig' %}
+        <div class="linkbox pager">
+            {{ render.pagelinks(page, results, pageSize, 9) }}
+        </div>
+    {% endif %}
+{% endblock %}

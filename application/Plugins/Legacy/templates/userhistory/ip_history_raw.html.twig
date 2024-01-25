@@ -1,0 +1,28 @@
+{% import "macros/icon.html.twig" as icon %}
+
+{% block content %}
+    <div class="thin">
+        <div class="linkbox pager">
+            {{ render.pagelinks(page, results, pageSize, 9) }}
+        </div>
+        <div class="head">IP history (<a href="/userhistory.php?action=ips&amp;userid={{ user.ID }}">raw</a>) for <a href="/user.php?id={{ user.ID }}">{{ user.Username }}</a></div>
+
+        <table>
+            <tr class="colhead">
+                <td style="width:20%">IP address</td>
+                <td style="width:30%">Started</td>
+                <td style="width:20%">Ended</td>
+            </tr>
+            {% for history in ips %}
+                <tr>
+                    <td>{{ history.ip }}</td>
+                    <td>{{ history.StartTime|date('Y-m-d H:i:s') }}</td>
+                    <td>{{ history.EndTime|date('Y-m-d H:i:s') }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+        <div class="linkbox pager">
+            {{ render.pagelinks(page, results, pageSize, 9) }}
+        </div>
+    </div>
+{% endblock %}

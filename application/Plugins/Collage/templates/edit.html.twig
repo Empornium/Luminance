@@ -1,0 +1,96 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/collage/{{ collage.ID }}">Edit collage {{ collage.Name }}</a>
+{% endblock %}
+
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : true,
+    'noGroup'   : true,
+    'noClass'   : true,
+    'noTitle'   : true,
+} %}
+
+{% block main_content %}
+    <form action="/collage/{{ collage.ID }}/edit" method="post" id="quickpostform" >
+        <input type="hidden" name="token" value="{{ secretary.getToken("collage.edit") }}" />
+        <table id="edit_collage">
+            {% if collage.canRename() %}
+                <tr>
+                    <td class="label">Name</td>
+                    <td><input type="text" name="name" class="long" value="{{ collage.Name }}" /></td>
+                </tr>
+            {% endif %}
+            {% if not collage.isPersonal() %}
+                <tr>
+                    <td class="label"><strong>Category</strong></td>
+                    <td>
+                        <select name="category">
+                            {% for category in categories if not category.isLocked() %}
+                                <option value="{{ category.ID }}" {{ category.ID == collage.CategoryID ? 'selected="selected"' }}>{{ category.Name }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+            {% endif %}
+            <tr>
+                <td class="label">Description</td>
+                <td>
+                    <div id="preview" class="box pad hidden"></div>
+                    <div  id="editor">
+                        {{ bbcode.display_bbcode_assistant("description", get_permissions_advtags(ActiveUser.ID, ActiveUser.CustomPermissions)) }}
+                        <textarea name="description" id="description" class="long" rows="10">{{ collage.Description }}</textarea>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="label">Tags</td>
+                <td>
+                    <input type="text" name="tags" class="long" value="{{ collage.TagList }}" />
+                </td>
+            </tr>
+            {% if collage.isPersonal() %}
+                <tr>
+                    <td class="label">Featured</td>
+                    <td>
+                        <input type="checkbox" value="1"  name="featured" {{ collage.isFeatured() ? 'checked="checked"' }}/>
+                    </td>
+                </tr>
+            {% endif %}
+            {% if auth.isAllowed('collage_moderate') %}
+                  <tr>
+                      <td class="label">Locked</td>
+                      <td>
+                          <input type="checkbox" value="1"  name="locked" {{ collage.isLocked() ? 'checked="checked"' }}/>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td class="label">Max groups</td>
+                      <td>
+                          <input type="text" name="maxgroups" size="5" value="{{ collage.MaxGroups }}" />
+                      </td>
+                  </tr>
+                  <tr>
+                      <td class="label">Max groups per user</td>
+                      <td>
+                          <input type="text" name="maxgroupsperuser" size="5" value="{{ collage.MaxGroupsPerUser }}" />
+                      </td>
+                  </tr>
+            {% endif %}
+            <tr>
+                <td colspan="2" class="center">
+                    <input id="previewbtn" type="button" value="Preview" onclick="Preview_Collage();" />
+                    <input type="submit" value="Edit collage" />
+                </td>
+            </tr>
+        </table>
+    </form>
+{% endblock %}

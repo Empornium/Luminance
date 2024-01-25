@@ -28,20 +28,19 @@
 //   +
 // invitedcount: the number of users this user has directly invited
 
-define('PARANOIA_MSG','This users privacy (paranoia) settings mean you cannot view this page.');
+define('PARANOIA_MSG', 'This users privacy (paranoia) settings mean you cannot view this page.');
 
 /**
- * Return whether currently logged in user can see $Property on a user with $Paranoia, $UserClass and (optionally) $UserID
+ * Return whether currently logged in user can see $Property on a user with $paranoia, $UserClass and (optionally) $UserID
  * If $Property is an array of properties, returns whether currently logged in user can see *all* $Property ...
  *
  * @param $Property The property to check, or an array of properties.
- * @param $Paranoia The paranoia level to check against.
+ * @param $paranoia The paranoia level to check against.
  * @param $UserClass The user class to check against (Staff can see through paranoia of lower classed staff)
  * @param $UserID Optional. The user ID of the person being viewed
  * @return Boolean representing whether the current user can see through the paranoia setting
  */
-function check_paranoia($Property, $Paranoia, $UserClass, $UserID = false)
-{
+function check_paranoia($Property, $paranoia, $UserClass, $UserID = false) {
     global $master;
 
     if (check_perms('users_override_paranoia', $UserClass)) {
@@ -50,15 +49,17 @@ function check_paranoia($Property, $Paranoia, $UserClass, $UserID = false)
     if ($Property == false) {
         return false;
     }
-    if (!is_array($Paranoia)) {
-        $Paranoia = unserialize($Paranoia);
+    if (!is_array($paranoia)) {
+        $paranoia = unserialize($paranoia);
     }
-    if (!is_array($Paranoia)) {
-        $Paranoia = array();
+    if (!is_array($paranoia)) {
+        $paranoia = array();
     }
     if (is_array($Property)) {
         $all = true;
-        foreach ($Property as $P) { $all = $all && check_paranoia($P, $Paranoia, $UserClass, $UserID); }
+        foreach ($Property as $P) {
+            $all = $all && check_paranoia($P, $paranoia, $UserClass, $UserID);
+        }
 
         return $all;
     } else {
@@ -66,18 +67,22 @@ function check_paranoia($Property, $Paranoia, $UserClass, $UserID = false)
             return true;
         }
 
-        $May = !in_array($Property, $Paranoia) && !in_array($Property . '+', $Paranoia);
+        $May = !in_array($Property, $paranoia) && !in_array($Property . '+', $paranoia);
         switch ($Property) {
             case 'downloaded':
             case 'ratio':
             case 'uploaded':
             case 'lastseen':
-            case 'snatched': case 'snatched+':
+            case 'snatched':
+            case 'snatched+':
                 $May = $May || check_perms('users_mod', $UserClass); // Allows access to the user moderation panels
                 break;
-            case 'uploads': case 'uploads+':
-            case 'leeching': case 'leeching+':
-            case 'seeding' : case 'seeding+':
+            case 'uploads':
+            case 'uploads+':
+            case 'leeching':
+            case 'leeching+':
+            case 'seeding':
+            case 'seeding+':
                 $May = $May || check_perms('users_view_seedleech', $UserClass); // Can view what a user is seeding or leeching.
                 break;
             case 'invitedcount':

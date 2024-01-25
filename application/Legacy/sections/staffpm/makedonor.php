@@ -1,5 +1,5 @@
 <?php
-if (!is_number($_GET['id'])) {
+if (!is_integer_string($_GET['id'])) {
     error(404);
 }
 
@@ -8,34 +8,61 @@ if (!check_perms('users_give_donor')) {
 }
 
 $ConvID = (int) $_GET['id'];
-$DB->query("SELECT c.Subject, c.UserID, c.Level, c.AssignedToUser, c.Unread, c.Status, u.Donor
-            FROM staff_pm_conversations AS c
-            JOIN users_info AS u ON u.UserID = c.UserID
-            WHERE ID=$ConvID");
-list($Subject, $UserID, $Level, $AssignedToUser, $Unread, $Status, $Donor) = $DB->next_record();
-if ($DB->record_count() == 0) {
+$nextRecord = $master->db->rawQuery(
+    "SELECT c.Subject,
+            c.UserID,
+            c.Level,
+            c.AssignedToUser,
+            c.Unread,
+            c.Status,
+            u.Donor
+       FROM staff_pm_conversations AS c
+       JOIN users_info AS u ON u.UserID = c.UserID
+      WHERE ID = ?",
+    [$ConvID]
+)->fetch(\PDO::FETCH_NUM);
+list($Subject, $userID, $Level, $AssignedToUser, $Unread, $Status, $Donor) = $nextRecord;
+if ($master->db->foundRows() == 0) {
     error(404);
 }
 
 $Message = "Thank you for helping to support the site.  It's users like you who make all of this possible.";
 
 if ((int) $Donor === 0) {
-    $Msg = db_string(sqltime() . " - Donated: /staffpm.php?action=viewconv&id={$ConvID}\n");
-    $DB->query("UPDATE users_info
-                SET Donor='1',
-                    AdminComment = CONCAT('$Msg',AdminComment)
-                WHERE UserID = $UserID");
-    $DB->query("UPDATE users_main SET Invites=Invites+2 WHERE ID = $UserID");
+    $Msg = sqltime() . " - Donated: /staffpm.php?action=viewconv&id={$ConvID}\n";
+    $master->db->rawQuery(
+        "UPDATE users_info
+            SET Donor = '1',
+                AdminComment = CONCAT(?, AdminComment)
+          WHERE UserID = ?",
+        [$Msg, $userID]
+    );
+    /* Eh... fuck no!
+    $master->db->rawQuery(
+        "UPDATE users_main
+            SET Invites = Invites + 2
+          WHERE ID = ?",
+        [$userID]
+    );
+    */
 
-    $master->repos->users->uncache($UserID);
+    $master->repos->users->uncache($userID);
     $Message .= "  Enjoy your new love from us!";
 } else {
     $Message .= "  ";
 }
-$DB->query("INSERT INTO staff_pm_messages (UserID, SentDate, Message, ConvID)
-            VALUES (".$LoggedUser['ID'].", '".sqltime()."', '".db_string($Message)."', $ConvID)");
-$DB->query("UPDATE staff_pm_conversations
-               SET Date='".sqltime()."', Unread=true,
-                   Status='Resolved', ResolverID=".$LoggedUser['ID']."
-             WHERE ID=$ConvID");
+$master->db->rawQuery(
+    "INSERT INTO staff_pm_messages (UserID, SentDate, Message, ConvID)
+          VALUES (?, ?, ?, ?)",
+    [$activeUser['ID'], sqltime(), $Message, $ConvID]
+);
+$master->db->rawQuery(
+    "UPDATE staff_pm_conversations
+        SET Date = ?,
+            Unread = true,
+            Status = 'Resolved',
+            ResolverID = ?
+      WHERE ID = ?",
+    [sqltime(), $activeUser['ID'], $ConvID]
+);
 header('Location: staffpm.php?view=open');

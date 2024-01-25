@@ -1,7 +1,7 @@
 <?php
 // error out on invalid requests (before caching)
 if (isset($_GET['details'])) {
-    if (in_array($_GET['details'],array('tagother','tagown','voteother','voteown'))) {
+    if (in_array($_GET['details'], ['tagother', 'tagown', 'voteother', 'voteown'])) {
         $Details = $_GET['details'];
     } else {
         error(404);
@@ -25,93 +25,93 @@ show_header('Top 10 Taggers');
 
 // defaults to 10 (duh)
 $Limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
-$Limit = in_array($Limit, array(10,100,250,500)) ? $Limit : 10;
+$Limit = in_array($Limit, [10, 100, 250, 500]) ? $Limit : 10;
 
 if ($Details=='all' || $Details=='tagother') {
-    if (!$TopTaggers = $Cache->get_value('toptaggers_'.$Limit)) {
-        $DB->query("SELECT
-                        um.ID,
-                        um.Username,
-                        COUNT(tt.TagID)  AS NumTags
-                    FROM torrents_tags AS tt
-                    JOIN torrents AS t ON t.GroupID=tt.GroupID AND tt.UserID!=t.UserID
-                    JOIN torrents_group AS tg ON tg.ID=tt.GroupID
-                    JOIN tags ON tt.TagID=tags.ID
-                    JOIN users_main AS um ON um.ID=tt.UserID
-                    GROUP BY tt.UserID
-                    ORDER BY Count(tt.TagID) DESC
-                    LIMIT $Limit");
+    if (!$TopTaggers = $master->cache->getValue('toptaggers_'.$Limit)) {
+        $TopTaggers = $master->db->rawQuery(
+            "SELECT u.ID,
+                    u.Username,
+                    COUNT(tt.TagID)  AS NumTags
+               FROM torrents_tags AS tt
+               JOIN torrents AS t ON t.GroupID = tt.GroupID AND tt.UserID != t.UserID
+               JOIN torrents_group AS tg ON tg.ID = tt.GroupID
+               JOIN tags ON tt.TagID = tags.ID
+               JOIN users AS u ON u.ID = tt.UserID
+           GROUP BY tt.UserID
+           ORDER BY Count(tt.TagID) DESC
+              LIMIT {$Limit}"
+        )->fetchAll(\PDO::FETCH_BOTH);
 
-        $TopTaggers = $DB->to_array();
-        $Cache->cache_value('toptaggers_'.$Limit,$TopTaggers,3600*12);
+        $master->cache->cacheValue("toptaggers_{$Limit}", $TopTaggers, 3600 * 12);
     }
 
     generate_tagger_table('Taggers (others torrents)', 'tagother', $TopTaggers, $Limit);
 }
 
 if ($Details=='all' || $Details=='tagown') {
-    if (!$TopOwnTaggers = $Cache->get_value('topselftaggers_'.$Limit)) {
-        $DB->query("SELECT
-                        um.ID,
-                        um.Username,
-                        COUNT(tt.TagID) AS NumTags
-                    FROM torrents_tags AS tt
-                    JOIN torrents AS t ON t.GroupID=tt.GroupID AND tt.UserID=t.UserID
-                    JOIN torrents_group AS tg ON tg.ID=tt.GroupID
-                    JOIN tags ON tt.TagID=tags.ID
-                    JOIN users_main AS um ON um.ID=tt.UserID
-                    GROUP BY tt.UserID
-                    ORDER BY Count(tt.TagID) DESC
-                    LIMIT $Limit");
+    if (!$TopOwnTaggers = $master->cache->getValue('topselftaggers_'.$Limit)) {
+        $TopOwnTaggers = $master->db->rawQuery(
+            "SELECT u.ID,
+                    u.Username,
+                    COUNT(tt.TagID) AS NumTags
+               FROM torrents_tags AS tt
+               JOIN torrents AS t ON t.GroupID = tt.GroupID AND tt.UserID = t.UserID
+               JOIN torrents_group AS tg ON tg.ID = tt.GroupID
+               JOIN tags ON tt.TagID = tags.ID
+               JOIN users AS u ON u.ID = tt.UserID
+           GROUP BY tt.UserID
+           ORDER BY Count(tt.TagID) DESC
+              LIMIT {$Limit}"
+        )->fetchAll(\PDO::FETCH_BOTH);
 
-        $TopOwnTaggers = $DB->to_array();
-        $Cache->cache_value('topselftaggers_'.$Limit, $TopOwnTaggers, 3600*12);
+        $master->cache->cacheValue("topselftaggers_{$Limit}", $TopOwnTaggers, 3600 * 12);
     }
 
     generate_tagger_table('Taggers (own torrents)', 'tagown', $TopOwnTaggers, $Limit);
 }
 
 if ($Details=='all' || $Details=='voteother') {
-    if (!$TopTagVoters = $Cache->get_value('toptagvoters_'.$Limit)) {
-        $DB->query("SELECT
-                        um.ID,
-                        um.Username,
-                        COUNT(ttv.TagID) AS NumTags
-                    FROM torrents_tags_votes AS ttv
-                    JOIN torrents AS t ON t.GroupID=ttv.GroupID AND ttv.UserID!=t.UserID
-                    JOIN torrents_group AS tg ON tg.ID=ttv.GroupID
-                    JOIN tags ON ttv.TagID=tags.ID
-                    JOIN torrents_tags AS tt ON tt.TagID=ttv.TagID AND tt.GroupID=ttv.GroupID
-                    JOIN users_main AS um ON um.ID=ttv.UserID
-                    GROUP BY ttv.UserID
-                    ORDER BY Count(ttv.TagID) DESC
-                    LIMIT $Limit");
+    if (!$TopTagVoters = $master->cache->getValue('toptagvoters_'.$Limit)) {
+        $TopTagVoters = $master->db->rawQuery(
+            "SELECT u.ID,
+                    u.Username,
+                    COUNT(ttv.TagID) AS NumTags
+               FROM torrents_tags_votes AS ttv
+               JOIN torrents AS t ON t.GroupID = ttv.GroupID AND ttv.UserID != t.UserID
+               JOIN torrents_group AS tg ON tg.ID = ttv.GroupID
+               JOIN tags ON ttv.TagID = tags.ID
+               JOIN torrents_tags AS tt ON tt.TagID = ttv.TagID AND tt.GroupID = ttv.GroupID
+               JOIN users AS u ON u.ID = ttv.UserID
+           GROUP BY ttv.UserID
+           ORDER BY Count(ttv.TagID) DESC
+              LIMIT {$Limit}"
+        )->fetchAll(\PDO::FETCH_BOTH);
 
-        $TopTagVoters = $DB->to_array();
-        $Cache->cache_value('toptagvoters_'.$Limit, $TopTagVoters, 3600*12);
+        $master->cache->cacheValue("toptagvoters_{$Limit}", $TopTagVoters, 3600 * 12);
     }
 
     generate_tagger_table('Tag Voters (others torrents)', 'voteother', $TopTagVoters, $Limit, true);
 }
 
 if ($Details=='all' || $Details=='voteown') {
-    if (!$TopTagVotersOwn = $Cache->get_value('toptagvotersown_'.$Limit)) {
-        $DB->query("SELECT
-                        um.ID,
-                        um.Username,
-                        COUNT(ttv.TagID) AS NumTags
-                    FROM torrents_tags_votes AS ttv
-                    JOIN torrents AS t ON t.GroupID=ttv.GroupID AND ttv.UserID=t.UserID
-                    JOIN torrents_group AS tg ON tg.ID=ttv.GroupID
-                    JOIN tags ON ttv.TagID=tags.ID
-                    JOIN torrents_tags AS tt ON tt.TagID=ttv.TagID AND tt.GroupID=ttv.GroupID
-                    JOIN users_main AS um ON um.ID=ttv.UserID
-                    GROUP BY ttv.UserID
-                    ORDER BY Count(ttv.TagID) DESC
-                    LIMIT $Limit");
+    if (!$TopTagVotersOwn = $master->cache->getValue('toptagvotersown_'.$Limit)) {
+        $TopTagVotersOwn = $master->db->rawQuery(
+            "SELECT u.ID,
+                    u.Username,
+                    COUNT(ttv.TagID) AS NumTags
+               FROM torrents_tags_votes AS ttv
+               JOIN torrents AS t ON t.GroupID = ttv.GroupID AND ttv.UserID = t.UserID
+               JOIN torrents_group AS tg ON tg.ID = ttv.GroupID
+               JOIN tags ON ttv.TagID = tags.ID
+               JOIN torrents_tags AS tt ON tt.TagID = ttv.TagID AND tt.GroupID = ttv.GroupID
+               JOIN users AS u ON u.ID = ttv.UserID
+           GROUP BY ttv.UserID
+           ORDER BY Count(ttv.TagID) DESC
+              LIMIT {$Limit}"
+        )->fetchAll(\PDO::FETCH_BOTH);
 
-        $TopTagVotersOwn = $DB->to_array();
-        $Cache->cache_value('toptagvotersown_'.$Limit, $TopTagVotersOwn, 3600*12);
+        $master->cache->cacheValue("toptagvotersown_{$Limit}", $TopTagVotersOwn, 3600 * 12);
     }
 
     generate_tagger_table('Tag Voters (own torrents)', 'voteown', $TopTagVotersOwn, $Limit, true);
@@ -121,7 +121,7 @@ if ($Details=='all' || $Details=='voteown') {
 </div>
 <?php
 show_footer();
-exit;
+return;
 
 // generate a table based on data from most recent query to $DB
 function generate_tagger_table($Caption, $Tag, $Details, $Limit, $IsVotes=false)
@@ -162,7 +162,7 @@ function generate_tagger_table($Caption, $Tag, $Details, $Limit, $IsVotes=false)
 ?>
     <tr class="row<?=$Highlight?>">
         <td class="tags_rank"><?=$Rank?></td>
-        <td class="tags_rank"><?=format_username($Detail['ID'],$Detail['Username'])?></td>
+        <td class="tags_rank"><?=format_username($Detail['ID'])?></td>
         <td class="tags_uses"><?=$Detail['NumTags']?></td>
 
     </tr>

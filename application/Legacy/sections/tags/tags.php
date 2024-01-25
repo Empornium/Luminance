@@ -1,23 +1,21 @@
 <?php
 define('RESULTS_PER_PAGE', 100);
 
-include_once(SERVER_ROOT.'/common/functions.php');
-
 if (!empty($_GET['order_way']) && $_GET['order_way'] == 'asc') {
-    $OrderWay = 'asc'; // For header links
+    $orderWay = 'asc'; // For header links
 } else {
     $_GET['order_way'] = 'desc';
-    $OrderWay = 'desc';
+    $orderWay = 'desc';
 }
 
-if (empty($_GET['order_by']) || !in_array($_GET['order_by'], array('Tag', 'Uses', 'Votes', 'TagType'))) {  // ,'Synonyms'
+if (empty($_GET['order_by']) || !in_array($_GET['order_by'], ['Tag', 'Uses', 'Votes', 'TagType'])) {  // , 'Synonyms'
     $_GET['order_by'] = 'Uses';
-    $OrderBy = 'Uses';
+    $orderBy = 'Uses';
 } else {
-    $OrderBy = $_GET['order_by'];
+    $orderBy = $_GET['order_by'];
 }
 
-if( empty($_GET['search_type']) || !in_array($_GET['search_type'], array('tags', 'syns', 'both')) )  $_GET['search_type']='tags';
+if (empty($_GET['search_type']) || !in_array($_GET['search_type'], ['tags', 'syns', 'both']))  $_GET['search_type']='tags';
 
 show_header('Tags');
 ?>
@@ -31,64 +29,76 @@ show_header('Tags');
 
     <div class="">
 <?php
-        list($Page,$Limit) = page_limit(RESULTS_PER_PAGE);
+        list($Page, $Limit) = page_limit(RESULTS_PER_PAGE);
 
-        $Searchtext = trim($_REQUEST['searchtags']);
-        $Searchtext_esc = db_string($Searchtext);
+        $Searchtext = trim($_REQUEST['searchtags'] ?? '');
 
         if ($Searchtext) {
             $title = "search results";
             $WHERE1=''; $WHERE2='';
-            if($_GET['search_type']=='both' || $_GET['search_type']=='tags')
-                $WHERE1 = "t.Name LIKE '%$Searchtext_esc%'";
+            $params = [];
+            $params2 = [];
+            if ($_GET['search_type']=='both' || $_GET['search_type']=='tags')
+                $WHERE1 = "t.Name LIKE CONCAT('%', ?, '%')";
+                $params[] = $Searchtext;
 
-            if($_GET['search_type']=='both' || $_GET['search_type']=='syns')
-                $WHERE2 = "s.Synomyn LIKE '%$Searchtext_esc%'";
+            if ($_GET['search_type']=='both' || $_GET['search_type']=='syns')
+                $WHERE2 = "s.Synonym LIKE CONCAT('%', ?, '%')";
+                $params2[] = $Searchtext;
         } else {
             $title = "tags";
             $WHERE1=''; $WHERE2='';
+            $params = [];
+            $params2 = [];
         }
 
         if (!$WHERE1 && !$WHERE2 && $Page==1) { // lets cache front page results for a few hours
 
-            $CacheResults = $Cache->get_value("tagslist_{$OrderBy}_$OrderWay");
+            $CacheResults = $master->cache->getValue("tagslist_{$orderBy}_{$orderWay}");
 
             if ($CacheResults===false) {
 
-                $DB->query("SELECT SQL_CALC_FOUND_ROWS
-                                       t.Name as Tag, Uses, IF(TagType='genre','*','') as TagType,
-                                        SUM(tt.PositiveVotes-1) AS PosVotes,
-                                        SUM(tt.NegativeVotes-1) AS NegVotes,
-                                        SUM(tt.PositiveVotes-1)-SUM(tt.NegativeVotes-1) As Votes, t.ID as TagID
-                                  FROM tags AS t
-                                  JOIN torrents_tags AS tt ON tt.TagID=t.ID
-                              GROUP BY t.ID
-                              ORDER BY $OrderBy $OrderWay
-                                 LIMIT $Limit");
+                $Tags = $master->db->rawQuery(
+                    "SELECT SQL_CALC_FOUND_ROWS
+                            t.ID as TagID,
+                            t.ID AS TagID,
+                            t.Name as Tag,
+                            t.Uses,
+                            IF(t.TagType='genre', '*', '') as TagType,
+                            SUM(tt.PositiveVotes-1) AS PosVotes,
+                            SUM(tt.NegativeVotes-1) AS NegVotes,
+                            SUM(tt.PositiveVotes-1)-SUM(tt.NegativeVotes-1) As Votes
+                       FROM tags AS t
+                       JOIN torrents_tags AS tt ON tt.TagID = t.ID
+                   GROUP BY t.ID
+                   ORDER BY {$orderBy} {$orderWay}
+                      LIMIT {$Limit}"
+                )->fetchAll(\PDO::FETCH_UNIQUE | \PDO::FETCH_ASSOC);
 
-                $Tags = $DB->to_array('TagID', MYSQLI_ASSOC) ;
-                $TagIDs = $DB->collect('TagID');
-                $TagIDs = implode(', ', $TagIDs);
+                $TagIDs = array_column($Tags, 'TagID');
+                $NumAllTags = $master->db->foundRows();
 
-                $DB->query("SELECT FOUND_ROWS()");
-                list($NumAllTags) = $DB->next_record();
-
-                if ($NumAllTags>0) {
+                if (!empty($TagIDs)) {
                     // get the syns for the tag results
-                    $DB->query("SELECT Count(ID) as Synonyms , GROUP_CONCAT( Synomyn  SEPARATOR ', ' ) as SynText, TagID
-                                  FROM tag_synomyns
-                                 WHERE TagID IN ( $TagIDs )
-                              GROUP BY TagID ");
-                    $Syns = $DB->to_array('TagID', MYSQLI_ASSOC) ;
+                    $inQuery = implode(', ', array_fill(0, count($TagIDs), '?'));
+                    $Syns = $master->db->rawQuery(
+                        "SELECT TagID,
+                                TagID,
+                                Count(ID) as Synonyms,
+                                GROUP_CONCAT(Synonym  SEPARATOR ', ') as SynText
+                           FROM tags_synonyms
+                          WHERE TagID IN ({$inQuery})
+                       GROUP BY TagID",
+                        $TagIDs
+                    )->fetchAll(\PDO::FETCH_UNIQUE | \PDO::FETCH_ASSOC);
                     foreach ($Tags as $tID=>$TagInfo) {
-                        if(isset($Syns[$tID])) $Tags[$tID] = array_merge($Syns[$tID], $TagInfo);
+                        if (isset($Syns[$tID])) $Tags[$tID] = array_merge($Syns[$tID], $TagInfo);
                     }
                 }
 
-                $Cache->cache_value("tagslist_{$OrderBy}_$OrderWay", array($NumAllTags, $Tags), 3600*12);
+                $master->cache->cacheValue("tagslist_{$orderBy}_{$orderWay}", [$NumAllTags, $Tags], 3600*12);
 
             } else {
-
                 list($NumAllTags, $Tags) = $CacheResults;
             }
         } else {
@@ -96,92 +106,130 @@ show_header('Tags');
 
             if ($WHERE2  == "" || $_GET['search_type']=='tags') {
 
-                if($WHERE1) $WHERE1 = "WHERE $WHERE1";
-                $DB->query("SELECT SQL_CALC_FOUND_ROWS
-                                       t.Name as Tag, Uses, IF(TagType='genre','*','') as TagType,
-                                        SUM(tt.PositiveVotes-1) AS PosVotes,
-                                        SUM(tt.NegativeVotes-1) AS NegVotes,
-                                        SUM(tt.PositiveVotes-1)-SUM(tt.NegativeVotes-1) As Votes, t.ID as TagID
-                                  FROM tags AS t
-                                  JOIN torrents_tags AS tt ON tt.TagID=t.ID
-                                $WHERE1
-                              GROUP BY t.ID
-                              ORDER BY $OrderBy $OrderWay
-                                 LIMIT $Limit");
+                if (!empty($WHERE1)) {
+                    $WHERE1 = "WHERE $WHERE1";
+                }
+
+                $Tags = $master->db->rawQuery(
+                    "SELECT SQL_CALC_FOUND_ROWS
+                            t.ID AS TagID,
+                            t.ID AS TagID,
+                            t.Name as Tag,
+                            t.Uses,
+                            IF(t.TagType='genre', '*', '') as TagType,
+                            SUM(tt.PositiveVotes-1) AS PosVotes,
+                            SUM(tt.NegativeVotes-1) AS NegVotes,
+                            SUM(tt.PositiveVotes-1)-SUM(tt.NegativeVotes-1) As Votes
+                       FROM tags AS t
+                       JOIN torrents_tags AS tt ON tt.TagID = t.ID
+                            {$WHERE1}
+                   GROUP BY t.ID
+                   ORDER BY {$orderBy} {$orderWay}
+                      LIMIT {$Limit}",
+                    $params
+                )->fetchAll(\PDO::FETCH_UNIQUE | \PDO::FETCH_ASSOC);
 
             } elseif ($_GET['search_type']=='syns') {
 
-                $DB->query("SELECT SQL_CALC_FOUND_ROWS
-                                   t.Name as Tag, Uses, IF(TagType='genre','*','') as TagType,
-                                    SUM(tt.PositiveVotes-1) AS PosVotes,
-                                    SUM(tt.NegativeVotes-1) AS NegVotes,
-                                    SUM(tt.PositiveVotes-1)-SUM(tt.NegativeVotes-1) As Votes, t.ID as TagID
-                              FROM tags AS t
-                              JOIN torrents_tags AS tt ON tt.TagID=t.ID
-                              JOIN tag_synomyns AS s ON s.TagID=t.ID
-                             WHERE $WHERE2
-                          GROUP BY t.ID
-                          ORDER BY $OrderBy $OrderWay
-                             LIMIT $Limit");
+                if (!empty($WHERE2)) {
+                    $WHERE2 = "WHERE $WHERE2";
+                }
+
+                $Tags = $master->db->rawQuery(
+                    "SELECT SQL_CALC_FOUND_ROWS
+                            t.ID AS TagID,
+                            t.ID AS TagID,
+                            t.Name as Tag,
+                            t.Uses,
+                            IF(t.TagType='genre', '*', '') as TagType,
+                            SUM(tt.PositiveVotes-1) AS PosVotes,
+                            SUM(tt.NegativeVotes-1) AS NegVotes,
+                            SUM(tt.PositiveVotes-1)-SUM(tt.NegativeVotes-1) As Votes
+                       FROM tags AS t
+                       JOIN torrents_tags AS tt ON tt.TagID = t.ID
+                       JOIN tags_synonyms AS s ON s.TagID = t.ID
+                            {$WHERE2}
+                   GROUP BY t.ID
+                   ORDER BY {$orderBy} {$orderWay}
+                      LIMIT {$Limit}",
+                    $params2
+                )->fetchAll(\PDO::FETCH_UNIQUE | \PDO::FETCH_ASSOC);
+
             } else {   //  $_GET['search_type']=='both'
                 // cannot get an accurate distinct row count using UNION (DISTINCT) and SQL_CALC_FOUND_ROWS ...
                 // so we will get the accurate count first then get the union'ed (limited) results
-                $DB->query("SELECT Count(DISTINCT t.ID)
-                              FROM tags AS t
-                         LEFT JOIN tag_synomyns AS s ON s.TagID=t.ID
-                             WHERE $WHERE1 OR $WHERE2 ");
-                list($NumAllTags) = $DB->next_record();
+                $NumAllTags = $master->db->rawQuery(
+                    "SELECT Count(DISTINCT t.ID)
+                       FROM tags AS t
+                  LEFT JOIN tags_synonyms AS s ON s.TagID = t.ID
+                      WHERE {$WHERE1} OR {$WHERE2} ",
+                    array_merge($params, $params2)
+                )->fetchColumn();
+
                 // now get the union of tags and synonyms (performs way faster than doing a (left)joined single version)
-                $DB->query("(SELECT t.Name as Tag, Uses, IF(TagType='genre','*','') as TagType,
-                                    SUM(tt.PositiveVotes-1) AS PosVotes,
-                                    SUM(tt.NegativeVotes-1) AS NegVotes,
-                                    SUM(tt.PositiveVotes-1)-SUM(tt.NegativeVotes-1) As Votes, t.ID as TagID
-                              FROM tags AS t
-                              JOIN torrents_tags AS tt ON tt.TagID=t.ID
-                             WHERE $WHERE1
-                          GROUP BY t.ID
-                          ORDER BY $OrderBy $OrderWay)
+                $Tags = $master->db->rawQuery(
+                    "(SELECT t.ID AS TagID,
+                             t.ID AS TagID,
+                             t.Name as Tag,
+                             t.Uses,
+                             IF(t.TagType='genre', '*', '') as TagType,
+                             SUM(tt.PositiveVotes-1) AS PosVotes,
+                             SUM(tt.NegativeVotes-1) AS NegVotes,
+                             SUM(tt.PositiveVotes-1)-SUM(tt.NegativeVotes-1) As Votes
+                        FROM tags AS t
+                        JOIN torrents_tags AS tt ON tt.TagID = t.ID
+                       WHERE {$WHERE1}
+                    GROUP BY t.ID
+                    ORDER BY {$orderBy} {$orderWay})
                         UNION
-                            (SELECT t.Name as Tag, Uses, IF(TagType='genre','*','') as TagType,
-                                    SUM(tt.PositiveVotes-1) AS PosVotes,
-                                    SUM(tt.NegativeVotes-1) AS NegVotes,
-                                    SUM(tt.PositiveVotes-1)-SUM(tt.NegativeVotes-1) As Votes, t.ID as TagID
-                              FROM tags AS t
-                              JOIN torrents_tags AS tt ON tt.TagID=t.ID
-                              JOIN tag_synomyns AS s ON s.TagID=t.ID
-                             WHERE $WHERE2
-                          GROUP BY t.ID
-                          ORDER BY $OrderBy $OrderWay)
-                          ORDER BY $OrderBy $OrderWay
-                             LIMIT $Limit");
+                     (SELECT t.ID AS TagID,
+                             t.ID AS TagID,
+                             t.Name as Tag,
+                             t.Uses,
+                             IF(t.TagType='genre', '*', '') as TagType,
+                             SUM(tt.PositiveVotes-1) AS PosVotes,
+                             SUM(tt.NegativeVotes-1) AS NegVotes,
+                             SUM(tt.PositiveVotes-1)-SUM(tt.NegativeVotes-1) As Votes
+                        FROM tags AS t
+                        JOIN torrents_tags AS tt ON tt.TagID = t.ID
+                        JOIN tags_synonyms AS s ON s.TagID = t.ID
+                       WHERE {$WHERE2}
+                    GROUP BY t.ID
+                    ORDER BY {$orderBy} {$orderWay})
+                    ORDER BY {$orderBy} {$orderWay}
+                       LIMIT {$Limit}",
+                    array_merge($params, $params2)
+                )->fetchAll(\PDO::FETCH_UNIQUE | \PDO::FETCH_ASSOC);
             }
 
-            $Tags = $DB->to_array('TagID', MYSQLI_ASSOC) ;
-            $TagIDs = $DB->collect('TagID');
-            $TagIDs = implode(', ', $TagIDs);
+            $TagIDs = array_column($Tags, 'TagID');
 
             if ($NumAllTags===false) {
-                $DB->query("SELECT FOUND_ROWS()");
-                list($NumAllTags) = $DB->next_record();
+                $NumAllTags = $master->db->foundRows();
             }
 
-
-            if ($NumAllTags>0) {
+            if (!empty($TagIDs)) {
                 // get the syns for the tag results
-                $DB->query("SELECT Count(ID) as Synonyms , GROUP_CONCAT( Synomyn  SEPARATOR ', ' ) as SynText, TagID
-                              FROM tag_synomyns
-                             WHERE TagID IN ( $TagIDs )
-                          GROUP BY TagID ");
-                $Syns = $DB->to_array('TagID', MYSQLI_ASSOC) ;
+                $inQuery = implode(', ', array_fill(0, count($TagIDs), '?'));
+                $Syns = $master->db->rawQuery(
+                    "SELECT TagID,
+                            TagID,
+                            Count(ID) as Synonyms,
+                            GROUP_CONCAT(Synonym  SEPARATOR ', ') as SynText
+                       FROM tags_synonyms
+                      WHERE TagID IN ({$inQuery})
+                   GROUP BY TagID",
+                    $TagIDs
+                )->fetchAll(\PDO::FETCH_UNIQUE | \PDO::FETCH_ASSOC);
                 foreach ($Tags as $tID=>$TagInfo) {
-                    if(isset($Syns[$tID])) $Tags[$tID] = array_merge($Syns[$tID], $TagInfo);
+                    if (isset($Syns[$tID])) $Tags[$tID] = array_merge($Syns[$tID], $TagInfo);
                 }
             }
         }
 
         $title = "$NumAllTags $title";
 
-        $Pages=get_pages($Page,$NumAllTags,RESULTS_PER_PAGE,9);
+        $Pages = get_pages($Page, $NumAllTags, RESULTS_PER_PAGE, 9);
 
 ?>
         <div class="head">Tag Search</div>
@@ -190,13 +238,13 @@ show_header('Tags');
                 <tr class="">
                     <td class="label">Search for:</td>
                     <td width="60%">
-                        <input name="searchtags" type="text" class="long" value="<?=htmlentities($Searchtext)?>" />
+                        <input id="taginput" name="searchtags" type="text" class="long" value="<?=htmlentities($Searchtext)?>" autofocus />
                     </td>
 
                     <td class="nobr">
-                        <input name="search_type" value="tags" type="radio" <?php if($_GET['search_type']=='tags')echo 'checked="checked"'?> />Tags &nbsp;&nbsp;
-                        <input name="search_type" value="syns" type="radio" <?php if($_GET['search_type']=='syns')echo 'checked="checked"'?> />Synonyms &nbsp;&nbsp;
-                        <input name="search_type" value="both" type="radio" <?php if(!isset($_GET['search_type']) || $_GET['search_type']=='both')echo 'checked="checked"'?> />Both &nbsp;&nbsp;
+                        <input name="search_type" value="tags" type="radio" <?php if ($_GET['search_type']=='tags')echo 'checked="checked"'?> />Tags &nbsp;&nbsp;
+                        <input name="search_type" value="syns" type="radio" <?php if ($_GET['search_type']=='syns')echo 'checked="checked"'?> />Synonyms &nbsp;&nbsp;
+                        <input name="search_type" value="both" type="radio" <?php if (!isset($_GET['search_type']) || $_GET['search_type']=='both')echo 'checked="checked"'?> />Both &nbsp;&nbsp;
 
                     </td>
                     <td>
@@ -210,15 +258,15 @@ show_header('Tags');
             </form>
         </table>
 
-        <div class="linkbox"><?=$Pages?></div>
+        <div class="linkbox pager"><?= $Pages ?></div>
 
         <div>
             <div class="tag_results">
             <table class="box shadow">
                 <tr class="colhead">
-                    <td><a href="/<?=header_link('Tag') ?>">Tag</a> <a class="tagtype" href="/<?=header_link('TagType') ?>">(*official)</a></td>
-                    <td class="center"><a href="/<?=header_link('Uses') ?>">Uses</a></td>
-                    <td class="center" colspan="2"><a href="/<?=header_link('Votes') ?>">Votes</a></td>
+                    <td><a href="<?=header_link('Tag') ?>">Tag</a> <a class="tagtype" href="<?=header_link('TagType') ?>">(*official)</a></td>
+                    <td class="center"><a href="<?=header_link('Uses') ?>">Uses</a></td>
+                    <td class="center" colspan="2"><a href="<?=header_link('Votes') ?>">Votes</a></td>
                     <td class="center">Synonyms</td>
                 </tr>
 <?php
@@ -228,8 +276,8 @@ show_header('Tags');
             foreach ($Tags as $TagItem) {
 
                 $Tag = $TagItem['Tag'];
-                $NumSyns =  $TagItem['Synonyms'];
-                $Synonyms =  $TagItem['SynText'];
+                $NumSyns =  $TagItem['Synonyms'] ?? 0;
+                $Synonyms =  $TagItem['SynText'] ?? '';
 
                 if ($Searchtext && ($_GET['search_type']=='tags' || $_GET['search_type']=='both'))
                     $TagShow = highlight_text_css($Searchtext, $Tag);
@@ -241,13 +289,13 @@ show_header('Tags');
                 else
                    $SynonymsShow = $Synonyms;
 
-                $row = $row == 'b'?'a':'b';
+                $row = ($row ?? 'a') == 'a' ? 'b' : 'a';
 ?>
                 <tr class="row<?=$row?>">
-                    <td><?="<a href=\"torrents.php?taglist=$Tag\">$TagShow$TagItem[TagType]</a>"?></td>
+                    <td><?="<a href=\"torrents.php?taglist={$Tag}\">{$TagShow}{$TagItem['TagType']}</a>"?></td>
                     <td class="center"><?=$TagItem['Uses']?></td>
-                    <td class="votes center"><?= "+$TagItem[PosVotes]"?></td>
-                    <td class="votes left"><?= "-$TagItem[NegVotes]"?></td>
+                    <td class="votes center"><?= "+{$TagItem['PosVotes']}"?></td>
+                    <td class="votes left"><?= "-{$TagItem['NegVotes']}"?></td>
                     <td class="center"><?=($NumSyns?$NumSyns:'')?>
 <?php                if ($NumSyns>0) {
                     if ($Synonyms==$SynonymsShow) {
@@ -271,9 +319,9 @@ show_header('Tags');
             <div class="tag_results">
             <table class="box shadow">
                 <tr class="colhead">
-                    <td><a href="/<?=header_link('Tag') ?>">Tag</a> <a class="tagtype" href="/<?=header_link('TagType') ?>">(*official)</a></td>
-                    <td class="center"><a href="/<?=header_link('Uses') ?>">Uses</a></td>
-                    <td class="center"  colspan="2"><a href="/<?=header_link('Votes') ?>">Votes</a></td>
+                    <td><a href="<?=header_link('Tag') ?>">Tag</a> <a class="tagtype" href="<?=header_link('TagType') ?>">(*official)</a></td>
+                    <td class="center"><a href="<?=header_link('Uses') ?>">Uses</a></td>
+                    <td class="center"  colspan="2"><a href="<?=header_link('Votes') ?>">Votes</a></td>
                     <td class="center">Synonyms</td>
                 </tr>
 <?php
@@ -285,7 +333,7 @@ show_header('Tags');
             </div>
         </div>
 
-        <div class="linkbox"><?=$Pages?></div>
+        <div class="linkbox pager"><?= $Pages ?></div>
     </div>
 </div>
 

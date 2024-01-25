@@ -1,0 +1,18 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/sandbox/smilies">Smilies</a>
+{% endblock %}
+
+{% block main_content %}
+    <div class="linkbox" >
+        [<a href="/sandbox/smilies?sort=0"> unsorted </a>] &nbsp;&nbsp;&nbsp;
+        [<a href="/sandbox/smilies?sort=1&asc=1"> sort A-Z </a>] &nbsp;&nbsp;&nbsp;
+        [<a href="/sandbox/smilies?sort=1&asc=0"> sort Z-A </a>] &nbsp;&nbsp;&nbsp;
+    </div>
+    {{ bbcode.draw_all_smilies(sort, order) }}
+{% endblock %}

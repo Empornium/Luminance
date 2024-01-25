@@ -1,0 +1,73 @@
+{% import "macros/icon.html.twig" as icon %}
+
+{% block content %}
+    <script type="text/javascript">
+        function ShowIPs(rowname) {
+            $('tr[data-name="'+rowname+'"]').toggle();
+        }
+    </script>
+
+    <div class="thin">
+        <div class="linkbox pager">
+            {{ render.pagelinks(page, results, pageSize, 9) }}
+        </div>
+        <div class="head">IP history (<a href="/userhistory.php?action=ips_raw&amp;userid={{ user.ID }}">parsed</a>) for <a href="/user.php?id={{ user.ID }}">{{ user.Username }}</a></div>
+        <table>
+            <tr class="colhead">
+                <td style="width:30%">IP address</td>
+                <td style="width:20%">Started</td>
+                <td style="width:20%">Ended</td>
+                {% if ActiveUser.options('ShowElapsed') == 0 %}
+                <td>Elapsed</td>
+                {% elseif ActiveUser.options('ShowElapsed') == 1 %}
+                <td>Host</td>
+                {% endif %}
+            </tr>
+            {% for history in ips %}
+                <tr class="rowa">
+                    <td>
+                        {{ display_ip(history.ip)|raw }}
+                        {% if auth.isAllowed('admin_manage_ipbans') and ActiveUser.options('DumpData') == 0 %}
+                            [<a href="/tools.php?action=ip_ban&userid={{ user.ID }}&uip={{ history.ip }}" title="Ban this users IP ({{ history.ip }})">IP Ban</a>]
+                        {% endif %}
+                        <br />
+                        {% if ActiveUser.options('ShowElapsed') == 0 %}
+                            {{ get_host(history.ip)|raw }}
+                        {% endif %}
+                        <br />
+                        {% if ActiveUser.options('DumpData') == 0 %}
+                        {% if history.dupes is not empty %}
+                            <a id="toggle{{ loop.index }}" href="#" onclick="ShowIPs({{ loop.index }}); return false;">show/hide dupes ({{ history.dupeCount }})</a>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>{{ time_diff(history.StartTime)|raw }}</td>
+                    <td>{{ time_diff(history.EndTime)|raw }}</td>
+
+                    {% if ActiveUser.options('ShowElapsed') == 0 %}
+                        <td>{{ time_diff(date(history.EndTime).diff(date(history.StartTime)))|raw }}</td>
+                    {% elseif ActiveUser.options('ShowElapsed') == 1 %}
+                        <td>{{ get_host(history.ip)|raw }}</td>
+                    {% endif %}
+                </tr>
+                {% if ActiveUser.options('DumpData') == 0 %}
+                {% for dupe in history.dupes %}
+                    <tr class="rowb {{ history.dupeCount > 10 ? 'hidden' }}" data-name="{{ loop.parent.loop.index }}">
+                        <td>&nbsp;&#187;&nbsp;{{ render.username(dupe.UserID) }}</td>
+                        <td>{{ time_diff(dupe.StartTime)|raw }}</td>
+                        <td>{{ time_diff(dupe.EndTime)|raw }}</td>
+                        {% if ActiveUser.options('ShowElapsed') == 0 %}
+                            <td>{{ time_diff(date(history.EndTime).diff(date(history.StartTime)))|raw }}</td>
+                        {% elseif ActiveUser.options('ShowElapsed') == 1 %}
+                            <td>{{ get_host(history.ip)|raw }}</td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+                {% endif %}
+            {% endfor %}
+        </table>
+        <div class="linkbox pager">
+            {{ render.pagelinks(page, results, pageSize, 9) }}
+        </div>
+    </div>
+{% endblock %}

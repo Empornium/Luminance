@@ -1,0 +1,17 @@
+<div id="modal_content">
+    <div class="thin">
+        <h2>Remove Post</h2>
+        <div class="box pad center">
+            {% if auth.isAllowed('forum_post_trash') and post.thread.numPosts > 1 %}
+                {% if post.getFlag(constant('Luminance\\Entities\\ForumPost::TRASHED')) %}
+                    <a href="#post{{ post.ID }}" onclick="TrashPost('{{ post.ID }}', {{ 0 }}, '{{ secretary.getToken('post.trash') }}');" class="button greenButton" title="restore this post" rel="modal:close">Restore</a>
+                {% else %}
+                    <a href="#post{{ post.ID }}" onclick="TrashPost('{{ post.ID }}', {{ 1 }}, '{{ secretary.getToken('post.trash') }}');" class="button blueButton" title="trash this post" rel="modal:close">Trash</a>
+                {% endif %}
+            {% endif %}
+            {% if auth.isAllowed('forum_post_delete') and post.thread.numPosts > 1 %}
+                <a href="#post{{ post.ID }}" onclick="DeletePost('{{ post.ID }}', '{{ secretary.getToken('post.delete') }}');" class="button redButton" title="permenantly delete this post">Delete</a>
+            {% endif %}
+        </div>
+    </div>
+</div>

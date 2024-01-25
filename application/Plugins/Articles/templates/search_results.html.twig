@@ -1,0 +1,55 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    Articles > Search Results
+{% endblock %}
+
+{% block main_content %}
+    {{ render.latestForumThreads() }}
+    <div class="head">Search Articles</div>
+    <form method="get" action="/articles/search">
+        <table>
+            <tr class="box">
+                <td class="label">Search for:</td>
+                <td>
+                        <input name="searchterms" type="text" class="long" value="{{ searchterms }}" autofocus />
+                </td>
+                <td width="10%">
+                        <input type="submit" value="Search" />
+                </td>
+            </tr>
+        </table>
+    </form>
+    <br/>
+    <div class="head">{{ articles|length }} Search Results</div>
+    <table width="100%" class="topic_list">
+        <tr class="colhead">
+            <td colspan="2">Searched for: {{ searchText }}</td>
+            <td>Found {{ articles|length }} result{{ articles|length > 1 ? 's' }}</td>
+        </tr>
+        {% for article in articles %}
+            <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                <td class="topic_link">
+                    {{ articleCats[article.Category] }} > {{ subCats[article.SubCat] }}
+                </td>
+                <td class="topic_link">
+                    <a href="/articles/view/{{ article.TopicID }}">
+                        {{ article.Title }}
+                    </a>
+                </td>
+                <td>
+                    {{ article.Description }}
+                    {% if article.MinClass > 0 %}
+                        <span style="float:right">
+                            [{{ master.repos.permissions.getLevels()[article.MinClass].Name }}+]
+                        </span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

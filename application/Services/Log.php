@@ -3,9 +3,6 @@ namespace Luminance\Services;
 
 use Luminance\Core\Master;
 use Luminance\Core\Service;
-use Luminance\Errors\ConfigurationError;
-use Luminance\Errors\SystemError;
-
 use Monolog\Logger;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
@@ -13,51 +10,47 @@ use Monolog\Formatter\LineFormatter;
 
 class Log extends Service {
 
-    public $ShortFormat = "%datetime% %message% %context% %extra%\n";
-    public $LongFormat = "%datetime% %channel%.%level_name% %message% %context% %extra%\n'";
-    public $TimeFormat = 'Y-m-d_H:i:s';
+    public $shortFormat = "%datetime% %message% %context% %extra%\n";
+    public $longFormat = "%datetime% %channel%.%level_name% %message% %context% %extra%\n'";
+    public $timeFormat = 'Y-m-d_H:i:s';
 
-    protected $PageLogger;
+    protected $pageLogger;
 
     public function __construct(Master $master) {
         parent::__construct($master);
-        $this->ShortFormatter = new LineFormatter($this->ShortFormat, $this->TimeFormat, false, true);
-        $this->LongFormatter = new LineFormatter($this->LongFormat, $this->LongFormat, false, true);
-        $this->init_loggers($this->master->settings->logs);
+        $this->shortFormatter = new LineFormatter($this->shortFormat, $this->timeFormat, false, true);
+        $this->longFormatter = new LineFormatter($this->longFormat, $this->longFormat, false, true);
+        $this->initLoggers($this->master->settings->logs);
     }
 
-    protected function init_loggers($LogSettings) {
-        $this->PageLogger = new Logger('page');
-        if (isset($LogSettings->page_file)) {
-            $Stream = new StreamHandler($LogSettings->page_file, $LogSettings->page_level);
+    protected function initLoggers($logSettings) {
+        $this->pageLogger = new Logger('page');
+        if (!empty($logSettings->page_file)) {
+            $stream = new StreamHandler($logSettings->page_file, $logSettings->page_level);
+            $stream->setFormatter($this->shortFormatter);
         } else {
-            $Stream = new NullHandler();
+            $stream = new NullHandler();
         }
-        $Stream->setFormatter($this->ShortFormatter);
-        $this->PageLogger->pushHandler($Stream);
+        $this->pageLogger->pushHandler($stream);
     }
 
-    public function get_message_prefix($request) {
-        $ip = $this->master->server['REMOTE_ADDR'];
-        if ($request->user) {
-            $prefix = "{$request->reference} {$request->ip} {$request->user->ID}/{$request->user->Username}";
-        } else {
-            $prefix = "{$request->reference} {$request->ip} -";
-        }
-        return $prefix;
+    public function getMessagePrefix($request) {
+        return $request->user ?
+            "{$request->reference} {$request->ip} {$request->user->ID}/{$request->user->Username}" :
+            "{$request->reference} {$request->ip} -";
     }
 
-    public function log_request($request) {
-        if ($request->method !== 'CLI') {
-            $prefix = $this->get_message_prefix($request);
-            $this->PageLogger->addInfo("{$prefix} {$request->method} {$request->uri}");
+    public function logRequest($request) {
+        if (!($request->method === 'CLI')) {
+            $prefix = $this->getMessagePrefix($request);
+            $this->pageLogger->info("{$prefix} {$request->method} {$request->uri}");
         }
     }
 
-    public function log_event($request, $message) {
-        if ($request->method !== 'CLI') {
-            $prefix = $this->get_message_prefix($request);
-            $this->PageLogger->addInfo("{$prefix} $message");
+    public function logEvent($request, $message) {
+        if (!($request->method === 'CLI')) {
+            $prefix = $this->getMessagePrefix($request);
+            $this->pageLogger->info("{$prefix} $message");
         }
     }
 }

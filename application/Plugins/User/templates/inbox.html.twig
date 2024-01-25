@@ -1,0 +1,139 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% block title %}
+    {% if section == 'received' %}
+        Inbox
+    {% elseif section == 'sent' %}
+        Sentbox
+    {% endif %}
+{% endblock %}
+{% block main_content %}
+    <div class="linkbox">
+        {% if section == 'received' %}
+            <a href="/user/inbox/sent">[Sentbox]</a>
+        {% elseif section == 'sent' %}
+            <a href="/user/inbox/received">[Inbox]</a>
+        {% endif %}
+        <br /><br />
+        {{ render.pagelinks(page, results, pageSize, 9) }}
+    </div>
+    <div class="head">Inbox</div>
+    <div class="box pad">
+        {% if conversations is not empty or search is not empty %}
+            <form action="/user/inbox/{{ section }}" method="get" id="searchbox">
+                <div>
+                    <input type="radio" name="searchtype" id="searchtype_user" value="user"
+                    {%  if searchType == 'user' %}
+                        checked="checked"
+                    {% endif %}
+                    />
+                    <label for="searchtype_user">User</label>
+                    <input type="radio" name="searchtype" id="searchtype_subject" value="subject"
+                    {%  if searchType == 'subject' %}
+                        checked="checked"
+                    {% endif %}
+                    />
+                    <label for="searchtype_subject">Subject</label>
+                    <input type="radio" name="searchtype" id="searchtype_message" value="message"
+                    {%  if searchType == 'message' %}
+                        checked="checked"
+                    {% endif %}
+                    />
+                    <label for="searchtype_message">Message</label>
+                    <span style="float: right;">
+                        {% if sort == 'unread' %}
+                            <a href="/user/inbox/{{ section }}">List latest first</a>
+                        {% else %}
+                            <a href="/user/inbox/{{ section }}?sort=unread">List unread first</a>
+                        {% endif %}
+                    </span>
+                    <br />
+                    {% if search is not empty %}
+                        {% set searchText = search %}
+                    {% else %}
+                        {% set searchText = "Search #{ (section == 'received') ? 'Inbox' : 'Sentbox' }" %}
+                    {% endif %}
+                    <input type="text" name="search" value="{{ searchText }}" style="width: 98%;"
+                            onfocus="if (this.value == 'Search {{ (section == 'received') ? 'Inbox' : 'Sentbox' }}') this.value='';"
+                            onblur="if (this.value == '') this.value='Search {{ (section == 'received') ? 'Inbox' : 'Sentbox' }}';"
+                    />
+                </div>
+            </form>
+        {% endif %}
+        {%  if conversations is empty %}
+            {% if search is not empty %}
+                <h2>Your search did not return anything</h2>
+            {% else %}
+                {% if section == 'received' %}
+                    <h2>Your inbox is currently empty</h2>
+                {% elseif section == 'sent' %}
+                    <h2>Your sentbox is currently empty</h2>
+                {% endif %}
+            {% endif %}
+        {% else %}
+            <form action="/user/inbox/manage" method="post" id="messageform" onsubmit="return anyChecks('messageform')">
+                <input type="hidden" name="token" value="{{ secretary.getToken('user.inbox.manage') }}" />
+                <table>
+                    <tr class="colhead">
+                        <td width="10"><input type="checkbox" onclick="toggleChecks('messageform',this)" /></td>
+                        <td width="45%">Subject</td>
+                        <td>{{ (section == 'received') ? 'Receiver' : 'Sender' }}</td>
+                        <td>Date</td>
+                    </tr>
+                    {% for conversation in conversations %}
+                        {% set unread = (section == 'received') ? conversation.UnRead : conversation.other.UnRead %}
+                        {% if unread == 1 %}
+                            <tr class="unreadpm">
+                        {% else %}
+                            <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                        {% endif %}
+                        <td class="center"><input type="checkbox" name="conversations[]" value="{{ conversation.ConvID }}" /></td>
+                        <td>
+                            {% if unread == '1' %}
+                                <strong>
+                            {% endif %}
+                            {% if conversation.Sticky == '1' %}
+                                Sticky:&nbsp;
+                            {% endif %}
+                            <a href="/user/inbox/conversation/{{ conversation.ConvID}}">{{ conversation.subject }}</a>
+                            {% if unread  == '1' %}
+                                </strong>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set usernameOptions = {
+                                'drawInBox' : false,
+                                'colorname' : false,
+                                'dropDown'  : false,
+                                'useSpan'   : true,
+                                'noIcons'   : false,
+                                'noGroup'   : false,
+                                'noClass'   : false,
+                                'noTitle'   : true,
+                            } %}
+                            {{ render.username(conversation.other.user, usernameOptions) }}
+                        </td>
+                        <td>
+                            {% if section == 'received' %}
+                                {{ time_diff(conversation.ReceivedDate)|raw }}
+                            {% else %}
+                                {{ time_diff(conversation.SentDate)|raw }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+                <input type="submit" name="read" value="Mark as read" formaction="/user/inbox/manage/read" />&nbsp;
+                <input type="submit" name="unread" value="Mark as unread" formaction="/user/inbox/manage/unread"/>&nbsp;
+                <input type="submit" name="stick" value="Stick message(s)" formaction="/user/inbox/manage/sticky"/>&nbsp;
+                <input type="submit" name="unstick" value="Unstick message(s)" formaction="/user/inbox/manage/unsticky"/>&nbsp;
+                <input type="submit" name="delete" value="Delete message(s)" formaction="/user/inbox/manage/delete"/>
+            </form>
+        {% endif %}
+    </div>
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9) }}
+    </div>
+{% endblock %}

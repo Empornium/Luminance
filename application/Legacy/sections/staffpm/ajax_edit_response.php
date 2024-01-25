@@ -4,16 +4,15 @@ enforce_login();
 
 $IsAjax = isset($_POST['submit']) && $_POST['submit'] == 'Save'? FALSE : TRUE;
 
-$DB->query("
-    SELECT
-        i.SupportFor,
-        p.DisplayStaff
-    FROM users_info as i
-    JOIN users_main as m ON m.ID = i.UserID
-    JOIN permissions as p ON p.ID = m.PermissionID
-    WHERE i.UserID = ".$LoggedUser['ID']
-);
-list($SupportFor, $DisplayStaff) = $DB->next_record();
+list($SupportFor, $DisplayStaff) = $master->db->rawQuery(
+    "SELECT i.SupportFor,
+            p.DisplayStaff
+       FROM users_info as i
+       JOIN users_main as m ON m.ID = i.UserID
+       JOIN permissions as p ON p.ID = m.PermissionID
+      WHERE i.UserID = ?",
+    [$activeUser['ID']]
+)->fetch(\PDO::FETCH_NUM);
 
 if (!($SupportFor != '' || $DisplayStaff == '1')) {
     // Logged in user is not FLS or Staff
@@ -29,38 +28,55 @@ $Name = isset($_POST['name'])? trim($_POST['name']):false;
 
 if ($Message && $Name && (trim($Message) != "") && ($Name != "")) {
 
-      $Text = new Luminance\Legacy\Text;
-      if (!$Text->validate_bbcode($Message,  get_permissions_advtags($LoggedUser['ID']), !$IsAjax)) {
+      $bbCode = new \Luminance\Legacy\Text;
+      if (!$bbCode->validate_bbcode($Message,  get_permissions_advtags($activeUser['ID']), !$IsAjax)) {
         echo "There are errors in your bbcode (unclosed tags)";
         die();
       }
 
-      $Message = db_string($Message);
-      $Name = db_string($Name);
     $ID = (int) $_POST['id'];
-    if (is_numeric($ID)) {
+    if (is_integer_string($ID)) {
         if ($ID == 0) {
             // Create new response
-            $DB->query("INSERT INTO staff_pm_responses (Message, Name) VALUES ('$Message', '$Name')");
+            $master->db->rawQuery(
+                "INSERT INTO staff_pm_responses (Message, Name)
+                      VALUES (?, ?)",
+                [$Message, $Name]
+            );
       // if submit is set then this is not an ajax response - reload page and pass vars for message & return convid
       if (!$IsAjax) {
-          $InsertedID = $DB->inserted_id();
+          $InsertedID = $master->db->lastInsertID();
           $ConvID = (int) $_POST['convid'];
           header("Location: staffpm.php?action=responses&added=$InsertedID".($ConvID>0?"&convid=$ConvID":'')."#old_responses");
       } else
           echo 1;
         } else {
-            $DB->query("SELECT * FROM staff_pm_responses WHERE ID=$ID");
-            if ($DB->record_count() != 0) {
+            $foundRows = $master->db->rawQuery(
+                "SELECT COUNT(*)
+                   FROM staff_pm_responses
+                  WHERE ID = ?",
+                [$ID]
+            )->fetchColumn();
+            if (!($foundRows === 0)) {
                 // Edit response
-                $DB->query("UPDATE staff_pm_responses SET Message='$Message', Name='$Name' WHERE ID=$ID");
+                $master->db->rawQuery(
+                    "UPDATE staff_pm_responses
+                        SET Message = ?,
+                            Name = ?
+                      WHERE ID = ?",
+                    [$Message, $Name, $ID]
+                );
                 echo '2';
             } else {
                 // Create new response
-                $DB->query("INSERT INTO staff_pm_responses (Message, Name) VALUES ('$Message', '$Name')");
+                $master->db->rawQuery(
+                    "INSERT INTO staff_pm_responses (Message, Name)
+                          VALUES (?, ?)",
+                    [$Message, $Name]
+                );
                 // if submit is set then this is not an ajax response - reload page and pass vars for message & return convid
         if (!$IsAjax) {
-              $InsertedID = $DB->inserted_id();
+              $InsertedID = $master->db->lastInsertID();
               $ConvID = (int) $_POST['convid'];
               header("Location: staffpm.php?action=responses&added=$InsertedID".($ConvID>0?"&convid=$ConvID":'')."#old_responses");
         } else

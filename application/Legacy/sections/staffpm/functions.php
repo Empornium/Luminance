@@ -1,61 +1,87 @@
 <?php
 
 function check_access($ConvID) {
-    global $DB, $LoggedUser;
+    global $master, $activeUser;
 
-    // get vars from LoggedUser
-    $SupportFor = $LoggedUser['SupportFor'];
-    $DisplayStaff = $LoggedUser['DisplayStaff'];
-    // Logged in user is staff
-    $IsStaff = ($DisplayStaff == 1);
-    // Logged in user is Staff or FLS
-    $IsFLS = ($SupportFor != '' || $IsStaff);
+    $IsStaff = check_perms('site_staff_inbox');
 
     // Check if conversation belongs to user
-    $DB->query("SELECT UserID, Level, AssignedToUser FROM staff_pm_conversations WHERE ID=$ConvID");
-    list($TargetUserID, $Level, $AssignedToUser) = $DB->next_record();
+    list($TargetUserID, $Level, $AssignedToUser) = $master->db->rawQuery(
+        "SELECT UserID,
+                Level,
+                AssignedToUser
+           FROM staff_pm_conversations
+          WHERE ID = ?",
+        [$ConvID]
+    )->fetch(\PDO::FETCH_NUM);
 
-    if (!(($TargetUserID == $LoggedUser['ID']) || ($AssignedToUser == $LoggedUser['ID']) || (($Level > 0 && $Level <= $LoggedUser['Class']) || ($Level == 0 && $IsFLS)))) {
+    if (!(($TargetUserID == $activeUser['ID']) || ($AssignedToUser == $activeUser['ID']) || (($Level > 0 && $Level <= $activeUser['Class']) || ($Level == 0 && $IsStaff)))) {
         // User is trying to view someone else's conversation
         error(403);
     }
 }
 
-function make_staffpm_note($Message, $ConvID)
-{
-    global $DB;
-    $DB->query("SELECT ID, Message FROM staff_pm_messages WHERE ConvID=$ConvID AND IsNotes");
-    if (list($ID, $Notes) = $DB->next_record()) {
-        $Notes = $Message."[br]".$Notes;
-        $DB->query("UPDATE staff_pm_messages SET Message='$Notes' WHERE ID=$ID AND IsNotes");
+function make_staffpm_note($Message, $ConvID) {
+    global $master;
+    $conv = $master->db->rawQuery(
+        "SELECT ID,
+                Message AS Notes
+           FROM staff_pm_messages
+          WHERE ConvID = ?
+            AND IsNotes",
+        [$ConvID]
+    )->fetch(\PDO::FETCH_ASSOC);
+    if (!empty($conv)) {
+        $conv['Notes'] = $Message."[br]".$conv['Notes'];
+        $master->db->rawQuery(
+            "UPDATE staff_pm_messages
+                SET Message = ?
+              WHERE ID = ?
+                AND IsNotes",
+            [$conv['Notes'], $conv['ID']]
+        );
     } else {
-        $DB->query("
-            INSERT INTO staff_pm_messages
-                (UserID, SentDate, Message, ConvID, IsNotes)
-            VALUES
-                (0, '".sqltime()."', '$Message', $ConvID, TRUE)"
+        $master->db->rawQuery(
+            "INSERT INTO staff_pm_messages (UserID, SentDate, Message, ConvID, IsNotes)
+                  VALUES (0, ?, ?, ?, TRUE)",
+            [sqltime(), $Message, $ConvID]
         );
     }
 }
-function get_num_staff_pms($UserID, $UserLevel)
-{
-    global $DB, $Cache;
-    $DB->query("SELECT COUNT(ID) FROM staff_pm_conversations
-                         WHERE (AssignedToUser=$UserID OR Level <=$UserLevel) AND Status IN ('Unanswered', 'User Resolved') AND NOT StealthResolved");
-    list($NumUnanswered) = $DB->next_record();
-    $DB->query("SELECT COUNT(ID) FROM staff_pm_conversations
-                         WHERE (AssignedToUser=$UserID OR Level <=$UserLevel) AND Status IN ('Open', 'Unanswered', 'User Resolved') AND NOT StealthResolved");
-    list($NumOpen) = $DB->next_record();
-    $DB->query("SELECT COUNT(ID) FROM staff_pm_conversations
-                         WHERE (AssignedToUser=$UserID OR Level =$UserLevel) AND Status='Unanswered' AND NOT StealthResolved");
-    list($NumMy) = $DB->next_record();
+function get_num_staff_pms($userID, $UserLevel) {
+    global $master;
+    $params = [$userID, $UserLevel];
+    $NumUnanswered = $master->db->rawQuery(
+        "SELECT COUNT(ID)
+           FROM staff_pm_conversations
+          WHERE (AssignedToUser = ? OR Level <= ?)
+            AND Status IN ('Unanswered', 'User Resolved')
+            AND NOT StealthResolved",
+        $params
+    )->fetchColumn();
 
-    return array($NumMy, $NumUnanswered, $NumOpen);
+    $NumOpen = $master->db->rawQuery(
+        "SELECT COUNT(ID)
+           FROM staff_pm_conversations
+          WHERE (AssignedToUser = ? OR Level <= ?)
+            AND Status IN ('Open', 'Unanswered', 'User Resolved')
+            AND NOT StealthResolved",
+        $params
+    )->fetchColumn();
+    $NumMy = $master->db->rawQuery(
+        "SELECT COUNT(ID)
+           FROM staff_pm_conversations
+          WHERE (AssignedToUser = ? OR Level = ?)
+            AND Status = 'Unanswered'
+        AND NOT StealthResolved",
+        $params
+    )->fetchColumn();
+
+    return [$NumMy, $NumUnanswered, $NumOpen];
 }
 
-function print_staff_assign_select($AssignedToUser, $Level)
-{
-    global $master, $DB, $ClassLevels;
+function print_staff_assign_select($AssignedToUser, $Level) {
+    global $master, $classLevels;
 ?>
         <select id="assign_to" name="assign">
             <optgroup label="User classes">
@@ -64,12 +90,12 @@ function print_staff_assign_select($AssignedToUser, $Level)
 ?>
                 <option value="class_0"<?=$Selected?>>First Line Support</option>
 <?php       // Staff classes
-foreach ($ClassLevels as $Class) {
+foreach ($classLevels as $class) {
     // Create one <option> for each staff user class  >= 650
-    if ($Class['Level'] >= 500) {
-        $Selected = (!$AssignedToUser && ($Level == $Class['Level'])) ? ' selected="selected"' : '';
+    if ($class['Level'] >= 500) {
+        $Selected = (!$AssignedToUser && ($Level == $class['Level'])) ? ' selected="selected"' : '';
 ?>
-                <option value="class_<?=$Class['Level']?>"<?=$Selected?>><?=$Class['Name']?></option>
+                <option value="class_<?=$class['Level']?>"<?=$Selected?>><?=$class['Name']?></option>
 <?php
     }
 }
@@ -77,20 +103,20 @@ foreach ($ClassLevels as $Class) {
             </optgroup>
             <optgroup label="Staff">
 <?php       // Staff members
-$DB->query("
-    SELECT
-        m.ID,
-        m.Username
-    FROM permissions as p
-    JOIN users_main as m ON m.PermissionID=p.ID
-    WHERE p.DisplayStaff='1'
-    ORDER BY p.Level DESC, m.Username ASC"
-);
-while (list($ID, $Name) = $DB->next_record()) {
+$permissions = $master->db->rawQuery(
+    "SELECT u.ID,
+            u.Username
+       FROM permissions as p
+       JOIN users_main AS um ON um.PermissionID = p.ID
+       JOIN users AS u ON u.ID = um.ID
+      WHERE p.DisplayStaff = '1'
+   ORDER BY p.Level DESC, u.Username ASC"
+)->fetchAll(\PDO::FETCH_OBJ);
+foreach ($permissions as $permission) {
     // Create one <option> for each staff member
-    $Selected = ($AssignedToUser == $ID) ? ' selected="selected"' : '';
+    $Selected = ($AssignedToUser == $permission->ID) ? ' selected="selected"' : '';
 ?>
-                <option value="user_<?=$ID?>"<?=$Selected?>><?=$Name?></option>
+                <option value="user_<?= $permission->ID ?>"<?= $Selected ?>><?= $permission->Username ?></option>
 <?php
 }
 ?>
@@ -98,21 +124,21 @@ while (list($ID, $Name) = $DB->next_record()) {
             <optgroup label="First Line Support">
 <?php
 // FLS users
-$DB->query("
-    SELECT
-        m.ID,
-        m.Username
-    FROM users_info as i
-    JOIN users_main as m ON m.ID=i.UserID
-    JOIN permissions as p ON p.ID=m.PermissionID
-    WHERE p.DisplayStaff!='1' AND i.SupportFor!=''
-    ORDER BY m.Username ASC
-");
-while (list($ID, $Name) = $DB->next_record()) {
+$flsUsers = $master->db->rawQuery(
+    "SELECT u.ID,
+            u.Username
+       FROM users AS u
+       JOIN users_main AS um ON um.ID = u.ID
+       JOIN users_info AS ui ON ui.UserID = u.ID
+       JOIN permissions as p ON p.ID = um.PermissionID
+      WHERE p.DisplayStaff != '1' AND ui.SupportFor != ''
+   ORDER BY u.Username ASC
+")->fetchAll(\PDO::FETCH_OBJ);
+foreach ($flsUsers as $flsUser) {
     // Create one <option> for each FLS user
-    $Selected = ($AssignedToUser == $ID) ? ' selected="selected"' : '';
+    $Selected = ($AssignedToUser == $flsUser->ID) ? ' selected="selected"' : '';
 ?>
-                <option value="user_<?=$ID?>"<?=$Selected?>><?=$Name?></option>
+                <option value="user_<?= $flsUser->ID ?>"<?= $Selected ?>><?= $flsUser->Username ?></option>
 <?php
 }
 ?>
@@ -121,97 +147,3 @@ while (list($ID, $Name) = $DB->next_record()) {
         <input type="button"  style="margin-right: 10px;" onClick="Assign();" value="Assign" />
 <?php
 }
-
-function print_compose_staff_pm($Hidden = true, $Assign = 0, $Subject ='', $Msg = '', $Text = false)
-{
-        global $LoggedUser;
-
-        // forwarding a msg
-        if ($_POST['action']=='forward') {
-            list($MsgType, $Subject, $FwdBody) = getForwardedPostData();
-        }
-
-        $IsStaff = $LoggedUser['DisplayStaff'] == 1;
-        if (!$Text) {
-            $Text = new Luminance\Legacy\Text;
-        }
-        if ($Msg=='changeusername') {
-            $Subject='Change Username';
-            $Msg="\n\nI would like to change my username to\n\nBecause";
-            $Assign='admin';
-        } elseif ($Msg=='donategb' || $Msg=='donatelove') {
-            $Subject='I would like to donate for ';
-            if ($Msg=='donategb') {
-                $Subject .= 'GB';
-                $Msg="\n\nPlease send me instructions on how to donate to remove gb from my download.";
-            } else {
-                $Subject .= 'love';
-                $Msg="\n\nPlease send me instructions on how to donate to help support the site.";
-            }
-            $Assign='sysop';
-            $AssignDirect = '1000';
-        } elseif ($Msg=='nobtcrate') {
-            $Subject='Error: No exchange rate for bitcoin';
-            $Msg='';
-            $Assign='admin';
-        }
-
-        ?>
-        <div id="compose" class="<?=($Hidden ? 'hide' : '')?>">
-<?php       if ($LoggedUser['SupportFor'] !="" || $IsStaff) {  ?>
-                    <div class="box pad">
-                      <strong class="important_text">Are you sure you want to send a message to staff? You are staff yourself you know...</strong>
-                    </div>
-<?php       }
-
-             if ($FwdBody) {
-?>
-                 <div class="head">
-                     <?=$MsgType;?> to be forwarded:
-                 </div>
-                 <div class="box vertical_space">
-                     <div class="body" >
-                         <?=$Text->full_format($FwdBody, true)?>
-                     </div>
-                 </div>
-<?php
-             }
-?>
-            <div id="preview" class="hidden"></div>
-            <form action="staffpm.php" method="post" id="messageform">
-                <div id="quickpost">
-                    <input type="hidden" name="action" value="takepost" />
-                    <input type="hidden" name="prependtitle" value="Staff PM - " />
-                    <input type="hidden" name="forwardbody" value="<?=display_str($FwdBody)?>" />
-
-                    <label for="subject"><h3>Subject</h3></label>
-                    <input class="long" type="text" name="subject" id="subject" value="<?=display_str($Subject)?>" />
-                    <br />
-
-                    <label for="message"><h3>Message</h3></label>
-                                <?php  $Text->display_bbcode_assistant("message"); ?>
-                    <textarea rows="10" class="long" name="message" id="message"><?=display_str($Msg)?></textarea>
-                    <br />
-                </div>
-
-                <input type="button" value="Hide" onClick="jQuery('#compose').toggle();return false;" />
-                <strong>Send to: </strong>
-<?php                   if ($AssignDirect) { ?>
-                <input type="hidden" name="level" value="<?=$AssignDirect?>" />
-                <input type="text" value="<?=$Assign?>" disabled="disabled" />
-<?php                   } else { ?>
-                <select name="level">
-                    <option value="0"<?php if(!$Assign)echo ' selected="selected"';?>>First Line Support</option>
-                    <option value="500"<?php if($Assign=='mod')echo ' selected="selected"';?>>Moderators</option>
-                    <option value="549"<?php if($Assign=='smod')echo ' selected="selected"';?>>Senior Staff</option>
-<?php                       if($IsStaff) { ?>
-                    <option value="600"<?php if($Assign=='admin')echo ' selected="selected"';?>>Admin Team</option>
-<?php                       } ?>
-                </select>
-<?php                   } ?>
-                <input type="button" id="previewbtn" value="Preview" onclick="Inbox_Preview();" />
-                        <input type="submit" value="Send message" />
-
-            </form>
-        </div>
-<?php  }

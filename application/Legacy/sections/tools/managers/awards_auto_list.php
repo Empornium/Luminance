@@ -1,37 +1,36 @@
 <?php
 if (!check_perms('admin_manage_awards')) { error(403); }
 
-show_header('Automatic Awards schedule','badges');
+show_header('Automatic Awards schedule', 'badges');
 
-$DB->query("SELECT ID, Title
-              FROM badges WHERE Type='Single' ORDER BY Sort");
-$BadgesArray = $DB->to_array();
+global $badgesArray, $catsArray;
+$badgesArray = $master->db->rawQuery("SELECT ID, Title
+              FROM badges WHERE Type='Single' ORDER BY Sort")->fetchAll(\PDO::FETCH_BOTH);
 
-$DB->query("SELECT ID, Name
-              FROM categories ORDER BY Name");
-$CatsArray = $DB->to_array();
+$catsArray = $master->db->rawQuery("SELECT ID, Name
+              FROM categories ORDER BY Name")->fetchAll(\PDO::FETCH_BOTH);
 
 function print_badges_select($ElementID, $CurrentBadgeID=-1)
 {
-    global $BadgesArray;
+    global $badgesArray;
 ?>
     <select name="badgeid[<?=$ElementID?>]" id="badgeid<?=$ElementID?>" onchange="Select_Badge('<?=$ElementID?>')">
-<?php       foreach ($BadgesArray as $Badge) {
+<?php       foreach ($badgesArray as $Badge) {
         list($ID, $Name) = $Badge;  ?>
-            <option value="<?=$ID?>"<?=($ID==$CurrentBadgeID?' selected="selected"':'')?> >#<?=$ID?> <?=$Name?>&nbsp;&nbsp;</option>
+            <option value="<?=$ID?>"<?=($ID==$CurrentBadgeID?' selected="selected"':'')?> >#<?=$ID?> <?=$Name?>  </option>
 <?php       } ?>
     </select>
 <?php
 }
 function print_categories($ElementID, $SelectedCat=-1)
 {
-    global $CatsArray;
+    global $catsArray;
 ?>
     <select name="catid[<?=$ElementID?>]" id="catid<?=$ElementID?>" onchange="Set_Edit('<?=$ElementID?>')" title="Category ID: If specified for NumUploaded then only torrents in this cateogry are counted (has no effect on other actions)">
         <option value="0">-none-</option>
-<?php       foreach ($CatsArray as $Cat) {
-            list($CatID,$CatName)=$Cat;  ?>
-            <option value="<?=$CatID?>"<?=($CatID==$SelectedCat?' selected="selected"':'')?>><?=$CatName?>&nbsp;&nbsp;</option>
+<?php       foreach ($catsArray as $Cat) {
+            list($CatID, $CatName)=$Cat;  ?>
+            <option value="<?=$CatID?>"<?=($CatID==$SelectedCat?' selected="selected"':'')?>><?=$CatName?>  </option>
 <?php       } ?>
     </select>
 <?php
@@ -41,7 +40,7 @@ function print_categories($ElementID, $SelectedCat=-1)
     <h2>Automatic Awards schedule</h2>
     <form action="tools.php" method="post">
         <input type="hidden" name="action" value="awards_alter" />
-        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
         <table>
             <tr class="head">
                 <td colspan="9">Add Automatic Award item</td>
@@ -82,8 +81,8 @@ function print_categories($ElementID, $SelectedCat=-1)
                     </td>
                     <td>
                         <select name="type[<?=$ID?>]" id="type<?=$ID?>" onchange="Set_Edit('<?=$ID?>')" >
-<?php                           foreach ($AutoAwardTypes as $Act) {   ?>
-                                <option value="<?=$Act?>"><?=$Act?>&nbsp;&nbsp;&nbsp;&nbsp;</option>
+<?php                           foreach ($autoAwardTypes as $Act) {   ?>
+                                <option value="<?=$Act?>"><?=$Act?>    </option>
 <?php                           } ?>
                     </select>
                     </td>
@@ -100,7 +99,7 @@ function print_categories($ElementID, $SelectedCat=-1)
                           <input class="medium"  type="checkbox" name="active[<?=$ID?>]" id="active<?=$ID?>" value="1" checked="checked" onchange="Set_Edit('<?=$ID?>')" title="If checked this award will be automatically distributed to users who meet the specified requirements" />
                     </td>
                     <td rowspan="2">
-                        <a href="#" onclick="Fill_From(<?=$i?>,['badgeid','catid','image','type','value','sendpm','active','descr'])" title="fill other add forms with this forms values">fill</a>
+                        <a href="#" onclick="Fill_From(<?=$i?>,['badgeid', 'catid', 'image', 'type', 'value', 'sendpm', 'active', 'descr'])" title="fill other add forms with this forms values">fill</a>
                     </td>
                 </tr>
                 <tr class="rowb">
@@ -126,7 +125,7 @@ function print_categories($ElementID, $SelectedCat=-1)
                 </td>
                 <td colspan="4" style="text-align: center;">
                     <label for="returntop">return to top</label>
-                    <input type="checkbox" name="returntop" value="1" title="If checked you will return to the top of the page after adding (otherwise you will return to where the new items are in the list)" />
+                    <input type="checkbox" id="returntop" name="returntop" value="1" title="If checked you will return to the top of the page after adding (otherwise you will return to where the new items are in the list)" />
                 </td>
             </tr>
         </table>
@@ -141,7 +140,7 @@ function print_categories($ElementID, $SelectedCat=-1)
 
         <form action="tools.php" method="post">
             <input type="hidden" name="action" value="awards_alter" />
-            <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+            <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
             <input type="submit" name="createcats" value="Automatically Create Category award schedules - CAUTION - deletes all category awards first" title="Automatically create category award schedules" />
         </form>
     </div><br/>
@@ -149,7 +148,7 @@ function print_categories($ElementID, $SelectedCat=-1)
     <div class="head">Manage Automatic Awards</div>
     <form id="editawards" action="tools.php" method="post">
         <input type="hidden" name="action" value="awards_alter" />
-        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
         <table>
             <tr class="colhead">
                 <td width="10px" rowspan="2">Edit</td>
@@ -167,12 +166,13 @@ function print_categories($ElementID, $SelectedCat=-1)
             </tr>
 <?php
 
-            $DB->query("SELECT ba.ID, ba.BadgeID, Title, Action, SendPM, Value, CategoryID, Description, Image , Active
+            $records = $master->db->rawQuery("SELECT ba.ID, ba.BadgeID, Title, Action, SendPM, Value, CategoryID, Description, Image , Active
                       FROM badges_auto AS ba
-                      JOIN badges AS b ON b.ID=ba.BadgeID ORDER BY b.Sort");
+                      JOIN badges AS b ON b.ID=ba.BadgeID ORDER BY b.Sort")->fetchAll(\PDO::FETCH_NUM);
 
             $Row = 'b';
-            while (list($ID, $BadgeID, $Name, $Action, $SendPM, $Value, $CategoryID, $Description, $Image, $Active) = $DB->next_record()) {
+            foreach ($records as $record) {
+                list($ID, $BadgeID, $Name, $Action, $SendPM, $Value, $CategoryID, $Description, $Image, $Active) = $record;
                   $Row = ($Row === 'a' ? 'b' : 'a');
 ?>
 
@@ -193,8 +193,8 @@ function print_categories($ElementID, $SelectedCat=-1)
                     </td>
                     <td>
                         <select name="type[<?=$ID?>]" onchange="Set_Edit('<?=$ID?>')" >
-<?php                           foreach ($AutoAwardTypes as $Act) {   ?>
-                                <option value="<?=$Act?>"<?=($Act==$Action?' selected="selected"':'')?> ><?=$Act?>&nbsp;&nbsp;&nbsp;&nbsp;</option>
+<?php                           foreach ($autoAwardTypes as $Act) {   ?>
+                                <option value="<?=$Act?>"<?=($Act==$Action?' selected="selected"':'')?> ><?=$Act?>    </option>
 <?php                           } ?>
                         </select>
                     </td>

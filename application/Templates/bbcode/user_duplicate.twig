@@ -1,0 +1,16 @@
+Verify the following user invite(s)!
+
+It may be possible a new user invites was recruited with a previous account onsite.
+
+Inviter: /user.php?id={{ inviter }}
+
+Invitee Email: {{ email }}
+
+Invite Comment: {{ inviteComment }}
+
+{% for user in existing %}
+    /user.php?id={{ user.UserID }}
+{% endfor %}
+
+
+[url=/user.php?action=search&action=search&comment={{ inviteComment }}]Find Previous Users[/url]

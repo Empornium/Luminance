@@ -20,14 +20,29 @@ function confirmDelete(id)
         [<a href="/tools.php">Back to Tools</a>]
     </div>
 <?php
-$DB->query("SELECT p.ID, p.Name, p.Level, p.DisplayStaff, p.MaxSigLength, p.MaxAvatarWidth,
-                   p.MaxAvatarHeight, p.Color, p.isAutoPromote, p.reqWeeks, p.reqUploaded,
-                   p.reqTorrents, p.reqForumPosts, p.reqRatio, COUNT(u.ID)
-                   FROM permissions AS p LEFT JOIN users_main AS u ON u.PermissionID=p.ID
-                   WHERE p.IsUserClass='1'
-                   GROUP BY p.ID
-                   ORDER BY p.IsUserClass DESC, p.Level ASC");
-if ($DB->record_count()) {
+$records = $master->db->rawQuery(
+    "SELECT p.ID,
+            p.Name,
+            p.Level,
+            p.DisplayStaff,
+            p.MaxSigLength,
+            p.MaxAvatarWidth,
+            p.MaxAvatarHeight,
+            p.Color,
+            p.isAutoPromote,
+            p.reqWeeks,
+            p.reqUploaded,
+            p.reqTorrents,
+            p.reqForumPosts,
+            p.reqRatio,
+            COUNT(um.ID)
+       FROM permissions AS p
+  LEFT JOIN users_main AS um ON um.PermissionID=p.ID
+      WHERE p.IsUserClass='1'
+   GROUP BY p.ID
+   ORDER BY p.IsUserClass DESC, p.Level ASC"
+)->fetchAll(\PDO::FETCH_NUM);
+if ($master->db->foundRows() > 0) {
 ?>
     <table>
         <tr class="colhead">
@@ -46,9 +61,10 @@ if ($DB->record_count()) {
             <td width="10%" class="center">User Count</td>
             <td width="18%" class="center">Actions</td>
         </tr>
-<?php 	while (list($ID, $Name, $Level, $DisplayStaff, $MaxSigLength, $MaxAvatarWidth,
+<?php   foreach ($records as $record) {
+            list($ID, $Name, $Level, $DisplayStaff, $MaxSigLength, $MaxAvatarWidth,
                     $MaxAvatarHeight, $Color, $IsAutoPromote, $reqWeeks, $reqUploaded,
-                    $reqTorrents, $reqForumPosts, $reqRatio, $UserCount)=$DB->next_record()) {
+                    $reqTorrents, $reqForumPosts, $reqRatio, $UserCount) = $record;
 
 ?>
         <tr <?=$IsAutoPromote=='0'&&$DisplayStaff!='1'? 'title="AutoPromote must be turned ON to see requirements"' : ''; ?>  >
@@ -74,31 +90,34 @@ if ($DB->record_count()) {
 <?php  } ?>
 
       <br/>
-      <h2>Group Permissions</h2>
+      <h2>Secondary Permissions</h2>
     <div class="linkbox">
-        [<a href="/tools.php?action=permissions&amp;id=new&amp;isclass=0">Create a new Group Permissions</a>]
+        [<a href="/tools.php?action=permissions&amp;id=new&amp;isclass=0">Create a new Secondary Class Permissions</a>]
         [<a href="/tools.php">Back to Tools</a>]
     </div>
 
 <?php
-$DB->query("SELECT p.ID,p.Name,p.Description,p.IsUserClass,p.Color, COUNT(u.ID)
-                   FROM permissions AS p LEFT JOIN users_main AS u ON u.GroupPermissionID=p.ID
+$records = $master->db->rawQuery("SELECT p.ID, p.Name, p.Level, p.Description, p.IsUserClass, p.Color, COUNT(um.ID)
+                   FROM permissions AS p LEFT JOIN users_main AS um ON um.GroupPermissionID=p.ID
                    WHERE p.IsUserClass='0'
                    GROUP BY p.ID
-                   ORDER BY p.IsUserClass DESC, p.Level ASC");
-if ($DB->record_count()) {
+                   ORDER BY p.IsUserClass DESC, p.Level ASC")->fetchAll(\PDO::FETCH_NUM);
+if ($master->db->foundRows() > 0) {
 ?>
     <table style="width:50%;margin:0px auto;">
         <tr class="colhead">
             <td width="18%">Name</td>
+            <td width="18%">Level</td>
             <td width="18%">Description</td>
             <td width="10%">User Count</td>
             <td width="8%" class="center">Color</td>
             <td width="20%" class="center">Actions</td>
         </tr>
-<?php 	while (list($ID,$Name,$Description,$IsUserClass,$Color,$UserCount)=$DB->next_record()) {  ?>
+<?php 	foreach ($records as $record) {
+            list($ID, $Name, $Level, $Description, $IsUserClass, $Color, $UserCount) = $record;  ?>
         <tr>
             <td><?=display_str($Name); ?></td>
+            <td><?=number_format($Level); ?></td>
             <td><?=display_str($Description); ?></td>
             <td><?=number_format($UserCount); ?></td>
             <td class="center"><span style="font-weight:bold;display:block;width:100%;height:100%;color:white;background-color: #<?=display_str($Color)?>">#<?=$Color?></span></td>

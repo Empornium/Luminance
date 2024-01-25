@@ -1,0 +1,141 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    Forum
+{% endblock %}
+
+{% block main_content %}
+    {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::FORUM')) %}
+    {{ render.latestForumThreads() }}
+    <div class="linkbox">
+        [<a href="/forum/catchup">Catch up</a>]&nbsp;
+        [<a href="#" onclick="$('#searchforum').toggle(); this.innerHTML = (this.innerHTML == 'Search all forums'?'Hide Search':'Search forum'); return false;">Search forum</a>]&nbsp;
+        [<a href="/forum/unread">Unread Posts</a>]
+    </div>
+    <div id="searchforum" class="hidden">
+        <div>
+            <br />
+            <div class="head">Search forum</div>
+            <form action="/forum/search" method="get">
+                <table cellpadding="6" cellspacing="1" border="0" class="border">
+                    <tr>
+                        <td class="label"><strong>Search for:</strong></td><td><input type="text" id="searchbox" name="terms" size="70" /></td>
+                    </tr>
+                    <tr>
+                        <td class="label"><strong>Search in:</strong></td>
+                        <td>
+                            <input type="radio" name="type" id="type_title" value="title" checked="checked" />
+                            <label for="type_title">Titles</label>
+                            <input type="radio" name="type" id="type_body" value="body" />
+                            <label for="type_body">Post bodies</label>
+                        </td>
+                    <tr>
+                        <td class="label"><strong>Username:</strong></td><td><input type="text" id="username" name="username" size="70" /></td>
+                    </tr>
+                    <tr><td colspan="2" class="align_center"><input type="submit" name="submit" value="Search" /></td></tr>
+                </table>
+            </form>
+            <br />
+        </div>
+    </div>
+
+    {% for category in categories %}
+        <div class="head">{{ category.Name|decode }}</div>
+        <table class="forum_index">
+            <tr class="colhead">
+                <td style="width:2%;"></td>
+                <td style="width:30%;">Forum</td>
+                <td>Last Post</td>
+                <td style="width:7%;" class="align_center">Threads</td>
+                <td style="width:7%;" class="align_center">Posts</td>
+            </tr>
+            {% for forum in category.forums %}
+                {% set unread = '' %}
+                {% set icons  = [] %}
+                {% set title  = '' %}
+                {% set sticky = '' %}
+                {% if forum.lastThread.hasUnread(ActiveUser) %}
+                    {% set unread = 'forum_hint_unread' %}
+                {% endif %}
+                {% if forum.lastThread.IsLocked %}
+                    {% set icons = icons|merge(['forum_locked']) %}
+                    {% set title = title ~ 'Locked ' %}
+                {% endif %}
+                {% if forum.lastThread.IsSticky %}
+                    {% set icons = icons|merge(['forum_pinned']) %}
+                    {% set title = title ~ 'Pinned ' %}
+                    {% set sticky = 'sticky' %}
+                {% endif %}
+                {% if not forum.lastThread.IsLocked and not forum.lastThread.IsSticky %}
+                    {% set icons = ['forum_read'] %}
+                    {% set title = 'Forum ' %}
+                {% endif %}
+                <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                    <td>
+                        <span class="forum_icon_container" title="{{ title }}Thread">
+                            {{ icon.render("forum_icons #{unread}", icons) }}
+                        </span>
+                    </td>
+                    <td>
+                        <h4 class="min_padding">
+                            <a href="/forum/{{ forum.ID }}" title="{{ forum.Description|decode }}">{{ forum.Name|decode }}</a>
+                        </h4>
+                    </td>
+                    {% if forum.numThreads == 0 %}
+                        <td colspan="3">
+                            There are no topics here
+                            {% if ActiveUser.class.Level >= forum.MinClassCreate %}
+                                <a href="/forum/{{ forum.ID}}/new">create one</a>
+                            {% endif %}
+                        </td>
+                    {% else %}
+                        <td>
+                            <span class="float_left last_thread">
+                                <a href="/forum/thread/{{ forum.lastThread.ID }}" title="{{ forum.lastthread.Title|decode }}">{{ forum.lastThread.Title|truncate(50)|decode }}</a>
+                            </span>
+                            {% if forum.lastThread.lastRead(ActiveUser) is not empty %}
+                                <span class="float_left" title="Jump to last read">
+                                    <a href="/forum/thread/{{ forum.lastThread.ID }}?postid={{ forum.lastThread.lastRead(ActiveUser).PostID }}#post{{ forum.lastThread.lastRead(ActiveUser).PostID }}">
+                                        {{ icon.render("forum_icons clickable", ['forum_latest']) }}
+                                    </a>
+                                </span>
+                            {% endif %}
+                            {% set usernameOptions = {
+                                'drawInBox' : false,
+                                'colorname' : false,
+                                'dropDown'  : false,
+                                'useSpan'   : true,
+                                'noIcons'   : true,
+                                'noGroup'   : true,
+                                'noClass'   : true,
+                                'noTitle'   : true,
+                            } %}
+                            <span class="float_right" class="last_poster">by {{ render.username(forum.lastThread.lastPost.AuthorID, usernameOptions) }} {{ time_diff(forum.lastThread.lastPost.AddedTime,1)|raw }}</span>
+                        </td>
+                        <td class="align_center">{{ forum.numThreads|number_format() }}</td>
+                        <td class="align_center">{{ forum.numPosts|number_format() }}</td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+        </table>
+    {% endfor %}
+    <div class="linkbox">
+        [<a href="/forum/catchup">Catch up</a>]&nbsp;
+        [<a href="/forum/unread">Unread Posts</a>]
+    </div>
+    <div class="linkbox">
+    </div>
+    {% endif %}
+    {% if master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::FORUM')) %}
+    <div class="box pad" align="center">
+    <b>Your forum privileges have been revoked!</b><br><br>
+    <a href="{{ settings.links.rules }}"> View the site rules</a>
+    </div>
+    {% endif %}
+{% endblock %}

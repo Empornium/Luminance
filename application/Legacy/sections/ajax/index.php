@@ -108,5 +108,5 @@ switch ($_GET['action']) {
         break;
     default:
         // If they're screwing around with the query string
-        print json_encode(array('status' => 'failure'));
+        print json_encode(['status' => 'failure']);
 }

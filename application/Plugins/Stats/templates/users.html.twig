@@ -1,0 +1,105 @@
+{% extends "@Stats/stats.html.twig" %}
+
+{% block title %}
+    User statistics
+{% endblock %}
+
+{% block stats_content %}
+        <div class="head">User Flow</div>
+        <div class="box pad center">
+            <h1>User Flow</h1>
+            <div id="chart_div" data-load_chart="/stats/user_flow_chart"></div>
+        </div>
+        <br/>
+
+        <div class="head">User Classes</div>
+        <div class="box pad center">
+            <h1>User Classes</h1>
+            <div>
+                [<a onclick="$('#classdist2').hide(); $('#classdist3').hide(); $('#classdist1').show(); redrawChart('classdist1'); return false;" href="#" >active</a>]&nbsp;&nbsp;&nbsp;
+                [<a onclick="$('#classdist1').hide(); $('#classdist3').hide(); $('#classdist2').show(); redrawChart('classdist2'); return false;" href="#" >last month</a>]&nbsp;&nbsp;&nbsp;
+                [<a onclick="$('#classdist1').hide(); $('#classdist2').hide(); $('#classdist3').show(); redrawChart('classdist3'); return false;" href="#" >last week</a>]&nbsp;&nbsp;&nbsp;
+            </div>
+            <div id="classdist1" data-load_chart="/stats/class_dist_active_chart" class="center"></div>
+            <div id="classdist2" data-load_chart="/stats/class_dist_month_chart"  class="center hidden"></div>
+            <div id="classdist3" data-load_chart="/stats/class_dist_week_chart"   class="center hidden"></div>
+        </div>
+        <br/>
+
+        <div class="head">User Platforms</div>
+        <div class="box pad center">
+            <h1>User Platforms</h1>
+            <div id="platformdist" class="center" data-load_chart="/stats/user_platforms_chart" ></div>
+        </div>
+        <br/>
+
+        <div class="head">User Browsers</div>
+        <div class="box pad center">
+            <h1>User Browsers</h1>
+                <div id="browserdist" class="center" data-load_chart="/stats/user_browsers_chart"></div>
+        </div>
+        <br/>
+
+        <div class="head">User Clients</div>
+        <div class="box pad center">
+            <h1>User Clients</h1>
+            <div class=" ">
+                [<a onclick="$('#clientdist1').hide(); $('#clientdist2').hide(); $('#clientdist3').show(); redrawChart('clientdist3'); return false;" href="#" >clients</a>]&nbsp;&nbsp;&nbsp;
+                [<a onclick="$('#clientdist1').hide(); $('#clientdist3').hide(); $('#clientdist2').show(); redrawChart('clientdist2'); return false;" href="#" >major version</a>]&nbsp;&nbsp;&nbsp;
+                [<a onclick="$('#clientdist2').hide(); $('#clientdist3').hide(); $('#clientdist1').show(); redrawChart('clientdist1'); return false;" href="#" >minor version</a>]
+            </div>
+            <br />
+            <div id="clientdist1" data-load_chart="/stats/client_minor_chart" class="center hidden"></div>
+            <div id="clientdist2" data-load_chart="/stats/client_major_chart" class="center hidden"></div>
+            <div id="clientdist3" data-load_chart="/stats/client_chart" class="center"></div>
+        </div>
+        <br/>
+
+        <div class="head">Geographical Distribution Map</div>
+        <div class="box center">
+            <h1>Geographical Distribution Map</h1>
+              <br />
+              <div id="worldgeodist" data-load_chart="/stats/choro_world_chart" class="center"></div>
+              {#
+              <br />
+              <div id="northamericageodist" data-load_chart="/stats/choro_north_america_chart" class="center"></div>
+              <br />
+              <div id="worldgeodist" data-load_chart="/stats/choro_europe_chart" class="center"></div>
+              <br />
+              <div id="worldgeodist" data-load_chart="/stats/choro_south_america_chart" class="center"></div>
+              <br />
+              <div id="worldgeodist" data-load_chart="/stats/choro_a_chart" class="center"></div>
+              <br />
+              <div id="worldgeodist" data-load_chart="/stats/choro_world_chart" class="center"></div>
+              <br />
+              <div id="worldgeodist" data-load_chart="/stats/choro_world_chart" class="center"></div>
+              #}
+              <br /><br />
+              <table style="width:90%;margin: 0px auto;">
+                  {% for user in users %}
+                      {% if loop.index0 is divisible by(6) %}
+                          <tr>
+                      {% endif %}
+                          <td>
+                      <td style="width:100px; padding: 0px 10px;">
+                          <table style="width:100px; border:1px solid #c4c4c4; border-bottom: none">
+                              <tr>
+                                  <td class="rowa" style="width:50px" title="{{ user.CountryName }}">{{ user.Code}}</td>
+                                  <td class="rowb" style="width:50px">{{ user.Users }}</td>
+                              </tr>
+                          </table>
+                      </td>
+                      {% if loop.index is not divisible by(5) and loop.last %}
+                          <td colspan={{ 6 - loop.index % 6 }}></td>
+                      {% endif %}
+                      {% if (loop.index is divisible by(6) and not loop.first) or loop.last %}
+                          </tr>
+                      {% endif %}
+                  {% endfor %}
+              </table>
+              <br /><br />
+              <p class="small">GeoLite data used under Creative Commons Attribution-ShareAlike 3.0 Unported License<br/>GeoLite data from MaxMind, available from https://www.maxmind.com</p>
+        </div>
+    </div>
+    <?php
+{% endblock %}

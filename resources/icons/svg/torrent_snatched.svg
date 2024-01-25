@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+  version="1.1"
+  id="torrent_snatched"
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  viewBox="0 0 16 16">
+  <path
+     d="M 6.2222222,4.8906315 V 1.3350765 L 0,7.5572985 6.2222222,13.77952 v -3.646187 c 4.4444448,0 7.5572988,1.422222 9.7777778,4.53159 C 15.111111,10.223964 12.444444,5.7795205 6.2222222,4.8906315 Z"
+  />
+</svg>

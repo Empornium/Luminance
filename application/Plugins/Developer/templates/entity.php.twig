@@ -1,0 +1,53 @@
+<?php
+namespace Luminance\Entities;
+
+use Luminance\Core\Entity;
+
+/**
+ * {{ entityName }} Entity representing rows from the `{{ dbTableName }}` DB table.
+ */
+class {{ entityName }} extends Entity {
+
+    /**
+     * $table contains a string identifying the DB table this entity is related to.
+     * @var string
+     *
+     * @access public
+     * @static
+     */
+    public static $table = '{{ dbTableName }}';
+
+{% block definition %}
+{% if properties %}
+    /**
+     * DB rows and their respective parameters.
+     * @var array
+     *
+     * @access public
+     * @static
+     */
+    public static $properties = [
+{% set align = max(properties|map((v, k) => k|length)) %}
+{% for name, attributes in properties %}
+        '{{ name }}' {% for i in range(0, (align-name|length)) %} {% endfor %}=> {{ attributes|raw }}
+{% endfor %}
+    ];
+{% endif %}
+
+{% if indexes %}
+    /**
+     * DB indexes.
+     * @var array
+     *
+     * @access public
+     * @static
+     */
+    public static $indexes = [
+{% set align = max(properties|map((v, k) => k|length)) %}
+{% for name, attributes in indexes %}
+        '{{ name }}' {% for i in range(0, (align-name|length)) %} {% endfor %}=> {{ attributes|raw }}
+{% endfor %}
+    ];
+{% endif %}
+{% endblock %}
+}

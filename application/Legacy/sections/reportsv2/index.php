@@ -4,13 +4,15 @@
  * This is the index page, it is pretty much reponsible only for the switch statement.
  */
 
+use Luminance\Entities\User;
+
 enforce_login();
 
-if ($master->repos->restrictions->is_restricted($LoggedUser['ID'], \Luminance\Entities\Restriction::REPORT)) {
+if ($master->repos->restrictions->isRestricted($activeUser['ID'], \Luminance\Entities\Restriction::REPORT)) {
     error('Your report rights have been disabled.');
 }
 
-include 'array.php';
+$types = (new class { use \Luminance\Legacy\sections\reportsv2\types; })::getTypes();
 
 if (isset($_REQUEST['action'])) {
     switch ($_REQUEST['action']) {
@@ -62,18 +64,30 @@ if (isset($_REQUEST['action'])) {
             break;
     }
 } else {
-    if ($_POST['sendmessage'] == 'Send message to selected user') {
+    if (($_POST['sendmessage'] ?? '') == 'Send message to selected user') {
         authorize();
 
-            if(empty($_POST['reportid']) || !is_number($_POST['reportid'])) error(0);
+            if (empty($_POST['reportid']) || !is_integer_string($_POST['reportid'])) error(0);
 
             $ReportID = (int) $_POST['reportid'];
-            $ConvID = startStaffConversation($_POST['toid'], $_POST['subject'], $_POST['message']);
+            $user = $master->repos->users->load((int) ($_POST['toid'] ?? 0));
+            if (!($user instanceof User)) {
+                error('Unknown user');
+            }
+            $ConvID = startStaffConversation($user->ID, $_POST['subject'], $_POST['message']);
 
-            $Comment=db_string(sqltime()." - {$LoggedUser['Username']} - [url=/staffpm.php?action=viewconv&id=$ConvID]Sent Message to {$_POST['username']}[/url]");
-            $DB->query("UPDATE reportsv2 SET LogMessage=CONCAT_WS( '\n', LogMessage, '$Comment') WHERE ID='$ReportID'");
-            $DB->query("INSERT INTO reportsv2_conversations ( `ReportID` , `ConvID` )
-                             VALUES ('$ReportID', '$ConvID') ");
+            $Comment = sqltime()." - {$activeUser['Username']} - [url=/staffpm.php?action=viewconv&id=$ConvID]Sent Message to {$user->Username}[/url]";
+            $master->db->rawQuery(
+                "UPDATE reportsv2
+                    SET LogMessage = CONCAT_WS(CHAR(10 using utf8), LogMessage, ?)
+                  WHERE ID = ?",
+                [$Comment, $ReportID]
+            );
+            $master->db->rawQuery(
+                "INSERT INTO reportsv2_conversations (`ReportID` , `ConvID`)
+                      VALUES (?, ?)",
+                [$ReportID, $ConvID]
+            );
 
             header("Location: reportsv2.php?view=report&id=$ReportID");
 

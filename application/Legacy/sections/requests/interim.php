@@ -1,17 +1,23 @@
 <?php
-if (!isset($_GET['id']) || !is_number($_GET['id'])) { error(404); }
+if (!isset($_GET['id']) || !is_integer_string($_GET['id'])) { error(404); }
 $RequestID = $_GET['id'];
 
 $Action = $_GET['action'];
 if ($Action != "unfill" && $Action != "delete" && $Action != "delete_vote") {
     error(404);
 }
+$Title = ucwords(str_replace('_', ' ', $Action));
 
-$DB->query("SELECT UserID, FillerID FROM requests WHERE ID = ".$_GET['id']);
-list($RequestorID, $FillerID) = $DB->next_record();
+list($RequestorID, $FillerID) = $master->db->rawQuery(
+    "SELECT UserID,
+            FillerID
+       FROM requests
+      WHERE ID = ?",
+    [$_GET['id']]
+)->fetch(\PDO::FETCH_NUM);
 
 if ($Action == 'unfill') {
-    if ($LoggedUser['ID'] != $RequestorID && $LoggedUser['ID'] != $FillerID && !check_perms('site_moderate_requests')) {
+    if ($activeUser['ID'] != $RequestorID && $activeUser['ID'] != $FillerID && !check_perms('site_moderate_requests')) {
         error(403);
     }
 } elseif ($Action == "delete" || $Action == "delete_vote") {
@@ -20,24 +26,24 @@ if ($Action == 'unfill') {
     }
 }
 
-$Request = get_requests(array($RequestID));
+$Request = get_requests([$RequestID]);
 $Request = $Request['matches'][$RequestID];
 if (empty($Request)) {
     error(404);
 }
 
-show_header(ucwords($Action)." Request");
+show_header(ucwords($Title)." Request");
 ?>
 <div class="thin middle_column">
     <div style="width:800px;margin:20px auto;">
         <div class="head">
-            <?=ucwords($Action)?> Request
+            <?=ucwords($Title)?> Request
         </div>
         <form action="requests.php" method="post">
             <table class="box pad">
                 <tr>
                     <td class="label">
-                        <img style="float:right" src="<?=( 'static/common/caticons/' . $NewCategories[$Request['CategoryID']]['image'])?>" />
+                        <img style="float:right" src="<?=( 'static/common/caticons/' . $newCategories[$Request['CategoryID']]['image'])?>" />
                     </td>
                     <td style="font-size: 1.2em;font-weight:bold;">
                         <?=$Request['Title']?>
@@ -47,12 +53,12 @@ show_header(ucwords($Action)." Request");
                     <td class="label">Votes</td>
                     <td>
                         <input type="hidden" name="action" value="take<?=$Action?>" />
-                        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                         <input type="hidden" name="id" value="<?=$RequestID?>" />
         <?php  if ($Action == 'delete') { ?>
                         <div class="warning">To return all bounties to users make sure the 'Return Bounties' option is checked.</div>
         <?php
-                        echo get_votes_html( get_votes_array($RequestID), $RequestID );
+                        echo get_votes_html(get_votes_array($RequestID), $RequestID);
         ?>
                         <input type="checkbox" name="returnvotes" checked="checked" value="1" /> Return all Bounties to voters.<br \>
                         (When bounties are returned all voters will get a 'returned bounty' system PM, the request uploader always receives a 'deleted request' system PM)<br />
@@ -73,7 +79,7 @@ show_header(ucwords($Action)." Request");
                 </tr>
                 <tr>
                     <td colspan="2" class=center>
-                        <input value="<?=ucwords($Action)?>" type="submit" />
+                        <input value="<?=$Title?>" type="submit" />
                     </td>
                 </tr>
             </table>

@@ -1,25 +1,22 @@
-
-function change_status(onoff){
+function change_status(onoff) {
     var ToPost = [];
     ToPost['auth'] = authkey;
     //ToPost['location'] = location;
     if (onoff=='0') ToPost['remove'] = 1;
-    ajax.post("torrents.php?action=change_status", ToPost, function(response){
-		$('#staff_status').raw().innerHTML = response;
+    ajax.post("/torrents.php?action=change_status", ToPost, function(response) {
+        $('#staff_status').raw().innerHTML = response;
     });
 }
 
-
-function Update_status(){
+function Update_status() {
     var ToPost = [];
     ToPost['auth'] = authkey;
-    ajax.post("torrents.php?action=update_status", ToPost, function(response){
-		$('#staff_status').raw().innerHTML = response;
+    ajax.post("/torrents.php?action=update_status", ToPost, function(response) {
+        $('#staff_status').raw().innerHTML = response;
     });
 }
 
-function Status_Timer()
-{
+function Status_Timer() {
     var interval_id, bool = true, timeout = 15000;
 
     // This independent timer makes sure we don't run the update
@@ -47,3 +44,19 @@ function Status_Timer()
         interval_id = 0;
     });
 }
+
+jQuery(document).ready(function() {
+    if (jQuery('#staff_status').length) {
+        Status_Timer();
+    }
+});
+
+jQuery(window).on("load", function() {
+    if (jQuery('#staff_status').length) {
+        jQuery('#descbox img').each(function(){
+            var width  = jQuery(this).get(0).naturalWidth;
+            var height = jQuery(this).get(0).naturalHeight;
+            jQuery(this).wrap('<span class="bbcode tooltip" title="' + width + 'x' + height + '"></span>');
+        });
+    }
+});

@@ -1,14 +1,14 @@
 <?php
 /* AJAX Previews, simple stuff. */
 
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
 $Content = $_REQUEST['body'];
 $Imageurl = $_REQUEST['image'];
 $AuthorID = (int) $_REQUEST['authorid'];
 if (!empty($Imageurl)) {
-    if ($Text->valid_url($Imageurl)) {
-        $Imageurl = "<div style=\"text-align: center;\" class=\"box pad\">". $Text->full_format('[img]'.$Imageurl.'[/img]',false,true)."</div>";
+    if ($bbCode->valid_url($Imageurl)) {
+        $Imageurl = "<div style=\"text-align: center;\" class=\"box pad\">". $bbCode->full_format('[img]'.$Imageurl.'[/img]',false,true)."</div>";
     } else {
         $Imageurl = "<div style=\"text-align: center;\"><strong class=\"important_text\">Not a valid url</strong></div>";
     }
@@ -23,6 +23,6 @@ echo '
                             <br />
                             <div class="box pad">
                             <div class="body">
-            '.$Text->full_format($Content, get_permissions_advtags($AuthorID), true).'
+            '.$bbCode->full_format($Content, get_permissions_advtags($AuthorID), true).'
                             </div>
                             </div>';

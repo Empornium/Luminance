@@ -10,96 +10,98 @@ much.
 // Number of users per page
 define('FRIENDS_PER_PAGE', '50');
 
-show_header('Friends','jquery');
+show_header('Friends', 'jquery');
 
-$UserID = $LoggedUser['ID'];
+$userID = $activeUser['ID'];
 
 $FType = isset($_REQUEST['type'])?$_REQUEST['type']:'friends';
-if(!in_array($FType, array('friends','blocked'))) error(0);
+if (!in_array($FType, ['friends', 'blocked'])) error(0);
 
-list($Page,$Limit) = page_limit(FRIENDS_PER_PAGE);
+list($Page, $Limit) = page_limit(FRIENDS_PER_PAGE);
 
 // Main query
-$DB->query("SELECT
-    SQL_CALC_FOUND_ROWS
-    f.FriendID,
-    f.Comment,
-    m.Username,
-    m.Uploaded,
-    m.Downloaded,
-    m.PermissionID,
-    p.Level,
-    m.GroupPermissionID,
-    m.Enabled,
-    m.Paranoia,
-    i.Donor,
-    m.Title,
-    m.LastAccess,
-    i.Avatar
-    FROM friends AS f
-    JOIN users_main AS m ON f.FriendID=m.ID
-    JOIN users_info AS i ON f.FriendID=i.UserID
-    JOIN permissions AS p ON p.ID=m.PermissionID
-    WHERE f.UserID='$UserID'
-        AND f.Type='$FType'
-    ORDER BY Username LIMIT $Limit");
-$Friends = $DB->to_array(false, MYSQLI_BOTH, array(9)); # This number should be the proper idx for m.Paranoia!
+$friends = $master->db->rawQuery(
+    "SELECT SQL_CALC_FOUND_ROWS
+            f.FriendID,
+            f.Comment,
+            fu.Username,
+            fum.Uploaded,
+            fum.Downloaded,
+            fum.PermissionID,
+            fp.Level,
+            fum.GroupPermissionID,
+            fum.Enabled,
+            fum.Paranoia,
+            fui.Donor,
+            fum.Title,
+            fum.LastAccess,
+            fui.Avatar
+       FROM friends AS f
+       JOIN users AS fu ON  f.FriendID=fu.ID
+       JOIN users_main AS fum ON f.FriendID=fum.ID
+       JOIN users_info AS fui ON f.FriendID=fui.UserID
+       JOIN permissions AS fp ON fp.ID=fum.PermissionID
+      WHERE f.UserID = ?
+        AND f.Type = ?
+   ORDER BY Username
+      LIMIT $Limit",
+    [$userID, $FType]
+)->fetchAll(\PDO::FETCH_BOTH);
 
 // Number of results (for pagination)
-$DB->query('SELECT FOUND_ROWS()');
-list($Results) = $DB->next_record();
+$results = $master->db->foundRows();
 
 // Start printing stuff
 ?>
 <div class="thin">
-      <h2><?=( $FType=='friends'?'friends':'blocked users' )?></h2>
+      <h2><?=($FType == 'friends' ? 'friends' : 'blocked users')?></h2>
     <div class="linkbox">
 <?php
 // Pagination
-$Pages=get_pages($Page,$Results,FRIENDS_PER_PAGE,9);
+$Pages = get_pages($Page, $results, FRIENDS_PER_PAGE, 9);
 echo $Pages;
 
-if ($Results > 0) {
+if ($results > 0) {
 ?>
         <span style="float:right;">&nbsp;&nbsp;[<a href="#" onclick="Toggle_All(false);">hide all</a>]</span>&nbsp;
         <span style="float:right;">&nbsp;&nbsp;[<a href="#" onclick="Toggle_All(true);">show all</a>]</span>&nbsp;
 <?php
 }
-        $OtherType=( $FType=='friends'?'blocked':'friends' );
+        $OtherType=($FType == 'friends' ? 'blocked' : 'friends');
 ?>
         <span style="float:left;">&nbsp;[<a href="/friends.php?type=<?=$OtherType?>" ><?=$OtherType?> list</a>]</span>&nbsp;
     </div>
     <div class="head"><?=ucfirst($FType)?> list</div>
     <div class="box pad">
 <?php
-if ($Results == 0) {
-    echo '<p>You have no '.( $FType=='friends'?'friends! :(':'blocked users' ).'</p>';
+if ($results == 0) {
+    echo '<p>You have no '.($FType == 'friends' ? 'friends! :(' : 'blocked users').'</p>';
 } else {
     // Start printing out friends
-    foreach ($Friends as $Friend) {
-          list($FriendID, $Comment, $Username, $Uploaded, $Downloaded, $Class, $Level, $GroupPermID, $Enabled, $Paranoia, $Donor, $Title, $LastAccess, $Avatar) = $Friend;
+    foreach ($friends as $Friend) {
+          list($FriendID, $Comment, $Username, $Uploaded, $Downloaded, $class, $Level, $GroupPermID, $enabled, $paranoia, $Donor, $Title, $LastAccess, $Avatar) = $Friend;
     ?>
     <form action="friends.php" method="post">
-          <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+          <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
           <input type="hidden" name="type" value="<?=$FType?>" />
           <table class="friends_table vertical_margin">
                 <tr>
                       <td class="colhead" colspan="3">
-                            <span style="float:left;"><?=format_username($FriendID, $Username, $Donor, true, $Enabled, $Class, $Title, true, $GroupPermID)?>
-    <?php 	if (check_paranoia('ratio', $Paranoia, $Level, $FriendID)) { ?>
+                            <span style="float:left;"><?=format_username($FriendID, $Donor, true, $enabled, $class, $Title, true, $GroupPermID)?>
+    <?php 	if (check_paranoia('ratio', $paranoia, $Level, $FriendID)) { ?>
                             &nbsp;Ratio: <strong><?=ratio($Uploaded, $Downloaded)?></strong>
     <?php 	} ?>
-    <?php 	if (check_paranoia('uploaded', $Paranoia, $Level, $FriendID)) { ?>
+    <?php 	if (check_paranoia('uploaded', $paranoia, $Level, $FriendID)) { ?>
                             &nbsp;Up: <strong><?=get_size($Uploaded)?></strong>
     <?php 	} ?>
-    <?php 	if (check_paranoia('downloaded', $Paranoia, $Level, $FriendID)) { ?>
+    <?php 	if (check_paranoia('downloaded', $paranoia, $Level, $FriendID)) { ?>
                             &nbsp;Down: <strong><?=get_size($Downloaded)?></strong>
     <?php 	} ?>
                             </span>
 
                             <span style="float:right;">&nbsp;&nbsp;<a href="#" class="togglelink" onclick="$('#friend<?=$FriendID?>').toggle(); this.innerHTML=(this.innerHTML=='(Hide)'?'(View)':'(Hide)'); return false;">(View)</a></span>&nbsp;
 
-    <?php 	if (check_paranoia('lastseen', $Paranoia, $Level, $FriendID)) { ?>
+    <?php 	if (check_paranoia('lastseen', $paranoia, $Level, $FriendID)) { ?>
                             <span style="float:right;"><?=time_diff($LastAccess)?></span>
     <?php 	} ?>
                       </td>
@@ -107,7 +109,7 @@ if ($Results == 0) {
                 <tr id="friend<?=$FriendID?>" class="hidden friendinfo">
                       <td width="50px" valign="top">
     <?php
-          if (empty($HeavyInfo['DisableAvatars'])) {
+          if (empty($heavyInfo['DisableAvatars'])) {
                 if (!empty($Avatar)) {
           ?>
                                   <img src="<?=$Avatar?>" alt="<?=$Username?>'s avatar" width="50px" />

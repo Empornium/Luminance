@@ -1,63 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-
 <svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="16"
-   height="16"
-   viewBox="0 0 4.2333332 4.2333335"
-   version="1.1"
-   id="svg4492"
-   inkscape:version="0.92.1 r"
-   sodipodi:docname="nav_myrequests.svg">
-  <defs
-     id="defs4486" />
-  <sodipodi:namedview
-     id="base"
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:pageopacity="0.0"
-     inkscape:pageshadow="2"
-     inkscape:zoom="54.9375"
-     inkscape:cx="7.8230134"
-     inkscape:cy="8"
-     inkscape:document-units="px"
-     inkscape:current-layer="layer1"
-     showgrid="false"
-     units="px"
-     inkscape:window-width="1600"
-     inkscape:window-height="1605"
-     inkscape:window-x="1600"
-     inkscape:window-y="55"
-     inkscape:window-maximized="0" />
-  <metadata
-     id="metadata4489">
-    <rdf:RDF>
-      <cc:Work
-         rdf:about="">
-        <dc:format>image/svg+xml</dc:format>
-        <dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
-      </cc:Work>
-    </rdf:RDF>
-  </metadata>
-  <g
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
-     id="layer1"
-     transform="translate(0,-292.76666)">
-    <path
-       d="m 0.92604167,296.73541 v -1.5875 l -0.26458333,-1.5875 H 0.26458333 v -0.26458 H 1.0583333 v 0.26458 l 2.9104167,0.13229 -0.1322917,1.32292 -2.5135416,0.13229 v 0.79375 h 2.1828125 v 0.79375 h -0.396875 v -0.39687 l -1.7859375,0.0264 v 0.37042 z"
-       id="path6087"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cccccccccccccccccc" />
-  </g>
+  version="1.1"
+  id="nav_myrequests"
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  viewBox="0 0 16 16">
+  <path
+     d="M 2.8571427,15.428564 V 8.5714214 L 1.7142856,1.7142784 H -1.5e-7 V 0.57143565 H 3.428571 V 1.7142784 L 16,2.2856998 15.428571,8 4.5714282,8.5714214 V 11.999993 H 14 v 3.428571 H 12.285714 V 13.7143 l -7.7142858,0.114034 v 1.600014 z"
+  />
 </svg>

@@ -2,11 +2,10 @@
 if (!check_perms('site_debug')) { error(403); }
 if (isset($_POST['global_flush'])) {
     authorize();
-    $Cache->flush();
+    $master->cache->flush();
 }
-$DB->query('SHOW GLOBAL STATUS');
-$DBStats =$DB->to_array('Variable_name');
-$MemStats = $Cache->getStats();
+$DBStats = $master->db->rawQuery('SHOW GLOBAL STATUS')->fetchAll(\PDO::FETCH_UNIQUE);
+$MemStats = $master->cache->getStats();
 
 show_header("Service Stats");
 ?>
@@ -57,7 +56,7 @@ show_header("Service Stats");
                 <td>
                     <form action="" method="post">
                         <input type="hidden" name="action" value="service_stats" />
-                        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                         <input type="hidden" name="global_flush" value="1" />
                         <input type="submit" value="Flush" />
                     </form>

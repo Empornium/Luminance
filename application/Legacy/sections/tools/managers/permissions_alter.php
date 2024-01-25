@@ -1,23 +1,25 @@
 <?php
-function display_perm($Key,$Title,$ToolTip='')
+function display_perm($Key, $Title, $ToolTip='')
 {
-    global $Values;
+    global $values;
     if (!$ToolTip)$ToolTip=$Title;
     $Perm='<input type="checkbox" name="perm_'.$Key.'" id="'.$Key.'" value="1"';
-    if (!empty($Values[$Key])) { $Perm.=" checked"; }
+    if (!empty($values[$Key])) { $Perm.=" checked"; }
     $Perm.=' /> <label for="'.$Key.'" title="'.$ToolTip.'">'.$Title.'</label><br />';
     echo $Perm;
 }
 
-show_header('Manage Permissions','validate');
+$permissions = (new class { use Luminance\Legacy\Permissions; });
+
+show_header('Manage Permissions', 'validate');
 
 echo $Val->GenerateJS('permform');
 
-if(isset($_REQUEST['isclass']) &&  $_REQUEST['isclass']=='1') $IsUserClass = true;
+if (isset($_REQUEST['isclass']) &&  $_REQUEST['isclass']=='1') $IsUserClass = true;
 ?>
 <form name="permform" id="permform" method="post" action="" onsubmit="return formVal();">
     <input type="hidden" name="action" value="permissions" />
-    <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+    <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
     <input type="hidden" name="id" value="<?=display_str($_REQUEST['id'])?>" />
     <input type="hidden" name="isclass" value="<?=($IsUserClass?'1':'0')?>" />
     <div class="linkbox">
@@ -78,12 +80,16 @@ if(isset($_REQUEST['isclass']) &&  $_REQUEST['isclass']=='1') $IsUserClass = tru
         </tr>
         <tr>
             <td class="label">Maximum number of personal collages</td>
-            <td><input type="text" name="maxcollages" size="5" value="<?=$Values['MaxCollages']?>" /></td>
+            <td><input type="text" name="maxcollages" size="5" value="<?=$values['MaxCollages']?>" /></td>
         </tr>
 <?php   } else {    ?>
         <tr>
             <td class="label">Group Permission</td>
             <td><input type="text" name="name" id="name" value="<?=(!empty($Name) ? display_str($Name) : '')?>" /></td>
+        </tr>
+        <tr>
+            <td class="label">Group Level</td>
+            <td><input type="text" name="level" id="level" value="<?=(!empty($Level) ? display_str($Level) : '')?>" /></td>
         </tr>
         <tr>
             <td class="label">Group Description</td>
@@ -94,12 +100,16 @@ if(isset($_REQUEST['isclass']) &&  $_REQUEST['isclass']=='1') $IsUserClass = tru
             <td><input type="text" name="color" style="font-weight:bold;color: #<?=display_str($Color)?>" value="<?=(!empty($Color) ? display_str($Color) : '')?>" /></td>
         </tr>
         <tr>
+            <td class="label">Extra Forums</td>
+            <td><input type="text" name="forums" value="<?=$values['Forums']?>" /></td>
+        </tr>
+        <tr>
             <td class="label">Extra personal collages</td>
-            <td><input type="text" name="maxcollages" size="5" value="<?=$Values['MaxCollages']?>" /></td>
+            <td><input type="text" name="maxcollages" size="5" value="<?=$values['MaxCollages']?>" /></td>
         </tr>
 <?php       }
 
-if (is_numeric($_REQUEST['id'])) { ?>
+if (is_integer_string($_REQUEST['id'])) { ?>
         <tr>
             <td class="label">Current users in this class</td>
             <td><?=number_format($UserCount)?></td>
@@ -107,8 +117,8 @@ if (is_numeric($_REQUEST['id'])) { ?>
 <?php  } ?>
     </table>
 <?php
-include(SERVER_ROOT."/Legacy/classes/permissions_form.php");
-permissions_form();
+
+$permissions->form();
 ?>
 </form>
 <?php

@@ -1,0 +1,60 @@
+<div class="nicebar_container">
+    {% set PFL = ActiveUser.legacy['personal_freeleech'] %}
+    {% if PFL is not null %}
+        {% set PFL = date(PFL) %}
+    {% endif %}
+    {% if is_integer_string(sitewideFreeleech) or PFL >= date('now') %}
+        <div class="freeleech_bar" style="display:inline-block">
+            {% if is_integer_string(sitewideFreeleech)  %}
+                {% set freeleechRemaining = time_diff(sitewideFreeleech, 2, false, false, 0) %}
+                {% set freeleechEndTime = sitewideFreeleech|date_modify(ActiveUser.heavyInfo()['TimeOffset'] ~ " second")|date('M d Y, H:i') %}
+                <span class="time" title="Sitewide Freeleech for {{ freeleechRemaining }} (until {{ freeleechEndTime }})">
+                    Sitewide Freeleech for {{ freeleechRemaining }}
+                </span>
+            {% else %}
+                {% set freeleechRemaining = time_diff(PFL, 2, false, false, 0) %}
+                {% set freeleechEndTime = PFL|date_modify(ActiveUser.heavyInfo()['TimeOffset'] ~ " second")|date('M d Y, H:i') %}
+                {% if PFL < date('now')|date_modify("+28 day") %}
+                    {# more than 28 days freeleech and the time is only specififed in the tooltip #}
+                    <span class="time" title="Personal Freeleech for {{ freeleechRemaining }} (until {{ freeleechEndTime }})">
+                      PFL for {{ freeleechRemaining }}
+                    </span>
+                {% else %}
+                    <span class="time" title="Personal Freeleech for {{ freeleechRemaining }} (until {{ freeleechEndTime }})">
+                    Personal Freeleech
+                    </span>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endif %}
+
+
+    {% set PDS = ActiveUser.legacy['personal_doubleseed'] %}
+    {% if PDS is not null %}
+        {% set PDS = date(PDS) %}
+    {% endif %}
+    {% if is_integer_string(sitewideDoubleseed) or PDS >= date('now') %}
+        <div class="doubleseed_bar" style="display:inline-block">
+            {% if is_integer_string(sitewideDoubleseed) %}
+                {% set doubleseedRemaining = time_diff(sitewideDoubleseed, 2, false, false, 0) %}
+                {% set doubleseedEndTime = sitewideDoubleseed|date_modify(ActiveUser.heavyInfo()['TimeOffset'] ~ " second")|date('M d Y, H:i') %}
+                <span class="time" title="Sitewide Doubleseed for {{ doubleseedRemaining }} (until {{ doubleseedEndTime }})">
+                    Sitewide Doubleseed for {{ doubleseedRemaining }}
+                </span>
+            {% else %}
+                {% set doubleseedRemaining = time_diff(PDS, 2, false, false, 0) %}
+                {% set doubleseedEndTime = PDS|date_modify(ActiveUser.heavyInfo()['TimeOffset'] ~ " second")|date('M d Y, H:i') %}
+                {% if PDS < date('now')|date_modify("+28 day") %}
+                    {# more than 28 days doubleseed and the time is only specififed in the tooltip #}
+                    <span class="time" title="Personal Doubleseed for {{ doubleseedRemaining }} (until {{ doubleseedEndTime }})">
+                      PDS for {{ doubleseedRemaining }}
+                    </span>
+                {% else %}
+                    <span class="time" title="Personal Doubleseed for {{ doubleseedRemaining }} (until {{ doubleseedEndTime }})">
+                    Personal Doubleseed
+                    </span>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endif %}
+</div>

@@ -1,0 +1,38 @@
+{% extends "@API/torznab/base.xml.twig" %}
+
+{% block content %}
+  <caps>
+    <server version="1.3" title="{{ settings.main.site_name }}" strapline="{{ settings.main.site_motto }}"
+            url="https://{{ settings.main.site_url }}/"
+            image="https://{{ settings.main.site_url }}{{ static_uri }}common/caticons/other-banner.png"/>
+    <limits max="100" default="25"/>
+    <searching>
+        <search available="yes" supportedParams="q,tag" />
+        <tv-search available="yes" supportedParams="q,tag" />
+        <movie-search available="yes" supportedParams="q,tag" />
+    </searching>
+    <categories>
+{% for categoryID, categoryInfo in categories %}
+        <category id="{{ categoryID }}" name="{{ categoryInfo.Name }}">
+{% for subcategory in categoryInfo.Subcategories %}
+          <subcat id="{{ subcategory.ID }}" name="{{ subcategory.Name }}" />
+{% endfor %}
+        </category>
+{% endfor %}
+    </categories>
+{% if genres is not empty %}
+    <genres>
+{% for genre in genres %}
+      <genre id="{{ genre.ID }}" categoryid="{{ genre.CategoryID }}" name="{{ genre.Name }}" />
+{% endfor %}
+    </genres>
+{% endif %}
+{% if tags is not empty %}
+    <tags>
+{% for tag in tags %}
+      <tag name="{{ tag.Name }}" description="{{ tag.Description }}" />
+{% endfor %}
+    </tags>
+{% endif %}
+  </caps>
+{% endblock %}

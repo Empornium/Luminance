@@ -1,0 +1,42 @@
+A user has submitted an application that links to an exisitng email address onsite.
+
+[b][size=3]Explanation[/size][/b]
+
+[*] The user is knowingly attempting to dupe
+[*] The user forgot about their account
+[*] The email was hacked: check the IP history carefully
+
+[b][size=3]Summary[/size][/b]
+
+Email address: {{ Email }}
+IP: [geoip]{{ IP }}[/geoip]
+Time: {{ CurrentTime }}
+
+Application information:
+Info: {{ information }}
+proof: {{ proof }}
+Proof 2: {{ proofTwo }}
+Proof 3: {{ proofThree }}
+{% if master.options.EnableQuestionOne %}
+{% set applicationCustomOne = master.options.ApplicationQuesOne %}
+    {% if applicationCustomOne is not empty %}
+        {{ bbcode.full_format(applicationCustomOne, true)|raw }}:
+        {{ questionOne }}
+    {% endif %}
+{% endif %}
+{% if master.options.EnableQuestionTwo %}
+    {% set applicationCustomTwo = master.options.ApplicationQuesTwo %}
+    {% if applicationCustomTwo is not empty %}
+        {{ bbcode.full_format(applicationCustomTwo, true)|raw }}:
+        {{ questionTwo }}
+    {% endif %}
+{% endif %}
+{% if master.options.EnableQuestionThree %}
+    {% set applicationCustomThree = master.options.ApplicationQuesThree %}
+    {% if applicationCustomThree is not empty %}
+        {{ bbcode.full_format(applicationCustomThree, true)|raw }}:
+        {{ questionThree }}
+    {% endif %}
+{% endif %}
+
+This user was summoned to discuss in the IRC.

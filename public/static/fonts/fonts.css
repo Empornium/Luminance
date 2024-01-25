@@ -1,0 +1,90 @@
+@font-face {
+    font-family: 'Aleo';
+    src: url('/static/fonts/aleo/regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Aleo';
+    src: url('/static/fonts/aleo/bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Aleo';
+    src: url('/static/fonts/aleo/italic.woff') format('woff');
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Aleo';
+    src: url('/static/fonts/aleo/bold_italic.woff') format('woff');
+    font-weight: bold;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Caviar Dreams';
+    src: url('/static/fonts/caviar_dreams/regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Caviar Dreams';
+    src: url('/static/fonts/caviar_dreams/bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Caviar Dreams';
+    src: url('/static/fonts/caviar_dreams/italic.woff') format('woff');
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Caviar Dreams';
+    src: url('/static/fonts/caviar_dreams/bold_italic.woff') format('woff');
+    font-weight: bold;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Quantico';
+    src: url('/static/fonts/quantico/regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Quantico';
+    src: url('/static/fonts/quantico/bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Quantico';
+    src: url('/static/fonts/quantico/italic.woff') format('woff');
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Quantico';
+    src: url('/static/fonts/quantico/bold_italic.woff') format('woff');
+    font-weight: bold;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Fapping';
+    src: url('/static/fonts/fapping/regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}

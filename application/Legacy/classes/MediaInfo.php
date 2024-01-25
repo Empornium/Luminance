@@ -4,7 +4,7 @@ namespace Luminance\Legacy;
 /*
  * Adapted from https://github.com/d1fferent/miparse
  */
- 
+
 class MediaInfo
 {
 
@@ -15,15 +15,48 @@ class MediaInfo
     // outputs
     public    $filename = 'Mediainfo Log';
     public    $sanitizedLog = '';
-    public    $audio = array();
-    public    $text = array();
-    public    $logs = array(); // will contain an object for each mediainfo log processed
+    public    $audio = [];
+    public    $text = [];
+    public    $logs = []; // will contain an object for each mediainfo log processed
 
     // internal use
     private $hadBlankLine = FALSE; // only parse as a mediainfo log if it included a blank line
     private $audionum = 0;
     private $textnum = 0;
     private $currentSection = ''; // tracks log section while parsing
+
+    private $attributes =[];
+
+    public function __get($name) {
+        if (property_exists($this, $name)) {
+            return $this->$name;
+        } else {
+            if (array_key_exists($name, $this->attributes)) {
+                return $this->attributes[$name];
+            } else {
+                return null;
+            }
+        }
+    }
+
+    public function __isset($name) {
+        if (property_exists($this, $name)) {
+            return true;
+        }
+        if (array_key_exists($name, $this->attributes)) {
+            return true;
+        }
+        return false;
+    }
+
+    public function __set($name, $value) {
+        if (property_exists($this, $name)) {
+            $this->$name = $value;
+        } else {
+            $this->attributes[$name] = $value;
+        }
+    }
+
 
     /**
      * Public interface for parsing text containing any amount of mediainfo logs
@@ -35,14 +68,13 @@ class MediaInfo
     public function parse($string) {
 
         $string = trim($string);
-        $output = array();
+        $output = [];
         $outputblock = 0; // counter
         $logcount = 0;
 
         //flags
         $inmi = false; // currently in a mediainfo log
         $insection = false; // currently in a mediainfo log section
-        $anymi = false; // debug
 
         //regexes
         $mistart="/^(?:general$|unique ?id(\/string)?\s*:|complete ?name\s*:|format\s*:\s*(matroska|avi|bdav)$)/i";
@@ -54,7 +86,11 @@ class MediaInfo
         // main loop
         for ($i=0, $imax=count($lines); $i < $imax; $i++) {
             $line = trim($lines[$i]);
-            $prevline = trim($lines[$i-1]);
+            if (array_key_exists(-1, $lines)) {
+                $prevline = trim($lines[$i-1]);
+            } else {
+                $prevline = null;
+            }
 
             if (strlen($line) == 0) { // blank line?
                 $insection = false;
@@ -65,16 +101,16 @@ class MediaInfo
             if (!$inmi) {
                 if (preg_match($mistart, $line)) { // start of a mediainfo log?
 
-                    $Log = new MEDIAINFO;  // create an instance of the class
+                    $Log = new MediaInfo;  // create an instance of the class
                     if ($this->checkEncodingSettings === TRUE) {
                         $Log->checkEncodingSettings = TRUE;
                     }
 
                     $inmi = true;
-                    $anymi = true;
                     $insection = true;
                     $Log->currentSection = "general";
                     $outputblock++;
+                    $output[$outputblock] = '';
                 }
             }
 
@@ -110,6 +146,7 @@ class MediaInfo
                     $logcount++;
                 }
                 $outputblock++;
+                $output[$outputblock] = '';
 
                 // reset flags
                 $inmi = false;
@@ -141,7 +178,7 @@ class MediaInfo
         $array = explode(":", $line, 2);
         $property = strtolower(trim($array[0]));
         $property = preg_replace("#/string$#", "", $property);
-        $value = trim($array[1]);
+        $value = trim($array[1] ?? null);
 
         if (strtoupper($array[0]) == $array[0]) {
             // ignore ALL CAPS tags, as set by mkvmerge 7
@@ -474,7 +511,7 @@ class MediaInfo
    protected function addHTML() {
         $this->codeccomputed = $this::computeCodec();
 
-        $miaudio = array();
+        $miaudio = [];
         for ($i=1; $i < count($this->audio)+1; $i++) {
             if (strtolower($this->audio[$i]['format']) === "mpeg audio") {
                 switch (strtolower($this->audio[$i]['profile'])) {
@@ -499,30 +536,31 @@ class MediaInfo
                 '6ch'      => '5.1ch',
                 '2ch'      => '2.0ch'
             );
+
             $chans = str_ireplace(array_keys($chansreplace), $chansreplace, $this->audio[$i]['channels']);
 
             $result =
-                $this->audio[$i]['lang']
+                $this->audio[$i]['lang'] ?? '???'
                 . " " . $chans
                 . " " . $this->audio[$i]['format'];
-            if ($this->audio[$i]['bitrate']) {
+            if ($this->audio[$i]['bitrate'] ?? false) {
                 $result .= " @ " . $this->audio[$i]['bitrate'];
             }
-            if ($this->audio[$i]['title']
+            if (($this->audio[$i]['title'] ?? false)
                 && (stripos($this->filename, $this->audio[$i]['title']) === FALSE) ) { // ignore audio track title if it contains filename
                 $result .= " (" . $this->audio[$i]['title'] . ")";
             }
             $miaudio[] = $result;
         }
 
-        $misubs = array();
+        $misubs = [];
         for ($i=1; $i < count($this->text)+1; $i++) {
 
-            if($this->text[$i]['title-lang'])
+            if ($this->text[$i]['title-lang'] ?? false)
              $result = $this->text[$i]['title-lang'];
-            elseif($this->text[$i]['lang'])
+            elseif ($this->text[$i]['lang'] ?? false)
              $result = $this->text[$i]['lang'];
-            elseif($this->text[$i]['default'])
+            elseif ($this->text[$i]['default'] ?? false)
              $result = 'Default';
             $misubs[] = $result;
         }
@@ -536,7 +574,6 @@ class MediaInfo
                 $this->bitrate = "Variable";
             } else {
                 $this->bitrate = $this->nominalbitrate;
-                $italicBitrate = TRUE;
             }
         }
 
@@ -565,11 +602,7 @@ class MediaInfo
         . '</td></tr><tr><td>Frame&nbsp;rate:&nbsp;</td><td>' . self::sanitizeHTML($this->framerate)
         . '</td></tr><tr><td>Bit&nbsp;rate:&nbsp;</td><td>';
 
-//        if ($italicBitrate === TRUE) {
-//            $table .= "<em>" . self::sanitizeHTML($this->bitrate) . "</em>";
-//        } else {
-            $table .= self::sanitizeHTML($this->bitrate);
-//        }
+        $table .= self::sanitizeHTML($this->bitrate);
 
         $table .= '</td></tr>' // <tr><td>BPP:&nbsp;</td><td>' . self::sanitizeHTML($this->bpp)
         . '</table></td><td>'
@@ -580,31 +613,32 @@ class MediaInfo
             . self::sanitizeHTML($miaudio[$i]) . '</td></tr>';
         }
 
-      if($misubs){
+        if ($misubs) {
+            $table .= '</table></td><td>'
+            . '<table class="nobr noborder"><caption>Subtitles</caption>';
 
-        $table .= '</table></td><td>'
-        . '<table class="nobr noborder"><caption>Subtitles</caption>';
+            for ($i = 0, $c = count($misubs); $i < $c; $i++) {
+                $Iteration = intval($i + 1);
+                $Flag      = '';
+                $Language  = self::sanitizeHTML($misubs[$i]);
 
-         for ($i = 0, $c = count($misubs); $i < $c; $i++) {
-             $Iteration = intval($i + 1);
-             $Flag      = '';
-             $Language  = self::sanitizeHTML($misubs[$i]);
+                // Consider 'default' as english
+                if($misubs[$i] === 'Default') {
+                    $misubs[$i] = 'English';
+                }
 
-             // Consider 'default' as english
-             if($misubs[$i] === 'Default')
-                $misubs[$i] = 'English';
+                // Get country code
+                $cd = trim(preg_replace('/\(SDH\)/', '', $misubs[$i])); // Remove SDH mention
+                $cd = $this->getLocaleCodeForDisplayLanguage($cd);
 
-             // Get country code
-             $cd = trim(preg_replace('/\(SDH\)/', '', $misubs[$i])); // Remove SDH mention
-             $cd = $this->getLocaleCodeForDisplayLanguage($cd);
+                // Add a flag if there's an image for it
+                if ($cd) {
+                    $Flag = '<img src="/static/common/flags/iso16/'.$cd.'.png" alt="'.$Language.'" title="'.$Language.'" />';
+                }
 
-             // Add a flag if there's an image for it
-             if ($cd)
-                 $Flag = '<img src="/static/common/flags/iso16/'.$cd.'.png" alt="'.$Language.'" title="'.$Language.'" />';
-
-             $table .= "<tr><td>#$Iteration:</td><td>$Flag</td><td>$Language</td></tr>";
-         }
-      }
+                $table .= "<tr><td>#$Iteration:</td><td>$Flag</td><td>$Language</td></tr>";
+             }
+        }
 
         $table .= '</table></td></tr>';
 
@@ -618,7 +652,7 @@ class MediaInfo
             }
         }
 
-      $table .= '</table>';
+        $table .= '</table>';
 
         return "<div>" . $midiv_start . $this->sanitizedLog . $midiv_end . $table . "</div>";
     }
@@ -628,7 +662,7 @@ class MediaInfo
      * @return string or null
     */
     protected function checkEncodingSettings() {
-        $poorSpecs = array();
+        $poorSpecs = [];
         $settings = explode("/", $this->encodingsettings);
 
         foreach($settings as $str) {
@@ -737,6 +771,7 @@ class MediaInfo
         $chk = strtolower($this->codec);
         $wl = strtolower($this->writinglibrary);
         $vf = strtolower($this->videoformat);
+
         // H264/5 is a codex, x264/5 is a library for creating videos of that codec.
         if ($chk === "v_mpeg4/iso/avc" || $chk === "avc1" || $vf === "avc" || strpos($wl, "x264 core") > -1) {
             return "H264";
@@ -744,6 +779,8 @@ class MediaInfo
         if ($chk === "v_mpegh/iso/hevc" || $chk === "hevc1" || $vf === "hevc" || strpos($wl, "x265") > -1) {
             return "H265";
         }
+
+        return '';
     }
 
     /**

@@ -3,14 +3,12 @@ namespace Luminance\Services;
 
 use Luminance\Core\Master;
 use Luminance\Core\Service;
-use Luminance\Core\Entity;
-
 use Luminance\Errors\InternalError;
 
 class Profiler extends Service {
 
-    public $start_time = null;
-    public $profile_log = [];
+    public $startTime = null;
+    public $profileLog = [];
     public $states = [];
     protected $disabled = false;
 
@@ -18,18 +16,18 @@ class Profiler extends Service {
     public function __construct(Master $master) {
         parent::__construct($master);
         $this->master = $master;
-        $real_start_time = $master->start_time;
-        if (is_null($real_start_time)) {
-            $this->start_time = microtime(true);
+        $realStartTime = $master->startTime;
+        if (is_null($realStartTime)) {
+            $this->startTime = microtime(true);
         } else {
-            $this->start_time = $real_start_time;
-            $this->add_log(0.0, 'application started');
+            $this->startTime = $realStartTime;
+            $this->addLog(0.0, 'application started');
         }
-        $this->enter_state('profiler_running');
+        $this->enterState('profiler_running');
     }
 
-    public function get_timestamp() {
-        $timestamp = microtime(true) - $this->start_time;
+    public function getTimestamp() {
+        $timestamp = microtime(true) - $this->startTime;
         return $timestamp;
     }
 
@@ -38,45 +36,45 @@ class Profiler extends Service {
         $this->disabled = true;
     }
 
-    protected function add_log($timestamp, $state_text) {
-        $this->profile_log[] = [$timestamp, $state_text];
+    protected function addLog($timestamp, $stateText) {
+        $this->profileLog[] = [$timestamp, $stateText];
     }
 
-    public function enter_state($state_name) {
+    public function enterState($stateName) {
         if ($this->disabled) {
             return;
         }
-        if (array_key_exists($state_name, $this->states)) {
-            $state = $this->states[$state_name];
+        if (array_key_exists($stateName, $this->states)) {
+            $state = $this->states[$stateName];
         } else {
             $state = new \stdClass();
             $state->active = false;
             $state->count = 0;
-            $state->total_time = 0.0;
-            $state->start_time = null;
-            $this->states[$state_name] = $state;
+            $state->totalTime = 0.0;
+            $state->startTime = null;
+            $this->states[$stateName] = $state;
         }
         if ($state->active) {
-            throw new InternalError("Profiler state {$state_name} already active!");
+            throw new InternalError("Profiler state {$stateName} already active!");
         }
         $state->active = true;
-        $state->start_time = $this->get_timestamp();
-        $this->info("+{$state_name}");
+        $state->startTime = $this->getTimestamp();
+        $this->info("+{$stateName}");
     }
 
-    public function leave_state($state_name) {
+    public function leaveState($stateName) {
         if ($this->disabled) {
             return;
         }
-        if (!array_key_exists($state_name, $this->states) || !$this->states[$state_name]->active) {
-            throw new InternalError("Profiler state {$state_name} not active!");
+        if (!array_key_exists($stateName, $this->states) || !$this->states[$stateName]->active) {
+            throw new InternalError("Profiler state {$stateName} not active!");
         }
-        $timestamp = $this->get_timestamp();
-        $state = $this->states[$state_name];
+        $timestamp = $this->getTimestamp();
+        $state = $this->states[$stateName];
         $state->active = false;
         $state->count++;
-        $state->total_time += $timestamp - $state->start_time;
-        $state->start_time = null;
+        $state->totalTime += $timestamp - $state->startTime;
+        $state->startTime = null;
         $this->info("-{$state}");
     }
 
@@ -84,15 +82,15 @@ class Profiler extends Service {
         if ($this->disabled) {
             return;
         }
-        $timestamp = $this->get_timestamp();
-        $this->add_log($timestamp, $message);
+        $timestamp = $this->getTimestamp();
+        $this->addLog($timestamp, $message);
     }
 
-    public function finish_and_log() {
+    public function finishAndLog() {
         if ($this->disabled) {
             return;
         }
-        $this->leave_state('profiler_running');
-        error_log(print_r($this->profile_log, true));
+        $this->leaveState('profiler_running');
+        error_log(print_r($this->profileLog, true));
     }
 }

@@ -1,0 +1,123 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/collage/create">Create a collage</a>
+{% endblock %}
+
+{% block main_content %}
+    <div class="head">Approved Imagehosts</div>
+    <div class="box pad">
+        <span style="float:right;clear:right">
+            <p>
+                <strong class="important_text">
+                    Last Updated: {{ time_diff(imageWhitelistUpdated)|raw }}
+                </strong>
+            </p>
+        </span>
+
+        <p>You must use one of the following approved imagehosts for all images.
+            <span><a href="#" onclick="$('#whitelist').toggle(); this.innerHTML=(this.innerHTML=='(Hide)'?'(Show)':'(Hide)'); return false;">(Show)</a></span>
+        </p>
+        <table id="whitelist" class="hidden" style="">
+            <tr class="colhead_dark">
+                <td style="width:50%;">
+                    <strong>Imagehost</strong>
+                </td>
+                <td>
+                    <strong>Comment</strong>
+                </td>
+            </tr>
+            {% for imagehost in imageWhitelist %}
+                <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                    <td>
+                        {{ bbcode.full_format(imagehost.Imagehost)|raw }}
+                        {% if imagehost.Link and bbcode.valid_url(imagehost.Link) %}
+                            <a href="{{ imagehost.Link }}"  target="_blank">
+                                <img src="/static/common/symbols/offsite.gif" width="16" height="16" alt="Goto {{ imagehost.Imagehost }}" />
+                            </a>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ bbcode.full_format(imagehost.Comment)|raw }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div class="head">New collage</div>
+        <form action="/collage/create" method="post" name="create">
+            <input type="hidden" name="token" value="{{ secretary.getToken("collage.create") }}" />
+            <table>
+                <tr id="collagename">
+                    <td class="label"><strong>Name</strong></td>
+                    <td>
+                        <input type="text" class="long" name="name" id="namebox" value="{{ name }}" />
+                        <span id="personal" class="hidden" style="font-style: oblique"><strong>{{ activeUser.Username }}'s personal collage</strong></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label"><strong>Category</strong></td>
+                    <td>
+                        <select name="category">
+                            {% for category in categories if not category.isLocked() %}
+                                <option value="{{ category.ID }}" {{ selectedCategory == category.ID ? 'selected="selected"' }}>{{ category.Name }}</option>
+                            {% endfor %}
+                        </select>
+                        <br />
+                        <ul>
+                            {% for category in categories %}
+                                <li><strong>{{ category.Name }}</strong> - {{ category.Description }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Editing Permissions</td>
+                    <td>
+                                who can add/delete torrents <br/>
+                                <select name="permission">
+                                    {% for classLevel in classLevels %}
+                                        <option value="{{ classLevel.Level }}" {{ classLevel == permission ? ' selected="selected"' }}>{{ classLevel.Name }}</option>
+                                    {% endfor %}
+                                    <option value="0">Only Creator</option>
+                                </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Description</td>
+                    <td>
+                                <div id="preview" class="box pad hidden"></div>
+                                <div  id="editor">
+                                    {{ bbcode.display_bbcode_assistant("description", get_permissions_advtags(ActiveUser.ID, ActiveUser.CustomPermissions)) }}
+                                    <textarea id="description" class="long" tabindex="1" onkeyup="resize('description');" name="description" rows="10">{{ description }}</textarea>
+                                </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label"><strong>Tags</strong></td>
+                    <td>
+                        <input type="text" id="tags" name="tags" class="long" value="{{ tags }}" />
+                        <p class="min_padding">Space-separated list - eg. <em>hardcore big.tits anal</em></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="center">
+                        <strong>Please ensure your collage will be allowed under the <a href="/articles/view/collages">rules</a></strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="center">
+                        <input id="previewbtn" type="button" value="Preview" onclick="Preview_Collage();" />
+                        <input type="submit" value="Create collage" />
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+{% endblock %}

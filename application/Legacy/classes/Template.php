@@ -26,7 +26,6 @@ class Template
 
     public function show()
     {
-        $TMPVAR='';
         for ($i=0; $i<sizeof($this->file); $i++) {
             $TMPVAR=$this->file[$i];
             foreach ($this->vars as $k=>$v) {
@@ -40,7 +39,6 @@ class Template
     public function get()
     {
        $RESULT='';
-       $TMPVAR='';
        for ($i=0; $i<sizeof($this->file); $i++) {
             $TMPVAR=$this->file[$i];
             foreach ($this->vars as $k=>$v) {

@@ -9,7 +9,6 @@ function add_tag() {
       resize('taginput');
 }
 
-
 function SynchInterface(){
     change_tagtext();
     resize('taginput');
@@ -23,7 +22,6 @@ function SelectTemplate(can_delete_any){ // a proper check is done in the backen
     return false;
 }
 
-
 function DeleteTemplate(can_delete_any){
 
     var TemplateID = $('#template').raw().options[$('#template').raw().selectedIndex].value;
@@ -34,7 +32,7 @@ function DeleteTemplate(can_delete_any){
     var ToPost = [];
     ToPost['template'] = TemplateID;
 
-    ajax.post("upload.php?action=delete_template", ToPost, function(response){
+    ajax.post("/upload.php?action=delete_template", ToPost, function(response){
         var x = json.decode(response);
         if ( is_array(x)){
             if (x[0]==0) { //
@@ -54,8 +52,6 @@ function DeleteTemplate(can_delete_any){
     });
     return false;
 }
-
-
 
 function OverwriteTemplate(can_delete_any){
 
@@ -74,8 +70,6 @@ function AddTemplate(can_delete_any, is_public){
     return SaveTemplate(can_delete_any, is_public, name, 0);
 }
 
-
-
 function SaveTemplate(can_delete_any, is_public, name, id){
 
     var ToPost = [];
@@ -88,7 +82,7 @@ function SaveTemplate(can_delete_any, is_public, name, id){
     ToPost['tags'] = $('#taginput').raw().value;
     ToPost['body'] = $('#desc').raw().value;
 
-    ajax.post("upload.php?action=add_template", ToPost, function(response){
+    ajax.post("/upload.php?action=add_template", ToPost, function(response){
 
         var x = json.decode(response);
         if ( is_array(x)){
@@ -110,10 +104,6 @@ function SaveTemplate(can_delete_any, is_public, name, id){
     });
     return false;
 }
-
-
-
-
 
 var LogCount = 1;
 
@@ -137,12 +127,10 @@ function RemoveLogField() {
     LogCount--;
 }
 
-
 function Upload_Quick_Preview() {
   $('#post_preview').raw().value = "Make changes";
   $('#post_preview').raw().preview = true;
-  ajax.post("ajax.php?action=preview_upload","upload_table", function(response){
-
+  ajax.post("/ajax.php?action=preview_upload","upload_table", function(response){
         var x = json.decode(response);
         if ( is_array(x)){
             $('#uploadpreviewbody').show();

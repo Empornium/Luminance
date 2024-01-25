@@ -2,24 +2,29 @@
 authorize();
 
 //Set by system
-if (!$_POST['groupid'] || !is_number($_POST['groupid'])) {
+if (!$_POST['groupid'] || !is_integer_string($_POST['groupid'])) {
     error(404);
 }
 $GroupID = $_POST['groupid'];
 
 //Usual perm checks
-if (!check_perms('torrents_edit')) {
-    $DB->query("SELECT UserID FROM torrents WHERE GroupID = ".$GroupID);
-    if (!in_array($LoggedUser['ID'], $DB->collect('UserID'))) {
+if (!check_perms('torrent_edit')) {
+    $userIDs = $master->db->rawQuery(
+        "SELECT UserID
+           FROM torrents
+          WHERE GroupID = ?",
+        [$GroupID]
+    )->fetchAll(\PDO::FETCH_COLUMN);
+    if (!in_array($activeUser['ID'], $userIDs)) {
         error(403);
     }
 }
 
-if (check_perms('torrents_freeleech') && isset($_POST['freeleech'])) {
+if (check_perms('torrent_freeleech') && isset($_POST['freeleech'])) {
     $Free = (int) $_POST['freeleech'];
     $Free = $Free==1?1:0;
 
-    freeleech_groups($GroupID, $Free);
+    freeleech_groups($GroupID, $Free, false, null);
 }
 
 header("Location: torrents.php?id=".$GroupID);

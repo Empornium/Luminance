@@ -5,7 +5,7 @@ if (!check_perms('admin_manage_tags')) {
 
 $UseMultiInterface= true;
 
-show_header('Official Tags Manager','tagmanager');
+show_header('Official Tags Manager', 'tagmanager');
 
 printRstMessage();
 ?>
@@ -19,7 +19,7 @@ printRstMessage();
         <div>
             <form method="post">
                 <input type="hidden" name="action" value="official_tags_alter" />
-                <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+                <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
                 <input type="hidden" name="doit" value="1" />
                 <table class="tagtable shadow">
                     <tr style="font-weight: bold" class="colhead">
@@ -29,9 +29,8 @@ printRstMessage();
                     </tr>
                     <?php
                     $i = 0;
-                    $DB->query("SELECT ID, Name, Uses FROM tags WHERE TagType='genre' ORDER BY Name ASC");
-                    $TagCount = $DB->record_count();
-                    $Tags = $DB->to_array();
+                    $Tags = $master->db->rawQuery("SELECT ID, Name, Uses FROM tags WHERE TagType='genre' ORDER BY Name ASC")->fetchAll(\PDO::FETCH_NUM);
+                    $TagCount = $master->db->foundRows();
                     for ($i = 0; $i < $TagCount / 3; $i++) {
                         list($TagID1, $TagName1, $TagUses1) = $Tags[$i];
                         list($TagID2, $TagName2, $TagUses2) = $Tags[ceil($TagCount / 3) + $i];
@@ -62,7 +61,7 @@ printRstMessage();
                     }
 ?>
                     <tr class="<?= (($i % 2) ? 'rowa' : 'rowb') ?>">
-                        <td colspan="11"><label for="newtag">New official tag: </label><input type="text" name="newtag" /></td>
+                        <td colspan="11"><label for="newtag">New official tag: </label><input type="text" id="newtag" name="newtag" /></td>
                     </tr>
                     <tr style="border-top: thin solid #98AAB1">
                         <td colspan="11" style="text-align: center"><input type="submit" value="Submit Changes" /></td>

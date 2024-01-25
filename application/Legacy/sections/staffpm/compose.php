@@ -1,7 +1,15 @@
 <?php
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
 show_header('Start Conversation', 'inbox,staffpm,bbcode,jquery');
+
+$ConvID        = $ConvID ?? '';
+$ReportID      = $ReportID ?? '';
+$Subject       = $Subject ?? '';
+$Message       = $Message ?? '';
+$NumUnanswered = $NumUnanswered ?? 0;
+$NumOpen       = $NumOpen ?? 0;
+$NumMy         = $NumMy ?? 0;
 ?>
 
 <div class="thin">
@@ -40,23 +48,32 @@ show_header('Start Conversation', 'inbox,staffpm,bbcode,jquery');
                         <option id="first_common_response">Select a message</option>
                         <?php
                         // List common responses
-                        $DB->query("SELECT ID, Name FROM staff_pm_responses ORDER BY Name ASC");
-                        while (list($ID, $Name) = $DB->next_record()) {
+                        $commonAnswers = $master->db->rawQuery(
+                            "SELECT ID,
+                                    Name
+                               FROM staff_pm_responses
+                           ORDER BY Name ASC"
+                        )->fetchAll(\PDO::FETCH_OBJ);
+                        foreach ($commonAnswers as $commonAnswer) {
                             ?>
-                            <option value="<?= $ID ?>"><?= $Name ?></option>
+                            <option value="<?= $commonAnswer->ID ?>"><?= $commonAnswer->Name ?></option>
                         <?php  } ?>
                     </select>
                     <input type="button" value="Set message" onClick="SetMessage();" />
-                    <input type="button" value="Create new / Edit" onClick="location.href='staffpm.php?action=responses&amp;convid=<?= $ConvID ?>'" />
+                    <input type="button" value="Create new / Edit" onClick="location.href='/staffpm.php?action=responses&amp;convid=<?= $ConvID ?>'" />
                     <br/><br/>
                     <div id="common_answers_body" class="body">Select an answer from the dropdown to view it.</div>
 
                 </div>
             </div>
 <?php
-            if (!empty($_GET['toid']) && is_number($_GET['toid'])) {
-                $DB->query("SELECT Username FROM users_main WHERE ID='$_GET[toid]'");
-                list($Username) = $DB->next_record();
+            if (!empty($_GET['toid']) && is_integer_string($_GET['toid'])) {
+                $Username = $master->db->rawQuery(
+                    "SELECT Username
+                       FROM users
+                      WHERE ID = ?",
+                    [$_GET['toid']]
+                )->fetchColumn();
             }
 ?>
             <div class="head">Start Conversation with <?=($Username?$Username:'User')?></div>
@@ -65,7 +82,7 @@ show_header('Start Conversation', 'inbox,staffpm,bbcode,jquery');
 
                 <form action="staffpm.php" method="post" id="messageform">
                     <div id="StaffPM" >
-                        <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+                        <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
                         <input type="hidden" name="action" value="takenewpost" />
                         <input type="hidden" name="prependtitle" value="Staff PM - " />
                         <table>
@@ -89,8 +106,8 @@ show_header('Start Conversation', 'inbox,staffpm,bbcode,jquery');
 
                         <br />
 
-                        <label for="message"><h3>Message</h3></label>
-                        <?php  $Text->display_bbcode_assistant("quickpost$ReportID"); ?>
+                        <label for="quickpost"><h3>Message</h3></label>
+                        <?php  $bbCode->display_bbcode_assistant("quickpost$ReportID"); ?>
                         <textarea rows="6" class="long" name="message" id="quickpost"><?= display_str($Message) ?></textarea>
                         <br />
 

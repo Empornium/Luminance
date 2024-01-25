@@ -1,8 +1,7 @@
 <?php
 namespace Luminance\Core;
 
-use Luminance\Core\Master;
-
+use Luminance\Errors\SystemError;
 use Luminance\Errors\InternalError;
 
 abstract class Repository {
@@ -10,123 +9,251 @@ abstract class Repository {
     protected $db;
     protected $orm;
     protected $cache;
+    protected $master;
     protected $entityName;
-    protected $use_cache = true;
-    // The cache service implements its own internal cache, thus we're storing
-    // same data in memory twice, this is a bad idea IMO.
-    //protected $internal_cache = [];
+    protected $useCache = true;
+    protected $entityClass = null;
 
     public function __construct(Master $master) {
         $this->master = $master;
         $this->db = $this->master->db;
         $this->orm = $this->master->orm;
         $this->cache = $this->master->cache;
+        $this->entityClass = "Luminance\\Entities\\{$this->entityName}";
     }
 
-    public function load_from_cache($ID) {
-        $key = $this->get_cache_key($ID);
-        $values = $this->cache->get_value($key);
+    public function loadFromCache($ID) {
+        $key = $this->getCacheKey($ID);
+        $casToken = 0;
+        $values = $this->cache->getValue($key, false, $casToken);
         if (is_array($values)) {
-            $cls = "Luminance\\Entities\\{$this->entityName}";
-            $entity = $cls::create_from_db($values);
+            $entity = $this->entityClass::createFromDB($values, $casToken);
             return $entity;
+        } else {
+            return $values;
+        }
+    }
+
+    public function get($sql, array $params = null, $cacheKey = null) {
+        # Cache will return false if key does not exist
+        $entityID = false;
+
+        if ($this->useCache && !empty($cacheKey)) {
+            $entityID = $this->cache->getValue($cacheKey);
+        }
+
+        if ($entityID === false) {
+            $entityID = $this->orm->get($this->entityName, $sql, $params);
+
+            # Don't cache null results.
+            if ($this->useCache && !empty($cacheKey) && !empty($entityID)) {
+                $this->cache->cacheValue($cacheKey, $entityID, 0);
+            }
+        }
+
+        if (!empty($entityID)) {
+            return $this->load($entityID);
         } else {
             return null;
         }
     }
 
-    public function get($sql, $params = null) {
-        $object = $this->orm->get($this->entityName, $sql, $params);
-        return $object;
-    }
-
-    public function find($sql, $params = null) {
-        $objects = $this->orm->find($this->entityName, $sql, $params);
-        return $objects;
-    }
-
-    public function find_count($sql, $params = null) {
-        $result = $this->orm->find_count($this->entityName, $sql, $params);
-        return $result;
-    }
-
-    public function disable_cache() {
-        $this->use_cache = false;
-    }
-
-    public function enable_cache() {
-        $this->use_cache = true;
-    }
-
-    public function save_to_cache($entity) {
-        if (!$entity->exists_in_db()) {
-            throw new InternalError("Attempt to cache non-saved entity.");
+    public function getOrCreate(array $where, array $creates, $cacheKey = null) {
+        $sql = [];
+        $params = [];
+        foreach ($where as $column => $value) {
+            $sql[] = "{$column} = ?";
+            $params[] = $value;
         }
-        if ($this->use_cache) {
-            $key = $this->get_cache_key($entity->get_pkey_value());
-            $values = $entity->get_saved_values();
-            $this->cache->cache_value($key, $values, 0);
+        $sql = implode(" AND ", $sql);
+        $entity = $this->get($sql, $params, $cacheKey);
+        if (empty($entity)) {
+            $creates = array_merge($where, $creates);
+            $entity = $this->orm->create($this->entityName, $creates);
         }
+        return $entity;
     }
-
-    public function load($ID, $post_load = true) {
-        $cls = "Luminance\\Entities\\{$this->entityName}";
-        if ($ID instanceof $cls) {
-            $entity = $ID;
+    public function updateOrCreate(array $where, array $updates, $cacheKey = null) {
+        $sql = [];
+        $params = [];
+        foreach ($where as $column => $value) {
+            $sql[] = "{$column} = ?";
+            $params[] = $value;
+        }
+        $sql = implode(" AND ", $sql);
+        $entity = $this->get($sql, $params, $cacheKey);
+        if (empty($entity)) {
+            $updates = array_merge($where, $updates);
+            $entity = $this->orm->create($this->entityName, $updates);
         } else {
-            //if (array_key_exists($ID, $this->internal_cache)) {
-            //    return $this->internal_cache[$ID];
-            //}
-            if ($this->use_cache) {
-                $entity = $this->load_from_cache($ID);
-            } else {
-                $entity = null;
+            foreach ($updates as $column => $value) {
+                $entity->$column = $value;
             }
-
-            if (!$entity) {
-                $entity = $this->orm->load($this->entityName, $ID);
-                if ($this->use_cache && $entity) {
-                    $this->save_to_cache($entity);
-                }
-            }
+            $this->save($entity);
         }
-        if ($post_load) {
-            $entity = $this->post_load($ID, $entity);
-        }
-        //if ($entity) {
-        //    $this->internal_cache[$ID] = $entity;
-        //}
         return $entity;
     }
 
-    protected function post_load($ID, $entity) {
+    public function find($sql = null, array $params = null, $order = null, $limit = null, $cacheKey = null, $indexColumn = null) {
+        # Cache handling, cache will return false if key does not exist
+        if (!empty($cacheKey) && $this->useCache) {
+            $entityIDs = $this->cache->getValue($cacheKey);
+        } else {
+            $entityIDs = false;
+        }
+
+        if ($entityIDs === false) {
+            # Load IDs from DB
+            $entityIDs = $this->orm->find($this->entityName, $sql, $params, $order, $limit);
+            if (!empty($cacheKey) && $this->useCache) {
+                $this->cache->cacheValue($cacheKey, $entityIDs, 900);
+            }
+        }
+
+        if (!empty($entityIDs)) {
+            $objects = [];
+            # Load entities individually
+            foreach ($entityIDs as $entityID) {
+                $objects[] = $this->load($entityID);
+            }
+        } else {
+            return [];
+        }
+
+        # Reindex resultset by abusing array_column a little
+        return array_column($objects, null, $indexColumn);
+    }
+
+    public function findCount($sql, array $params = null, $order = null, $limit = null) {
+        list($entityIDs, $count) = $this->orm->findCount($this->entityName, $sql, $params, $order, $limit);
+
+        # Shortcut
+        if ($count === 0) {
+            return [null, 0];
+        }
+
+        $objects = [];
+        # Load from cache
+        foreach ($entityIDs as $entityID) {
+            $objects[] = $this->load($entityID);
+        }
+        return [$objects, $count];
+    }
+
+    public function disableCache() {
+        $this->useCache = false;
+    }
+
+    public function enableCache() {
+        $this->useCache = true;
+    }
+
+    public function saveToCache($entity) {
+        # Check we're dealing with the right kind of object
+        if (!($entity instanceof $this->entityClass)) {
+            throw new InternalError("Attempt to cache foreign entity.");
+        }
+        if (!$entity->existsInDB()) {
+            throw new InternalError("Attempt to cache non-saved entity.");
+        }
+        if ($this->useCache) {
+            $key = $this->getCacheKey(implode('_', $entity->getPKeyValues()));
+            $values = $entity->getSavedValues();
+            if (defined($this->entityClass.'::CACHE_EXPIRATION')) {
+                $cacheExpiration = $entity::CACHE_EXPIRATION;
+            } else {
+                $cacheExpiration = 900;
+            }
+            $this->cache->cacheValue($key, $values, $cacheExpiration, $entity->casToken);
+        }
+    }
+
+    public function load($ID, $postLoad = true) {
+        if ($ID instanceof $this->entityClass) {
+            $entity = $ID;
+        } elseif (is_null($ID) || is_integer_string($ID) && $ID === 0) {
+            return null;
+        } else {
+            if ($this->useCache) {
+                $entity = $this->loadFromCache($ID);
+            } else {
+                $entity = false;
+            }
+
+            if ($entity === false) {
+                $entity = $this->orm->load($this->entityName, $ID);
+                if ($this->useCache) {
+                    if ($entity instanceof Entity) {
+                        $this->saveToCache($entity);
+                    } else {
+                        $key = $this->getCacheKey($ID);
+                        $this->cache->cacheValue($key, null, 0);
+                    }
+                }
+            }
+        }
+        if ($postLoad === true && $entity instanceof Entity) {
+            $entity = $this->postLoad($entity->getPKeyValues(), $entity);
+        }
+
+        return $entity;
+    }
+
+    protected function postLoad($ID, $entity) {
         return $entity; # Override where needed
     }
 
-    public function save(Entity $entity) {
-        if ($this->use_cache && $entity->exists_in_db()) {
-            $this->uncache($entity->get_pkey_value());
+    #TODO make allowUpdate automatic based on pkey structure
+    public function save(Entity &$entity, $allowUpdate = false) {
+        # Check we're dealing with the right kind of object
+        if (!($entity instanceof $this->entityClass)) {
+            throw new InternalError("Attempt to save foreign entity.");
         }
-        $this->orm->save($entity);
+
+        # First check if there's anything to actually save!
+        if (!$entity->needsSaving()) {
+            return;
+        }
+
+        # Call the ORM to do the save
+        try {
+            $entity = $this->orm->save($entity, $allowUpdate);
+        } catch (SystemError $e) {
+            $message  = $e->getMessage();
+            $message .= $entity->printState();
+            throw new SystemError($message);
+        }
+
+        # Ensure we update the cache
+        if ($this->useCache && $entity->existsInDB()) {
+            if (!empty($entity->casToken)) {
+                $this->saveToCache($entity);
+            } else {
+                $this->uncache(implode('_', $entity->getPKeyValues()));
+            }
+        }
     }
 
     public function delete(Entity $entity) {
-        if ($this->use_cache && $entity->exists_in_db()) {
-            $this->uncache($entity->get_pkey_value());
+        if ($this->useCache && $entity->existsInDB()) {
+            $this->uncache(implode('_', $entity->getPKeyValues()));
         }
         $this->orm->delete($entity);
     }
 
-    public function get_cache_key($ID) {
+    public function getCacheKey($ID) {
+        if (is_array($ID)) {
+            $ID = implode('_', $ID);
+        }
         $key = "_entity_{$this->entityName}_{$ID}";
         return $key;
     }
 
     public function uncache($ID) {
-        $key = $this->get_cache_key($ID);
-        $this->cache->delete_value($key);
-        //if (array_key_exists($ID, $this->internal_cache)) {
-        //    unset($this->internal_cache[$ID]);
-        //}
+        if ($ID instanceof Entity) {
+            $ID = implode('_', $ID->getPKeyValues());
+        }
+        $key = $this->getCacheKey($ID);
+        $this->cache->deleteValue($key);
     }
 }

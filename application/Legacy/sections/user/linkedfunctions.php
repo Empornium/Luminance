@@ -1,189 +1,302 @@
 <?php
 
-function link_users($UserID, $TargetID)
+function link_users($userID, $TargetID)
 {
-    global $DB, $LoggedUser;
+    global $master, $activeUser;
 
     authorize();
     if (!check_perms('users_mod')) {
         error(403);
     }
 
-    if (!is_number($UserID) || !is_number($TargetID)) {
+    if (!is_integer_string($userID) || !is_integer_string($TargetID)) {
         error(403);
     }
-    if ($UserID == $TargetID) {
+    if ($userID == $TargetID) {
         return;
     }
 
-    $DB->query("SELECT 1 FROM users_main WHERE ID IN ($UserID, $TargetID)");
-    if ($DB->record_count() != 2) {
+    $master->db->rawQuery(
+        "SELECT 1
+           FROM users_main
+          WHERE ID IN (?, ?)",
+        [$userID, $TargetID]
+    );
+    if ($master->db->foundRows() != 2) {
         error(403);
     }
 
-    $DB->query("SELECT GroupID FROM users_dupes WHERE UserID = $TargetID");
-    list($TargetGroupID) = $DB->next_record();
-    $DB->query("SELECT u.GroupID, d.Comments FROM users_dupes AS u JOIN dupe_groups AS d ON d.ID = u.GroupID WHERE UserID = $UserID");
-    list($UserGroupID, $Comments) = $DB->next_record();
+    $targetGroupID = $master->db->rawQuery(
+        "SELECT GroupID
+           FROM users_dupes
+          WHERE UserID = ?",
+        [$TargetID]
+    )->fetchColumn();
 
-    $UserInfo = user_info($UserID);
+    list($userGroupID, $comments) = $master->db->rawQuery(
+        "SELECT u.GroupID,
+                d.Comments
+           FROM users_dupes AS u
+           JOIN dupe_groups AS d ON d.ID = u.GroupID
+          WHERE UserID = ?",
+        [$userID]
+    )->fetch(\PDO::FETCH_NUM);
+
+    $UserInfo = user_info($userID);
     $TargetInfo = user_info($TargetID);
     if (!$UserInfo || !$TargetInfo) {
         return;
     }
 
-    if ($TargetGroupID) {
-        if ($TargetGroupID == $UserGroupID) {
+    if ($targetGroupID) {
+        if ($targetGroupID == $userGroupID) {
             return;
         }
-        if ($UserGroupID) {
-            $DB->query("UPDATE users_dupes SET GroupID = $TargetGroupID WHERE GroupID = $UserGroupID");
-            $DB->query("UPDATE dupe_groups SET Comments = CONCAT('".db_string($Comments)."\n',Comments) WHERE ID = $TargetGroupID");
-            $DB->query("DELETE FROM dupe_groups WHERE ID = $UserGroupID");
-            $GroupID = $UserGroupID;
+        if ($userGroupID) {
+            $master->db->rawQuery(
+                "UPDATE users_dupes
+                    SET GroupID = ?
+                  WHERE GroupID = ?",
+                [$targetGroupID, $userGroupID]
+            );
+            $master->db->rawQuery(
+                "UPDATE dupe_groups
+                    SET Comments = CONCAT(?, Comments)
+                  WHERE ID = ?",
+                ["{$comments}\n", $targetGroupID]
+            );
+            $master->db->rawQuery(
+                "DELETE
+                   FROM dupe_groups
+                  WHERE ID = ?",
+                [$userGroupID]
+            );
+            $GroupID = $userGroupID;
         } else {
-            $DB->query("INSERT INTO users_dupes (UserID, GroupID) VALUES ($UserID, $TargetGroupID)");
-            $GroupID = $TargetGroupID;
+            $master->db->rawQuery(
+                "INSERT INTO users_dupes (UserID, GroupID)
+                      VALUES (?, ?)",
+                [$userID, $targetGroupID]
+            );
+            $GroupID = $targetGroupID;
         }
-    } elseif ($UserGroupID) {
-        $DB->query("INSERT INTO users_dupes (UserID, GroupID) VALUES ($TargetID, $UserGroupID)");
-        $GroupID = $UserGroupID;
+    } elseif ($userGroupID) {
+        $master->db->rawQuery(
+            "INSERT INTO users_dupes (UserID, GroupID)
+                  VALUES (?, ?)",
+            [$TargetID, $userGroupID]
+        );
+        $GroupID = $userGroupID;
     } else {
-        $DB->query("INSERT INTO dupe_groups () VALUES ()");
-        $GroupID = $DB->inserted_id();
-        $DB->query("INSERT INTO users_dupes (UserID, GroupID) VALUES ($TargetID, $GroupID)");
-        $DB->query("INSERT INTO users_dupes (UserID, GroupID) VALUES ($UserID, $GroupID)");
+        $master->db->rawQuery("INSERT INTO dupe_groups () VALUES ()");
+        $GroupID = $master->db->lastInsertID();
+        $master->db->rawQuery(
+            "INSERT INTO users_dupes (UserID, GroupID)
+                  VALUES (?, ?)",
+            [$TargetID, $GroupID]
+        );
+        $master->db->rawQuery(
+            "INSERT INTO users_dupes (UserID, GroupID)
+                  VALUES (?, ?)",
+            [$userID, $GroupID]
+        );
     }
 
-    $AdminComment = sqltime()." - Linked accounts updated: [user]".$UserInfo['ID']."[/user] and [user]".$TargetInfo['ID']."[/user] linked by ".$LoggedUser['Username'];
-    $DB->query("UPDATE users_info  AS i
-                JOIN   users_dupes AS d ON d.UserID = i.UserID
-                SET i.AdminComment = CONCAT('".db_string($AdminComment)."\n', i.AdminComment)
-                WHERE d.GroupID = $GroupID");
+    $AdminComment = sqltime()." - Linked accounts updated: [user]".$UserInfo['ID']."[/user] and [user]".$TargetInfo['ID']."[/user] linked by ".$activeUser['Username'];
+    $master->db->rawQuery(
+        "UPDATE users_info AS i
+           JOIN users_dupes AS d
+             ON d.UserID = i.UserID
+            SET i.AdminComment = CONCAT(?, i.AdminComment)
+          WHERE d.GroupID = ?",
+        ["{$AdminComment}\n", $GroupID]
+    );
 }
 
-function unlink_user($UserID)
+function unlink_user($userID)
 {
-    global $DB, $LoggedUser;
+    global $master, $activeUser;
 
     authorize();
     if (!check_perms('users_mod')) {
         error(403);
     }
 
-    if (!is_number($UserID)) {
+    if (!is_integer_string($userID)) {
         error(403);
     }
-    $UserInfo = user_info($UserID);
+    $UserInfo = user_info($userID);
     if ($UserInfo === FALSE) {
         return;
     }
-    $AdminComment = sqltime()." - Linked accounts updated: [user]".$UserInfo['ID']."[/user] unlinked by ".$LoggedUser['Username'];
-    $DB->query("UPDATE users_info  AS i
-                JOIN   users_dupes AS d1 ON d1.UserID = i.UserID
-                JOIN   users_dupes AS d2 ON d2.GroupID = d1.GroupID
-                SET i.AdminComment = CONCAT('".db_string($AdminComment)."\n', i.AdminComment)
-                WHERE d2.UserID = $UserID");
-    $DB->query("DELETE FROM users_dupes WHERE UserID='$UserID'");
-    $DB->query("DELETE g.* FROM dupe_groups AS g LEFT JOIN users_dupes AS u ON u.GroupID = g.ID WHERE u.GroupID IS NULL");
+    $AdminComment = sqltime()." - Linked accounts updated: [user]".$UserInfo['ID']."[/user] unlinked by ".$activeUser['Username'];
+    $master->db->rawQuery(
+        "UPDATE users_info AS i
+           JOIN users_dupes AS d1
+             ON d1.UserID = i.UserID
+           JOIN users_dupes AS d2
+             ON d2.GroupID = d1.GroupID
+            SET i.AdminComment = CONCAT(?, i.AdminComment)
+          WHERE d2.UserID = ?",
+        ["{$AdminComment}\n", $userID]
+    );
+    $master->db->rawQuery(
+        "DELETE
+           FROM users_dupes
+          WHERE UserID = ?",
+        [$userID]
+    );
+
+    $master->db->rawQuery(
+        "DELETE g
+           FROM dupe_groups AS g
+      LEFT JOIN users_dupes AS u ON u.GroupID = g.ID
+          WHERE u.GroupID IS NULL"
+    );
 }
 
 function delete_dupegroup($GroupID)
 {
-    global $DB;
+    global $master;
 
     authorize();
     if (!check_perms('users_mod')) {
         error(403);
     }
 
-    if (!is_number($GroupID)) {
+    if (!is_integer_string($GroupID)) {
         error(403);
     }
 
-    $DB->query("DELETE FROM dupe_groups WHERE ID = '$GroupID'");
+    $master->db->rawQuery(
+        "DELETE
+           FROM dupe_groups
+          WHERE ID = ?",
+        [$GroupID]
+    );
 }
 
 function dupe_comments($GroupID, $Comments)
 {
-    global $DB, $Text, $LoggedUser;
+    global $master, $bbCode, $activeUser;
 
     authorize();
     if (!check_perms('users_mod')) error(403);
-    if (!is_number($GroupID)) error(0);
+    if (!is_integer_string($GroupID)) error(0);
 
-    $DB->query("SELECT Comments, SHA1(Comments) AS CommentHash FROM dupe_groups WHERE ID = '$GroupID'");
-    list($OldComment, $OldCommentHash) = $DB->next_record();
-    if ($OldCommentHash != sha1($Comments)) {
-        $AdminComment = sqltime()." - Linked accounts updated: Comments changed from [bg=#aaaaaa40]". ($OldComment)."[/bg] to [bg=#aaaaaa40]". ($Comments)."[/bg] by ".$LoggedUser['Username'];
-        if ($_POST['form_comment_hash'] == $OldCommentHash) {
-            $DB->query("UPDATE dupe_groups SET Comments = '".db_string($Comments)."' WHERE ID = '$GroupID'");
+    list($oldComment, $oldCommentHash) = $master->db->rawQuery(
+        "SELECT Comments,
+                SHA1(Comments) AS CommentHash
+           FROM dupe_groups
+          WHERE ID = ?",
+        [$GroupID]
+    )->fetch(\PDO::FETCH_NUM);
+
+    if ($oldCommentHash != sha1($Comments)) {
+        $AdminComment = sqltime()." - Linked accounts updated: Comments changed from [bg=#aaaaaa40]". ($oldComment)."[/bg] to [bg=#aaaaaa40]". ($Comments)."[/bg] by ".$activeUser['Username'];
+        if ($_POST['form_comment_hash'] == $oldCommentHash) {
+            $master->db->rawQuery(
+                "UPDATE dupe_groups
+                    SET Comments = ?
+                  WHERE ID = ?",
+                [$Comments, $GroupID]
+            );
         } else {
-            $DB->query("UPDATE dupe_groups SET Comments = CONCAT('".db_string($Comments)."\n',Comments) WHERE ID = '$GroupID'");
+            $master->db->rawQuery(
+                "UPDATE dupe_groups
+                    SET Comments = CONCAT(?, Comments)
+                  WHERE ID = ?",
+                ["{$Comments}\n", $GroupID]
+            );
         }
 
-        $DB->query("UPDATE users_info  AS i
-                    JOIN   users_dupes AS d ON d.UserID = i.UserID
-                    SET i.AdminComment = CONCAT('".db_string($AdminComment)."\n', i.AdminComment)
-                    WHERE d.GroupID = $GroupID");
+        $master->db->rawQuery(
+            "UPDATE users_info AS i
+               JOIN users_dupes AS d
+                 ON d.UserID = i.UserID
+                SET i.AdminComment = CONCAT(?, i.AdminComment)
+              WHERE d.GroupID = ?",
+            ["{$AdminComment}\n", $GroupID]
+        );
     }
 }
 
-function user_dupes_table($UserID, $Username)
+function user_dupes_table($userID, $Username)
 {
-    global $DB, $LoggedUser;
-    $Text = new Luminance\Legacy\Text;
+    global $master, $activeUser;
+    $bbCode = new \Luminance\Legacy\Text;
 
     if (!check_perms('users_mod')) {
         error(403);
     }
-    if (!is_number($UserID)) {
+    if (!is_integer_string($userID)) {
         error(403);
     }
 
-    $DB->query("SELECT d.ID, d.Comments, SHA1(d.Comments) AS CommentHash
-                FROM dupe_groups AS d
-                JOIN users_dupes AS u ON u.GroupID = d.ID
-                WHERE u.UserID = $UserID");
-    if (list($GroupID, $Comments, $CommentHash) = $DB->next_record()) {
-        $DB->query("SELECT m.ID
-                    FROM users_main AS m
-                    JOIN users_dupes AS d ON m.ID = d.UserID
-                    WHERE d.GroupID = $GroupID
-                    ORDER BY m.ID ASC");
-        $DupeCount = $DB->record_count();
-        $Dupes = $DB->to_array('ID');
+    $dupeGroup = $master->db->rawQuery(
+        'SELECT d.ID
+           FROM dupe_groups AS d
+           JOIN users_dupes AS u ON u.GroupID = d.ID
+          WHERE u.UserID = ?',
+          [$userID]
+    )->fetchColumn();
+
+    if (is_integer_string($dupeGroup)) {
+        $Dupes = $master->db->rawQuery(
+            'SELECT m.ID
+               FROM users_main AS m
+               JOIN users_dupes AS d ON m.ID = d.UserID
+              WHERE d.GroupID = ?
+           ORDER BY m.ID ASC',
+           [$dupeGroup]
+        )->fetchAll(\PDO::FETCH_COLUMN);
     } else {
-        $DupeCount = 0;
-        $Dupes = array();
+        $Dupes = [];
     }
 
-/*  This breaks badly for users with large numbers of IPs
-    $DB->query("SELECT uh.UserID AS UserID, uh.IP
-                  FROM users_history_ips AS uh
-                  JOIN users_history_ips AS me ON uh.IP=me.IP
-                 WHERE uh.IP != '127.0.0.1' AND uh.IP !='' AND me.UserID = $UserID AND uh.UserID != $UserID
-              GROUP BY UserID, IP
-              ORDER BY UserID, IP
-                 LIMIT 50"); */
-
     /* LIMIT results to latest 500 IPs from History */
-    $DB->query("SELECT uh.UserID AS UserID, uh.IP, e.Address
-                  FROM users_history_ips AS uh
-                  JOIN (SELECT IP, UserID FROM users_history_ips
-                 WHERE IP != '127.0.0.1' AND IP !='' AND UserID = $UserID
-              ORDER BY StartTime DESC
-                 LIMIT 500) AS me ON uh.IP=me.IP
-                  LEFT JOIN users AS u ON u.ID=uh.UserID
-                  LEFT JOIN emails AS e ON e.ID=u.EmailID
-                 WHERE uh.UserID!=$UserID
-              GROUP BY UserID, IP
-              ORDER BY UserID, IP
-                 LIMIT 50");
+    $ipids = $master->db->rawQuery(
+        'SELECT IPID
+           FROM users_history_ips
+          WHERE IPID IS NOT NULL
+            AND UserID = ?
+       GROUP BY IPID
+       ORDER BY MAX(StartTime) DESC
+          LIMIT 500',
+        [$userID]
+    )->fetchAll(\PDO::FETCH_COLUMN);
 
-    $IPDupeCount = $DB->record_count();
-    $IPDupes = $DB->to_array();
+    $IPDupeCount = 0;
+    $IPDupes = [];
+
+    /* Search for duplicates in the DB, halt at 50 */
+    foreach ($ipids as $ipid) {
+        $newIPDupes = $master->db->rawQuery(
+            "SELECT uh.UserID AS UserID,
+                    INET6_NTOA(ips.StartAddress),
+                    e.Address
+               FROM users_history_ips AS uh
+          LEFT JOIN users AS u ON u.ID = uh.UserID
+          LEFT JOIN emails AS e ON e.ID = u.EmailID
+          LEFT JOIN ips ON ips.ID = uh.IPID
+              WHERE uh.UserID != ?
+                AND uh.IPID = ?
+           GROUP BY uh.UserID, uh.IPID
+              LIMIT 50",
+            [$userID, $ipid]
+        )->fetchAll(\PDO::FETCH_BOTH);
+        $IPDupeCount = $master->db->foundRows();
+        $IPDupes = array_merge($IPDupes, $newIPDupes);
+        if ($IPDupeCount >= 50) {
+            break;
+        }
+    }
+
     if ($IPDupeCount>0) {
+        if ($IPDupeCount>50) {
+            $IPDupeCount = 50;
+            $IPDupes = array_slice($IPDupes, 0, 50);
+        }
 ?>
         <div class="head">
             <span style="float:left;"><?=$IPDupeCount?> record<?=(($IPDupeCount == 1)?'':'s')?> with the same IP address</span>
@@ -196,27 +309,31 @@ function user_dupes_table($UserID, $Username)
                 list($EUserID, $IP, $Email) = $IPDupe;
                 $DupeInfo = user_info($EUserID);
 
-            $Row = ($Row == 'a') ? 'b' : 'a';
+            $row = ($row ?? 'a') == 'a' ? 'b' : 'a';
 ?>
-            <tr class="row<?=$Row?>">
+            <tr class="row<?=$row?>">
                 <td align="left">
-                    <?=format_username($EUserID, $DupeInfo['Username'], $DupeInfo['Donor'], true, $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
+                    <?=format_username($EUserID, $DupeInfo['Donor'], true, $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
                 </td>
                 <td align="left">
+                <?php if (check_perms('users_view_email')) { ?>
                     <?=display_str($Email)?>
+                <?php } ?>
                 </td>
                 <td align="left">
+                <?php if (check_perms('users_view_ips')) { ?>
                     <?=display_ip($IP, $DupeInfo['ipcc'])?>
+                <?php } ?>
                 </td>
                 <td>
 <?php
-                    if ( !array_key_exists($EUserID, $Dupes) ) {
+                    if (!in_array(intval($EUserID), $Dupes)) {
 ?>
-                        [<a href="/user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>">link</a>]
+                        [<a href="/user.php?action=dupes&dupeaction=link&auth=<?=$activeUser['AuthKey']?>&userid=<?=$userID?>&targetid=<?=$EUserID?>">link</a>]
 <?php
                     }
 ?>
-                    [<a href="/tools.php?action=compare_users&usera=<?=$UserID?>&userb=<?=$EUserID?>">compare</a>]
+                    [<a href="/tools.php?action=compare_users&usera=<?=$userID?>&userb=<?=$EUserID?>">compare</a>]
                 </td>
             </tr>
 <?php
@@ -226,66 +343,4 @@ function user_dupes_table($UserID, $Username)
         </div>
 <?php
     }
-
-?>
-        <div class="head">
-            <span style="float:left;"><?=$DupeCount?max($DupeCount - 1, 0).' ':''?>Linked Account<?=(($DupeCount == 2)?'':'s')?></span>
-            <span style="float:right;"><a href="#" id="linkedbutton" onclick="return Toggle_view('linked');">(Hide)</a></span>&nbsp;
-        </div>
-       <div class="box">
-        <form method="POST" id="linkedform">
-            <input type="hidden" name="action" value="dupes" />
-            <input type="hidden" name="dupeaction" value="update" />
-            <input type="hidden" name="userid" value="<?=$UserID?>" />
-            <input type="hidden" id="auth" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-            <input type="hidden" id="form_comment_hash" name="form_comment_hash" value="<?=$CommentHash?>" />
-                 <table width="100%"  id="linkeddiv" class="linkedaccounts shadow">
-                    <?=($DupeCount?'<tr >':'')?>
-<?php
-    $i = 0;
-    foreach ($Dupes as $Dupe) {
-        $i++;
-        list($DupeID) = $Dupe;
-        $DupeInfo = user_info($DupeID);
-        $Row = ($Row == 'b') ? 'a' : 'b';
-?>
-                    <td class="row<?=$Row?>" align="left"><?=format_username($DupeID, $DupeInfo['Username'], $DupeInfo['Donor'], true, $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
-                        [<a href="/user.php?action=dupes&dupeaction=remove&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&removeid=<?=$DupeID?>" onClick="return confirm('Are you sure you wish to remove <?=$DupeInfo['Username']?> from this group?');">x</a>]</td>
-<?php
-        if ($i == 4) {
-            $i = 0;
-            echo '</tr><tr>';
-        }
-    }
-    if ($DupeCount) {
-        for ($j = $i; $j < 4; $j++) {
-            echo '<td>&nbsp;</td>';
-        }
-?>
-                    </tr>
-                    <tr class="rowa">
-                        <td colspan="5" align="left"><strong>Comments:</strong></td>
-                    </tr>
-                    <tr class="rowa">
-                        <td colspan="5" align="left">
-                            <div id="dupecomments" class="<?=($DupeCount?'':'hidden')?>"><?=$Text->full_format($Comments);?></div>
-                            <div id="editdupecomments" class="<?=$DupeCount?'hidden':''?>">
-                                <textarea id="dupecommentsbox" name="dupecomments" onkeyup="resize('dupecommentsbox');" cols="65" rows="5" style="width:98%;"><?=display_str($Comments)?></textarea>
-                                                <input type="submit" name="submitcomment" value="Save" />
-                            </div>
-                            <span style="float:right;"><a href="#" onClick="$('#dupecomments').toggle(); $('#editdupecomments').toggle(); resize('dupecommentsbox');return false;">(Edit comments)</a>
-                        </td>
-                    </tr>
-<?php 	}	?>
-                    <tr>
-                        <td colspan="5" align="left">
-                                        <label for="target">Link this user with: </label>
-                                        <input type="text" name="target" id="target" title="Enter the username of the account you wish to link this to" />
-                                        <input type="submit" name="submitlink" value="Link" id="submitlink" />
-                                    </td>
-                    </tr>
-                </table>
-        </form>
-            </div>
-<?php
 }

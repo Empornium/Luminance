@@ -2,7 +2,6 @@
 namespace Luminance\Repositories;
 
 use Luminance\Core\Repository;
-use Luminance\Entities\Invite;
 
 class InviteRepository extends Repository {
 
@@ -25,6 +24,17 @@ class InviteRepository extends Repository {
      * @return mixed
      */
     public function getByAddress($email) {
-        return $this->get('Email = ?', [$email]);
+        return $this->get('Email = ?', [$email], "invite_{$email}");
+    }
+
+    /**
+     * Delete Invite entity from cache
+     * @param int|Invite $invite invite to uncache
+     *
+     */
+    public function uncache($invite) {
+        $invite = $this->load($invite);
+        parent::uncache($invite);
+        $this->cache->deleteValue("_query_Invite_Email_{$invite->Email}");
     }
 }

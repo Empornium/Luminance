@@ -1,0 +1,58 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block title %}Edit Reminder{% endblock %}
+
+{% block main_content %}
+    <div class="thin">
+        <div id="quickreplypreview">
+            <div id="contentpreview" class="preview_content" style="text-align:left;"></div>
+        </div>
+        <div class="box pad">
+            <div class="center">
+                <strong><font size="4">Warning: Beta phase! Removals, deletions, and preview do not yet function</font></strong>
+            </div>
+        </div>
+        <form id="quickpostform" action="/user/{{ reminder.ID }}/reminder" method="post">
+            <div class="box pad">
+                <div id="edit">
+                    <div id="quickreplytext">
+                        <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                        <input type="hidden" name="reminderid" value="{{ reminder.ID }}" />
+                        <h3>Subject</h3>
+                        <input type="text" name="subject" size="95" value="{{ reminder.Subject }}" required/>
+                        <br />
+                        <h3>Note</h3>
+                            {{ bbcode.display_bbcode_assistant('textbody')|raw }}
+                        <textarea id="textbody" name="note" class="long" rows="15">{{ reminder.Note }}</textarea>
+                    </div>
+                    <br />
+                    <div class="center">
+                        <tr><td>
+                            <input type="radio" name="type" id="type_pers" value="pers" {% if reminder.Type == pers %} checked="checked" {% endif %} checked="checked" />
+                            <label for="type_pers">Personal</label>
+                            <input type="radio" name="type" id="type_group" value="group" {% if reminder.Type == group %} checked="checked" {% endif %} onchange="toggle_visible('typeLevel')"/>
+                            <label for="type_group">Group</label>
+                        </td></tr>
+                        <tr name="typeLevel" class="typeLevel hidden"><td>
+                            <select name="stafflevel">
+                                <option value="">Select If Group</option>
+                                {% for class in classes if class.IsUserClass == '1' %}
+                                    <option value="{{ class.Level }}" {{ reminder.StaffLevel == class.Level ? 'selected="selected"' }}>
+                                        {{ class.Name|truncate(20)}}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </td></tr>
+                        <br />
+                        <br />
+                        Date Due <input type="datetime" name="RemindDate" value="{{ reminder.RemindDate|date('Y-m-d H:m:s') }}" required>
+                    </div>
+                    <br />
+               <div class="center">
+                <input id="post_preview" type="button" value="Preview" onclick="if (this.preview) {Quick_Edit_Blog();} else {Quick_Preview_Blog();}" />
+                      <input type="submit" value="Edit reminder" />
+                </div>
+            </div>
+        </form>
+    </div>
+{% endblock %}

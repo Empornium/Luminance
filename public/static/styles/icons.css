@@ -1,0 +1,374 @@
+.torrent_icon_container {
+		display: flex;
+		flex-direction: row;
+}
+
+.icon_container {
+	display: inline-flex;
+	vertical-align: top;
+}
+
+.torrent_icon_container .icon_stack {
+		width: 18px;
+		height: 22px;
+		animation-play-state: paused;
+}
+
+
+.torrent_icon_container .icon_stack:hover {
+		animation-play-state: running;
+}
+
+.icon_stack {
+    width: 1.4em;
+    height: 1.4em;
+    display: inline-block;
+    vertical-align: top;
+    position: relative;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+.icon {
+    display:inline-block;
+    margin-right: 4px;
+}
+
+.font_icon {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 1em;
+    height: 1em;
+		padding: 1px 1px 1px 1px;
+		margin: auto;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.font_icon.nav_icons {
+    margin-left: 0.25em;
+    padding-bottom: 2px;
+    color: #d2d2d2;
+}
+
+.font_icon.forum_icons {
+    width: 1.25em;
+    height: 1.25em;
+    background: linear-gradient(to bottom, #d4d4d4 0%, #f8f8f8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #969696;
+}
+
+.font_icon.misc_icons {
+    color: #2d3f68;
+}
+
+.font_icon.misc_icons:hover {
+    color: #5c7cbc;
+}
+
+.torrent_grid .font_icon.torrent_icons {
+		color: white;
+}
+
+.font_icon.torrent_icons {
+    font-size: 18px;
+    color: #2d3f68;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #8884;
+}
+
+.font_icon.clickable {
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.font_icon.torrent_icons.download {
+    background: linear-gradient(170deg, #100080 0%, #00a8ff 25%, #100080 50%, #00a8ff 75%, #100080 100%);
+		background-size: 100% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #96969640;
+		animation: download_pulse 1s linear infinite;
+		animation-play-state: inherit;
+}
+
+.font_icon.torrent_icons.download.warned {
+    background: linear-gradient(170deg, #f2f2f2 0%, #dadada 50%, #d3d3d3 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #96969640;
+}
+
+.font_icon.torrent_icons.leeching {
+    background: linear-gradient(170deg, #298000 0%, #5ae707 25%, #298000 50%, #5ae707 75%, #298000 100%);
+		background-size: 100% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #96969640;
+		animation: download_pulse 1s linear infinite;
+		animation-play-state: inherit;
+}
+
+.font_icon.torrent_icons.leeching.warned {
+    background: linear-gradient(170deg, #800000 0%, #e70707 25%, #800000 50%, #e70707 75%, #800000 100%);
+		background-size: 100% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #96969640;
+		animation: download_pulse 1s linear infinite;
+		animation-play-state: inherit;
+}
+
+.font_icon.torrent_icons.seeding {
+    background: linear-gradient(170deg, #298000 0%, #5ae707 25%, #298000 50%, #5ae707 75%, #298000 100%);
+		background-size: 100% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #96969640;
+		animation: upload_pulse 1s linear infinite;
+		animation-play-state: inherit;
+}
+
+.font_icon.torrent_icons.seeding.warned {
+    background: linear-gradient(170deg, #800000 0%, #e70707 25%, #800000 50%, #e70707 75%, #800000 100%);
+		background-size: 100% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #96969640;
+		animation: upload_pulse 1s linear infinite;
+		animation-play-state: inherit;
+}
+
+.font_icon.torrent_icons.icon_torrent_disk_inner {
+    color: transparent;
+}
+
+.redbar .font_icon.torrent_icons.icon_torrent_disk_inner {
+    color:  #00000080;
+}
+
+.font_icon.torrent_icons.icon_torrent_disk.grabbed {
+    -webkit-text-fill-color: #ffa500;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #96610060;
+}
+
+.font_icon.torrent_icons.icon_torrent_disk.snatched {
+    -webkit-text-fill-color: #8f00ff;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #34015d60;
+}
+
+@keyframes download_pulse {
+	0%    {background-position: 50% 100% }
+	100%  {background-position: 50% 0%   }
+}
+
+@keyframes upload_pulse {
+	0%    {background-position: 50% 0%   }
+	100%  {background-position: 50% 100% }
+}
+
+.font_icon.torrent_icons.icon_torrent_warned {
+    background: linear-gradient(to bottom, #fbd66b 0%, #f19a06 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #c96a1b40;
+}
+
+.font_icon.torrent_icons.icon_torrent_okay {
+    background: linear-gradient(to bottom, #dcefb8 0%, #48912c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #85b47d40;
+}
+
+.font_icon.torrent_icons.bonus.icon_torrent_leeching {
+		font-size: 0.9em;
+		text-align: right;
+    margin-top: auto;
+    margin-bottom: unset;
+		width: 100%;
+		bottom: 0;
+}
+
+.font_icon.torrent_icons.bonus.icon_torrent_seeding {
+		font-size: 0.9em;
+		text-align: left;
+    margin-top: unset;
+    margin-bottom: auto;
+		width: 100%;
+		bottom: 0;
+}
+
+.font_icon.torrent_icons.icon_torrent_bonus {
+		background: linear-gradient(170deg, #f2f2f2 0%, #dadada 50%, #d3d3d3 100%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		-webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #969696;
+}
+
+.font_icon.torrent_icons.icon_torrent_bonus.bonus {
+    background: linear-gradient(to bottom, #ffe000 0%, #fbd000 50%, #ffe000 100%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		-webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #ff81006e;
+}
+.font_icon.torrent_icons.personal.icon_torrent_bonus {
+    background: linear-gradient(315deg, #b8c6db 0%, #f5f7fa 74%);
+		-webkit-background-clip: text;
+    -webkit-text-stroke-color: #ff81006e;
+}
+
+.font_icon.torrent_icons.personal_leech.icon_torrent_leeching {
+    background: linear-gradient(170deg, #298000 0%, #5ae707 25%, #298000 50%, #5ae707 75%, #298000 100%);
+		background-size: 100% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #96969640;
+		animation: download_pulse 1s linear infinite;
+		animation-play-state: inherit;
+}
+
+.font_icon.torrent_icons.unlimited_leech.icon_torrent_leeching {
+		background: linear-gradient(170deg, #100080 0%, #00a8ff 25%, #100080 50%, #00a8ff 75%, #100080 100%);
+		background-size: 100% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #96969640;
+		animation: download_pulse 1s linear infinite;
+		animation-play-state: inherit;
+}
+
+.font_icon.torrent_icons.sitewide_leech.icon_torrent_leeching {
+    background: linear-gradient(170deg, #800000 0%, #e70707 25%, #800000 50%, #e70707 75%, #800000 100%);
+		background-size: 100% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #96969640;
+		animation: download_pulse 1s linear infinite;
+		animation-play-state: inherit;
+}
+
+.font_icon.torrent_icons.personal_seed.icon_torrent_seeding {
+    background: linear-gradient(170deg, #298000 0%, #5ae707 25%, #298000 50%, #5ae707 75%, #298000 100%);
+		background-size: 100% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #96969640;
+		animation: upload_pulse 1s linear infinite;
+		animation-play-state: inherit;
+}
+
+.font_icon.torrent_icons.unlimited_seed.icon_torrent_seeding {
+		background: linear-gradient(170deg, #100080 0%, #00a8ff 25%, #100080 50%, #00a8ff 75%, #100080 100%);
+		background-size: 100% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #96969640;
+		animation: upload_pulse 1s linear infinite;
+		animation-play-state: inherit;
+}
+
+.font_icon.torrent_icons.sitewide_seed.icon_torrent_seeding {
+    background: linear-gradient(170deg, #800000 0%, #e70707 25%, #800000 50%, #e70707 75%, #800000 100%);
+		background-size: 100% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #96969640;
+		animation: upload_pulse 1s linear infinite;
+		animation-play-state: inherit;
+}
+
+.font_icon.torrent_icons.bookmark {
+    background: linear-gradient(to bottom, #f2f2f2 0%, #dadada 50%, #d3d3d3 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #969696;
+}
+
+.font_icon.bookmark.bookmarked {
+    background: linear-gradient(to bottom, #889ce4 0%, #077be7 50%, #17b0ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #2456b2;
+}
+
+.font_icon.bookmark.action_confirm {
+    background: linear-gradient(to bottom, #e48686 0%, #e90707 50%, #ff1a1a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #b22424;
+}
+
+.font_icon.icon_torrent_ducky {
+    background: linear-gradient(to bottom, #e4c388 0%, #e7ac07 50%, #fff817 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #b27924;
+}
+
+.font_icon.bookmark.action_confirm:hover::after {
+    all: initial;
+		white-space: nowrap;
+    content: "Click again to remove!";
+    padding: 3px 5px;
+    position: absolute;
+    margin-top: -5px;
+    color: white;
+    background: #e90707;
+    border: 1px solid #ff1a1a;
+}
+
+.font_icon.forum_icons.icon_forum_latest {
+    -webkit-text-fill-color: #f3fbff;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #969696;
+    margin-left: 0.4em;
+}
+
+.font_icon.forum_icons.forum_hint_unread {
+    background: linear-gradient(to bottom, #bde7f7 0%, #ffffff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #1884ce;
+}
+
+.font_icon.forum_icon.active {
+    color: #a90909;
+		text-shadow: 0px 0px 8px #101010;
+}
+
+.forum_icon_container:hover .font_icon.forum_icons {
+		font-size: 1.1em;
+    background: linear-gradient(to bottom, #bde7f7 0%, #ffffff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #1884ce;
+}

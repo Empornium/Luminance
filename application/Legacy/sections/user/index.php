@@ -6,13 +6,16 @@ Should the advanced search really only show if they match 3 perms?
 Make sure all constants are defined in config.php and not in random files
 *****************************************************************/
 enforce_login();
-$Val = new Luminance\Legacy\Validate;
+$Val = new \Luminance\Legacy\Validate;
 
 if (empty($_REQUEST['action'])) { $_REQUEST['action']=''; }
 
 switch ($_REQUEST['action']) {
-      case 'dupes':
+    case 'dupes':
         include 'manage_linked.php';
+        break;
+    case 'groups':
+        include 'manage_groups.php';
         break;
     case 'notify':
         include 'notify_edit.php';
@@ -22,10 +25,16 @@ switch ($_REQUEST['action']) {
         break;
     case 'notify_delete':
         authorize();
-        if ($_GET['id'] && is_number($_GET['id'])) {
-            $DB->query("DELETE FROM users_notify_filters WHERE ID='".db_string($_GET['id'])."' AND UserID='$LoggedUser[ID]'");
+        if ($_GET['id'] && is_integer_string($_GET['id'])) {
+            $master->db->rawQuery(
+                "DELETE
+                   FROM users_notify_filters
+                  WHERE ID = ?
+                    AND UserID = ?",
+                [$_GET['id'], $activeUser['ID']]
+            );
         }
-        $Cache->delete_value('notify_filters_'.$LoggedUser['ID']);
+        $master->cache->deleteValue('notify_filters_'.$activeUser['ID']);
         header('Location: user.php?action=notify');
         break;
     case 'search':// User search
@@ -40,9 +49,6 @@ switch ($_REQUEST['action']) {
         break;
     case 'takeedit':
         include 'takeedit.php';
-        break;
-    case 'invitetree':
-        include 'invitetree.php';
         break;
     case 'sessions':
         include 'sessions.php';
@@ -60,12 +66,12 @@ switch ($_REQUEST['action']) {
         include 'takemoderate.php';
         break;
     default:
-        if ($_REQUEST['action']=='reset_login_watch' && is_number($_POST['loginid']) ) {
+        if ($_REQUEST['action']=='reset_login_watch' && is_integer_string($_POST['loginid'])) {
             authorize();
             if (!check_perms('admin_login_watch')) error(403);
 
-            if ($flood = $master->repos->floods->load($_POST['loginid'])) {
-                $master->repos->floods->delete($flood);
+            if ($flood = $master->repos->requestfloods->load($_POST['loginid'])) {
+                $master->repos->requestfloods->delete($flood);
             }
 
             if ($IP = $master->repos->ips->load($flood->IPID)) {

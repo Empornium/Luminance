@@ -1,0 +1,16 @@
+{# How do we handle this now? #}
+{#{% set flashes = master.flasher.grabFlashes() %}#}
+{% if flashes is not empty %}
+    <noscript>
+        <div id="forcediv">
+            <div id="flashes" class="flashes" style="margin-bottom: 20px;">
+                <div class="flashControls">
+                    <span id="flashClose" onclick="$(forcediv).hide();" class="close">Dismiss</span>
+                </div>
+                {% for flash in flashes %}
+                    <div id="messagebarA" class="flash {{ flash.severity }}" title="{{ flash.message }}"><pre>{{ flash.message | raw }}</pre></div>
+                {% endfor %}
+            </div>
+        </div>
+    </noscript>
+{% endif %}

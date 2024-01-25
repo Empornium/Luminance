@@ -31,7 +31,8 @@ function InitDupeHelper()
         else if (mul == 'TiB') startsize *= 1024 * 1024 * 1024 * 1024;
         else if (mul == 'PiB') startsize *= 1024 * 1024 * 1024 * 1024 * 1024;
         currentsize = startsize;
-        $('#copylink').html('<a href="#" onclick="CopyDupePMtext();" title="auto generates bbcode PM text for the uploader and puts it in the clipboard">generate PM bbcode to clipboard</a><br/><a href="#" onclick="CopyLinks();" title="copy the raw urls to the clipboard">copy selected links to clipboard</a><br/><a href="#" onclick="GotoDelete();" title="takes you to the v2 delete form and auto fills it">delete torrent v2</a>')
+        //$('#copylink').html('<a href="#" onclick="CopyDupePMtext();" title="auto generates bbcode PM text for the uploader and puts it in the clipboard">generate PM bbcode to clipboard</a><br/><a href="#" onclick="CopyLinks();" title="copy the raw urls to the clipboard">copy selected links to clipboard</a><br/><a href="#" onclick="GotoDelete();" title="takes you to the v2 delete form and auto fills it">delete torrent</a>')
+        $('#copylink').html('<a href="#" onclick="CopyDupePMtext();" title="auto generates bbcode PM text for the uploader and puts it in the clipboard">generate PM bbcode to clipboard</a><br/><a href="#" onclick="CopyLinks();" title="copy the raw urls to the clipboard">copy selected links to clipboard</a>')
     }
 }
 
@@ -130,7 +131,7 @@ function GotoDelete()
 function SetMessage() {
   var id = document.getElementById('common_answers_select').value;
 
-  ajax.get("?action=get_response&plain=1&id=" + id, function (data) {
+  ajax.get("/staffpm.php?action=get_response&plain=1&id=" + id, function (data) {
     if ( $('#quickpost').raw().value != '') data = "\n"+data+"\n";
         insert(data, 'quickpost');
     $('#common_answers').hide();
@@ -140,7 +141,7 @@ function SetMessage() {
 function UpdateMessage() {
   var id = document.getElementById('common_answers_select').value;
 
-  ajax.get("?action=get_response&plain=0&id=" + id, function (data) {
+  ajax.get("/staffpm.php?action=get_response&plain=0&id=" + id, function (data) {
     $('#common_answers_body').raw().innerHTML = data;
     $('#first_common_response').remove()
   });
@@ -188,7 +189,7 @@ function SaveMessage(id) {
   ToPost['name'] = $('#response_name_' + id).raw().value;
   ToPost['message'] = $('#response_message_' + id).raw().value;
 
-  ajax.post("?action=edit_response", ToPost, function (data) {
+  ajax.post("/staffpm.php?action=edit_response", ToPost, function (data) {
       if (data == '1') {
         $(ajax_message).raw().innerHTML = 'Response successfully created.';
                         $(ajax_message).remove_class('alert');
@@ -221,7 +222,7 @@ function DeleteMessage(id) {
 
   var ToPost = [];
   ToPost['id'] = id;
-  ajax.post("?action=delete_response", ToPost, function (data) {
+  ajax.post("/staffpm.php?action=delete_response", ToPost, function (data) {
     $('#response_head_' + id).hide();
     $('#response_' + id).hide();
     if (data == '1') {
@@ -240,7 +241,7 @@ function Assign() {
   var ToPost = [];
   ToPost['assign'] = document.getElementById('assign_to').value;
   ToPost['convid'] = document.getElementById('convid').value;
-  ajax.post("?action=assign", ToPost, function (data) {
+  ajax.post("/staffpm.php?action=assign", ToPost, function (data) {
     if (data == '1') {
       document.getElementById('ajax_message').textContent = 'Conversation successfully assigned.';
     } else {
@@ -275,7 +276,7 @@ function AssignUrgency() {
             }
         }
     } */
-    ajax.post("?action=assign_urgency", ToPost, function (data) {
+    ajax.post("/staffpm.php?action=assign_urgency", ToPost, function (data) {
         if (data == '1') {
             $('#ajax_message').raw().innerHTML = 'Force Response assigned.';
         } else {
@@ -293,7 +294,7 @@ function PreviewResponse(id) {
   if ($(div).has_class('hidden')) {
     var ToPost = [];
     ToPost['message'] = document.getElementById('response_message_'+id).value;
-    ajax.post('?action=preview', ToPost, function (data) {
+    ajax.post('/staffpm.php?action=preview', ToPost, function (data) {
       document.getElementById('response_div_'+id).innerHTML = data;
       $(div).toggle();
       $('#response_editor_'+id).toggle();
@@ -311,7 +312,7 @@ function PreviewMessage() {
   if ($('#preview').has_class('hidden')) {
     var ToPost = [];
     ToPost['message'] = document.getElementById('quickpost').value;
-    ajax.post('?action=preview', ToPost, function (data) {
+    ajax.post('/staffpm.php?action=preview', ToPost, function (data) {
       document.getElementById('preview').innerHTML = data;
       $('#preview').toggle();
       $('#quickpost').toggle();

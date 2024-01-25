@@ -7,7 +7,7 @@ if (!check_perms('admin_reports')) {
     error(403, true);
 }
 
-if (empty($_POST['reportid']) || !is_number($_POST['reportid'])) {
+if (empty($_POST['reportid']) || !is_integer_string($_POST['reportid'])) {
     //echo 'HAX ATTEMPT!'.$_GET['reportid'];
     //die();
     error(0, true);
@@ -15,11 +15,20 @@ if (empty($_POST['reportid']) || !is_number($_POST['reportid'])) {
 
 $ReportID = (int)$_POST['reportid'];
 
-$Message = db_string($_POST['comment']);
+$Message = $_POST['comment'];
 //Message can be blank!
 
-$DB->query("SELECT ModComment FROM reportsv2 WHERE ID=".$ReportID);
-list($ModComment) = $DB->next_record();
+$ModComment = $master->db->rawQuery(
+    "SELECT ModComment
+       FROM reportsv2
+      WHERE ID = ?",
+    [$ReportID]
+)->fetchColumn();
 if (isset($ModComment)) {
-    $DB->query("Update reportsv2 SET ModComment='".$Message."' WHERE ID=".$ReportID);
+    $master->db->rawQuery(
+        "UPDATE reportsv2
+            SET ModComment = ?
+          WHERE ID = ?",
+        [$Message, $ReportID]
+    );
 }

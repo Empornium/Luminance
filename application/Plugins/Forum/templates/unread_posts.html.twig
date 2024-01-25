@@ -1,0 +1,111 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    Unread Posts
+{% endblock %}
+
+{% block main_content %}
+    {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::FORUM')) %}
+    {{ render.latestForumThreads() }}
+    <div class="linkbox">
+        [<a href="/forum/catchup/{{ forum.ID }}">Catch up</a>]
+    </div>
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9) }}
+    </div>
+    <div class="head"><a href="/forum/">Forum</a> &gt; Unread Posts</div>
+    <table class="forum_index">
+        <tr class="colhead">
+            <td style="width:2%;"></td>
+            <td style="width:25%;">Forum</td>
+            <td>Topic</td>
+            <td style="text-align: center;width:7%;">Replies</td>
+            <td style="text-align: center;width:7%;">Views</td>
+        </tr>
+        {% if posts is empty %}
+            <tr>
+                <td colspan="5" class="center">
+                    No unread posts
+                </td>
+            </tr>
+        {% else %}
+            {% for post in posts %}
+                {% set unread = '' %}
+                {% set icons  = [] %}
+                {% set title  = '' %}
+                {% set sticky = '' %}
+                {% if post.thread.hasUnread(ActiveUser) %}
+                    {% set unread = 'forum_hint_unread' %}
+                {% endif %}
+                {% if post.thread.IsLocked %}
+                    {% set icons = icons|merge(['forum_locked']) %}
+                    {% set title = title ~ 'Locked ' %}
+                {% endif %}
+                {% if post.thread.IsSticky %}
+                    {% set icons = icons|merge(['forum_pinned']) %}
+                    {% set title = title ~ 'Pinned ' %}
+                    {% set sticky = 'sticky' %}
+                {% endif %}
+                {% if not post.thread.IsLocked and not post.thread.IsSticky %}
+                    {% set icons = ['forum_read'] %}
+                    {% set title = 'Forum ' %}
+                {% endif %}
+                <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                    <td>
+                        <span class="forum_icon_container" title="{{ title }}Thread">
+                            {{ icon.render("forum_icons #{unread}", icons) }}
+                        </span>
+                    </td>
+                    <td>
+                        <h4 class="min_padding">
+                            <a href="/forum/{{ post.thread.forum.ID }}" title="{{ post.thread.forum.Description|striptags|raw }}">{{ post.thread.forum.Name|striptags|raw }}</a>
+                        </h4>
+                    </td>
+                    <td>
+                        <span class="last_topic float_left">
+                            <a href="/forum/thread/{{ post.thread.ID }}" title="{{ post.thread.Title }}">{{ post.thread.Title|truncate(50)|striptags|raw }}</a>
+                        </span>
+                        <span class="float_left" title="Jump to last read">
+                            <a href="/forum/thread/{{ post.thread.ID }}?postid={{ post.ID }}#post{{ post.ID }}">
+                                {{ icon.render("forum_icons clickable", ['forum_latest']) }}
+                            </a>
+                        </span>
+                        {% set usernameOptions = {
+                            'drawInBox' : false,
+                            'colorname' : false,
+                            'dropDown'  : false,
+                            'useSpan'   : true,
+                            'noIcons'   : true,
+                            'noGroup'   : true,
+                            'noClass'   : true,
+                            'noTitle'   : true,
+                        } %}
+                        <span class="float_right" class="last_poster">by {{ render.username(post.thread.lastPost.AuthorID, usernameOptions) }} {{ time_diff(post.thread.lastPost.AddedTime,1)|raw }}</span>
+                    </td>
+                    <td class="align_center">{{ post.thread.numPostsInFlow|number_format() }}</td>
+                    <td class="align_center">{{ post.thread.NumViews|number_format() }}</td>
+                </tr>
+            {% endfor %}
+        {% endif %}
+    </table>
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9) }}
+    </div>
+    {{ render.forumGoto(forum) }}
+    <div class="linkbox">
+        [<a href="/forum/catchup/{{ forum.ID }}">Catch up</a>]
+    </div>
+    {% endif %}
+    {% if master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::FORUM')) %}
+    <div class="box pad" align="center">
+    <b>Your forum privileges have been revoked!</b><br><br>
+    <a href="{{ settings.links.rules }}"> View the site rules</a>
+    </div>
+    {% endif %}
+{% endblock %}

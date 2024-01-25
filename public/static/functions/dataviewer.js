@@ -1,5 +1,3 @@
-
-
 function changeQuery(element)
 {
     var selectedindex = element.selectedIndex;

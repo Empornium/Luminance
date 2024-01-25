@@ -14,19 +14,18 @@ define('IPS_PER_PAGE', 25);
 
 if (!check_perms('users_mod')) { error(403); }
 
-$UserID = $_GET['userid'];
-if (!is_number($UserID)) { error(404); }
+$userID = $_GET['userid'];
+if (!is_integer_string($userID)) { error(404); }
 
-$DB->query("SELECT um.Username, p.Level AS Class FROM users_main AS um LEFT JOIN permissions AS p ON p.ID=um.PermissionID WHERE um.ID = ".$UserID);
-list($Username, $Class) = $DB->next_record();
+$user = $master->repos->users->load($userID);
 
-if (!check_perms('users_view_ips', $Class)) {
+$grouped = $_GET['grouped'] ?? false;
+
+if (!check_perms('users_view_ips', $user->class->Level)) {
     error(403);
 }
 
-$UsersOnly = $_GET['usersonly'];
-
-show_header("Tracker IP history for $Username");
+show_header("Tracker IP history for $user->Username");
 ?>
 <script type="text/javascript">
 function ShowIPs(rowname)
@@ -36,38 +35,96 @@ function ShowIPs(rowname)
 </script>
 <div class="thin">
 <?php
-list($Page,$Limit) = page_limit(IPS_PER_PAGE);
+list($Page, $Limit) = page_limit(IPS_PER_PAGE);
 
-$TrackerIps = $DB->query("SELECT IF(INET6_NTOA(ipv6) IS NULL, INET6_NTOA(ipv4), INET6_NTOA(ipv6)) AS IP, fid, tstamp FROM xbt_snatched WHERE uid = ".$UserID." AND (ipv4!='' OR ipv6!='') ORDER BY tstamp DESC LIMIT $Limit");
+if ($grouped) {
+    $results = $master->db->rawQuery(
+        "SELECT SQL_CALC_FOUND_ROWS
+                IF(INET6_NTOA(ipv6) IS NULL, INET6_NTOA(ipv4), INET6_NTOA(ipv6)) AS IP,
+                COUNT(fid) AS torrents,
+                tstamp
+           FROM xbt_snatched
+          WHERE uid = ?
+            AND (ipv4!='' OR ipv6!='')
+       GROUP BY IP
+       ORDER BY torrents DESC
+          LIMIT {$Limit}",
+        [$user->ID]
+    )->fetchAll(\PDO::FETCH_NUM);
+} else {
+    $results = $master->db->rawQuery(
+        "SELECT SQL_CALC_FOUND_ROWS
+                IF(INET6_NTOA(ipv6) IS NULL, INET6_NTOA(ipv4), INET6_NTOA(ipv6)) AS IP,
+                fid,
+                tstamp
+           FROM xbt_snatched
+          WHERE uid = ?
+            AND (ipv4!='' OR ipv6!='')
+       ORDER BY tstamp DESC
+          LIMIT {$Limit}",
+        [$user->ID]
+    )->fetchAll(\PDO::FETCH_NUM);
+}
 
-$DB->query("SELECT FOUND_ROWS()");
-list($NumResults) = $DB->next_record();
-$DB->set_query_id($TrackerIps);
-
-$Pages=get_pages($Page,$NumResults,IPS_PER_PAGE,9);
+$numResults = $master->db->foundRows();
+$Pages = get_pages($Page, $numResults, IPS_PER_PAGE, 9);
 
 ?>
-    <div class="linkbox"><?=$Pages?></div>
-        <div class="head">Tracker IP history for <a href="/user.php?id=<?=$UserID?>"><?=$Username?></a></div>
+    <div class="linkbox">
+        <?php
+        if ($grouped) {
+        ?>
+            <br /><br />
+            [<a href="/userhistory.php?action=tracker_ips&userid=<?=$user->ID?>">Show Individual</a>]&nbsp;&nbsp;&nbsp;
+        <?php
+        } else {
+        ?>
+            <br /><br />
+            [<a href="/userhistory.php?action=tracker_ips&grouped=1&userid=<?=$user->ID?>">Show Grouped</a>]&nbsp;&nbsp;&nbsp;
+        <?php
+        }
+        ?>
+    </div>
+    <div class="linkbox pager"><?= $Pages ?></div>
+    <div class="head">Tracker IP history for <a href="/user.php?id=<?=$user->ID?>"><?=$user->Username?></a></div>
     <table>
         <tr class="colhead">
             <td>IP address</td>
-            <td>Torrent</td>
+            <?php
+            if ($grouped) {
+            ?>
+                <td>Torrents</td>
+            <?php
+            } else {
+            ?>
+                <td>Torrent</td>
+            <?php
+            }
+            ?>
             <td>Time</td>
         </tr>
 <?php
-$Results = $DB->to_array();
-foreach ($Results as $Index => $Result) {
-    list($IP, $TorrentID, $Time) = $Result;
+foreach ($results as $result) {
+    list($IP, $torrentID, $time) = $result;
 
 ?>
     <tr class="rowa">
         <td>
-                <?=display_ip($IP, geoip($IP))?><br />
+                <?=display_ip($IP)?><br />
                 <?=get_host($IP)?>
         </td>
-        <td><a href="/details.php?id=<?=$TorrentID?>"><?=$TorrentID?></a></td>
-        <td><?=date("Y-m-d g:i:s", $Time)?></td>
+        <?php
+        if ($grouped) {
+        ?>
+            <td><?=$torrentID?></td>
+        <?php
+        } else {
+        ?>
+            <td><a href="/torrents.php?id=<?=$torrentID?>"><?=$torrentID?></a></td>
+        <?php
+        }
+        ?>
+        <td><?=date("Y-m-d g:i:s", $time)?></td>
     </tr>
 <?php
 }

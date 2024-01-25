@@ -1,0 +1,161 @@
+{% import "macros/icon.html.twig" as icon %}
+
+{% block content %}
+    <div class="thin">
+        <h2>
+            {% set usernameOptions = {
+                'drawInBox' : false,
+                'colorname' : false,
+                'dropDown'  : false,
+                'useSpan'   : true,
+                'noIcons'   : true,
+                'noGroup'   : true,
+                'noClass'   : true,
+                'noTitle'   : true,
+            } %}
+            {% if showGrouped %}
+                {% if showUnread %}
+                    Grouped unread post history for {{ render.username(user.ID, usernameOptions) }}
+                {% else %}
+                    Grouped post history for {{ render.username(user.ID, usernameOptions) }}
+                {% endif %}
+            {% elseif showUnread %}
+                Unread post history for {{ render.username(user.ID, usernameOptions) }}
+            {% else %}
+                Post history for {{ render.username(user.ID, usernameOptions) }}
+            {% endif %}
+        </h2>
+        {{ render.latestForumThreads() }}
+        <div class="linkbox">
+            <br /><br />
+            {% if viewingOwn %}
+                {% if not showUnread %}
+                    {% if showGrouped %}
+                        <a href="/userhistory.php?action=posts&amp;userid={{ user.ID }}&amp;showunread=0&amp;group=0">Show all posts</a>&nbsp;&nbsp;&nbsp;
+                        <a href="/userhistory.php?action=posts&amp;userid={{ user.ID }}&amp;showunread=0&amp;group=1">Show all posts (grouped)</a>&nbsp;&nbsp;&nbsp;
+                    {% else %}
+                    {% endif %}
+                    <a href="/userhistory.php?action=posts&amp;userid={{ user.ID }}&amp;showunread=1&amp;group=1">Only display posts with unread replies (grouped)</a>&nbsp;&nbsp;&nbsp;
+                {% else %}
+                    <a href="/userhistory.php?action=posts&amp;userid={{ user.ID }}&amp;showunread=0&amp;group=0">Show all posts</a>&nbsp;&nbsp;&nbsp;
+                    {% if not showGrouped %}
+                        <a href="/userhistory.php?action=posts&amp;userid={{ user.ID }}&amp;showunread=1&amp;group=1">Only display posts with unread replies (grouped)</a>&nbsp;&nbsp;&nbsp;
+                    {% else %}
+                        <a href="/userhistory.php?action=posts&amp;userid={{ user.ID }}&amp;showunread=1&amp;group=0">Only display posts with unread replies</a>&nbsp;&nbsp;&nbsp;
+                    {% endif %}
+                {% endif %}
+                <a href="/userhistory.php?action=subscriptions">Go to forum subscriptions</a>&nbsp;&nbsp;&nbsp;
+                <a href="/userhistory.php?action=subscribed_collages">Go to collage subscriptions</a>&nbsp;&nbsp;&nbsp;
+                <a href="/userhistory.php?action=comments">Go to comment history</a>
+            {% else %}
+                <a href="/userhistory.php?action=comments&amp;userid={{ user.ID }}">Go to comment history</a>
+            {% endif %}
+        </div>
+        {% if posts is empty %}
+            <tr>
+                <td colspan="3">
+                    <p class="center">
+                        No threads{{ showUnread ? ' with unread posts' : '' }}
+                    </p>
+                </td>
+            </tr>
+        {% else %}
+            <div class="linkbox pager">
+                {{ render.pagelinks(page, results, pageSize, 9) }}
+            </div>
+            {% if showGrouped %}
+                <table>
+                    <tr class="colhead">
+                        <td style="width:30%;">Forum</td>
+                        <td>Thread</td>
+                        <td></td>
+                    </tr>
+                    {% if posts is empty %}
+                        <tr>
+                            <td colspan="3">
+                                <p class="center">
+                                    No threads{{ showUnread ? ' with unread posts' : '' }}
+                                </p>
+                            </td>
+                        </tr>
+                    {% else %}
+                        {% for post in posts %}
+                            <tr id="header_post{{ post.ID }}" class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                                <td>
+                                    <a href="/forum/{{ post.thread.forum.ID }}">{{ post.thread.forum.Name|decode }}</a>
+                                </td>
+                                <td>
+                                    <span class="float_left last_thread">
+                                        <a href="/forum/thread/{{ post.thread.ID }}" title="{{ post.thread.Title|decode }}">{{ post.thread.Title|truncate(75)|decode }}</a>
+                                    </span>
+                                    {% set unread = post.thread.unread(ActiveUser.ID) %}
+                                    {% if unread > 0 %}
+                                        <span title="{{ unread }} new post {{ unread > 1 ? 's' : '' }}!" class="float_left newstatus" style="color: inherit">
+                                            &ensp;(New!)
+                                        </span>
+                                    {% endif %}
+                                    {% set lastRead = post.thread.lastRead(ActiveUser) %}
+                                    {% if lastRead %}
+                                        <span class="float_left" title="Jump to last read">
+                                            <a href="/forum/thread/{{ post.thread.ID }}?postid={{ lastRead.PostID }}#post{{ lastRead.PostID }}">
+                                                {{ icon.render("forum_icons clickable", ['forum_latest']) }}
+                                            </a>
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="float_right">
+                                        [<a href="#" onclick="Subscribe({{ post.thread.ID }});return false;" class="subscribelink{{ post.thread.ID }}">{{ post.thread.isSubscribed(ActiveUser) ? 'Unsubscribe' : 'Subscribe' }}</a>]
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                </table>
+            {% else %}
+                {% if posts is empty %}
+                    <table>
+                        <tr>
+                            <td colspan="3">
+                                <p class="center">
+                                    No threads{{ showUnread ? ' with unread posts' : '' }}
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                {% else %}
+                    {% for post in posts %}
+                        <div class="head" style="margin-top: 10px;">
+                            <span class="float_left">
+                                <a href="/forum">Forums</a> &gt;
+                                <a href="/forum/{{ post.thread.forum.ID }}">{{ post.thread.forum.Name|decode }}</a> &gt;
+                                {{ post.thread.Title|decode }}
+                                {% set unread = post.thread.unread(ActiveUser.ID) %}
+                                {% if unread > 0 %}
+                                    <span title="{{ unread }} new post {{ unread > 1 ? 's' : '' }}!" class="newstatus">
+                                        &ensp;(New!)
+                                    </span>
+                                {% endif %}
+                            </span>
+                            {% set lastRead = post.thread.lastRead(ActiveUser) %}
+                            {% if lastRead %}
+                                <span class="float_left" title="Jump to last read">
+                                    <a href="/forum/thread/{{ post.thread.ID }}?postid={{ lastRead.PostID }}#post{{ lastRead.PostID }}">
+                                        {{ icon.render("forum_icons clickable", ['forum_latest']) }}
+                                    </a>
+                                </span>
+                            {% endif %}
+                            <span class="float_right">
+                                [<a href="#" onclick="Subscribe({{ post.thread.ID }});return false;" class="subscribelink{{ post.thread.ID}}">{{ post.thread.isSubscribed(ActiveUser) ? 'Unsubscribe' : 'Subscribe' }}</a>]
+                            </span>
+                        </div>
+                        {{ render.post('forum', post) }}
+                    {% endfor %}
+                {% endif %}
+            {% endif %}
+            <div class="linkbox pager">
+                {{ render.pagelinks(page, results, pageSize, 9) }}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

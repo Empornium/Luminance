@@ -16,10 +16,10 @@ function SetDate() {
 			amount *= 1000; //millis
 			break;
 	}
-	
+
 	var d = new Date;
 	d.setTime(d.getTime() + amount + (d.getTimezoneOffset() * 60 * 1000));
-	
+
 	//YYYY-MM-DD HH:MM:SS
 	var out = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate() + " " + d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
 
@@ -47,7 +47,7 @@ function AddOption() {
 		var options = json.decode($('#delays_json').raw().value);
 		var delays = document.createElement("select");
 		delays.name = "delay[]";
-		for(var option in options) {
+		for (var option in options) {
 			var delay = document.createElement("option");
 			delay.value = option;
 			delay.innerHTML = options[option][0].long;

@@ -7,7 +7,7 @@ animateMS=0;
 var reel = new Array(4);
 var stopped = new Array(4);
 var offset = new Array(4);
-    for(var i=0;i<4;i++) {
+    for (var i=0;i<4;i++) {
         offset[i]=0;
     }
 arrayNum=0;
@@ -45,27 +45,31 @@ function Toggle_Play_Row(reels_row, is_playing){
 function Change_Bet(){
     var num = parseInt($('#betamount').raw().value);
     num *= 10;
-    if (num>100)num=1;
+    if (num>10000)num=1;
     Set_Bet_Interface(num);
 }
 function Set_Bet_Interface(num){
-    if (!in_array(num, new Array(1,10,100))) num = 1;
+    if (!in_array(num, new Array(1,10,100,1000,10000))) num = 1;
     $('#betamount').raw().value = num;
-    ajax.get("?action=ajax_slot_paytable&bet="+num, function (response) {
+    ajax.get("/bonus.php?action=ajax_slot_paytable&bet="+num, function (response) {
         $('#payout_table').html(response);
     });
+    //the large numbers are too big to fit on the icons so we have to shorten the numerical representation
+    if (num == 1000) num = '1k';
+    else if (num == 10000) num = '10k';
+
     $('#betanum').html(num);
     $('#betbnum').html(num);
     $('#betcnum').html(num);
 }
 
 
-function Pull_Lever(){
+function Pull_Lever() {
     if (count>0) return; // make them wait!
     var num_bets = parseInt($('#numbets').raw().value);
     if (!in_array(num_bets, new Array(1,2,3))) num_bets = 1;
     var bet_amount = parseInt($('#betamount').raw().value);
-    if (!in_array(bet_amount, new Array(1,10,100))) bet_amount = 1;
+    if (!in_array(bet_amount, new Array(1,10,100,1000,10000))) bet_amount = 1;
     bet = num_bets * bet_amount;
     if ( parseInt($('#winnings').raw().innerHTML.replace(/,/gi, '') ) < bet ) {
         alert('you do not have enough credits to bet ' + bet + ' credits');
@@ -77,7 +81,7 @@ function Pull_Lever(){
     animateMS=10;
     arrayNum=0;
     won=0;
-    for(var i=0;i<4;i++) {
+    for (var i=0;i<4;i++) {
         reel[i]=-1;
         stopped[i]=0;
         $('#reela'+i).remove_class('win');
@@ -96,20 +100,18 @@ function Pull_Lever(){
 	ToPost['bet'] = bet_amount;
 	ToPost['numbets'] = num_bets;
 
-    ajax.post("?action=slot_result", ToPost, function(response){  // "form" + postid
-	//ajax.get("?action=slot_result&bet="+bet_amount+"&numbets="+num_bets, function (response) {
+    ajax.post("/bonus.php?action=slot_result", ToPost, function(response){  // "form" + postid
         var x = json.decode(response);
         setTimeout(leverup, 800);
         if ( is_array(x)){
             animate();
-            for(var i=0;i<4;i++) {
+            for (var i=0;i<4;i++) {
                 reel[i]= x[i]; // store the end positions
             }
-            //$('#res0').raw().innerHTML = x[6];
             won = x[4]; // total won
             winningreels=x[5]; // which reels and rows to highlight in interface
         } else {    // error from ajax
-            for(var j=0;j<4;j++) {
+            for (var j=0;j<4;j++) {
                 EndReel(j,((arrayNum+offset[j])%20));
             }
             count=0;
@@ -135,7 +137,7 @@ function animate(){
         clearTimeout(t);
         if (stopped[3]==0) {
             stopped[3]=1;
-            for(var i=0;i<4;i++) {
+            for (var i=0;i<4;i++) {
                 EndReel(i,reel[i]);
                 if (winningreels[0]>=(i+1)) $('#reelb'+i).add_class('win');
                 if (winningreels[1]>=(i+1)) $('#reelc'+i).add_class('win');
@@ -144,7 +146,7 @@ function animate(){
             var current = addCommas( parseInt( $('#winnings').raw().innerHTML.replace(/,/gi, '') )+won-bet);
             $('#winnings').raw().innerHTML = current;
             $('#stats_credits').raw().innerHTML = current;
-            $('#result').raw().innerHTML = won>0?'*Win* ' +won:'';
+            $('#result').raw().innerHTML = won>0?'*Win* ' +won.toLocaleString():'';
             count=0;
         }
     }

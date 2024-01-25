@@ -1,74 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-
 <svg
-   xmlns:osb="http://www.openswatchbook.org/uri/2009/osb"
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="16"
-   height="16"
-   viewBox="0 0 4.2333332 4.2333332"
-   version="1.1"
-   id="svg5177"
-   inkscape:version="0.92.1 r"
-   sodipodi:docname="nav_leeching.svg">
-  <defs
-     id="defs5171">
-    <linearGradient
-       id="linearGradient5726"
-       osb:paint="solid">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop5724" />
-    </linearGradient>
-  </defs>
-  <sodipodi:namedview
-     id="base"
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:pageopacity="0.0"
-     inkscape:pageshadow="2"
-     inkscape:zoom="63.356767"
-     inkscape:cx="-0.0051133075"
-     inkscape:cy="9.7240381"
-     inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
-     showgrid="false"
-     inkscape:window-width="3200"
-     inkscape:window-height="1605"
-     inkscape:window-x="0"
-     inkscape:window-y="55"
-     inkscape:window-maximized="1"
-     units="px" />
-  <metadata
-     id="metadata5174">
-    <rdf:RDF>
-      <cc:Work
-         rdf:about="">
-        <dc:format>image/svg+xml</dc:format>
-        <dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
-      </cc:Work>
-    </rdf:RDF>
-  </metadata>
-  <g
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
-     id="layer1"
-     transform="translate(0,-292.76667)">
-    <path
-       style="fill-opacity:1;stroke:none;stroke-width:0.07000434px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 2.2489583,293.29583 h 0.79375 v 1.5875 h 0.396875 l -0.79375,1.5875 -0.79375,-1.5875 h 0.396875 z"
-       id="path5179"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cccccccc" />
-  </g>
+  version="1.1"
+  id="nav_leeching"
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  viewBox="0 0 16 16">
+  <path
+     d="m 6.25,1 h 3.5 V 8 H 11.5 L 8,15 4.5,8 h 1.75 z"
+  />
 </svg>

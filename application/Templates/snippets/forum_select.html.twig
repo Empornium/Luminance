@@ -1,0 +1,16 @@
+{% if elementID is defined %}
+    {% set elementID %}
+        id={{ elementID }}
+    {% endset %}
+{% else %}
+    {% set elementID = '' %}
+{% endif %}
+<select name="forumid" {{ elementID }} {{ attribsRaw }}>
+    {% for category in categories %}
+        <optgroup label="{{ category.Name }}">
+            {% for forum in category.forums %}
+                <option value="{{ forum.ID }}" {{ forumID == forum.ID ? ' selected="selected"' }}>{{ forum.Name }}</option>
+            {% endfor %}
+        </optgroup>
+    {% endfor %}
+</select>

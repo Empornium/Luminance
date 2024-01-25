@@ -1,47 +1,45 @@
 <?php
 if (!check_perms('users_view_ips')) { error(403); }
 
-include(SERVER_ROOT . '/common/functions.php');
-
 define('USERS_PER_PAGE', 50);
 define('IP_OVERLAPS', 5);
 
 if (empty($_GET['order_way']) || $_GET['order_way'] == 'asc') {
-    $OrderWay = 'asc'; // For header links
+    $orderWay = 'asc'; // For header links
 } else {
     $_GET['order_way'] = 'desc';
-    $OrderWay = 'desc';
+    $orderWay = 'desc';
 }
 
-if (empty($_GET['order_by']) || !in_array($_GET['order_by'], array('NumUsers', 'IP', 'StartTime', 'EndTime' ))) {
+if (empty($_GET['order_by']) || !in_array($_GET['order_by'], ['NumUsers', 'IP', 'StartTime', 'EndTime'])) {
     $_GET['order_by'] = 'NumUsers';
-    $OrderBy = 'NumUsers';
+    $orderBy = 'NumUsers';
 } else {
-    $OrderBy = $_GET['order_by'];
+    $orderBy = $_GET['order_by'];
 }
 
-list($Page,$Limit) = page_limit(USERS_PER_PAGE);
+list($Page, $Limit) = page_limit(USERS_PER_PAGE);
 
-$RS = $DB->query("SELECT
-                    SQL_CALC_FOUND_ROWS
-                    Count(DISTINCT h.UserID) as NumUsers,
-                    h.IP as IP,
-                    Max(h.StartTime) as StartTime,
-                    Max(h.EndTime) as EndTime
-                  FROM users_history_ips AS h
-                  JOIN users_main AS m ON m.ID=h.UserID
-                  GROUP BY h.IP
-                  HAVING NumUsers>1
-                  ORDER BY $OrderBy $OrderWay
-                  LIMIT $Limit ");
+$DupeIPtotals = $master->db->rawQuery(
+    "SELECT SQL_CALC_FOUND_ROWS
+            Count(DISTINCT h.UserID) as NumUsers,
+            INET6_NTOA(ips.StartAddress) as IP,
+            Max(h.StartTime) as StartTime,
+            Max(h.EndTime) as EndTime
+       FROM users_history_ips AS h
+       JOIN ips ON h.IPID=ips.ID
+       JOIN users_main AS m ON m.ID=h.UserID
+   GROUP BY h.IPID
+     HAVING NumUsers>1
+   ORDER BY {$orderBy} {$orderWay}
+      LIMIT {$Limit}"
+)->fetchAll(\PDO::FETCH_BOTH);
 
-$DupeIPtotals = $DB->to_array();
-$DB->query("SELECT FOUND_ROWS()");
-list($NumResults) = $DB->next_record();
+$NumResults = $master->db->foundRows();
 
-$Pages=get_pages($Page,$NumResults,USERS_PER_PAGE,9);
+$Pages = get_pages($Page, $NumResults, USERS_PER_PAGE, 9);
 
-show_header('Dupe IPs','dupeip');
+show_header('Dupe IPs', 'dupeip');
 
 ?>
 <div class="thin">
@@ -56,11 +54,11 @@ show_header('Dupe IPs','dupeip');
     <div class="head">Duped IP's</div>
     <table width="100%">
         <tr class="colhead">
-            <td><a href="/<?=header_link('IP') ?>">IP</a></td>
+            <td><a href="<?=header_link('IP') ?>">IP</a></td>
             <td class="center">Host</td>
-            <td class="center"><a href="/<?=header_link('NumUsers') ?>">Num Users</a></td>
-            <td class="center"><a href="/<?=header_link('StartTime') ?>">Last Start Time</a></td>
-            <td class="center"><a href="/<?=header_link('EndTime') ?>">Last End Time</a></td>
+            <td class="center"><a href="<?=header_link('NumUsers') ?>">Num Users</a></td>
+            <td class="center"><a href="<?=header_link('StartTime') ?>">Last Start Time</a></td>
+            <td class="center"><a href="<?=header_link('EndTime') ?>">Last End Time</a></td>
         </tr>
 <?php
         if ($NumResults==0) {

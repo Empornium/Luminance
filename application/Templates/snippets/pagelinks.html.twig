@@ -1,0 +1,42 @@
+{% if startPage > 1 %}
+    <a href="{{ location }}?{{ pageGetVar }}=1{{ queryString|raw }}{{ anchor }}" class="pager pager_first">&lt;&lt; First</a>
+    {% if startPage > 2 %}
+        <a href="{{ location }}?{{ pageGetVar }}={{ startPage - 1}}{{ queryString|raw }}{{ anchor }}" class="pager pager_prev">&lt; Prev</a>
+    {% endif %}
+    |
+{% endif %}
+
+{% for i in startPosition..stopPage %}
+    {% if i != startPage %}
+        <a href="{{ location }}?{{ pageGetVar }}={{ i }}{{ queryString|raw }}{{ anchor }}" class="pager pager_page">
+    {% else %}
+        <span class="pager pager_on">
+    {% endif %}
+
+    {% if i * itemsPerPage > totalRecords %}
+        {{ ((i - 1) * itemsPerPage) + 1 }}-{{ totalRecords }}
+    {% else %}
+        {{ ((i - 1) * itemsPerPage) + 1 }}-{{ i * itemsPerPage }}
+    {% endif %}
+
+    {% if i != startPage %}
+        </a>
+    {% else %}
+        </span>
+    {% endif %}
+
+    {% if i < stopPage %}
+        |
+    {% endif %}
+
+{% endfor %}
+
+{% if startPage < totalPages %}
+    |
+{% endif %}
+{% if startPage < totalPages-1 %}
+    <a href="{{ location }}?{{ pageGetVar }}={{ startPage + 1 }}{{ queryString|raw }}{{ anchor }}" class="pager pager_next">Next &gt;</a>
+{% endif %}
+{% if startPage < totalPages %}
+    <a href="{{ location }}?{{ pageGetVar }}={{ totalPages }}{{ queryString|raw }}{{ anchor }}" class="pager pager_last"> Last &gt;&gt;</a>
+{% endif %}

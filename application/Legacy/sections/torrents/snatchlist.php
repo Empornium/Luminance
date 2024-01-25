@@ -1,35 +1,32 @@
 <?php
-if (!isset($_GET['torrentid']) || !is_number($_GET['torrentid']) ) {
+if (!isset($_GET['torrentid']) || !is_integer_string($_GET['torrentid'])) {
     error(404);
 }
-if ( !check_perms('site_view_torrent_snatchlist')) {
+
+if (!check_perms('site_view_torrent_snatchlist')) {
     error(403);
 }
-$TorrentID = $_GET['torrentid'];
 
-if (!empty($_GET['page']) && is_number($_GET['page'])) {
-    $Page = $_GET['page'];
-    $Limit = (string) (($Page - 1) * 100) . ', 100';
-} else {
-    $Page = 1;
-    $Limit = 100;
-}
+$torrentID = $_GET['torrentid'];
 
-$Result = $DB->query("SELECT SQL_CALC_FOUND_ROWS
-    xs.uid,
-    xs.tstamp
-    FROM xbt_snatched AS xs
-    WHERE xs.fid='$TorrentID'
-    ORDER BY xs.tstamp DESC
-    LIMIT $Limit");
-$Results = $DB->to_array('uid', MYSQLI_ASSOC);
 
-$DB->query("SELECT FOUND_ROWS()");
-list($NumResults) = $DB->next_record();
+list($page, $limit) = page_limit(100);
+$records = $master->db->rawQuery(
+    "SELECT SQL_CALC_FOUND_ROWS
+            xs.uid,
+            xs.tstamp
+       FROM xbt_snatched AS xs
+      WHERE xs.fid = ?
+   ORDER BY xs.tstamp DESC
+      LIMIT {$limit}",
+    [$torrentID]
+)->fetchAll(\PDO::FETCH_NUM);
+
+$NumResults = $master->db->foundRows();
 ?>
 
 <?php  if ($NumResults > 100) { ?>
-    <div class="linkbox"><?= js_pages('show_snatches', $_GET['torrentid'], $NumResults, $Page) ?></div>
+    <div class="linkbox"><?= js_pages('show_snatches', $_GET['torrentid'], $NumResults, $page) ?></div>
     <?php  } ?>
 <table>
     <?php
@@ -55,12 +52,12 @@ list($NumResults) = $DB->next_record();
             <?php
             $i = 0;
 
-            foreach ($Results as $ID => $Data) {
-                list($SnatcherID, $Timestamp) = array_values($Data);
+            foreach ($records as $record) {
+                list($SnatcherID, $timestamp) = $record;
 
                 $UserInfo = user_info($SnatcherID);
 
-                $User = format_username($SnatcherID, $UserInfo['Username'], $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
+                $User = format_username($SnatcherID, $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
 
                 if ($i % 2 == 0 && $i > 0) {
                     ?>
@@ -70,7 +67,7 @@ list($NumResults) = $DB->next_record();
                 }
                 ?>
                 <td><?= $User ?></td>
-                <td><?= time_diff($Timestamp) ?></td>
+                <td><?= time_diff($timestamp) ?></td>
                 <?php
                 $i++;
             }
@@ -81,5 +78,5 @@ list($NumResults) = $DB->next_record();
     ?>
 </table>
 <?php  if ($NumResults > 100) { ?>
-    <div class="linkbox"><?= js_pages('show_snatches', $_GET['torrentid'], $NumResults, $Page) ?></div>
+    <div class="linkbox"><?= js_pages('show_snatches', $_GET['torrentid'], $NumResults, $page) ?></div>
 <?php  }

@@ -7,8 +7,7 @@ use Luminance\Entities\IP;
 use Luminance\Entities\SecurityLog;
 use Luminance\Entities\User;
 
-class SecurityLogRepository extends Repository
-{
+class SecurityLogRepository extends Repository {
     protected $entityName = 'SecurityLog';
 
     /**
@@ -38,8 +37,8 @@ class SecurityLogRepository extends Repository
      * @return SecurityLog
      */
     public function passwordReset($userID) {
-        // The author of the event is not logged yet (0),
-        // but we do have to force the IP
+        # The author of the event is not logged yet (0),
+        # but we do have to force the IP
         return $this->log('Password reset', $userID, 0, $this->master->request->ip);
     }
 
@@ -61,6 +60,26 @@ class SecurityLogRepository extends Repository
      */
     public function twoFactorDisabling($userID) {
         return $this->log('2-Factor Authentication disabled', $userID, $this->master->request->user->ID);
+    }
+
+    /**
+     * Log on IRC authing
+     *
+     * @param $userID
+     * @return SecurityLog
+     */
+    public function ircAuth($userID, $nick) {
+        return $this->log("IRC Authentication added for {$nick}", $userID, $this->master->request->user->ID);
+    }
+
+    /**
+     * Log on IRC deauthing
+     *
+     * @param $userID
+     * @return SecurityLog
+     */
+    public function ircDeauth($userID, $nick) {
+        return $this->log("IRC Authentication removed for {$nick}", $userID, $this->master->request->user->ID);
     }
 
     /**
@@ -108,6 +127,50 @@ class SecurityLogRepository extends Repository
     }
 
     /**
+     * Log on API Key add
+     *
+     * @param $userID
+     * @param $key
+     * @return SecurityLog
+     */
+    public function newAPIKey($userID, $key) {
+        return $this->log("API Key {$key} added", $userID, $this->master->request->user->ID);
+    }
+
+    /**
+     * Log on API Key removal (soft delete)
+     *
+     * @param $userID
+     * @param $key
+     * @return SecurityLog
+     */
+    public function removeAPIKey($userID, $key) {
+        return $this->log("API Key {$key} removed", $userID, $this->master->request->user->ID);
+    }
+
+    /**
+     * Log on API Key removal (hard delete)
+     *
+     * @param $userID
+     * @param $key
+     * @return SecurityLog
+     */
+    public function deleteAPIKey($userID, $key) {
+        return $this->log("API Key {$key} deleted", $userID, $this->master->request->user->ID);
+    }
+
+    /**
+     * Log on API Key restore
+     *
+     * @param $userID
+     * @param $key
+     * @return SecurityLog
+     */
+    public function restoreAPIKey($userID, $key) {
+        return $this->log("API Key {$key} restored", $userID, $this->master->request->user->ID);
+    }
+
+    /**
      * Create a new security log
      *
      * @param $event
@@ -118,7 +181,7 @@ class SecurityLogRepository extends Repository
      * @return SecurityLog
      */
     private function log($event, $subject, $author = 0, IP $ip = null, \DateTime $date = null) {
-        // User type conversion for the subject
+        # User type conversion for the subject
         if (!is_int($subject)) {
             if (!$subject instanceof User) {
                 throw new \InvalidArgumentException('User must be a User entity or an int');
@@ -127,7 +190,7 @@ class SecurityLogRepository extends Repository
             }
         }
 
-        // User type conversion for the author
+        # User type conversion for the author
         if (!is_int($author)) {
             if (!$author instanceof User) {
                 throw new \InvalidArgumentException('Author must be a User entity or an int');
@@ -136,22 +199,26 @@ class SecurityLogRepository extends Repository
             }
         }
 
-        // Get current date if none was provided
+        # Get current date if none was provided
         if ($date === null) {
             $date = new \DateTime();
         }
 
-        // IP type conversion
+        # Ensure IP is saved to the DB
         if ($ip instanceof IP) {
-            $ip = $ip->ID;
+            $this->master->repos->ips->save($ip);
 
-        // If no IP was given and it was not a System event,
-        // we get the IP directly from the request
-        } elseif ($author !== 0) {
-            $ip = $this->master->request->ip->ID;
+        # If no IP was given and it was not a System event,
+        # we get the IP directly from the request
+        } elseif (!($author === 0)) {
+            $ip = $this->master->request->ip;
+            $this->master->repos->ips->save($ip);
         }
 
-        // Create the new security entry
+        # IP type conversion
+        $ip = $ip->ID;
+
+        # Create the new security entry
         $log = new SecurityLog();
 
         $log->Event    = $event;

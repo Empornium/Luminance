@@ -1,0 +1,60 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "@Articles/list.html.twig" as list %}
+{% import "macros/icon.html.twig" as icon %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    {% if ActiveUser.options('ShortTitles', false) %}
+        <a href="/articles/view/{{ article.TopicID }}">{{ article.Title }}</a>
+    {% else %}
+        <a href="/articles/view/{{ article.TopicID }}">{{ articleCats[article.Category] }} > {{ article.Title }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main_content %}
+    {{ render.latestForumThreads() }}
+    <div class="head">Search Articles</div>
+    <form method="get" action="/articles/search">
+        <table>
+            <tr class="box">
+                <td class="label">Search for:</td>
+                <td>
+                        <input name="searchterms" type="text" class="long" value="{{ searchterms }}" autofocus />
+                </td>
+                <td width="10%">
+                        <input type="submit" value="Search" />
+                </td>
+            </tr>
+        </table>
+    </form>
+    <br/>
+    {{ list.print(master, topArticles, staffClass, articleCats, subCats) }}
+    <div class="head">
+        {{ article.Title }}
+        {% if auth.isAllowed('admin_edit_articles') %}
+            <a href="/articles/edit/{{ article.ID }}">
+                {{ icon.render("forum_icon", ['forum_edit']) }}
+            </a>
+        {% endif %}
+        {% if auth.isAllowed('admin_delete_articles') %}
+            <form style="display: inline-block;" action="/articles/delete" method="POST" onSubmit="return confirm('Are you sure you want to delete this article?');">
+                <input type="hidden" name="token" value="{{ secretary.getToken('article.delete') }}" />
+                <input type="hidden" name="id" value="{{ article.ID }}">
+                <button style="all: unset" type="submit" value="Delete" title="Delete">
+                    {{ icon.render("forum_icon", ['misc_trash']) }}
+                </button>
+            </form>
+        {% endif %}
+    </div>
+    <div class="box pad" style="padding:10px 10px 10px 20px;">
+        {% set body %}
+            {{ bbcode.full_format(article.Body)|raw }}
+        {% endset %}
+        {{ master.getPlugin('Articles').replaceSpecialTags(body)|raw }}
+    </div>
+    {{ list.print(master, articles, staffClass, articleCats, subCats, article.SubCat) }}
+{% endblock %}

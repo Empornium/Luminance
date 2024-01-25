@@ -1,0 +1,181 @@
+.torrent_grid {
+  background: rgba(0, 0, 0, 0.4);
+  border-collapse: collapse;
+  padding: 5px;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 0.333fr));
+}
+
+.torrent_grid__torrent {
+  float: left;
+  display: inline-block;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+  border: 5px solid  rgba(0, 0, 0, 0.6);
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  color: white;
+}
+
+.torrent_grid__torrent.warned {
+  background: rgba(255, 0, 0, 0.4);
+  border: 5px solid  rgba(255, 0, 0, 0.6);
+}
+
+.torrent_grid__torrent__cat {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: rgba(0, 0, 0, 0.7);
+  font-size: 15px;
+  padding: 2px 10px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.torrent_grid__torrent__cat.warned {
+  background: rgba(255, 0, 0, 0.7);
+}
+
+.torrent_grid__torrent__info {
+  position: absolute;
+  display: block;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 10px;
+  box-sizing: border-box;
+  transition: .1s ease;
+  font-size: 13px;
+}
+
+
+.torrent_grid__torrent__info.warned {
+  background: rgba(255, 0, 0, 0.75);
+}
+
+.torrent_grid__torrent__info h3 {
+  font-weight: normal;
+  font-size: 1.2em;
+  color: #cccccc;
+}
+
+.torrent_grid__torrent:hover h3 {
+  color: white;
+}
+
+.torrent__size {
+  color: #ccc;
+  border: 1px solid #888;
+  padding: 0px 2px;
+  font-size: 12px;
+  font-weight: normal;
+  margin-left: 2px;
+}
+
+h3 .torrent__size {
+  border-color: rgb(226, 226, 226);
+  color: rgb(226, 226, 226);
+  position: relative;
+  font-size: 13px;
+  top: -2px;
+  margin-right: 2px;
+  margin-left: 0;
+}
+
+@media (max-width: 1200px) {
+  .torrent_grid__torrent__info h3 {
+    font-size: 1em;
+  }
+}
+
+.torrent_grid__torrent__info h3:hover {
+  text-decoration: underline;
+}
+
+.newtime{
+  position: absolute;
+  down: 0;
+  right: 0;
+  padding: 0px 5px;
+}
+
+.torrent_grid__torrent__info .uploader a {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.seeders, .leechers {
+  margin-right: 5px;
+}
+
+.seeders svg, .leechers svg {
+  position: relative;
+  top: 4px;
+  margin-right: -2px
+}
+
+span[style="color: #FF0000;"] {
+  color: #ff4646 !important;
+}
+
+.torrent--freeleech {
+  background: rgba(0, 0, 0, 0.7);
+  position: absolute; top: 5px; right: 5px; padding: 10px 10px;
+}
+
+.torrent_grid__torrent:visited h3, .uploader a:visited {
+  color: #d2d2d2;
+}
+
+.torrent__info_extra {
+  bottom: 9px;
+  right: 8px;
+}
+
+.torrent__info_extra img[alt="Freeleech"] {
+  display: none;
+}
+
+.torrent__info_extra .icon {
+  width: 18px;
+  background-size: contain;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+
+.torrent__info__time {
+  vertical-align: middle;
+  margin-top: 2px;
+  display: inline-block;
+  color: #cccccc;
+}
+
+@media (max-width: 1500px) {
+  .torrent__info__time {
+    display: none;
+  }
+}
+
+.torrent__cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+
+.trim {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

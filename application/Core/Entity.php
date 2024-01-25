@@ -9,60 +9,61 @@ abstract class Entity {
     protected static $properties = [];
     protected static $indexes    = [];
     protected static $attributes = [];
-    protected static $useRepositories = [];
     protected static $useServices = [];
 
-    protected $saved_values   = []; # Values as they exist in the DB
-    protected $unsaved_values = []; # Values yet to be saved to the DB
-    protected $local_values   = []; # Values not corresponding to defined properties (will never be saved)
+    protected $master;
+    protected $request;
+
+    protected $savedValues   = []; # Values as they exist in the DB
+    protected $unsavedValues = []; # Values yet to be saved to the DB
+    protected $localValues   = []; # Values not corresponding to defined properties (will never be saved)
+
+    public $casToken = null; # Used to update entity in cache
+
+    const CACHE_EXPIRATION = 0;
 
     # static functions
 
-    public static function create_from_db($values) {
+    public static function createFromDB($values, &$casToken = null) {
         $instance = new static();
-        $instance->set_saved_values($values);
+        $instance->setSavedValues($values);
+        $instance->casToken = $casToken;
         return $instance;
     }
 
-    public static function get_table() {
+    public static function getTable() {
         return static::$table;
     }
 
-    public static function get_properties() {
+    public static function getProperties() {
         return static::$properties;
     }
 
-    public static function get_indexes() {
+    public static function getIndexes() {
         return static::$indexes;
     }
 
-    public static function get_attributes() {
+    public static function getAttributes() {
         return static::$attributes;
     }
 
-    public static function is_property($name) {
+    public static function isProperty($name) {
         return array_key_exists($name, static::$properties);
     }
 
-    public static function is_pkey_property($name) {
-        $result = (
-            self::is_property($name) &&
-            array_key_exists('primary', static::$properties[$name]) &&
-            static::$properties[$name]
-        );
-        return $result;
+    public static function isPKeyProperty($name) {
+        return in_array($name, self::getPKeyProperties());
     }
 
-    public static function get_pkey_property() {
-        foreach (static::$properties as $name => $options) {
-            if (self::is_pkey_property($name)) {
-                return $name;
+    public static function getPKeyProperties() {
+        return array_keys(array_filter(static::$properties, function ($property) {
+            if (array_key_exists('primary', $property)) {
+                return true;
             }
-        }
-        return null;
+        }));
     }
 
-    public static function cast_for_property($name, $value) {
+    public static function castForProperty($name, $value) {
         if (array_key_exists('nullable', static::$properties[$name]) && static::$properties[$name]['nullable'] && is_null($value)) {
             return null;
         }
@@ -70,12 +71,17 @@ abstract class Entity {
         switch ($type) {
             case 'int':
                 return intval($value);
+            case 'float':
+                return floatval($value);
             case 'str':
+                if (is_array($value)) {
+                    throw new InternalError;
+                }
                 return strval($value);
             case 'bool':
                 return (int)boolval($value); # Since PHP 5.5
             case 'timestamp':
-                if ($value instanceof \Datetime) {
+                if ($value instanceof \DateTime) {
                     return $value->format('Y-m-d H:i:s');
                 } else {
                     return strval($value);
@@ -87,14 +93,16 @@ abstract class Entity {
     }
 
     # For lack of a better name...
-    public static function unflatten_from_property($name, $value) {
+    public static function unflattenFromProperty($name, $value) {
         if (array_key_exists('nullable', static::$properties[$name]) && static::$properties[$name]['nullable'] && is_null($value)) {
             return null;
         }
         $type = static::$properties[$name]['type'];
         switch ($type) {
+            case 'bool':
+                return boolval($value);
             case 'timestamp':
-                if ($value == '0000-00-00 00:00:00') {
+                if ($value === '0000-00-00 00:00:00') {
                     return null;
                 }
                 return new \DateTime($value);
@@ -103,7 +111,7 @@ abstract class Entity {
         }
     }
 
-    public static function get_auto_increment_column() {
+    public static function getAutoIncrementColumn() {
         foreach (static::$properties as $name => $options) {
             if (array_key_exists('auto_increment', $options) && $options['auto_increment']) {
                 return $name; # There can only be a single auto_increment column per table
@@ -114,22 +122,17 @@ abstract class Entity {
 
     # public functions
 
-    public function __construct($values = null) {
+    final public function __construct($values = null) {
         global $master;
-        $this->master = $master;
-        $this->set_defaults();
+        $this->master  = &$master;
+        $this->request = &$this->master->request;
+
+        $this->setDefaults();
         if (!is_null($values)) {
-            $this->set_unsaved_values($values);
+            $this->setUnsavedValues($values);
         }
 
-        $this->prepareRepositories();
         $this->prepareServices();
-    }
-
-    protected function prepareRepositories() {
-        foreach (static::$useRepositories as $localName => $repositoryName) {
-            $this->{$localName} = $this->master->getRepository($repositoryName);
-        }
     }
 
     protected function prepareServices() {
@@ -138,139 +141,188 @@ abstract class Entity {
         }
     }
 
-    public function print_state() {
-        print("* Entity of type: ".get_class($this)." stored in table `".static::$table."`\n");
-        print("  Exists in DB: ".intval($this->exists_in_db())."\n");
-        print("  Needs_saving: ".intval($this->needs_saving())."\n");
-        print("  Saved values:\n");
-        foreach ($this->saved_values as $name => $value) {
-            print("  - {$name}: {$value}\n");
+    public function printState() {
+        $print = PHP_EOL;
+        $print .= "* Entity of type: ".get_class($this)." stored in table `".static::$table."`".PHP_EOL;
+        $print .= "  Exists in DB: ".intval($this->existsInDB()).PHP_EOL;
+        $print .= "  needsSaving: ".intval($this->needsSaving()).PHP_EOL;
+        $print .= "  Saved values:\n";
+        foreach ($this->savedValues as $name => $value) {
+            $print .= "  - {$name}: {$value}".PHP_EOL;
         }
-        print("  Unsaved values:\n");
-        foreach ($this->unsaved_values as $name => $value) {
-            print("  - {$name}: {$value}\n");
+        $print .= "  Unsaved values:".PHP_EOL;
+        foreach ($this->unsavedValues as $name => $value) {
+            $print .= "  - {$name}: {$value}".PHP_EOL;
         }
-        print("  Local values:\n");
-        foreach ($this->local_values as $name => $value) {
-            print("  - {$name}: {$value}\n");
-        }
+        return $print;
     }
 
-    public function set_defaults() {
+    public function setDefaults() {
         foreach (static::$properties as $name => $options) {
-            if (!empty($options['default'])) {
-                $this->unsaved_values[$name] = $options['default'];
+            if (array_key_exists('default', $options)) {
+                $this->unsavedValues[$name] = $options['default'];
             } else {
-                $this->unsaved_values[$name] = null;
+                $this->unsavedValues[$name] = null;
             }
         }
     }
 
-    public function get_saved_values() {
-        return $this->saved_values;
+    public function getSavedValues() {
+        return $this->savedValues;
     }
 
-    public function get_unsaved_values() {
-        return $this->unsaved_values;
+    public function getUnsavedValues() {
+        return $this->unsavedValues;
     }
 
-    public function get_pkey_value() {
-        $pkey_property = static::get_pkey_property();
-        $pkey_value = $this->saved_values[$pkey_property];
-        return $pkey_value;
+    public function getPKeyValues() {
+        $pKeyProperties = self::getPKeyProperties();
+        $pKeyValue = [];
+        foreach ($pKeyProperties as $pKeyProperty) {
+            if (array_key_exists($pKeyProperty, $this->unsavedValues)) {
+                $pKeyValue[] = $this->unsavedValues[$pKeyProperty];
+            } else {
+                $pKeyValue[] = $this->savedValues[$pKeyProperty];
+            }
+        }
+        return $pKeyValue;
     }
 
-    public function exists_in_db() {
-        $pkey_property = self::get_pkey_property();
-        return isset($this->saved_values[$pkey_property]);
+    public function existsInDB() {
+        # Assume entity exists if it has any saved values.
+        return !empty($this->savedValues);
+
+        # The old method (below) would fail for entities which do not use
+        # an auto-increment PKey column. :-(
+        /*
+         * $pKeyProperties = self::getPKeyProperties();
+         * foreach ($pKeyProperties as $pKeyProperty) {
+         *     if (!isset($this->savedValues[$pKeyProperty])) {
+         *         return false;
+         *     }
+         * }
+         * return true;
+         */
     }
 
-    public function needs_saving() {
-        $this->cleanup_unsaved_values();
-        return boolval(count($this->unsaved_values));
+    public function needsSaving() {
+        $this->cleanupUnsavedValues();
+        return boolval(count($this->unsavedValues));
     }
 
-    public function cleanup_unsaved_values() {
-        foreach ($this->unsaved_values as $name => $value) {
-            if (isset($this->saved_values[$name]) && $this->saved_values[$name] === $value) {
-                unset($this->unsaved_values[$name]);
+    public function cleanupUnsavedValues() {
+        foreach ($this->unsavedValues as $name => $value) {
+            if (isset($this->savedValues[$name]) && $this->savedValues[$name] === $value) {
+                unset($this->unsavedValues[$name]);
             }
         }
     }
 
-    public function set_unsaved_values($values) {
+    public function setUnsavedValues($values) {
         foreach ($values as $name => $value) {
-            if (!is_property($name)) {
+            if (!self::isProperty($name)) {
                 throw new InternalError("Can't set Entity value which isn't a defined property: {$name}.");
             }
-            $this->unsaved_values[$name] = $value;
+            $this->setProperty($name, $value);
         }
     }
 
-    public function set_saved_values($values) {
+    public function setSavedValues($values) {
         foreach ($values as $name => $value) {
-            if (!self::is_property($name)) {
+            if (!self::isProperty($name)) {
                 # Would previously throw an error, but that breaks the site when there are locally created DB columns.
                 continue;
             }
-            $this->saved_values[$name] = $value;
-            if (array_key_exists($name, $this->unsaved_values)) {
-                unset($this->unsaved_values[$name]);
+            $this->savedValues[$name] = $value;
+            if (array_key_exists($name, $this->unsavedValues)) {
+                unset($this->unsavedValues[$name]);
             }
         }
     }
 
     public function __set($name, $value) {
-        if (self::is_property($name)) {
-            $this->set_property($name, $value);
+        if (self::isProperty($name)) {
+            $this->setProperty($name, $value);
         } else {
-            $this->local_values[$name] = $value;
+            $this->localValues[$name] = $value;
         }
     }
 
+    public function safeSet($name, $value) {
+        if (!array_key_exists($name, $this->localValues)) {
+            # Don't self-cache null results
+            if (is_null($value) === false) {
+                self::__set($name, $value);
+            } else {
+                return null;
+            }
+        }
+        return self::__get($name);
+    }
+
     public function __get($name) {
-        if (self::is_property($name)) {
-            return $this->get_property($name);
+        if (self::isProperty($name)) {
+            return $this->getProperty($name);
         } else {
-            return $this->local_values[$name];
+            if (array_key_exists($name, $this->localValues)) {
+                return $this->localValues[$name];
+            } else {
+                return null;
+            }
         }
     }
 
     public function __isset($name) {
-        if (self::is_property($name)) {
-            return $this->isset_property($name);
+        if (self::isProperty($name)) {
+            return $this->issetProperty($name);
         } else {
-            return (isset($this->local_values[$name]) || isset($this->$name));
+            return (isset($this->localValues[$name]) || isset($this->$name));
         }
     }
 
     public function __unset($name) {
-        if (self::is_property($name)) {
+        if (self::isProperty($name)) {
             # There will still be some value in the DB (even if it's null), so unsetting it could lead to unexpected results.
             throw new InternalError("Cannot unset defined Entity property: {$name}.");
         } else {
-            unset($this->local_values[$name]);
+            unset($this->localValues[$name]);
         }
     }
 
-    public function set_property($name, $value) {
-        if (self::is_pkey_property($name) && $this->exists_in_db()) {
+    public function __sleep() {
+        return ['savedValues', 'unsavedValues'];
+    }
+
+    /**
+     * Return meaningful debug information from entity objects
+     * @return array Array containing the data related to DB columns
+     */
+    public function __debugInfo() {
+        return [
+            'savedValues'   => $this->savedValues,
+            'unsavedValues' => $this->unsavedValues,
+            'casToken'       => $this->casToken,
+        ];
+    }
+
+    public function setProperty($name, $value) {
+        if (self::isPKeyProperty($name) && $this->existsInDB()) {
             throw new InternalError("Cannot change primary key values for objects in database.");
         }
-        $this->unsaved_values[$name] = self::cast_for_property($name, $value);
+        $this->unsavedValues[$name] = self::castForProperty($name, $value);
     }
 
-    public function get_property($name) {
-        if (array_key_exists($name, $this->unsaved_values)) {
-            $value = $this->unsaved_values[$name];
+    public function getProperty($name) {
+        if (array_key_exists($name, $this->unsavedValues)) {
+            $value = $this->unsavedValues[$name];
         } else {
-            $value = $this->saved_values[$name];
+            $value = $this->savedValues[$name];
         }
-        return self::unflatten_from_property($name, $value);
+        return self::unflattenFromProperty($name, $value);
     }
 
-    public function isset_property($name) {
-        return (isset($this->saved_values[$name]) || isset($this->unsaved_values[$name]));
+    public function issetProperty($name) {
+        return (isset($this->savedValues[$name]) || isset($this->unsavedValues[$name]));
     }
 
     public function setFlags($flags, $column = 'Flags') {
@@ -287,8 +339,8 @@ abstract class Entity {
     }
 
     public function setFlagStatus($flag, $status, $column = 'Flags') {
-        # Useful for setting a flag's status from an existing boolean var
-        if ($status) {
+        # Useful for setting a flag's status from an existing bool var
+        if (!empty($status)) {
             $this->setFlags($flag, $column);
         } else {
             $this->unsetFlags($flag, $column);
@@ -302,14 +354,14 @@ abstract class Entity {
     }
 
     public function hasExpired($column = 'Expires') {
-        // Compare apples to apples
-        $treshold = new \DateTime();
+        # Compare apples to apples
+        $threshold = new \DateTime();
         $expires  = $this->$column;
 
-        // Make sure we have a DateTime object
+        # Make sure we have a DateTime object
         if (!$expires instanceof \DateTime)
-            $expires = new \DateTime($this->$column);
+            $expires = new \DateTime($expires);
 
-        return $expires < $treshold;
+        return $expires < $threshold;
     }
 }

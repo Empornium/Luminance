@@ -22,11 +22,12 @@
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `xbt_snatched` (
-  `uid` int(11) NOT NULL DEFAULT '0',
+  `uid` bigint(24) NOT NULL DEFAULT '0',
   `tstamp` int(11) NOT NULL,
   `fid` int(11) NOT NULL,
   `ipv4` varbinary(4) DEFAULT NULL,
   `ipv6` varbinary(16) DEFAULT NULL,
+  PRIMARY KEY (`uid`, `fid`),
   KEY `fid` (`fid`),
   KEY `uid` (`uid`),
   KEY `tstamp` (`tstamp`)

@@ -3,35 +3,44 @@ namespace Luminance\Services;
 
 use Luminance\Core\Master;
 use Luminance\Core\Service;
-use Luminance\Core\Entity;
+
+use Luminance\Errors\SystemError;
+
+use Luminance\Services\Debug;
 
 class Cache extends Service {
-    public $CacheHits  = array();
-    public $CacheTimes = array();
-    public $MemcacheDBArray = array();
-    public $MemcacheDBKey = '';
-    protected $InTransaction = false;
-    protected $enable = true;
-    protected $enable_debug = true;
-    public $Time = 0;
-    private $PersistentKeys = array(
+    public $hits  = [];
+    public $hot = [];
+    public $times = [];
+    private $casTokens = [];
+    private static $enabled = true;
+    protected $apcuHotcache = false;
+    protected $apcuPrefix = null;
+    public $time = 0;
+    private $persistenKeys = [
         'stats_*',
         'percentiles_*',
         'top10tor_*'
-    );
+    ];
 
-    private $Memcached = null;
-
-    public $CanClear = false;
+    private $casToken = null;
+    private $memcached = null;
 
     public function __construct(Master $master) {
         parent::__construct($master);
         $host = $master->settings->memcached->host;
         $port = $master->settings->memcached->port;
 
-        if (is_null($this->Memcached)) {
-            // Compatibility, prefer Memcached
-            if (class_exists('\Memcached')) {
+        if (extension_loaded('apcu') && ini_get('apc.enabled')) {
+            $this->apcuPrefix = $master->settings->keys->apcu_prefix;
+            if (!empty($this->apcuPrefix)) {
+                $this->apcuHotcache = true;
+            }
+        }
+
+        if (is_null($this->memcached)) {
+            # Detect memcached presence
+            if (class_exists('\memcached')) {
                 if (substr($host, 0, 7) === "unix://") {
                     $host = str_replace('unix://', '', $host);
                     $port = 0;
@@ -39,344 +48,300 @@ class Cache extends Service {
                     $port = (int)$port;
                 }
 
-                $this->Memcached = new \Memcached("{$host}:{$port}_Luminance");
-                $servers = $this->Memcached->getServerList();
+                $this->memcached = new \Memcached("{$host}:{$port}_Luminance");
+                $servers = $this->memcached->getServerList();
                 if (empty($servers)) {
-                    $this->Memcached->addServer($host, $port);
-                }
+                    $options = [
+                        #\Memcached::OPT_BINARY_PROTOCOL => true, # More trouble than it's worth
+                        \Memcached::OPT_TCP_NODELAY     => true,
+                        \Memcached::OPT_VERIFY_KEY      => true,
+                    ];
 
-            // Compatibility, fallback to Memcache
-            } elseif (class_exists('\Memcache')) {
-                $this->Memcached = new \Memcache();
-                @$this->Memcached->pconnect($host, $port);
+                    if (method_exists($this->memcached, 'flushBuffers')) {
+                        #$options[\Memcached::OPT_BUFFER_WRITES] = true; # Breaks on PHP 8.2, need to debug more
+                        $options[\Memcached::OPT_NO_BLOCK     ] = true;
+                    }
+
+                    if (extension_loaded('igbinary')) {
+                        if ($this->memcached->getOption(\Memcached::HAVE_IGBINARY)) {
+                            $options[\Memcached::OPT_SERIALIZER] = \Memcached::SERIALIZER_IGBINARY;
+                        }
+                    }
+                    $this->memcached->setOptions($options);
+                    $this->memcached->addServer($host, $port);
+                }
             } else {
-                $this->enable = false;
+                self::$enabled = false;
             }
         }
     }
 
-    public function __call($func, $params) {
-        if (method_exists($this->Memcached, $func)) {
-            return call_user_func_array([$this->Memcached, $func], (array)$params);
-        } else {
-            return call_user_func_array([$this, $func], (array)$params);
+    public function __destruct() {
+        $this->flushBuffers();
+    }
+
+    public function getOptions() {
+        $options['binary protocol'] = $this->memcached->getOption(\Memcached::OPT_BINARY_PROTOCOL);
+        $options['no block']        = $this->memcached->getOption(\Memcached::OPT_NO_BLOCK);
+        $options['tcp no delay']    = $this->memcached->getOption(\Memcached::OPT_TCP_NODELAY);
+        $options['serializer']      = $this->memcached->getOption(\Memcached::OPT_SERIALIZER);
+        $options['buffer writes']   = $this->memcached->getOption(\Memcached::OPT_BUFFER_WRITES);
+        return $options;
+    }
+
+    public static function disable() {
+        self::$enabled = false;
+    }
+
+    public static function enable() {
+        self::$enabled = true;
+    }
+
+    private function apcuKey($key) {
+        return "{$this->apcuPrefix}_{$key}";
+    }
+
+    private function checkKey(string $key) {
+        if (!mb_check_encoding($key, 'ASCII')) {
+            throw new SystemError('Invalid characters in cache key (non-ASCII)');
+        }
+
+        if (!preg_match('/[0-9a-zA-Z_]/', $key)) {
+            throw new SystemError('Invalid characters in cache key (Control/Whitespace)');
+        }
+
+        if (empty($key)) {
+            throw new SystemError('Invalid cache key (Empty)');
         }
     }
 
-    public function disable() {
-        $this->enable = false;
-    }
+    public function flush() {
+        $this->memcached->flush();
 
-    public function enable() {
-        if (!is_null($this->Memcached)) {
-            $this->enable = true;
+        if ($this->apcuHotcache) {
+            apcu_clear_cache();
         }
-    }
-
-    public function enable_debug() {
-        $this->enable_debug = true;
-    }
-
-    public function disable_debug() {
-        $this->enable_debug = false;
     }
 
     public function getStats($args = null) {
-        $stats = $this->Memcached->getStats($args);
-        if (is_subclass_of($this, '\Memcached')) {
-            $servers = array_keys($stats);
-            $stats = $stats[$servers[0]];
-        }
+        $stats = $this->memcached->getStats($args);
+        $servers = array_keys($stats);
+        $stats = $stats[$servers[0]];
         return $stats;
     }
 
-    //---------- Caching functions ----------//
+    #---------- Caching functions ----------#
 
-    // Allows us to set an expiration on otherwise perminantly cache'd values
-    // Useful for disabled users, locked threads, basically reducing ram usage
-    public function expire_value($Key, $Duration = 2592000) {
-        $StartTime=microtime(true);
-        $this->Memcached->set($Key, @$this->Memcached->get($Key), $Duration);
-        $this->Time+=(microtime(true)-$StartTime)*1000;
-    }
+    # Allows us to set an expiration on otherwise perminantly cache'd values
+    # Useful for disabled users, locked threads, basically reducing ram usage
+    public function expireValue($key, $duration = 2592000) {
+        if (!self::$enabled) return;
+        $startTime=microtime(true);
 
-    // Wrapper for Memcache::set, with the zlib option removed and default duration of 30 days
-    public function cache_value($Key, $Value, $Duration = 2592000) {
-        if (!$this->enable) return;
-        $StartTime=microtime(true);
-        if (empty($Key)) {
-            //trigger_error("Cache insert failed for empty key");
+        $this->checkKey($key);
+
+        # Remove from hotcache
+        if ($this->apcuHotcache) {
+            $apcuKey = $this->apcuKey($key);
+            apcu_delete($apcuKey);
         }
 
-        // Default parameters for Memcache set function
-        if ($this->Memcached instanceof \Memcache) {
-            $success = $this->Memcached->set($Key, $Value, 0, $Duration);
+        $this->memcached->touch($key, $duration);
+        $this->time+=(microtime(true)-$startTime)*1000;
+    }
+
+    # Wrapper for Memcache::set, with the zlib option removed and default duration of 30 days
+    public function cacheValue($key, $value, $duration = 2592000, &$casToken = null) {
+        if (!self::$enabled) return;
+        $startTime=microtime(true);
+
+        $this->checkKey($key);
+
+        if (is_null($casToken)) {
+            $this->memcached->set($key, $value, (int)$duration);
+            $success = $this->memcached->getResultCode();
         } else {
-            $success = $this->Memcached->set($Key, $Value, $Duration);
-        }
+            $this->memcached->cas($casToken, $key, $value, $duration);
+            $success = $this->memcached->getResultCode();
 
-        if (!$success) {
-            //trigger_error("Cache insert failed for key $Key");
-        }
-
-        $this->Time+=(microtime(true)-$StartTime)*1000;
-    }
-
-    public function replace_value($Key, $Value, $Duration = 2592000) {
-        if (!$this->enable) return;
-        $StartTime=microtime(true);
-
-        // Memcached uses only 3 parameters (no flag)
-        if ($this->Memcached instanceof \Memcache) {
-            $this->Memcached->replace($Key, $Value, false, $Duration);
-        } else {
-            $this->Memcached->replace($Key, $Value, $Duration);
-        }
-
-        $this->Time+=(microtime(true)-$StartTime)*1000;
-    }
-
-    public function get_value($Key, $NoCache = false) {
-        if (!$this->enable) return;
-        $StartTime=microtime(true);
-        if (empty($Key)) {
-            trigger_error("Cache retrieval failed for empty key");
-        }
-
-        if (isset($_GET['clearcache']) && $this->CanClear && !in_array_partial($Key, $this->PersistentKeys)) {
-            if ($_GET['clearcache'] == 1) {
-                //Because check_perms isn't true until loggeduser is pulled from the cache, we have to remove the entries loaded before the loggeduser data
-                //Because of this, not user cache data will require a secondary pageload following the clearcache to update
-                if (count($this->CacheHits) > 0) {
-                    foreach (array_keys($this->CacheHits) as $HitKey) {
-                        if (!in_array_partial($HitKey, $this->PersistentKeys)) {
-                            $this->Memcached->delete($HitKey);
-                            unset($this->CacheHits[$HitKey]);
-                            unset($this->CacheTimes[$HitKey]);
-                        }
-                    }
-                }
-                $this->Memcached->delete($Key);
-                $this->Time+=(microtime(true)-$StartTime)*1000;
-
-                return false;
-            } elseif ($_GET['clearcache'] == $Key) {
-                $this->Memcached->delete($Key);
-                $this->Time+=(microtime(true)-$StartTime)*1000;
-
-                return false;
-            } elseif (in_array($_GET['clearcache'], $this->CacheHits)) {
-                unset($this->CacheHits[$_GET['clearcache']]);
-                unset($this->CacheTimes[$_GET['clearcache']]);
-                $this->Memcached->delete($_GET['clearcache']);
-            }
-        }
-
-        //For cases like the forums, if a keys already loaded grab the existing pointer
-        if (isset($this->CacheHits[$Key]) && !$NoCache) {
-            $this->Time+=(microtime(true)-$StartTime)*1000;
-            return $this->CacheHits[$Key];
-        }
-
-        $Return = @$this->Memcached->get($Key);
-        $EndTime = microtime(true);
-        if ($Return !== false && !$NoCache && $this->enable_debug) {
-            if (count($this->CacheHits) < 200) {
-                $this->CacheHits[$Key]  = $Return;
-                $this->CacheTimes[$Key] = ($EndTime-$StartTime)*1000;
-            }
-            $this->Time+=($EndTime-$StartTime)*1000;
-        }
-
-        return $Return;
-    }
-
-    // Wrapper for Memcache::delete. For a reason, see above.
-    public function delete_value($Key) {
-        if (!$this->enable) return;
-        $StartTime=microtime(true);
-        @$this->Memcached->delete($Key);
-        $this->Time+=(microtime(true)-$StartTime)*1000;
-    }
-
-    //---------- memcachedb functions ----------//
-
-    public function begin_transaction($Key) {
-        if (!$this->enable) return;
-        $Value = @$this->Memcached->get($Key);
-        if (!is_array($Value)) {
-            $this->InTransaction = false;
-            $this->MemcacheDBKey = array();
-            $this->MemcacheDBKey = '';
-
-            return false;
-        }
-        $this->MemcacheDBArray = $Value;
-        $this->MemcacheDBKey = $Key;
-        $this->InTransaction = true;
-
-        return true;
-    }
-
-    public function cancel_transaction() {
-        if (!$this->enable) return;
-        $this->InTransaction = false;
-        $this->MemcacheDBKey = array();
-        $this->MemcacheDBKey = '';
-    }
-
-    public function commit_transaction($Time = 2592000) {
-        if (!$this->enable) return;
-        if (!$this->InTransaction) {
-            return false;
-        }
-        $this->cache_value($this->MemcacheDBKey, $this->MemcacheDBArray, $Time);
-        $this->InTransaction = false;
-    }
-
-    // Updates multiple rows in an array
-    public function update_transaction($Rows, $Values) {
-        if (!$this->enable) return;
-        if (!$this->InTransaction) {
-            return false;
-        }
-        $Array = $this->MemcacheDBArray;
-        if (is_array($Rows)) {
-            $i = 0;
-            $Keys = $Rows[0];
-            $Property = $Rows[1];
-            foreach ($Keys as $Row) {
-                $Array[$Row][$Property] = $Values[$i];
-                $i++;
-            }
-        } else {
-            $Array[$Rows] = $Values;
-        }
-        $this->MemcacheDBArray = $Array;
-    }
-
-    // Updates multiple values in a single row in an array
-    // $Values must be an associative array with key:value pairs like in the array we're updating
-    public function update_row($Row, $Values) {
-        if (!$this->enable) return;
-        if (!$this->InTransaction) {
-            return false;
-        }
-        if ($Row === false) {
-            $UpdateArray = $this->MemcacheDBArray;
-        } else {
-            $UpdateArray = $this->MemcacheDBArray[$Row];
-        }
-        foreach ($Values as $Key => $Value) {
-            if (!array_key_exists($Key, $UpdateArray)) {
-                trigger_error('Bad transaction key ('.$Key.') for cache '.$this->MemcacheDBKey);
-            }
-            if ($Value === '+1') {
-                if (!is_number($UpdateArray[$Key])) {
-                    trigger_error('Tried to increment non-number ('.$Key.') for cache '.$this->MemcacheDBKey);
-                }
-                ++$UpdateArray[$Key]; // Increment value
-            } elseif ($Value === '-1') {
-                if (!is_number($UpdateArray[$Key])) {
-                    trigger_error('Tried to decrement non-number ('.$Key.') for cache '.$this->MemcacheDBKey);
-                }
-                --$UpdateArray[$Key]; // Decrement value
+            # Check if out CAS token is out of date
+            if ($success === \Memcached::RES_DATA_EXISTS) {
+                # Someone else beat us to this key, clear it
+                # to force a reload from the DB.
+                $this->deleteValue($key);
             } else {
-                $UpdateArray[$Key] = $Value; // Otherwise, just alter value
+                # Update the CAS token
+                $update = $this->memcached->get($key, null, \Memcached::GET_EXTENDED);
+                $success = $this->memcached->getResultCode();
+                if ($success === \Memcached::RES_SUCCESS) {
+                    $casToken = $update['cas'];
+                }
             }
         }
-        if ($Row === false) {
-            $this->MemcacheDBArray = $UpdateArray;
-        } else {
-            $this->MemcacheDBArray[$Row] = $UpdateArray;
-        }
-    }
 
-    // Increments multiple values in a single row in an array
-    // $Values must be an associative array with key:value pairs like in the array we're updating
-    public function increment_row($Row, $Values) {
-        if (!$this->enable) return;
-        if (!$this->InTransaction) {
-            return false;
-        }
-        if ($Row === false) {
-            $UpdateArray = $this->MemcacheDBArray;
-        } else {
-            $UpdateArray = $this->MemcacheDBArray[$Row];
-        }
-        foreach ($Values as $Key => $Value) {
-            if (!array_key_exists($Key, $UpdateArray)) {
-                trigger_error('Bad transaction key ('.$Key.') for cache '.$this->MemcacheDBKey);
+        if ($success === \Memcached::RES_SUCCESS || $success === \Memcached::RES_BUFFERED) {
+            if ($this->apcuHotcache) {
+                $apcuKey = $this->apcuKey($key);
+                apcu_store($apcuKey, [$casToken, $value], $duration);
             }
-            if (!is_number($Value)) {
-                trigger_error('Tried to increment with non-number ('.$Key.') for cache '.$this->MemcacheDBKey);
+        } else {
+            //trigger_error("Cache insert failed for key {$key}");
+        }
+
+        $this->time+=(microtime(true)-$startTime)*1000;
+    }
+
+    public function replaceValue($key, $value, $duration = 2592000) {
+        if (!self::$enabled) return;
+        $startTime=microtime(true);
+
+        $this->checkKey($key);
+
+        $this->memcached->replace($key, $value, $duration);
+        $success = $this->memcached->getResultCode();
+        $this->hits[$key] = $value;
+        unset($this->casTokens[$key]);
+
+        if ($success === \Memcached::RES_SUCCESS && $this->apcuHotcache) {
+            $apcuKey = $this->apcuKey($key);
+            apcu_store($apcuKey, [null, $value], $duration);
+        }
+
+        $this->time+=(microtime(true)-$startTime)*1000;
+    }
+
+    public function getValue($key, $noCache = false, &$casToken = null) {
+        if (!self::$enabled) {
+            # Must return false otherwise logic will accept "null" as the value
+            return false;
+        }
+
+        $this->checkKey($key);
+
+        $startTime=microtime(true);
+
+        if (empty($key)) {
+            //trigger_error("Cache retrieval failed for empty key");
+            return false;
+        }
+
+        # If a key's already loaded grab the existing pointer
+        if ($noCache === false) {
+            if (array_key_exists($key, $this->hits)) {
+                $this->time+=(microtime(true)-$startTime)*1000;
+                if (array_key_exists($key, $this->casTokens)) {
+                    $casToken = $this->casTokens[$key];
+                    $value = $this->hits[$key];
+                    return $value;
+                }
             }
-            $UpdateArray[$Key] += $Value; // Increment value
         }
-        if ($Row === false) {
-            $this->MemcacheDBArray = $UpdateArray;
+
+        # Otherwise, if the hotcache is enabled grab it from there
+        if ($this->apcuHotcache === true && $noCache === false) {
+            $apcuKey = $this->apcuKey($key);
+            $success = false;
+            list($casToken, $value) = apcu_fetch($apcuKey, $success);
+            if ($success === true) {
+                $this->hits[$key] = $value;
+                $this->hot[$key] = true;
+                $this->casTokens[$key] = $casToken;
+                $endTime = microtime(true);
+                $this->times[$key] = ($endTime-$startTime)*1000;
+                return $value;
+            }
+        }
+
+        # Finally, try to fetch from memcached
+        $result = $this->memcached->get($key, null, \Memcached::GET_EXTENDED);
+        $success = $this->memcached->getResultCode();
+
+        $endTime = microtime(true);
+
+        if ($success === \Memcached::RES_SUCCESS) {
+            $casToken = $result['cas'];
+            $value = $result['value'];
+
+            # Store in hotcache
+            if ($this->apcuHotcache) {
+                $apcuKey = $this->apcuKey($key);
+                apcu_store($apcuKey, [$casToken, $value], 900); # auto-hotcache for 15 mins
+            }
+
+            # Store in local cache
+            if ($noCache === false) {
+                $this->hits[$key] = $value;
+                $this->hot[$key] = false;
+                $this->casTokens[$key] = $casToken;
+                if (Debug::getEnabled()) {
+                    $this->times[$key] = ($endTime-$startTime)*1000;
+                    $this->time+=($endTime-$startTime)*1000;
+                }
+            }
+            return $result['value'];
+        }
+
+        # Default is return false (cache miss)
+        return false;
+    }
+
+    # Wrapper for Memcache::delete. For a reason, see above.
+    public function deleteValue($key) {
+        if (!self::$enabled) return;
+        $startTime=microtime(true);
+
+        $this->checkKey($key);
+
+        # Remove from hotcache
+        if ($this->apcuHotcache) {
+            $apcuKey = $this->apcuKey($key);
+            apcu_delete($apcuKey);
+        }
+
+        # Remove from memcached
+        $this->memcached->delete($key);
+        $this->time+=(microtime(true)-$startTime)*1000;
+    }
+
+    public function incrementValue(string $key, int $offset = 1) {
+        if (!self::$enabled) return;
+        $this->checkKey($key);
+
+        $this->memcached->increment($key, $offset);
+        $success = $this->memcached->getResultCode();
+
+        if ($success === \Memcached::RES_SUCCESS || $success === \Memcached::RES_BUFFERED) {
+            # Remove from hotcache
+            if ($this->apcuHotcache) {
+                $apcuKey = $this->apcuKey($key);
+                apcu_delete($apcuKey);
+            }
         } else {
-            $this->MemcacheDBArray[$Row] = $UpdateArray;
+            //trigger_error("Failed to increment {$key}");
         }
     }
 
-    // Insert a value at the beginning of the array
-    public function insert_front($Key, $Value) {
-        if (!$this->enable) return;
-        if (!$this->InTransaction) {
-            return false;
-        }
-        if ($Key === '') {
-            array_unshift($this->MemcacheDBArray, $Value);
+    public function decrementValue(string $key, int $offset = 1) {
+        if (!self::$enabled) return;
+        $this->checkKey($key);
+
+        $this->memcached->decrement($key, $offset);
+        $success = $this->memcached->getResultCode();
+
+        if ($success === \Memcached::RES_SUCCESS || $success === \Memcached::RES_BUFFERED) {
+            # Remove from hotcache
+            if ($this->apcuHotcache) {
+                $apcuKey = $this->apcuKey($key);
+                apcu_delete($apcuKey);
+            }
         } else {
-            $this->MemcacheDBArray = array($Key=>$Value) + $this->MemcacheDBArray;
+            //trigger_error("Failed to decrement {$key}");
         }
     }
 
-    // Insert a value at the end of the array
-    public function insert_back($Key, $Value) {
-        if (!$this->enable) return;
-        if (!$this->InTransaction) {
-            return false;
-        }
-        if ($Key === '') {
-            array_push($this->MemcacheDBArray, $Value);
-        } else {
-            $this->MemcacheDBArray = $this->MemcacheDBArray + array($Key=>$Value);
-        }
-    }
-
-    public function insert($Key, $Value) {
-        if (!$this->enable) return;
-        if (!$this->InTransaction) {
-            return false;
-        }
-        if ($Key === '') {
-            $this->MemcacheDBArray[] = $Value;
-        } else {
-            $this->MemcacheDBArray[$Key] = $Value;
-        }
-    }
-
-    public function delete_row($Row) {
-        if (!$this->enable) return;
-        if (!$this->InTransaction) {
-            return false;
-        }
-        if (!isset($this->MemcacheDBArray[$Row])) {
-            trigger_error('Tried to delete non-existent row ('.$Row.') for cache '.$this->MemcacheDBKey);
-        }
-        unset($this->MemcacheDBArray[$Row]);
-    }
-
-    public function update($Key, $Rows, $Values, $Time = 2592000) {
-        if (!$this->enable) return;
-        if (!$this->InTransaction) {
-            $this->begin_transaction($Key);
-            $this->update_transaction($Rows, $Values);
-            $this->commit_transaction($Time);
-        } else {
-            $this->update_transaction($Rows, $Values);
+    public function flushBuffers() {
+        if (method_exists($this->memcached, 'flushBuffers')) {
+            $this->memcached->flushBuffers();
         }
     }
 }

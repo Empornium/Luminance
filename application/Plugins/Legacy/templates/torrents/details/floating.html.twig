@@ -1,0 +1,93 @@
+{% if not ActiveUser.options('HideDetailsSidebar', false) %}
+    <div id="hidebar" class="content">
+        <div id="modal_content">
+            <div class="details thin">
+                <h2>
+                    <span class="arrow" style="float: left;">
+                        <a href="/torrents.php?id={{ group.ID }}&action=prev" title="goto previous torrent">
+                            {{ icon.render("font_icon", ['nav_arrow_left']) }}
+                        </a>
+                    </span>
+                    {{ group.Name }}&nbsp;({{ get_size(torrents[0].Size) }})
+                    <span class="arrow" style="float: right;">
+                        <a href="/torrents.php?id={{ group.ID }}&action=next" title="goto previous torrent">
+                            {{ icon.render("font_icon", ['nav_arrow_right']) }}
+                        </a>
+                    </span>
+                </h2>
+                <div id="user-sidebar">
+                    <div class="linkbox" style="display:block;">
+                        <div class="top_info" style="margin:unset;">
+                            <table class="boxstat" style="margin:unset;">
+                                <tr>
+                                    <td>
+                                        {{ torrent_username(torrents[0].uploader.ID, torrents[0].Anonymous)|raw }} &nbsp; {{ time_diff(torrents[0].Time)|raw }}
+                                    </td>
+                                    <td>
+                                        {{ get_size(torrents[0].Size) }}
+                                    </td>
+                                    <td>
+                                        {{ icon.render("font_icon", ['torrent_snatched']) }}{{ torrents[0].Snatched|number_format() }}
+                                    </td>
+                                    <td>
+                                        {{ icon.render("font_icon", ['torrent_seeding']) }}{{ torrents[0].Seeders|number_format() }}
+                                    </td>
+                                    <td>
+                                        {{ icon.render("font_icon", ['torrent_leeching']) }}{{ torrents[0].Leechers|number_format() }}
+                                    </td>
+                                    <td>
+                                        {{ extraIcons|raw }}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <br/>
+
+                    {% if auth.isAllowed('torrent_download_override') or (master.options.EnableDownloads and (review.Status is not defined or review.Status == 'Okay' )) %}
+                        {% if canFreeleech %}
+                            <a href="/torrents.php?action=download&amp;id={{ torrents[0].ID }}&amp;authkey={{ ActiveUser.legacy.AuthKey }}&amp;torrent_pass={{ ActiveUser.legacy.torrent_pass }}&amp;usetoken=1" class="button greenButton" title="This will use 1 slot" onClick="return confirm('Are you sure you want to use a freeleech slot here?');">FREELEECH TORRENT</a>
+                        {% endif %}
+                        {% if canDoubleseed %}
+                            <a href="/torrents.php?action=download&amp;id={{ torrents[0].ID }}&amp;authkey={{ ActiveUser.legacy.AuthKey }}&amp;torrent_pass={{ ActiveUser.legacy.torrent_pass }}&amp;usetoken=2" class="button orangeButton" title="This will use 1 slot" onClick="return confirm('Are you sure you want to use a doubleseed slot here?');">DOUBLESEED TORRENT</a>
+                        {% endif %}
+                    {% endif %}
+                    {% if group.canThank(ActiveUser) %}
+                        <input type="button" onclick="this.disabled=true; document.getElementById('thanksbutton').click();this.style.display = 'none';" value="Thank the uploader!" />
+                    {% endif %}
+                    {% if auth.isAllowed('torrent_review') %}
+                        <span id="admin-sidebar" style="float: right;">
+                            <form action="" method="post">
+                                <input type="hidden" name="action"  value="set_review_status" />
+                                <input type="hidden" name="groupid" value="{{ group.ID }}" />
+                                <input type="hidden" name="auth"    value="{{ ActiveUser.legacy.AuthKey }}" />
+                                <input type="hidden" name="convid"  value="{{ review.ConvID }}" />
+                                <input type="hidden" name="ninja"   value="{{ review.ID }}" />
+                                <strong name="warn_insert" class="important_text" style="margin-right:20px;"></strong>
+                                {% if review.Status is empty or review.Status in ['Unreviewed', 'Okay'] or auth.isAllowed('torrent_review_override') %}
+                                    <select name="reasonid"  onchange="Select_Reason(this, {{ review.Status in ['Warned', 'Pending', 'Okay'] ? 'true' : 'false' }});" >
+                                        <option value="-1" selected="selected">none&nbsp;&nbsp;</option>
+                                        {% for reason in reviewReasons %}
+                                            <option value="{{ reason.ID }}">{{ reason.Name }}&nbsp;&nbsp;</option>
+                                        {% endfor %}
+                                        <option value="0">Other&nbsp;&nbsp;</option>
+                                    </select>
+                                    <input data-id="mfd" type="submit" name="submit" value="Mark for Deletion" disabled="disabled" title="Mark this torrent for Deletion" />
+                                {% endif %}
+                                {% if review.Status == 'Pending' %}
+                                    <input type="submit" name="submit" value="Accept Fix" title="Accept the fix this uploader has made" />
+                                    <input type="submit" name="submit" value="Reject Fix" title="Reject the fix this uploader has made" />
+                                {% else %}
+                                    <input type="submit" name="submit" value="Mark as Okay" {{ (review.Status in ['Okay', 'Warned'] and not auth.isAllowed('torrent_review_override')) ? 'disabled="disabled"' }} title="Mark this torrent as Okay" />
+                                    {% if review.Status == 'Warned' and auth.isAllowed('torrent_review_override') %}
+                                        <br/><strong class="important_text" style="margin-left:10px;">override warned status?</strong>
+                                    {% endif %}
+                                {% endif %}
+                            </form>
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}

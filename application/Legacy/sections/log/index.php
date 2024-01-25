@@ -4,9 +4,9 @@ enforce_login();
 if (!defined('LOG_ENTRIES_PER_PAGE')) {
     define('LOG_ENTRIES_PER_PAGE', 25);
 }
-list($Page,$Limit) = page_limit(LOG_ENTRIES_PER_PAGE);
+list($Page, $Limit) = page_limit(LOG_ENTRIES_PER_PAGE);
 
-$_GET['search'] = trim($_GET['search']);
+$_GET['search'] = trim($_GET['search'] ?? '');
 
 if (!empty($_GET['search'])) {
     $Search = ($_GET['search']);
@@ -19,21 +19,23 @@ $sql = "SELECT
     Message,
     Time
     FROM log ";
+$params = [];
 if ($Search) {
+    $Search = preg_replace('/\(/', '\(', $Search);
+    $Search = preg_replace('/\)/', '\)', $Search);
     // Break search string down into individual words
     $Words = explode(' ',  $Search);
     foreach ($Words as $Key => &$Word) {
         $Word = trim($Word);
+
+        // Should we do this for log search?
         $slen = strlen($Word);
-        if ($slen > 2 || $Word[0] != '!' &&  $slen >= 2) {
-            $Word = db_string($Word);
-        } else {
+        if ($slen <= 2 && !in_array($Word, ['!', '.*'])) {
             unset($Words[$Key]);
         }
     }
-    $sql .= "WHERE Message LIKE '%";
-    $sql .= implode("%' AND Message LIKE '%", $Words);
-    $sql .= "%' ";
+    $sql .= "WHERE Message REGEXP ? ";
+    $params[] = implode(" ", $Words);
 }
 if (!check_perms('site_view_full_log')) {
     if ($Search) {
@@ -44,13 +46,11 @@ if (!check_perms('site_view_full_log')) {
     $sql .= " Time>'".time_minus(3600*24*28)."' ";
 }
 
-$sql .= "ORDER BY Time DESC LIMIT $Limit";
+$sql .= "ORDER BY Time DESC LIMIT {$Limit}";
 
 show_header("Site log");
-$DB->query($sql);
-$logs = $DB->to_array();
-$DB->query("SELECT FOUND_ROWS()");
-list($Results) = $DB->next_record();
+$logs = $master->db->rawQuery($sql, $params)->fetchAll(\PDO::FETCH_BOTH);
+$Results = $master->db->foundRows();
 
 ?>
 <div class="thin">
@@ -68,9 +68,9 @@ list($Results) = $DB->next_record();
             </table>
         </form>
 
-    <div class="linkbox">
+    <div class="linkbox pager">
 <?php
-$Pages=get_pages($Page,$Results,LOG_ENTRIES_PER_PAGE,9);
+$Pages = get_pages($Page, $Results, LOG_ENTRIES_PER_PAGE, 9);
 echo $Pages;
 ?>
     </div>
@@ -86,10 +86,10 @@ if ($Results === 0) {
     echo '<tr class="nobr"><td colspan="2">Nothing found!</td></tr>';
 }
 $Row = 'a';
-$Usernames = array();
-$HideName = !check_perms('users_view_anon_uploaders');
+$Usernames = [];
+$HideName = !check_perms('site_view_uploaders');
 
-foreach($logs as $log) {
+foreach ($logs as $log) {
     $log['Message'] = display_str($log['Message']);
     $MessageParts = explode(" ", $log['Message']);
     $log['Message'] = "";
@@ -103,7 +103,17 @@ foreach($logs as $log) {
             $MessageParts[$i] = '<a href="/'.$link.'">'.$link.'</a>';
         }
         switch ($MessageParts[$i]) {
-            case "Tag":
+            case "article":
+                $articleID = $MessageParts[$i + 1];
+                if (is_numeric($articleID)) {
+                    $log['Message'] = $log['Message'].' '.$MessageParts[$i].' <a href="/wiki.php?action=article&id='.$articleID.'"> '.$articleID.'</a>';
+                    $i++;
+                } else {
+                    $log['Message'] = $log['Message'].' '.$MessageParts[$i];
+                }
+                break;
+            case "list:":
+            case "Tag": // are Tag/tag used?
             case "tag":
             case "Synonym":
             case "synonym":
@@ -117,10 +127,19 @@ foreach($logs as $log) {
                 break;
             case "Torrent":
             case "torrent":
-                //$HideName = true;
-                $TorrentID = $MessageParts[$i + 1];
-                if (is_numeric($TorrentID)) {
-                    $log['Message'] = $log['Message'].' '.$MessageParts[$i].' <a href="/details.php?id='.$TorrentID.'"> '.$TorrentID.'</a>';
+                $HideName = true;
+                $torrentID = $MessageParts[$i + 1];
+                //$torrentID = trim($torrentID, ',');
+                if (is_numeric($torrentID)) {
+                    $HideThisName = $master->db->rawQuery(
+                        "SELECT Anonymous
+                           FROM torrents
+                          WHERE id = ?",
+                        [$torrentID]
+                    )->fetchColumn();
+
+                    $HideName = $HideThisName || $HideName;
+                    $log['Message'] = $log['Message'].' '.$MessageParts[$i].' <a href="/torrents.php?torrentid='.$torrentID.'"> '.$torrentID.'</a>';
                     $i++;
                 } else {
                     $log['Message'] = $log['Message'].' '.$MessageParts[$i];
@@ -128,16 +147,16 @@ foreach($logs as $log) {
                 break;
             case "Torrents":
             case "torrents": // actually groups but call it torrents to not overely confuse user
-                        $TorrentIDs = explode(',', $MessageParts[$i + 1]);
+                        $torrentIDs = explode(',', $MessageParts[$i + 1]);
                         $Links='';
                         $Div='';
-                        foreach ($TorrentIDs as $TorrentID) {
-                            if (is_numeric($TorrentID)) {
-                                    $Links .= $Div .'<a href="/torrents.php?id='.$TorrentID.'">'.$TorrentID.'</a>';
+                        foreach ($torrentIDs as $torrentID) {
+                            if (is_numeric($torrentID)) {
+                                    $Links .= $Div .'<a href="/torrents.php?torrentid='.$torrentID.'">'.$torrentID.'</a>';
                                     $Div=', ';
                             }
                         }
-                $log['Message'] = "$log[Message] $MessageParts[$i] $Links";
+                $log['Message'] = "{$log['Message']} {$MessageParts[$i]} {$Links}";
                         if ($Links != '') $i++;
                 break;
             case "Request":
@@ -161,33 +180,47 @@ foreach($logs as $log) {
                 $i++;
                 break;
             case "by":
-                $UserID = 0;
+                $userID = 0;
                 $User = "";
                 $URL = "";
+                $HideThisName = (($HideName && !check_perms('users_view_anon_uploaders')) && $MessageParts[$i-1] == 'uploaded');
 
-                if (!$HideName) {   //} || check_perms('users_view_anon_uploaders')) {
+                if (!$HideThisName) {
 
                     if ($MessageParts[$i + 1] == "user") {
                         $i++;
                         if (is_numeric($MessageParts[$i + 1])) {
-                            $UserID = $MessageParts[++$i];
+                            $userID = $MessageParts[++$i];
                         }
-                        $URL = "user ".$UserID." ".'<a href="/user.php?id='.$UserID.'">'.$MessageParts[++$i]."</a>";
+                        $Username = $master->db->rawQuery(
+                            "SELECT Username
+                               FROM users
+                              WHERE ID = ?",
+                            [$userID]
+                        )->fetchColumn();
+                        $URL = "<a href=\"/user.php?id={$userID}\">{$Username}</a>";
                     } else {
-                        $User = $MessageParts[++$i];
+                        $User = implode(' ', array_slice($MessageParts, $i+1));
+                        preg_match('/^(.*?)( was| for| with|$)/', $User, $matches);
+                        $User = trim($matches[1]);
+                        $UserWords = count(explode(' ', $User));
+                        $i = $i + $UserWords;
                         if (substr($User,-1) == ':') {
                             $User = substr($User, 0, -1);
                             $Colon = true;
                         }
                         if (!isset($Usernames[$User])) {
-                            $DB->query("SELECT ID FROM users_main WHERE Username = '".db_string($User)."'");
-                            list($UserID) = $DB->next_record();
-                            $Usernames[$User] = $UserID ? $UserID : '';
+                            $userID = $master->db->rawQuery(
+                                "SELECT ID
+                                   FROM users
+                                  WHERE Username = ?",
+                                [$User]
+                            )->fetchColumn();
+                            $Usernames[$User] = $userID ? $userID : '';
                         } else {
-                            $UserID = $Usernames[$User];
+                            $userID = $Usernames[$User];
                         }
-                        $DB->set_query_id($Log);
-                        $URL = $Usernames[$User] ? '<a href="/user.php?id='.$UserID.'">'.$User."</a>".($Colon?':':'') : $User;
+                        $URL = $Usernames[$User] ? '<a href="/user.php?id='.$userID.'">'.$User."</a>".($Colon?':':'') : $User;
                     }
 
                 } else {
@@ -216,14 +249,14 @@ foreach($logs as $log) {
                 $log['Message'] = $log['Message']." ".$MessageParts[$i];
                 break;
             case "Okay":
-                //$HideName = false;
+                $HideName = false;
                 if ($Color === false) {
                     $Color = 'green';
                 }
                 $log['Message'] = $log['Message']." ".$MessageParts[$i];
                 break;
             case "Warned":
-                //$HideName = false;
+                $HideName = false;
                 $Color = '#a07100';
                 $log['Message'] = $log['Message']." ".$MessageParts[$i];
                 break;
@@ -248,14 +281,17 @@ foreach($logs as $log) {
                 if ($i == 1) {
                     $User = $MessageParts[$i - 1];
                     if (!isset($Usernames[$User])) {
-                        $DB->query("SELECT ID FROM users_main WHERE Username = '".db_string($User)."'");
-                        list($UserID) = $DB->next_record();
-                        $Usernames[$User] = $UserID ? $UserID : '';
-                        $DB->set_query_id($Log);
+                        $userID = $master->db->rawQuery(
+                            "SELECT ID
+                               FROM users
+                              WHERE Username = ?",
+                            [$User]
+                        )->fetchColumn();
+                        $Usernames[$User] = $userID ? $userID : '';
                     } else {
-                        $UserID = $Usernames[$User];
+                        $userID = $Usernames[$User];
                     }
-                    $URL = $Usernames[$User] ? '<a href="/user.php?id='.$UserID.'">'.$User."</a>" : $User;
+                    $URL = $Usernames[$User] ? '<a href="/user.php?id='.$userID.'">'.$User."</a>" : $User;
                     $log['Message'] = $URL." ".$MessageParts[$i];
                 } else {
                     $log['Message'] = $log['Message'].' '.$MessageParts[$i];
@@ -264,7 +300,7 @@ foreach($logs as $log) {
             case "Collage":
                 $CollageID = $MessageParts[$i + 1];
                 if (is_numeric($CollageID)) {
-                    $log['Message'] = $log['Message'].' '.$MessageParts[$i].' <a href="/collages.php?id='.$CollageID.'"> '.$CollageID.'</a>';
+                    $log['Message'] = $log['Message'].' '.$MessageParts[$i].' <a href="/collage/'.$CollageID.'"> '.$CollageID.'</a>';
                     $i++;
                 } else {
                     $log['Message'] = $log['Message'].' '.$MessageParts[$i];
@@ -288,7 +324,7 @@ foreach($logs as $log) {
 }
 ?>
     </table>
-    <div class="linkbox">
+    <div class="linkbox pager">
         <?=$Pages?>
     </div>
 </div>

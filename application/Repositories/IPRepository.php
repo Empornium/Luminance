@@ -2,9 +2,12 @@
 namespace Luminance\Repositories;
 
 use Luminance\Core\Repository;
+
 use Luminance\Entities\IP;
+
 use Luminance\Errors\ForbiddenError;
 use Luminance\Errors\InternalError;
+
 use IPLib\Factory;
 use IPLib\Range\Type;
 
@@ -12,23 +15,29 @@ class IPRepository extends Repository {
 
     protected $entityName = 'IP';
 
-    protected function post_load($ID, $IP) {
-        if (!$IP) return null;
-        $IP->get_cidr();
-        $IP->geoip = geoip((string)$IP);
+    protected function postLoad($ID, $IP) {
+        if (!($IP instanceof IP)) return null;
+        $IP->getCIDR();
         return $IP;
     }
 
-    public function get_or_new($address, $netmask = null) {
-        $binaryAddress = @inet_pton($address);
-        if ($netmask) {
-            $IP = new IP($address, $netmask);
-            $IP = $this->get('`StartAddress` = ? AND `EndAddress` = ?', [$IP->StartAddress, $IP->EndAddress]);
+    public function getOrNew($address, $netmask = null) {
+        if (!empty($netmask)) {
+            list($startAddress, $endAddress) = IP::convertRange($address, $netmask);
+            $IP = $this->get(
+                '`StartAddress` = ? AND `EndAddress` = ?',
+                [$startAddress, $endAddress],
+                "ip_{$address}/{$netmask}"
+            );
         } else {
-            $IP = $this->get('`StartAddress` = ? AND `EndAddress` IS NULL', [$binaryAddress]);
+            $IP = $this->get(
+                '`StartAddress` = INET6_ATON(?) AND `EndAddress` IS NULL',
+                [$address],
+                "ip_{$address}"
+            );
         }
 
-        if (empty($IP)) {
+        if (empty($IP) && !empty($address)) {
             $IP = $this->newIP($address, $netmask);
         }
 
@@ -37,10 +46,15 @@ class IPRepository extends Repository {
 
     public function newIP($address, $netmask = null) {
         try {
-            $IP = new IP($address, $netmask);
+            $IP = IP::fromCIDR($address, $netmask);
             $IP->Banned = false;
             $IP->Bans = 0;
             $this->save($IP);
+            if (!empty($netmask)) {
+                $this->cache->deleteValue("ip_{$address}/{$netmask}");
+            } else {
+                $this->cache->deleteValue("ip_{$address}");
+            }
             return $IP;
         } catch (InternalError $e) {
             return null;
@@ -62,11 +76,13 @@ class IPRepository extends Repository {
         return $search;
     }
 
-    public function ban($address, $reason, $hours = null) {
+    public function ban($address, $reason = null, $hours = null) {
         if ($address instanceof IP) {
-            $range = $address->get_range();
-            if (empty($range)) return null;
-            if ($range->getRangeType() !== Type::T_PUBLIC) {
+            $range = $address->getRange();
+            if (empty($range)) {
+                return null;
+            }
+            if (!($range->getRangeType() === Type::T_PUBLIC)) {
                 $type = Type::getName($range->getRangeType());
                 $this->master->flasher->error("{$type} {$address} cannot be banned, public addresses only");
                 return null;
@@ -75,29 +91,31 @@ class IPRepository extends Repository {
         } else {
             $address = (string) $address;
             $range = Factory::rangeFromString($address);
-            if (empty($range)) return null;
-            if ($range->getRangeType() !== Type::T_PUBLIC) {
+            if (empty($range)) {
+                return null;
+            }
+            if (!($range->getRangeType() === Type::T_PUBLIC)) {
                 $type = Type::getName($range->getRangeType());
                 $this->master->flasher->error("{$type} {$address} cannot be banned, public addresses only");
                 return null;
             }
-            if (strpos($address, '/') !== false) {
+            if (!(strpos($address, '/') === false)) {
                 list($address, $netmask) = explode('/', $address);
             } else {
                 $netmask = null;
             }
-            $IP = $this->get_or_new($address, $netmask);
+            $IP = $this->getOrNew($address, $netmask);
         }
         $now = new \DateTime();
 
-        // Extend existing ban
-        if ($IP->BannedUntil > $now && $IP->Banned == true) {
+        # Extend existing ban
+        if ($IP->BannedUntil > $now && $IP->Banned === true && !empty($reason)) {
             $IP->Reason = $IP->Reason . ' and ' . $reason;
             if (!is_null($hours)) {
                 $IP->BannedUntil->add(new \DateInterval("PT{$hours}H"));
             }
 
-        // Create new ban
+        # Create new ban
         } else {
             $IP->Reason = $reason;
             if (!is_null($hours)) {
@@ -121,35 +139,45 @@ class IPRepository extends Repository {
         $this->save($IP);
     }
 
-    public function check_banned($IP) {
-
+    public function checkBanned($IP) {
         if (!$IP instanceof IP) {
             return false;
         }
 
-        $Banned = $this->search($IP);
+        $banned = $this->search($IP);
         $now = new \DateTime();
 
-        foreach ($Banned as $Ban) {
-            // Does the ban really match this IP?
-            if (!$IP->match($Ban)) continue;
+        foreach ($banned as $ban) {
+            # Does the ban really match this IP?
+            if (!$IP->match($ban)) continue;
 
-            // Was it a timed ban that has expired?
-            if (!is_null($Ban->BannedUntil) && $Ban->BannedUntil < $now) {
-                // Update banned status and return
-                $Ban->Banned = false;
-                $this->save($Ban);
+            # Was it a timed ban that has expired?
+            if (!is_null($ban->BannedUntil) && $ban->BannedUntil < $now) {
+                # Update banned status and return
+                $ban->Banned = false;
+                $this->save($ban);
                 continue;
 
-            // Is it a currently active timed ban?
+            # Is it a currently active timed ban?
             } elseif (!is_null($IP->BannedUntil) && $IP->BannedUntil > $now) {
                 $diff = time_diff($IP->BannedUntil);
                 throw new ForbiddenError("Your IP is banned for another {$diff}");
 
-            // Must be a perma-ban then
+            # Must be a perma-ban then
             } else {
                 throw new ForbiddenError("Your IP has been banned");
             }
         }
+    }
+
+    /**
+     * Delete IP entity from cache
+     * @param int|IP $ip ip to uncache
+     *
+     */
+    public function uncache($ip) {
+        $ip = $this->load($ip);
+        parent::uncache($ip);
+        $this->cache->deleteValue("_query_IP_{$ip}");
     }
 }

@@ -1,0 +1,169 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/forum">Forum</a>
+    &gt; Search
+    {% if thread is not null %}
+        &gt; <a href="/forum/thread/{{ thread.ID }}">{{ thread.Title }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main_content %}
+    {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::FORUM')) %}
+    {{ render.latestForumThreads() }}
+    <form action="/forum/search" method="get">
+        <table cellpadding="6" cellspacing="1" border="0" class="border" width="100%">
+            <tr>
+                <td class="label" width="90px"><strong>Search for:</strong></td>
+                <td colspan="2">
+                    <input type="text" name="terms" size="70" value="{{ terms }}" />
+                </td>
+            </tr>
+            {% if thread is empty %}
+                <tr>
+                    <td class="label"><strong>Search in:</strong></td>
+                    <td colspan="2">
+                        <input type="radio" name="type" id="type_title" value="title"
+                        {%  if type == 'title' %}
+                            checked="checked"
+                        {% endif %}
+                        />
+                        <label for="type_title">Titles</label>
+                        <input type="radio" name="type" id="type_body" value="body"
+                        {%  if type == 'body' %}
+                            checked="checked"
+                        {% endif %}
+                        />
+                        <label for="type_body">Post bodies</label>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label"><strong>Forum:</strong></td>
+                    <td>
+                        <a id="forumfilterbutton" href="#" onclick="return Toggle_view('forumfilter');">(Hide)</a>
+                    </td>
+                    <td>
+                        <div id="forumfilterdiv">
+                            {% include '@Forum/snippets/forum_filter.html.twig' %}
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                <input type="hidden" name="threadid" value="{{ thread.ID }}" />
+            {% endif %}
+            <tr>
+                <td class="label"><strong>Username:</strong></td>
+                <td colspan="2">
+                    <input type="text" name="username" size="70" value="{{ username }}" />
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3" class="center">
+                    <input type="submit" value="Search" />
+                </td>
+            </tr>
+        </table>
+    </form>
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9) }}
+    </div>
+    <table cellpadding="6" cellspacing="1" border="0" class="border" width="100%">
+    <tr class="colhead">
+        <td>Forum</td>
+        <td>{{ threads is empty ? 'Post Begins' : 'Topic' }}</td>
+        <td>Time</td>
+        {% if auth.isAllowed('forum_thread_move') %}
+            <td>Moderation</td>
+        {% endif %}
+    </tr>
+        {% if type == 'body' %}
+            {% if posts is empty %}
+                <tr><td colspan="3">Nothing found!</td></tr>
+            {% else %}
+                {% for post in posts %}
+                    <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                        <td>
+                            <a href="/forum/{{ post.thread.forum.ID }}">{{ post.thread.forum.Name|striptags|raw }}</a>
+                        </td>
+                        <td>
+                            <a href="/forum/thread/{{ post.thread.ID }}" title="{{ post.thread.Title }}">{{ post.thread.Title|truncate(80)|striptags|raw }}</a>
+                            <span class="float_right" title="Jump to post">
+                                <a href="/forum/thread/{{ post.thread.ID }}?postid={{ post.ID }}#post{{ post.ID }}">
+                                    {{ icon.render("forum_icons clickable", ['forum_latest']) }}
+                                </a>
+                            </span>
+                        </td>
+                        <td>
+                            {{ time_diff(post.AddedTime,1)|raw }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
+        {% else %}
+            {% if threads is empty %}
+                <tr><td colspan="3">Nothing found!</td></tr>
+            {% else %}
+                {% for thread in threads %}
+                    <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                        <td>
+                            <a href="/forum/{{ thread.forum.ID }}">{{ thread.forum.Name|striptags|raw }}</a>
+                        </td>
+                        <td>
+                            <a href="/forum/thread/{{ thread.ID }}" title="{{ thread.Title }}">{{ thread.Title|truncate(80)|striptags|raw }}</a>
+                        </td>
+                        <td>
+                            {{ time_diff(thread.lastPost.AddedTime,1)|raw }}
+                        </td>
+                        {% if auth.isAllowed('forum_thread_move') %}
+                            <td><span class="align_center">
+                                <div><input type="checkbox" name="threadids[]" value="{{ thread.ID }}" form="threads"/></div>
+                            </span></td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+    </table>
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9) }}
+    </div>
+    {% if auth.isAllowed('forum_thread_move') %}
+        <form id="threads" action="/forum/threads/move" method="post">
+        <div class="messagecontainer" id="container"><div id="message" class="hidden center messagebar"></div></div>
+        <div class="head">Edit Threads</div>
+            <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+            <input type="hidden" name="destination" value="{{ forum.ID }}" />
+            <table cellpadding="6" cellspacing="1" border="0" width="100%" class="border">
+                <tr>
+                </tr>
+                <tr>
+                    <td>
+                        {{ render.forumSelect(thread.ForumID) }}
+                    </td>
+                    <td>
+                        <input type="text" name="comment" class="medium" value="" placeholder="Reason for moving" />
+                        <input type="submit" value="Move"/>
+                    </td>
+                    <td>
+                        {% if auth.isAllowed('forum_thread_delete') %}
+                            <input type="submit" value="Delete" formaction="/forum/threads/delete"/>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </form>
+    {% endif %}
+    {% endif %}
+    {% if master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::FORUM')) %}
+    <div class="box pad" align="center">
+    <b>Your forum privileges have been revoked!</b><br><br>
+    <a href="{{ settings.links.rules }}"> View the site rules</a>
+    </div>
+    {% endif %}
+{% endblock %}

@@ -1,13 +1,14 @@
 <?php
-
-
 namespace Luminance\Services;
 
-use GuzzleHttp\Client;
 use Luminance\Core\Service;
 
-class HaveIBeenPwned extends Service
-{
+use Luminance\Services\Cache;
+
+use GuzzleHttp\Client;
+
+class HaveIBeenPwned extends Service {
+
     protected static $useServices = [
         'cache' => 'Cache',
     ];
@@ -32,14 +33,14 @@ class HaveIBeenPwned extends Service
     public function check($password) {
         $this->init($password);
 
-        // Avoid any API call if it's cached
+        # Avoid any API call if it's cached
         if ($cache = $this->checkCache()) {
             return $cache;
         }
 
         $response = $this->api();
 
-        // If for some reason, the API call failed
+        # If for some reason, the API call failed
         if ($response === false) {
             return self::UNKNOWN;
         }
@@ -63,24 +64,24 @@ class HaveIBeenPwned extends Service
      * @return bool
      */
     private function cache($pwned) {
-        if (!$this->cache) {
+        if ($this->cache instanceof Cache) {
+            # The results are cached for a month
+            $this->cache->cacheValue($this->cacheKey(), $pwned);
+            return true;
+        } else {
             return false;
         }
-
-        // The results are cached for a month
-        $this->cache->cache_value($this->cacheKey(), $pwned);
-        return true;
     }
 
     /**
      * @return int
      */
     private function checkCache() {
-        if (!$this->cache) {
+        if ($this->cache instanceof Cache) {
+            return (int) $this->cache->getValue($this->cacheKey());
+        } else {
             return 0;
         }
-
-        return (int) $this->cache->get_value($this->cacheKey());
     }
 
     /**
@@ -107,7 +108,8 @@ class HaveIBeenPwned extends Service
             $response = (string) $http->get($this->createUri())->getBody();
         } catch (\Exception $e) {
             $response = false;
-            error_log("HTTP call against HaveIBeenPwned API failed: ".$e->getMessage());
+            # Make this an exception instead
+            //error_log("HTTP call against HaveIBeenPwned API failed: ".$e->getMessage());
         }
 
         return $response;

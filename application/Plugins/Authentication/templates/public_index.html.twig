@@ -1,5 +1,7 @@
-{% extends "core/page.html.twig" %}
+{% extends "core/public_page.html.twig" %}
 
-{% block main_content %}
-<span class="center">Here be Porn</span>
+{% block motto_content %}
+    <div id="motto" class="flex_item">
+        <span class="center">{{ settings.main.site_motto }}</span>
+    </div>
 {% endblock %}

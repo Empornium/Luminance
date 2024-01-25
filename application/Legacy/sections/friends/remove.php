@@ -1,6 +1,14 @@
 <?php
 $FType = isset($_REQUEST['type'])?$_REQUEST['type']:'friends';
-if(!in_array($FType, array('friends','blocked'))) error(0);
-$DB->query("DELETE FROM friends WHERE UserID='$LoggedUser[ID]' AND FriendID='$P[friendid]' AND Type='$FType'");
-$Cache->delete_value('user_friends_'.$LoggedUser['ID']);
-header('Location: friends.php?type='.$FType);
+if (!in_array($FType, ['friends', 'blocked'])) error(0);
+$master->db->rawQuery(
+    "DELETE
+       FROM friends
+      WHERE UserID = ?
+        AND FriendID = ?
+        AND Type = ?",
+    [$activeUser['ID'], $P['friendid'], $FType]
+);
+$master->cache->deleteValue("user_friends_{$activeUser['ID']}");
+$master->repos->userfriends->uncache([$activeUser['ID'], $P['friendid']]);
+header("Location: friends.php?type={$FType}");

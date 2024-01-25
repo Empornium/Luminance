@@ -10,19 +10,19 @@ authorize();
 
 enforce_login();
 
-$Validate = new Luminance\Legacy\Validate;
+$Validate = new \Luminance\Legacy\Validate;
 
 $GroupID = (int) $_POST['groupid'];
-$SenderID = isset($_POST['showsender']) ? $LoggedUser['ID'] : 0;
-$Subject = db_string($_POST['subject']);
-$Message = db_string($_POST['message']);
+$SenderID = isset($_POST['showsender']) ? $activeUser['ID'] : 0;
+$Subject = $_POST['subject'];
+$Message = $_POST['message'];
 
 //******************************************************************************//
 //--------------- Validate data in edit form -----------------------------------//
 
-$Validate->SetFields('groupid','1','number','Invalid group ID.',array('maxlength'=>1000000000, 'minlength'=>1)); // we shouldn't have group IDs higher than a billion either
-$Validate->SetFields('subject','1','string','Invalid subject.',array('maxlength'=>1000, 'minlength'=>1));
-$Validate->SetFields('message','1','string','Invalid message.',array('maxlength'=>10000, 'minlength'=>1));
+$Validate->SetFields('groupid', '1', 'number', 'Invalid group ID.', ['maxlength'=>1000000000, 'minlength'=>1]); // we shouldn't have group IDs higher than a billion either
+$Validate->SetFields('subject', '1', 'string', 'Invalid subject.',  ['maxlength'=>1000, 'minlength'=>1]);
+$Validate->SetFields('message', '1', 'string', 'Invalid message.',  ['maxlength'=>10000, 'minlength'=>1]);
 $Err = $Validate->ValidateForm($_POST); // Validate the form
 
 if ($Err) {
@@ -34,21 +34,30 @@ if ($Err) {
 //******************************************************************************//
 //--------------- Send PMs to users --------------------------------------------//
 
-$DB->query('SELECT UserID FROM users_groups WHERE GroupID='.$GroupID);
+$users = $master->db->rawQuery(
+    'SELECT UserID
+       FROM users_groups
+      WHERE GroupID = ?',
+    [$GroupID]
+)->fetchAll(\PDO::FETCH_COLUMN);
 
-if ($DB->record_count()>0) {
-    $Users = $DB->collect('UserID');
+if ($master->db->foundRows()>0) {
     if ($SenderID == 0) { // we only want to send a masspm if from system
-        send_pm($Users,0,$Subject,$Message);
+        send_pm($users, 0, $Subject, $Message);
     } else {
-        foreach ($Users as $UserID) {
-        send_pm($UserID,($SenderID==$UserID?0:$SenderID),$Subject,$Message);
+        foreach ($users as $userID) {
+        send_pm($userID,($SenderID==$userID?0:$SenderID), $Subject, $Message);
         }
     }
 }
 
-$Log = isset($_POST['showsender']) ? "[user]{$LoggedUser['ID']}[/user]" : "System ([user]{$LoggedUser['ID']}[/user])";
+$Log = isset($_POST['showsender']) ? "[user]{$activeUser['ID']}[/user]" : "System ([user]{$activeUser['ID']}[/user])";
 $Log = sqltime()." - [color=purple]Mass PM sent[/color] by $Log - subject: $Subject";
-$DB->query("UPDATE groups SET Log=CONCAT_WS( '\n', '$Log', Log) WHERE ID='$GroupID'");
+$master->db->rawQuery(
+    "UPDATE groups
+        SET Log=CONCAT_WS(CHAR(10 using utf8), ?, Log)
+      WHERE ID = ?",
+    [$Log, $GroupID]
+);
 
-header("Location: groups.php?groupid=$GroupID");
+header("Location: groups.php?groupid={$GroupID}");

@@ -11,25 +11,27 @@ function delete_col(&$array, $offset) {
 }
 
 // generate a graph of monthly donations (last 18 months)
-if ( !isset($_GET['page']) && !$DonationTimeline = $Cache->get_value('donation_timeline')) {
+if ( !isset($_GET['page']) && !$DonationTimeline = $master->cache->getValue('donation_timeline')) {
 
-    $DB->query("SELECT DATE_FORMAT(received,'%b \'%y') AS Month,
-                       MIN(UNIX_TIMESTAMP(DATE_FORMAT(received, '%Y-%m-01 00:00:00'))*1000) AS Time,
-                       SUM(amount_euro) AS Donations
-                       FROM bitcoin_donations
-                       WHERE state!='unused'
-                       AND received >= DATE_SUB(NOW(), INTERVAL 2 YEAR)
-                       GROUP BY Month ORDER BY received DESC");
+    $DonationTimeline = $master->db->rawQuery(
+        "SELECT DATE_FORMAT(received, '%b \'%y') AS Month,
+                MIN(UNIX_TIMESTAMP(DATE_FORMAT(received, '%Y-%m-01 00:00:00'))*1000) AS Time,
+                SUM(amount_euro) AS Donations
+           FROM bitcoin_donations
+          WHERE state!='unused'
+            AND received >= DATE_SUB(NOW(), INTERVAL 2 YEAR)
+       GROUP BY Month
+       ORDER BY received DESC"
+    )->fetchAll(\PDO::FETCH_ASSOC);
 
-    $DonationTimeline = $DB->to_array(false, MYSQLI_ASSOC, false, false);
-    foreach($DonationTimeline as $Key => $Value) {
+    foreach ($DonationTimeline as $Key => $Value) {
         $DonationTimeline[$Key] = array_map('intval', array_slice($Value, 1, 2));
     }
-    $Cache->cache_value('donation_timeline',$DonationTimeline,3600);
+    $master->cache->cacheValue('donation_timeline', $DonationTimeline, 3600);
 }
 
 $view = $_GET['view'];
-if (!$view || !in_array($view, array('issued','submitted','cleared'))) $view='submitted';
+if (!$view || !in_array($view, ['issued', 'submitted', 'cleared'])) $view='submitted';
 
 if ($view == 'issued') {
     $statesql= 'unused';
@@ -39,7 +41,7 @@ if ($view == 'issued') {
     $unused = false;
 }
 
-show_header('Donation log','jquery,bitcoin,flot/excanvas,flot/jquery.flot.min,flot/jquery.flot.time');
+show_header('Donation log', 'jquery,bitcoin,flot/excanvas,flot/jquery.flot.min,flot/jquery.flot.time');
 ?>
 <div class="thin">
     <h2>Donation log</h2>
@@ -50,40 +52,47 @@ show_header('Donation log','jquery,bitcoin,flot/excanvas,flot/jquery.flot.min,fl
     <div class="head">Donation history</div>
     <div class="box pad">
         <script type="text/javascript">
-            jQuery(function() {
-                jQuery.plot(jQuery("#donation_timeline"),
-                    [
-                       {
-                            data: <?=json_encode($DonationTimeline)?>,
-                            lines: {
-                                show: true,
-                                fill: true,
-                                fillColor: "rgba(61, 121, 48, 0.2)"
+            document.addEventListener('LuminanceLoaded', function() {
+                jQuery(function() {
+                    jQuery.plot(jQuery("#donation_timeline"),
+                        [
+                           {
+                                data: <?=json_encode($DonationTimeline)?>,
+                                lines: {
+                                    show: true,
+                                    fill: true,
+                                    fillColor: "rgba(61, 121, 48, 0.2)"
+                                }
                             }
+                        ], {
+                        grid: {
+                            hoverable: true
+                        },
+                        xaxis: {
+                            mode: "time",
+                            timeformat: "%b'%y"
+                        },
+                        colors: ["#3d7930", "#aa0000"]
+                    });
+                    jQuery("#donation_timeline").bind("plothover", function (event, pos, item) {
+                        if (item) {
+                            var d = new Date(item.datapoint[0]);
+                            jQuery("#plot_hover_date").html(d.toDateString());
+                            jQuery("#plot_hover_euro").html('&euro; '+item.datapoint[1].toFixed(2));
                         }
-                    ], {
-                    grid: {
-                        hoverable: true
-                    },
-                    xaxis: {
-                        mode: "time",
-                        timeformat: "%b'%y"
-                    },
-                    colors: ["#3d7930", "#aa0000"]
-                });
-                jQuery("#donation_timeline").bind("plothover", function (event, pos, item) {
-                    if (item) {
-                        var d = new Date(item.datapoint[0]);
-                        jQuery("#plot_hover_date").html(d.toDateString());
-                        jQuery("#plot_hover_euro").html('&euro; '+item.datapoint[1].toFixed(2));
-                    }
+                    });
                 });
             });
         </script>
         <div id="donation_timeline" style="width:100%;height:300px"></div><br/>
 <?php
-        $DB->query("SELECT Count(ID), SUM(amount_euro), SUM(current_euro) FROM bitcoin_donations WHERE state!='unused'");
-        list($totalnum, $totalsum, $currentsum) = $DB->next_record();
+        list($totalnum, $totalsum, $currentsum) = $master->db->rawQuery(
+            "SELECT Count(ID),
+                    SUM(amount_euro),
+                    SUM(current_euro)
+               FROM bitcoin_donations
+              WHERE state!='unused'"
+        )->fetch(\PDO::FETCH_NUM);
 
 ?>
         <span id="plot_hover_data" style="float:left">
@@ -100,31 +109,47 @@ show_header('Donation log','jquery,bitcoin,flot/excanvas,flot/jquery.flot.min,fl
 
 <?php   }
 
-    list($Page,$Limit) = page_limit(DONATIONS_PER_PAGE);
+    list($Page, $Limit) = page_limit(DONATIONS_PER_PAGE);
 
-    $DB->query("SELECT SQL_CALC_FOUND_ROWS
-                        bc.ID, state, public, bc.time, bc.userID, bitcoin_rate,
-                        received, amount_bitcoin, amount_euro, current_euro,
-                        comment, bc.staffID, staff.Username, m.Username,
-                        m.PermissionID, m.Enabled, i.Donor
-                  FROM bitcoin_donations AS bc
-             LEFT JOIN users_main AS m ON m.ID=bc.userID
-             LEFT JOIN users_info AS i ON i.UserID=bc.userID
-             LEFT JOIN users_main AS staff ON staff.ID=bc.staffID
-                 WHERE state ='$statesql'
-             ORDER BY received DESC, bc.time DESC
-                LIMIT $Limit ");
+    $Donations = $master->db->rawQuery(
+        "SELECT SQL_CALC_FOUND_ROWS
+                bc.ID,
+                state,
+                public,
+                bc.time,
+                bc.userID,
+                bitcoin_rate,
+                received,
+                amount_bitcoin,
+                amount_euro,
+                current_euro,
+                comment,
+                bc.staffID,
+                staff.Username,
+                u.Username,
+                um.PermissionID,
+                um.Enabled,
+                ui.Donor
+           FROM bitcoin_donations AS bc
+      LEFT JOIN users AS u ON u.ID=bc.UserID
+      LEFT JOIN users_main AS um ON um.ID=bc.userID
+      LEFT JOIN users_info AS ui ON ui.UserID=bc.userID
+      LEFT JOIN users AS staff ON staff.ID=bc.staffID
+          WHERE state = ?
+       ORDER BY received DESC,
+                bc.time DESC
+          LIMIT {$Limit}",
+        [$statesql]
+    )->fetchAll(\PDO::FETCH_NUM);
 
-    $Donations = $DB->to_array(false, MYSQLI_NUM);
-    $DB->query("SELECT FOUND_ROWS()");
-    list($Results) = $DB->next_record();
+    $Results = $master->db->foundRows();
 
     $eur_rate = get_current_btc_rate();
 
 ?>
     <div class="linkbox">
     <?php
-        $Pages=get_pages($Page,$Results,DONATIONS_PER_PAGE,11) ;
+        $Pages = get_pages($Page, $Results, DONATIONS_PER_PAGE, 11);
         echo $Pages;
     ?>
     </div>
@@ -170,11 +195,11 @@ show_header('Donation log','jquery,bitcoin,flot/excanvas,flot/jquery.flot.min,fl
                     <td colspan="<?=($unused?'4':'6')?>" style="text-align:right;">
     <?php                   if ($numthispage>0) {
                             $timeout=800;
-                            if(BTC_LOCAL) $timeout=0;
+                            if (BTC_LOCAL) $timeout=0;
                             ?>
                             <span title="query all btc balances on this page (dont hammer the webservice too much though)">
-                            <a style="cursor: pointer;" onclick="CheckAddressLoadNext('1','<?=$eur_rate?>','6','<?=$numthispage?>','<?=($unused?'0':'1')?>','<?=$timeout?>');"><img src="<?= STATIC_SERVER ?>common/symbols/reload1.gif" alt="query" /></a> &nbsp;
-                            <a style="cursor: pointer;" onclick="CheckAddressLoadNext('1','<?=$eur_rate?>','6','<?=$numthispage?>','<?=($unused?'0':'1')?>','<?=$timeout?>');">query all btc balances</a>
+                            <a style="cursor: pointer;" onclick="CheckAddressLoadNext('1', '<?=$eur_rate?>', '6', '<?=$numthispage?>', '<?=($unused?'0':'1')?>', '<?=$timeout?>');"><img src="<?= STATIC_SERVER ?>common/symbols/reload1.gif" alt="query" /></a> &nbsp;
+                            <a style="cursor: pointer;" onclick="CheckAddressLoadNext('1', '<?=$eur_rate?>', '6', '<?=$numthispage?>', '<?=($unused?'0':'1')?>', '<?=$timeout?>');">query all btc balances</a>
                             </span>
     <?php                   }                   ?>
                     </td>
@@ -198,9 +223,9 @@ show_header('Donation log','jquery,bitcoin,flot/excanvas,flot/jquery.flot.min,fl
                 </tr>
     <?php
             $i=0;
-            foreach($Donations as $Donation) {
-                list($ID, $state, $public, $activetime, $UserID, $bitcoin_rate, $received, $amount_bitcoin, $amount_euro, $current_euro, $comment,
-                        $staffID, $staffname, $Username, $PermissionID, $Enabled, $Donor) = $Donation;
+            foreach ($Donations as $Donation) {
+                list($ID, $state, $public, $activetime, $userID, $bitcoin_rate, $received, $amount_bitcoin, $amount_euro, $current_euro, $comment,
+                        $staffID, $staffname, $Username, $PermissionID, $enabled, $Donor) = $Donation;
                 $i++;
                 if ($state == 'unused') {
                     $time = time_diff($activetime);
@@ -210,14 +235,14 @@ show_header('Donation log','jquery,bitcoin,flot/excanvas,flot/jquery.flot.min,fl
                 $row = $row=='b'?'a':'b';
     ?>
                 <tr class="row<?=$row?> record<?=$i?>">
-                    <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?>
-                        <a style="font-style: italic;font-size:0.8em;" href="/donate.php?action=my_donations&userid=<?=$UserID?>" target="_blank" title="view users my donations page">[view log]</a></td>
+                    <td><?=format_username($userID, $Donor, true, $enabled, $PermissionID)?>
+                        <a style="font-style: italic;font-size:0.8em;" href="/donate.php?action=my_donations&userid=<?=$userID?>" target="_blank" title="view users my donations page">[view log]</a></td>
                     <td>
                         <a href="https://blockchain.info/address/<?=$public?>">
-                            <span class="address" id="address_<?=$i?>" <?=$add_title?>><?=$public?></span>
+                            <span class="address" id="address_<?=$i?>" <?=($add_title ?? '')?>><?=$public?></span>
                         </a>
                     </td>
-    <?php               if ($admin_addresses){      ?>
+    <?php               if ($admin_addresses) {      ?>
                         <td><?=$staffname?></td>
     <?php               }                   ?>
                     <td><?=$time?></td>
@@ -235,7 +260,7 @@ show_header('Donation log','jquery,bitcoin,flot/excanvas,flot/jquery.flot.min,fl
                     </td>
                     <td>
                         <span style="font-style: italic; vertical-align: middle;" id="btc_button_<?=$i?>">
-                            <a href="#" onclick="CheckAddress('<?=$i?>','<?=$eur_rate?>','<?=$public?>','6','<?=($unused?'0':'1')?>');return false;">
+                            <a href="#" onclick="CheckAddress('<?=$i?>', '<?=$eur_rate?>', '<?=$public?>', '6', '<?=($unused?'0':'1')?>');return false;">
                                 <img src="<?= STATIC_SERVER ?>common/symbols/reload1.gif" title="query btc balance" alt="query" /></a>
                         </span>&nbsp;
                     </td>
@@ -244,9 +269,9 @@ show_header('Donation log','jquery,bitcoin,flot/excanvas,flot/jquery.flot.min,fl
                     <tr class="row<?=$row?> record<?=$i?>">
                         <td><strong>status: <span id="status_<?=$i?>"><?=$state?></span></strong></td>
                         <td colspan="<?=($admin_addresses?'4':'3')?>"><?=$comment?></td>
-                        <td colspan="1"><?php  if ($admin_addresses) { ?><input type="button" onclick="ChangeState('<?=$i?>','<?=$public?>','unused', true)" value="unsubmit(!)" title="unsubmitting a donation sets its state back to just issued - this means the current balance can be resubmitted as a new donation. NOTE: this is for testing/emergency use only, it does not undo donor medals or -gb, it just changes the status of the donation so it can be resubmitted." /><?php  } ?></td>
+                        <td colspan="1"><?php  if ($admin_addresses) { ?><input type="button" onclick="ChangeState('<?=$i?>', '<?=$public?>', 'unused', true)" value="unsubmit(!)" title="unsubmitting a donation sets its state back to just issued - this means the current balance can be resubmitted as a new donation. NOTE: this is for testing/emergency use only, it does not undo donor medals or -gb, it just changes the status of the donation so it can be resubmitted." /><?php  } ?></td>
                         <!--<td colspan="2"><span id="state_button_<?=$i?>"></span></td> -->
-                        <td colspan="3" id="state_button_<?=$i?>"><?php  if ($admin_addresses && $state=='cleared') { ?><input type="button" onclick="ChangeState('<?=$i?>','<?=$public?>','submitted', false)" value="unclear(!)" title="unclearing a donation sets its state back to submitted. NOTE: this is for testing/un-fucking records that should not have been cleared, all it does is change the status of the donation back to submitted." /><?php  } ?></td>
+                        <td colspan="3" id="state_button_<?=$i?>"><?php  if ($admin_addresses && $state=='cleared') { ?><input type="button" onclick="ChangeState('<?=$i?>', '<?=$public?>', 'submitted', false)" value="unclear(!)" title="unclearing a donation sets its state back to submitted. NOTE: this is for testing/un-fucking records that should not have been cleared, all it does is change the status of the donation back to submitted." /><?php  } ?></td>
 
                     </tr>
                 <?php  }                        ?>

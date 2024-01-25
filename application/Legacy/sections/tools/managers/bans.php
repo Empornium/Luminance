@@ -1,58 +1,84 @@
 <?php
+
+use Luminance\Entities\IP;
+use Luminance\Errors\InternalError;
+
 if (!check_perms('admin_manage_ipbans')) { error(403); }
 
 if (isset($_POST['submit'])) {
     authorize();
 
     if ($_POST['submit'] == 'Delete') { //Delete
-        if (!is_number($_POST['id']) || $_POST['id'] == '') { error(0); }
-        $IP = $master->repos->ips->load($_POST['id']);
-        $master->repos->ips->unban($IP);
+        if (!is_integer_string($_POST['id']) || $_POST['id'] == '') { error(0); }
+        if ($ip = $master->repos->ips->load($_POST['id'])) {
+            $master->repos->ips->unban($ip);
+        }
+        if ($flood = $master->repos->requestfloods->get('IPID=?', [$_POST['id']])) {
+            $master->repos->requestfloods->delete($flood);
+        }
     } else { //Edit & Create, Shared Validation
-        $Val->SetFields('start', '1','cidr','You must inculde an IP address or CIDR range.');
-        $Val->SetFields('notes', '1','string','You must inculde a note regarding the reason for the ban.');
+        $Val->SetFields('start', '1', 'cidr', 'You must inculde an IP address or CIDR range.');
+        $Val->SetFields('notes', '1', 'string', 'You must inculde a note regarding the reason for the ban.');
         $Err=$Val->ValidateForm($_POST); // Validate the form
         if ($Err) { error($Err); }
 
         $Address = $_POST['start'];
-        $Notes = db_string($_POST['notes']);
+        $Notes = $_POST['notes'];
         $EndHours = (float)$_POST['endtime'];
-        if($EndHours === 0.0) $EndHours = null;
+        if ($EndHours === 0.0) $EndHours = null;
 
         if ($_POST['submit'] == 'Edit') { //Edit
-            if (empty($_POST['id']) || !is_number($_POST['id'])) {
+            if (empty($_POST['id']) || !is_integer_string($_POST['id'])) {
                 error(404);
             }
             $IP = $master->repos->ips->load($_POST['id']);
-            $master->repos->ips->unban($IP);
-        }
 
-        $now = new \DateTime();
-        if($EndHours === -1.0) $EndHours = $now->diff($IP->BannedUntil)->format('%h');
-        $master->repos->ips->ban($Address, $Notes, $EndHours);
+            if ($IP instanceof IP) {
+                $now = new \DateTime();
+                if ($EndHours === -1.0) {
+                    $EndHours = $now->diff($IP->BannedUntil)->format('%h');
+                }
+                if ($IP->getCIDR() === $Address) {
+                    if (!empty($EndHours)) {
+                        $IP->BannedUntil = $now->add(new \DateInterval("PT{$EndHours}H"));
+                    } else {
+                        $IP->BannedUntil = null;
+                    }
+                    $IP->Reason = $Notes;
+                    $master->repos->ips->save($IP);
+                } else {
+                    # Chaning IP, unban then reban
+                    $master->repos->ips->unban($IP);
+                    $master->repos->ips->ban($Address, $Notes, $EndHours);
+                }
+            } else {
+                throw new InternalError('Ban disappeared while editing');
+            }
+        } else {
+            $master->repos->ips->ban($Address, $Notes, $EndHours);
+        }
     }
     header('Location: tools.php?action=ip_ban');
     die();
 }
 
 define('BANS_PER_PAGE', '50');
-include(SERVER_ROOT . '/common/functions.php');
 
-if (empty($_GET['order_by']) || !in_array($_GET['order_by'], array('StartAddress', 'LastUserID', 'ActingUserID', 'BannedUntil', 'Reason'  ))) {
+if (empty($_GET['order_by']) || !in_array($_GET['order_by'], ['StartAddress', 'LastUserID', 'ActingUserID', 'BannedUntil', 'Reason'])) {
     $_GET['order_by'] = 'StartAddress';
-    $OrderBy = 'StartAddress';
+    $orderBy = 'StartAddress';
 } else {
-    $OrderBy = $_GET['order_by'];
+    $orderBy = $_GET['order_by'];
 }
 
 if (!empty($_GET['order_way']) && $_GET['order_way'] == 'desc') {
-    $OrderWay = 'desc';
+    $orderWay = 'desc';
 } else {
     $_GET['order_way'] = 'asc';
-    $OrderWay = 'asc';
+    $orderWay = 'asc';
 }
 
-list($Page,$Limit) = page_limit(BANS_PER_PAGE);
+list($Page, $Limit) = page_limit(BANS_PER_PAGE);
 $sql = 'Banned = true';
 $parameters = [];
 
@@ -64,19 +90,25 @@ if (!empty($_REQUEST['notes'])) {
 if (!empty($_REQUEST['ip'])) {
     try {
         $range = \IPLib\Factory::rangeFromString($_REQUEST['ip']);
-        if(!is_null($range)) {
+        if (!is_null($range)) {
             $ipSearch = new \Luminance\Entities\IP($range->getStartAddress());
             if (strpos($range, '/') !== false) {
                 list(, $ipSearch->Netmask) = explode('/', (string)$range);
             }
-            if ($range->getStartAddress() !== $range->getEndAddress) {
-                $sql .= " AND StartAddress BETWEEN ? AND ?";
-                $sql .= " AND (EndAddress >= ? OR EndAddress IS NULL)";
+            if ($range->getStartAddress() !== $range->getEndAddress()) {
+                $sql .= " AND ((StartAddress BETWEEN ? AND ? OR EndAddress BETWEEN ? AND ?)
+                           OR (StartAddress <= ? AND EndAddress >= ?))";
                 $parameters[] = inet_pton($range->getStartAddress());
                 $parameters[] = inet_pton($range->getEndAddress());
+                $parameters[] = inet_pton($range->getStartAddress());
+                $parameters[] = inet_pton($range->getEndAddress());
+                $parameters[] = inet_pton($range->getStartAddress());
                 $parameters[] = inet_pton($range->getEndAddress());
             } else {
-                $sql .= "AND ? BETWEEN StartAddress AND EndAddress";
+                $sql .= " AND ((StartAddress <= ? AND EndAddress >= ?)
+                           OR (StartAddress = ? AND EndAddress IS NULL))";
+                $parameters[] = inet_pton($range->getStartAddress());
+                $parameters[] = inet_pton($range->getStartAddress());
                 $parameters[] = inet_pton($range->getStartAddress());
             }
         } else {
@@ -85,14 +117,14 @@ if (!empty($_REQUEST['ip'])) {
     } catch(\Luminance\Errors\InternalError $e) {}
 }
 
-$sql .= " ORDER BY {$OrderBy} {$OrderWay}";
+$sql .= " ORDER BY {$orderBy} {$orderWay}";
 $sql .= " LIMIT {$Limit}";
 
-list($Bans, $Results) = $master->repos->ips->find_count($sql, $parameters);
+list($Bans, $Results) = $master->repos->ips->findCount($sql, $parameters);
 
-$PageLinks=get_pages($Page,$Results,BANS_PER_PAGE,11);
+$Pages = get_pages($Page, $Results, BANS_PER_PAGE, 11);
 
-show_header('IP Bans','bbcode');
+show_header('IP Bans', 'bbcode');
 
 $userid = $_GET['userid'];
 if ($userid) {
@@ -130,7 +162,7 @@ if (empty($endtime['uend'])) $endtime['uend'] = '2016';
     <br />
 
     <h2>Manage</h2>
-    <div class="linkbox"><?=$PageLinks?></div>
+    <div class="linkbox pager"><?= $Pages ?></div>
 
     <div class="head">Create new IP ban</div>
     <table width="100%">
@@ -145,15 +177,15 @@ if (empty($endtime['uend'])) $endtime['uend'] = '2016';
         <tr class="rowa">
             <form action="" method="post">
                 <input type="hidden" name="action" value="ip_ban" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <td class="nobr">
-                    <input type="text" size="12" name="start" value="<?=$startip?>"/>
+                    <input type="text" size="18" name="start" value="<?=$startip?>"/>
                 </td>
                 <td class="center" style="width:100px">
                     <input type="text" class="medium" name="user"  value="<?=$username?>"/>
                 </td>
                 <td class="center">
-                    <?=$LoggedUser['Username']?>
+                    <?=$activeUser['Username']?>
                 </td>
                 <td class="center">
                     <select name="endtime">
@@ -184,69 +216,71 @@ if (empty($endtime['uend'])) $endtime['uend'] = '2016';
     <div class="head"><?=  str_plural('IP ban', $Results) ?> </div>
     <table width="100%">
         <tr class="colhead">
-            <td><a href="/<?=header_link('StartAddress') ?>">Range</a></td>
-            <td class="center" style="width:100px"><a href="/<?=header_link('LastUserID') ?>">User</a></td>
-            <td class="center"><a href="/<?=header_link('ActingUserID') ?>">Staff</a></td>
-            <td class="center"><a href="/<?=header_link('BannedUntil') ?>">Endtime</a></td>
-            <td style="width:40%"><a href="/<?=header_link('Reason') ?>">Notes</a></td>
+            <td><a href="<?=header_link('StartAddress') ?>">Range</a></td>
+            <td class="center" style="width:100px"><a href="<?=header_link('LastUserID') ?>">User</a></td>
+            <td class="center"><a href="<?=header_link('ActingUserID') ?>">Staff</a></td>
+            <td class="center"><a href="<?=header_link('BannedUntil') ?>">Endtime</a></td>
+            <td style="width:40%"><a href="<?=header_link('Reason') ?>">Notes</a></td>
             <td>Submit</td>
         </tr>
 <?php
-    $Row = 'a';
-    foreach ($Bans as $Ban) {
-        $Row = ($Row === 'a' ? 'b' : 'a');
-        $Start=$Ban->get_range();
-        $UserInfo = user_info($Ban->LastUserID);
-        $StaffInfo = user_info($Ban->ActingUserID);
+    if ($Results > 0) {
+        $Row = 'a';
+        foreach ($Bans as $Ban) {
+            $Row = ($Row === 'a' ? 'b' : 'a');
+            $Start=$Ban->getRange();
+            $UserInfo = user_info($Ban->LastUserID);
+            $StaffInfo = user_info($Ban->ActingUserID);
 ?>
-        <tr class="row<?=$Row?>">
-            <form action="" method="post">
-                <input type="hidden" name="id" value="<?=$Ban->ID?>" />
-                <input type="hidden" name="action" value="ip_ban" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-                <td class="nobr">
-                    <input type="text" size="12" name="start" value="<?=$Start?>" />
-                </td>
-                <td class="nobr center">
- <?=  $Ban->LastUserID ? format_username($Ban->LastUserID, $UserInfo['Username'], $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID'], false, false, $UserInfo['GroupPermissionID'], true, true) : '-';?>
+            <tr class="row<?=$Row?>">
+                <form action="" method="post">
+                    <input type="hidden" name="id" value="<?=$Ban->ID?>" />
+                    <input type="hidden" name="action" value="ip_ban" />
+                    <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
+                    <td class="nobr">
+                        <input type="text" size="18" name="start" value="<?=$Start?>" />
+                    </td>
+                    <td class="nobr center">
+<?=  $Ban->LastUserID ? format_username($Ban->LastUserID, $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID'], false, false, $UserInfo['GroupPermissionID'], true, true) : '-';?>
 
-                </td>
-                <td class="nobr center">
-  <?= $Ban->ActingUserID ? format_username($Ban->ActingUserID, $StaffInfo['Username'], $StaffInfo['Donor'], true, $StaffInfo['Enabled'], $StaffInfo['PermissionID'], false, false, $StaffInfo['GroupPermissionID'], true, true): '-';?>
+                    </td>
+                    <td class="nobr center">
+<?= $Ban->ActingUserID ? format_username($Ban->ActingUserID, $StaffInfo['Donor'], true, $StaffInfo['Enabled'], $StaffInfo['PermissionID'], false, false, $StaffInfo['GroupPermissionID'], true, true): '-';?>
 
-                </td>
-                <td class="center">
-                    <select name="endtime">
- <?php  if ($Ban->BannedUntil != null) { ?>
-                        <option value="-1" selected="selected"><?=time_diff($Ban->BannedUntil, 2, false, false, 0)?></option>
- <?php  } ?>
-                        <option value=  "24">24 hours</option>
-                        <option value=  "48">48 hours</option>
-                        <option value=  "72">72 hours</option>
-                        <option value= "168">1 week</option>
-                        <option value= "336">2 weeks</option>
-                        <option value= "672">4 weeks</option>
-                        <option value="2016">12 weeks</option>
-                        <option value="4032">24 weeks</option>
-                        <option value="8064">48 weeks</option>
-                        <option value="0" <?=(!$Ban->BannedUntil || $Ban->BannedUntil=='0000-00-00 00:00:00')?'selected="seleced"':''?>>Never</option>
-                    </select>
-                </td>
-                <td>
-                    <textarea name="notes" id="notes<?=$Ban->ID?>" class="long" rows="1" onkeyup="resize('notes<?=$Ban->ID?>')" ><?=$Ban->Reason?></textarea>
-                </td>
-                <td class="nobr">
-                    <input type="submit" name="submit" value="Edit" />
-                    <input type="submit" name="submit" value="Delete" />
-                </td>
+                    </td>
+                    <td class="center">
+                        <select name="endtime">
+<?php  if ($Ban->BannedUntil != null) { ?>
+                            <option value="-1" selected="selected"><?=time_diff($Ban->BannedUntil, 2, false, false, 0)?></option>
+<?php  } ?>
+                            <option value=  "24">24 hours</option>
+                            <option value=  "48">48 hours</option>
+                            <option value=  "72">72 hours</option>
+                            <option value= "168">1 week</option>
+                            <option value= "336">2 weeks</option>
+                            <option value= "672">4 weeks</option>
+                            <option value="2016">12 weeks</option>
+                            <option value="4032">24 weeks</option>
+                            <option value="8064">48 weeks</option>
+                            <option value="0" <?=(!$Ban->BannedUntil || $Ban->BannedUntil=='0000-00-00 00:00:00')?'selected="seleced"':''?>>Never</option>
+                        </select>
+                    </td>
+                    <td>
+                        <textarea name="notes" id="notes<?=$Ban->ID?>" class="long" rows="1" onkeyup="resize('notes<?=$Ban->ID?>')" ><?=$Ban->Reason?></textarea>
+                    </td>
+                    <td class="nobr">
+                        <input type="submit" name="submit" value="Edit" />
+                        <input type="submit" name="submit" value="Delete" />
+                    </td>
 
-            </form>
-        </tr>
+                </form>
+            </tr>
 <?php
+        }
     }
 ?>
     </table>
-    <div class="linkbox"><?=$PageLinks?></div>
+    <div class="linkbox pager"><?= $Pages ?></div>
 </div>
 <?php
 show_footer();

@@ -1,0 +1,144 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : false,
+    'noIcons'   : true,
+    'noGroup'   : true,
+    'noClass'   : true,
+    'noTitle'   : true,
+} %}
+
+{% block title %}{{ conversation.subject }}{{ (conversation.ForwardedID > 0) ? ' Forwarded to #{conversation.forwarded.Username})' : ''}}{% endblock %}
+{% block main_content %}
+    <div class="linkbox">
+        <a href="/user/inbox/received">[Back to Inbox]</a>
+    </div>
+    <div class="head">conversation details</div>
+    <div class="box pad vertical_space colhead">
+        started by <strong>{{ render.username(conversation.sender, usernameOptions) }}</strong> {{ time_diff(conversation.ReceivedDate)|raw }}
+        <span style="float:right">to <strong>{{ render.username(conversation.recipient, usernameOptions) }}</strong></span>&nbsp;
+    </div>
+    {% for message in conversation.messages %}
+        {{ render.post('user inbox', message) }}
+    {% endfor %}
+
+    {% if conversation.canReply() %}
+        <div class="head">Reply to {{ render.username(conversation.other.user, usernameOptions) }}</div>
+        <form id="quickpostform" action="/user/inbox/conversation/{{ conversation.ConvID }}/reply" method="post" onsubmit="return Validate_Form('message','quickpost')" style="display: block;">
+            <input type="hidden" name="token" value="{{ secretary.getToken('user.inbox.conversation.reply') }}" />
+            <div class="box pad">
+                <div id="quickreplytext">
+                    {{ bbcode.display_bbcode_assistant("quickpost", get_permissions_advtags(ActiveUser.ID, ActiveUser.CustomPermissions)) }}
+                    <textarea id="quickpost" class="long" tabindex="1" onkeyup="resize('quickpost');" name="body" rows="8"></textarea> <br />
+                </div>
+            </div>
+            <div class="messagecontainer" id="container">
+                <div id="message" class="hidden center messagebar"></div>
+            </div>
+            <table id="quickreplypreview" class="forum_post box vertical_margin hidden {{ ActiveUser.options('DisableAvatars', 0) == 1 ? 'noavatar' }}" style="text-align:left;">
+                <tr class="smallhead">
+                    <td colspan="2">
+                        <span style="float:left;">
+                              <a href='#quickreplypreview'>#XXXXXX</a>
+                              {% set usernameOptions = {
+                                  'drawInBox' : true,
+                                  'colorname' : false,
+                                  'dropDown'  : true,
+                                  'useSpan'   : true,
+                                  'noIcons'   : false,
+                                  'noGroup'   : false,
+                                  'noClass'   : false,
+                                  'noTitle'   : false,
+                              } %}
+                              {{ render.username(ActiveUser.ID, usernameOptions) }} Just now
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    {% if ActiveUser.options('DisableAvatars', 0) == 0 %}
+                        <td class="avatar" valign="top">
+                            {% if ActiveUser.legacy.Avatar is not empty %}
+                                <img src="{{ ActiveUser.legacy.Avatar }}" class="avatar" style="{{ get_avatar_css(ActiveUser.class.MaxAvatarWidth, ActiveUser.class.MaxAvatarHeight) }}" alt="{{ ActiveUser.Username}}'s avatar" />
+                            {% else %}
+                                <img src="/static/common/avatars/default.png"  class="avatar" style="{{ get_avatar_css(100, 120) }}" alt="Default avatar" />
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                    <td class="body" valign="top">
+                        <div id="contentpreview" class="preview_content" style="text-align:left;"></div>
+                    </td>
+                </tr>
+            </table>
+            <div id="buttons" class="center">
+                <input id="post_preview" type="button" tabindex="1" value="Preview" onclick="if (this.preview) {Quick_Edit();} else {Quick_Preview();}" />
+                <input type="submit" tabindex="1" value="Send reply to {{ conversation.other.user.Username }}" />
+            </div>
+        </form>
+    {% endif %}
+
+    <div class="head">Forward as new PM (takes you to a new compose message page)</div>
+    <div class="box pad rowa">
+        <form id="forwardform" method="post">
+            <input type="hidden" name="token" value="{{ secretary.getToken('user.inbox.forward') }}" />
+            <label for="recipient">Forward to user:</label>&nbsp;
+            <input id="recipient" type="text" name="recipient" value="" size="20" />
+            &nbsp;&nbsp;&nbsp;
+            <input type="submit" formaction="/user/inbox/conversation/{{ conversation.ConvID }}/forward" value="Forward entire conversation" />
+        </form>
+    </div>
+
+    <div class="head">Forward as Staff PM (takes you to a new compose message page)</div>
+    <div class="box pad rowa">
+        <form action="/staffpm.php" method="post">
+            <input type="hidden" name="action" value="forward" />
+            <input type="hidden" name="show" value="1" />
+            <input type="hidden" name="convid" value="{{ conversation.ConvID }}" />
+            <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+            <input type="hidden" id="forwardmessage" name="forwardmessage" value="conversation" />
+
+            <label for="assign">Forward to staff:</label>&nbsp;
+            <select id="assign" name="assign">
+                <option value="">First Line Support</option>
+                <option value="mod">Moderators</option>
+                <option value="smod">Senior Staff</option>
+                {% if ActiveUser.class.DisplayStaff %}
+                    <option value="admin">Admin Team</option>
+                {% endif %}
+            </select>
+            &nbsp;&nbsp;&nbsp;
+            <input type="submit" value="Forward conversation as StaffPM" />
+        </form>
+    </div>
+
+    <div class="head">Manage conversation</div>
+    <div class="box pad rowa">
+        <form action="/user/inbox/conversation/{{ conversation.ConvID }}/manage" method="post">
+            <input type="hidden" name="token" value="{{ secretary.getToken('user.inbox.conversation.manage') }}" />
+            <table width="100%" class="noborder">
+                <tr class="rowa">
+                    <td class="center" width="33%"><label for="sticky">Sticky</label>
+                        <input type="checkbox" id="sticky" name="sticky" value="1"
+                        {%  if conversation.Sticky %}
+                            checked="checked"
+                        {% endif %}
+                        />
+                    </td>
+                    <td class="center" width="33%"><label for="mark_unread">Mark as unread</label>
+                        <input type="checkbox" id="mark_unread" name="mark_unread" value="1"/>
+                    </td>
+                    <td class="center" width="33%"><label for="delete">Delete conversation</label>
+                        <input type="checkbox" id="delete" name="delete" value="1"/>
+                    </td>
+                </tr>
+                <tr class="rowa">
+                    <td class="center" colspan="3"><input type="submit" value="Manage conversation" /></td>
+                </tr>
+            </table>
+        </form>
+    </div>
+{% endblock %}

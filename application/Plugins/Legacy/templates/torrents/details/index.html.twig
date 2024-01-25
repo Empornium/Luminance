@@ -1,0 +1,28 @@
+{% import "macros/icon.html.twig" as icon %}
+
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : true,
+    'noGroup'   : true,
+    'noClass'   : true,
+    'noTitle'   : true,
+} %}
+
+<div class="details thin">
+    {% include '@Legacy/torrents/details/header.html.twig' %}
+
+    <div id="details_top">
+        {% include '@Legacy/torrents/details/sidebar.html.twig' %}
+        {% include '@Legacy/torrents/details/info.html.twig' %}
+    </div>
+    <div style="clear:both"></div>
+
+    <div class="main_column">
+        {% include '@Legacy/torrents/details/description.html.twig' %}
+        {% include '@Legacy/torrents/details/comments.html.twig' %}
+        {% include '@Legacy/torrents/details/floating.html.twig' %}
+    </div>
+</div>

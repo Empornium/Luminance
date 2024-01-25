@@ -1,0 +1,93 @@
+{% import "macros/icon.html.twig" as icon %}
+{% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::COMMENT')) %}
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9) }}
+    </div>
+    {% for comment in comments if comments is not empty %}
+        {{ render.post('torrent comment', comment) }}
+    {% endfor %}
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9) }}
+    </div>
+
+    {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::POST')) %}
+        <div class="messagecontainer" id="container">
+            <div id="message" class="hidden center messagebar"></div>
+        </div>
+
+        <table id="quickreplypreview" class="forum_post box vertical_margin hidden {{ ActiveUser.options('DisableAvatars', 0) == 1 ? 'noavatar' }}">
+            <tr class="smallhead">
+                <td colspan="2">
+                    <span style="float:left;">
+                        {% set usernameOptions = {
+                            'drawInBox' : true,
+                            'colorname' : false,
+                            'dropDown'  : true,
+                            'useSpan'   : true,
+                            'noIcons'   : false,
+                            'noGroup'   : false,
+                            'noClass'   : false,
+                            'noTitle'   : false,
+                        } %}
+                        <a href='#quickreplypreview'>#XXXXXX</a>
+                        {{ render.username(ActiveUser.ID, usernameOptions) }}
+                        Just now
+                    </span>
+                    <span id="barpreview" style="float:right;">
+                        <a href="#quickreplypreview">[Report]</a>
+                        <a href="#">&uarr;</a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                {% if ActiveUser.options('DisableAvatars', 0) == 0 %}
+                    {% if ActiveUser.options('DisableSignatures', 0) == 0 and ActiveUser.class.MaxSigLength > 0 and ActiveUser.legacy.Signature is not empty %}
+                        {% set rowspan %}
+                            rowspan="2"
+                        {% endset %}
+                    {% else %}
+                        {% set rowspan='' %}
+                    {% endif %}
+                    <td class="avatar" valign="top" {{ rowspan }}>
+                        {% if ActiveUser.legacy.Avatar is not empty %}
+                            <img src="{{ ActiveUser.legacy.Avatar }}" class="avatar" style="{{ get_avatar_css(ActiveUser.class.MaxAvatarWidth, ActiveUser.class.MaxAvatarHeight) }}" alt="{{ ActiveUser.Username}}'s avatar" />
+                        {% else %}
+                            <img src="/static/common/avatars/default.png"  class="avatar" style="{{ get_avatar_css(100, 120) }}" alt="Default avatar" />
+                        {% endif %}
+                        <div class="badges">
+                              {{ render.badges(ActiveUser.ID) }}
+                        </div>
+                    </td>
+                    <td class="postbody" valign="top">
+                {% else %}
+                    <td class="postbody" valign="top" colspan="2">
+                {% endif %}
+                    <div id="contentpreview" class="preview_content"></div>
+                </td>
+            </tr>
+            {% if ActiveUser.options('DisableSignatures', 0) == 0 and ActiveUser.class.MaxSigLength > 0 and ActiveUser.legacy.Signature is not empty %}
+                <tr>
+                    <td class="sig">
+                        <div id="sig" style="max-height: {{ settings.forums.sig_max_height }}px;">
+                            <div>{{ bbcode.full_format(ActiveUser.legacy.Signature, auth.isAllowed('site_advanced_tags', ActiveUser), false, 'sig_' ~ ActiveUser.ID)|raw }}</div>
+                        </div>
+                    </td>
+                </tr>
+            {% endif %}
+        </table>
+        <div class="head">Post reply</div>
+        <div class="box pad shadow">
+            <form id="quickpostform" method="post" onsubmit="return Validate_Form('message', 'quickpost')" style="display: block; text-align: center;">
+                <div id="quickreplytext">
+                    <input type="hidden" name="action" value="add_comment" />
+                    <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                    <input type="hidden" name="groupid" value="{{ group.ID }}" />
+                    {{ bbcode.display_bbcode_assistant("quickpost", get_permissions_advtags(ActiveUser.ID, ActiveUser.legacy.CustomPermissions))|raw }}
+                    <textarea id="quickpost" name="body" class="long"  rows="5"></textarea> <br />
+                </div>
+                <input id="post_preview" type="button" value="Preview" onclick="if (this.preview) {Quick_Edit();} else {Quick_Preview();}" />
+                <input type="submit" value="Post reply" />
+            </form>
+        </div>
+    {% endif %}
+{% endif %}

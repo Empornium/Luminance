@@ -2,7 +2,6 @@
 
 /**
  * TODO: Improve permission?
- * TODO: Create a log table to know when invites were sent and by who?
  * TODO: Merge with the invite_pool page?
  * TODO: Add more user options (e.g. exclude disabled, etc.)
  */
@@ -12,8 +11,8 @@ if (!check_perms('users_edit_invites')) {
 }
 
 // Get all user classes
-$Query = $master->db->raw_query("SELECT Name, Level FROM permissions WHERE IsUserClass = '1' ORDER BY Level ASC");
-$Classes = $Query->fetchAll(\PDO::FETCH_OBJ);
+$Query = $master->db->rawQuery("SELECT Name, Level FROM permissions WHERE IsUserClass = '1' ORDER BY Level ASC");
+$classes = $Query->fetchAll(\PDO::FETCH_OBJ);
 
 if (isset($_POST['submit'])) {
     authorize();
@@ -26,25 +25,25 @@ if (isset($_POST['submit'])) {
 
     $do = $_POST['do'];
 
-    if (!isset($_POST['min-level']) || !is_number($_POST['min-level'])) {
+    if (!isset($_POST['min-level']) || !is_integer_string($_POST['min-level'])) {
         error('Invalid `min-level` parameter.');
     }
 
     $MinLevel = (int) $_POST['min-level'];
 
-    if (!isset($_POST['max-level']) || !is_number($_POST['max-level'])) {
+    if (!isset($_POST['max-level']) || !is_integer_string($_POST['max-level'])) {
         error('Invalid `max-level` parameter.');
     }
 
     $MaxLevel = (int) $_POST['max-level'];
 
-    if (!isset($_POST['quantity']) || !is_numeric($_POST['quantity'])) {
+    if (!isset($_POST['quantity']) || !is_integer_string($_POST['quantity'])) {
         error('Invalid `quantity` parameter.');
     }
 
     $Quantity = (int) $_POST['quantity'];
 
-    if (!isset($_POST['threshold']) || !is_numeric($_POST['threshold'])) {
+    if (!isset($_POST['threshold']) || !is_integer_string($_POST['threshold'])) {
         error('Invalid `threshold` parameter.');
     }
 
@@ -58,28 +57,32 @@ if (isset($_POST['submit'])) {
         error("You got the max/min classes backwards.");
     }
 
-    # Uncomment when/if the history table is set
-//    if (!$Simulation && empty($_POST['reason'])) {
-//        error("Please write a reason to {$do} those invites.");
-//    }
+    if (!$Simulation && empty($_POST['reason'])) {
+        error("Please write a reason to {$do} those invites.");
+    }
 
     $Reason = $_POST['reason'];
 
+    $params = [$Threshold, $Quantity];
     if ($do === 'give') {
-        $SetQuery = "LEAST({$Threshold}, Invites + {$Quantity})";
+        $SetQuery = "LEAST(?, Invites + ?)";
     } else {
-        $SetQuery = "GREATEST({$Threshold}, Invites - {$Quantity})";
+        $SetQuery = "GREATEST(?, Invites - ?)";
     }
 
+    $conditionParams = [$MinLevel];
     if ($MinLevel === $MaxLevel) {
-        $LevelCond = "p.Level = {$MinLevel}";
+        $LevelCond = "p.Level = ?";
     } else {
-        $LevelCond = "p.Level >= {$MinLevel} AND p.Level <= {$MaxLevel}";
+        $conditionParams[] = $MaxLevel;
+        $LevelCond = "p.Level >= ? AND p.Level <= ?";
     }
 
-    $UsersCount = $master->db->raw_query("SELECT COUNT(*) FROM users_main AS u 
-                                      LEFT JOIN permissions AS p ON u.PermissionID = p.ID 
-                                      WHERE {$LevelCond}")->fetchColumn();
+    $UsersCount = $master->db->rawQuery("SELECT COUNT(*) FROM users_main AS um
+                                      LEFT JOIN permissions AS p ON um.PermissionID = p.ID
+                                      WHERE um.Enabled = '1' AND {$LevelCond}",
+        $conditionParams
+    )->fetchColumn();
 
     $InvitesCount = $UsersCount * $Quantity;
     $Results = "{$Quantity} invites sent to {$UsersCount} users, {$InvitesCount} invites are now in the wild. ";
@@ -88,14 +91,23 @@ if (isset($_POST['submit'])) {
         // Staff note
         $Action = $do === 'give' ? 'given' : 'removed';
         $ThresholdStr = $do === 'give' ? "(Max: {$Threshold})" : "(Min: {$Threshold})";
-        $Comment = sqltime()." - {$Quantity} invites {$Action} {$ThresholdStr} for {$Reason} by {$LoggedUser['Username']}\n";
-        $Comment = db_string($Comment);
+        $Comment = sqltime()." - {$Quantity} invites {$Action} {$ThresholdStr} for {$Reason} by {$activeUser['Username']}\n";
+        $params[] = $Comment;
+        $params = array_merge($params, $conditionParams);
 
-        $master->db->raw_query("UPDATE users_main AS u
-                                LEFT JOIN permissions AS p ON u.PermissionID = p.ID
-                                LEFT JOIN users_info AS ui ON u.ID = ui.UserID
-                                SET Invites = {$SetQuery}, AdminComment = CONCAT('{$Comment}', AdminComment)
-                                WHERE {$LevelCond}");
+        $master->db->rawQuery("UPDATE users_main AS um
+                                LEFT JOIN permissions AS p ON um.PermissionID = p.ID
+                                LEFT JOIN users_info AS ui ON um.ID = ui.UserID
+                                SET Invites = {$SetQuery}, AdminComment = CONCAT(?, AdminComment)
+                                WHERE Enabled = '1' AND {$LevelCond}",
+            $params
+        );
+        $logMsg = $Results . ' Reason: ' . $Reason;
+        if ($Action === 'given') {
+            $this->inviteLog->massInviteGrant($logMsg, $MinLevel, $MaxLevel, $Quantity);
+        } else {
+            $this->inviteLog->massInviteRemoval($logMsg, $MinLevel, $MaxLevel, $Quantity);
+        }
     } else {
         $Results .= '[Simulation mode, nothing has been sent!]';
     }
@@ -106,7 +118,7 @@ show_header('Manage invites');
     <div class="thin">
         <h2>Manage invites</h2>
 
-        <?php if(!empty($Results)): ?>
+        <?php if (!empty($Results)): ?>
             <div class="head">Results</div>
             <div class="box pad">
                 <?= display_str($Results) ?>
@@ -115,7 +127,7 @@ show_header('Manage invites');
 
         <form method="post">
             <input type="hidden" name="action" value="manage_invites" />
-            <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+            <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
 
             <div class="head">Manage invites</div>
             <div class="box pad">
@@ -130,16 +142,16 @@ show_header('Manage invites');
                     <div style="display:inline-block;margin-right:20px;vertical-align: top;">
                         <h3>Min class</h3>
                         <select name="min-level">
-                            <?php foreach ($Classes as $Class): ?>
-                            <option value="<?= $Class->Level ?>"><?= $Class->Name ?></option>
+                            <?php foreach ($classes as $class): ?>
+                            <option value="<?= $class->Level ?>"><?= $class->Name ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div style="display:inline-block;margin-right:20px;vertical-align: top;">
                         <h3>Max class</h3>
                         <select name="max-level">
-                            <?php foreach ($Classes as $Class): ?>
-                                <option value="<?= $Class->Level ?>"><?= $Class->Name ?></option>
+                            <?php foreach ($classes as $class): ?>
+                                <option value="<?= $class->Level ?>"><?= $class->Name ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -162,10 +174,16 @@ show_header('Manage invites');
                 </div>
             </div>
 
-            <div class="head">History (TODO?)</div>
+            <div class="head">History</div>
                 <div class="box pad">
-                    <p><em>22/05/2018</em> - 7th birthday by Admin</p>
-                    <p><em>15/01/2018</em> - Oktoberfest by Starbuck</p>
+                    <?php $logs = $this->inviteLog->massLog(); ?>
+                    <table>
+                    <tr><th>Date</th><th>Event</th><th>Reason</th><th>User</th><th>Quantity</th><th>Action</th></tr>
+                    <?php foreach ($logs as $row) {
+                        list($event, $reason, $authorID, $quantity, $action, $date) = $row; ?>
+                        <tr><td><?=trimDate($date)?></td><td><?=$event?></td><td><?=$reason?></td><td><?=format_username($authorID)?></td><td><?=$quantity?></td><td><?=$action?></td></tr>
+                    <?php } ?>
+                    </table>
                 </div>
             </div>
         </form>

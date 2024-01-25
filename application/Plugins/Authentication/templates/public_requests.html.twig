@@ -1,0 +1,392 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/manage/requests/new">Public Requests</a>
+{% endblock %}
+
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : false,
+    'noGroup'   : true,
+    'noClass'   : false,
+    'noTitle'   : true,
+} %}
+
+{% block main_content %}
+    <div class="linkbox">
+        <a href="/manage/requests/new">New</a>
+        &nbsp;|&nbsp;
+        <a href="/manage/requests/old">Old</a>
+        &nbsp;|&nbsp;
+        <a href="/manage/requests/all">All</a>
+        {% if auth.isAllowed('admin_reports') %}
+            &nbsp;|&nbsp;
+            <a href="/manage/requests/stats">Stats</a>
+        {% endif %}
+    </div>
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, requestCount, pageSize, 9) }}
+    </div>
+    {% if (requestCount == 0) %}
+        <div>
+            <table>
+                <tr>
+                    <td class='center'>
+                        <strong>No new requests! <img src="/static/common/smileys/yaydance.gif"></strong>
+                    </td>
+                </tr>
+            </table>
+        </div>
+   {% else %}
+        <div class='head clear' align='center'>
+            Total Current requests: {{ requestCount }}
+        </div>
+    {% endif %}
+    {% set break = false %}
+    {% for request in requests if not break %}
+        <div id="request_{{ request.ID }}">
+        {% if request.Type == "Reactivate" %}
+            <div class="head clear">
+                <span class="float_left">
+                    {{ render.username(request.user.ID, usernameOptions) }}
+                </span>
+                <span class="float_right">
+                    {{ time_diff(request.Date)|raw }}
+                </span>
+            </div>
+            <div class="box">
+                <table class="shadow">
+                    <tr>
+                        <td class="label" width="15%"></td>
+                        <td width="50%"></td>
+                        <td class="label" width="15%"></td>
+                        <td width="20%"></td>
+                    </tr>
+                    {% if request.StaffID is not empty %}
+                        <tr>
+                            <td class="label">Resolved by:</td>
+                            <td>
+                                {{ render.username(request.StaffID, usernameOptions) }}
+                            </td>
+                            <td class="label">Resolve action:</td>
+                            <td>
+                                {{ request.Status }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if auth.isAllowed('users_view_ips') %}
+                        <tr>
+                            <td class="label">Last User IP:</td>
+                            <td>
+                                {{ render.geoip(request.user.ip) }}
+                            </td>
+                            <td class="label">Request IP:</td>
+                            <td>
+                                {{ render.geoip(request.ip) }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td> </td>
+                            <td> Unauthorized data section </td>
+                            <td> </td>
+                            <td> </td>
+                        </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="label">GeoIP Distance:</td>
+                        <td>
+                            {% if request.distance is null %}
+                                &infin; miles
+                            {% else %}
+                                {{ request.distance|number_format(2) }} miles
+                            {% endif %}
+                        </td>
+                        <td class="label">ISP Match?:</td>
+                        <td>
+                            {% if request.matchingISP %}
+                                Yes
+                            {% else %}
+                                No
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if (auth.isAllowed('users_view_ips') and auth.isAllowed('users_view_email')) %}
+                        <tr>
+                            <td class="label">Requested Email:</td>
+                            <td>
+                                {{ request.email }}
+                            </td>
+                        <td class="label">IP History:</td>
+                        <td>
+                            {#{{ request.user.IPChanges|number_format }}#}
+                            [<a href="/userhistory.php?action=ips&amp;userid={{ request.user.ID }}">View</a>]&nbsp;
+                            [<a href="/userhistory.php?action=ips&amp;userid={{ request.user.ID }}&amp;usersonly=1">View Users</a>]
+                        </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td> </td>
+                            <td> Unauthorized data section </td>
+                            <td> </td>
+                            <td> </td>
+                        </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="label">User Last Activity Estimate:</td>
+                        <td>
+                            {{ request.Extra }}
+                        </td>
+                        <td class="label"></td><td></td>
+                    </tr>
+                    <tr>
+                        <td rowspan="8" class="label">Linked Accounts:</td>
+                        <td rowspan="8">
+                            {{ request.user.dupes()|raw }}
+                        </td>
+                        <td class="label">Joined On:</td>
+                        <td>
+                            {{ time_diff(request.user.legacy['JoinDate'])|raw }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Last Active:</td>
+                        <td>
+                            {{ time_diff(request.user.legacy['LastAccess'])|raw }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Uploaded:</td>
+                        <td>
+                            {{ get_size(request.user.legacy.Uploaded) }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Downloaded:</td>
+                        <td>
+                            {{ get_size(request.user.legacy.Downloaded) }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Ratio:</td>
+                        <td>
+                            {{ ratio(request.user.legacy.Uploaded, request.user.legacy.Downloaded)|raw }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Required Ratio:</td>
+                        <td>
+                            {{ request.user.legacy.RequiredRatio|number_format(2) }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Reactivation History:</td>
+                        <td>
+                            {{ request.user.reactivationRequests|number_format }} [<a href="/manage/requests/old?userid={{ request.user.ID }}">View</a>]
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Tracker Proofs:</td>
+                        <td>
+                            {{ request.Proof }}<br/>
+                            {{ request.ProofTwo }}<br/>
+                            {{ request.ProofThree }}
+                        </td>
+                    </tr>
+                    {% if request.Status == 'New' %}
+                        <tr>
+                            <form action="/manage/requests/{{ request.ID }}" method="post" onsubmit="return confirm('Are you sure?');">
+                                <input type="hidden" name="token" value="{{ secretary.getToken('manage.public_requests') }}" />
+                                    <td class="label">Notes:</td>
+                                    <td>
+                                        <textarea rows="4" class="long" name="notes" id="notes" onkeyup="resize('notes');"></textarea>
+                                    </td>
+                                    <td class="label">Action:</td>
+                                    <td>
+                                            <input type="hidden" name="type" value="{{ request.Type }}"/>
+                                            <input type="submit" name="action" value="Accept" title="Accept this request and enable the user account" />
+                                            <input type="submit" name="action" value="Reject" title="Reject this request and leave the account disabled" />
+                                            <input type="submit" name="action" value="Summon" title="Summon the user to IRC and leave the account disabled" />
+                                    </td>
+                            </form>
+                        </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="label">Staff Notes:</td>
+                        <td colspan="3">
+                            <div id="admincommentlinks" class="AdminComment box pad scrollbox">
+                                {{ bbcode.full_format(request.user.legacy['AdminComment'])|raw }}
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="head clear">
+                <span class="float_left">
+                    New User Application - No. {{ request.ID }}
+                </span>
+                <span class="float_right">
+                    {{ time_diff(request.Date)|raw }}
+                </span>
+            </div>
+            <div class="box">
+                <table class="shadow">
+                    {% if request.StaffID is not empty %}
+                        <tr>
+                            <td class="label">Resolved by:</td>
+                            <td>
+                                {{ render.username(request.StaffID, usernameOptions) }}
+                            </td>
+                            <td class="label">Resolve action:</td>
+                            <td>
+                                {{ request.Status }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if (auth.isAllowed('users_view_ips') and auth.isAllowed('users_view_email'))%}
+                        <tr>
+                            <td class="label">Request IP:</td>
+                            <td>
+                                {{ render.geoip(request.ip) }}
+                            </td>
+                            <td class="label">Requested Email:</td>
+                            <td>
+                                 {{ request.ApplicantEmail }}
+                                 <a href="/user.php?action=search&action=search&email={{ request.ApplicantEmail }}">[S]</a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                        <td> </td>
+                        <td> Unauthorized data section </td>
+                        <td> </td>
+                        <td> </td>
+                        </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="label">How did you hear about us:</td>
+                        <td colspan="3">
+                            {{ request.Extra }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Tracker Proofs:</td>
+                            <td>
+                                {{ request.Proof }}<br>
+                                {{ request.ProofTwo }}<br>
+                                {{ request.ProofThree }}
+                            <td> </td>
+                            <td> </td>
+                    </tr>
+                    <tr>
+                        <td class="label">{{ master.options.ApplicationQuesOne }}</td>
+                            <td>
+                                {{ request.QuestionOne }}
+                            </td>
+                            <td class="label">{{ master.options.ApplicationQuesTwo }}</td>
+                            <td> {{ request.QuestionTwo }} </td>
+                    </tr>
+                    <tr>
+                        <td class="label">{{ master.options.ApplicationQuesThree }}</td>
+                            <td>
+                                {{ request.QuestionThree }}
+                            </td>
+                            <td> </td>
+                            <td> </td>
+                    </tr>
+                    {% if request.ApplicantEmail in matches|keys %}
+                        <tr>
+                            <td colspan="4" style="vertical-align: top;">
+                                {#{{ dump(matches) }}#}
+                                {% set break = true %}
+                                {% for match in matches %}
+                                    {% if match.Address == request.ApplicantEmail %}
+                                        Matched Email to User: {{ render.username(match.UserID, usernameOptions) }}
+                                    {% endif %}
+                                {% endfor %}
+                                {% set break = false %}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    <tr>
+                        <td colspan="4" style="vertical-align: top;">
+                            <table>
+                                {% if request.Status == 'New' %}
+                                    <form action="/manage/requests/{{ request.ID }}" method="post" onsubmit="return confirm('Are you sure?');">
+                                        <input type="hidden" name="token" value="{{ secretary.getToken('manage.public_requests') }}" />
+                                        <tr>
+                                            <td class="label">Notes:</td>
+                                            <td>
+                                                <textarea rows="4" class="long" name="notes" id="notes" onkeyup="resize('notes');"></textarea>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="label">Action:</td>
+                                            <td>
+                                                    <input type="hidden" name="email" value="{{ request.ApplicantEmail }}"/>
+                                                    <input type="hidden" name="type" value="{{ request.Type }}"/>
+                                                    <input type="submit" name="action" value="Accept" title="Accept this request and enable the user account" />
+                                                    <input type="submit" name="action" value="Reject" title="Reject this request and leave the account disabled" />
+                                                    <input type="submit" name="action" value="Summon" title="Summon the user to IRC and leave the account disabled" />
+                                            </td>
+                                        </tr>
+                                    </form>
+                                {% endif %}
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Notes:</td>
+                        <td colspan="3">
+                            <div id="publicRequestNotes" class="AdminComment box pad scrollbox">
+                                {{ request.Notes }}
+                            </div>
+                        </td>
+                    </tr>
+                    {% if (request.Type == 'Reactivate') %}
+                    <tr>
+                        <td class="label">Staff Notes:</td>
+                        <td colspan="3">
+                            <div id="admincommentlinks" class="AdminComment box pad scrollbox">
+                                {{ bbcode.full_format(request.user.legacy['AdminComment'])|raw }}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% if (request.Type == 'Application' and request.Status == 'Summoned') %}
+                        <tr>
+                            <td>
+                                Did this user pass IRC?
+                            </td>
+                            <td colspan="3">
+                            <a href="#" onClick="$('#{{ loop.index }}applicant').toggle(); this.innerHTML=(this.innerHTML=='(Hide)'?'(Show)':'(Hide)'); return false;">(Show)</a></div>
+                                <div class="hidden" id="{{ loop.index }}applicant">
+                                <form action="/manage/requests/{{ request.ID }}" method="post" onsubmit="return confirm('Are you sure?');">
+                                    <textarea rows="4" class="long" name="notes" id="notes" onkeyup="resize('notes');">{{ request.Notes }}</textarea>
+                                    <input type="hidden" name="token" value="{{ secretary.getToken('manage.public_requests') }}" />
+                                    <input type="hidden" name="email" value="{{ request.ApplicantEmail }}"/>
+                                    <input type="hidden" name="type" value="{{ request.Type }}"/>
+                                    <input type="submit" name="action" value="Send Invite Email" title="Accept this request and enable the user account" />
+                                </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    {% endif %}
+    {% endfor %}
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, requestCount, pageSize, 9) }}
+    </div>
+{% endblock %}

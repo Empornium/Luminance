@@ -2,9 +2,9 @@ var elemStyles=Array();
 var errorElems=Array();
 
 function validEmail(str) {
-	if (str.match(/^[_a-z0-9-]+([.+][_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$/i)) {			  
+	if (str.match(/^[_a-z0-9-]+([.+][_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$/i)) {
 		return true;
-	} else { 
+	} else {
 		return false;
 	}
 }
@@ -56,7 +56,7 @@ function showError(fields,alertStr) {
 	var tField=Array();
 
 	if (typeof(fields)=='object') { tField[0]=fields; } else { tField=fields.split(','); }
-	for(s=0; s<=tField.length-1; s++) {
+	for (s=0; s<=tField.length-1; s++) {
 		if ($('#'+tField[s])) {
 			$('#'+tField[s]).className=$('#'+tField[s]).className+" elem_error";
 			if (s==0) {
@@ -79,7 +79,7 @@ function showError(fields,alertStr) {
 
 function clearErrors(theForm) {
 	elementList=document.forms[theForm].elements;
-	for(x=0; x<=elementList.length-1; x++) {
+	for (x=0; x<=elementList.length-1; x++) {
 		if (elementList[x].type!="submit" && elementList[x].type!="button") {
 			if (!elemStyles[elementList[x].id]) {
 				elemStyles[elementList[x].id]=elementList[x].className;
@@ -93,7 +93,7 @@ function clearErrors(theForm) {
 }
 
 function clearElemError(evt) {
-	for(x=0; x<=errorElems.length-1; x++) {
+	for (x=0; x<=errorElems.length-1; x++) {
 		elem=$('#'+errorElems[x]);
 		if ($('#'+elem).type!="select-one") {
 			$('#'+elem).onkeypress="";

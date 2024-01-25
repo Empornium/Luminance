@@ -3,22 +3,23 @@ if (!check_perms('admin_manage_categories')) {
     error(403);
 }
 
-$images = scandir($master->public_path . '/static/common/caticons', 0);
-$images = array_diff($images, array('.', '..'));
+$images = scandir($master->publicPath . '/static/common/caticons', 0);
+$images = array_diff($images, ['.', '..']);
 
 show_header('Manage Categories', 'jquery');
 ?>
 
-<script type="text/javascript">//<![CDATA[
-    public function change_image(display_image, cat_image)
-    {
-        jQuery(display_image).html('<img src="/static/common/caticons/'+jQuery(cat_image).val()+'"/>');
-    }
-    //]]></script>
+<script type="text/javascript">
+    //<![CDATA[
+        function change_image(display_image, cat_image) {
+            jQuery(display_image).html('<img src="/static/common/caticons/'+jQuery(cat_image).val()+'"/>');
+        }
+    //]]>
+</script>
 
 <div class="thin">
     <h2>Categories</h2>
-    <p><strong>Observe!</strong> You must upload new images to the <?= $master->public_path ?>/static/common/caticons/ folder before you can use it here.</p><br />
+    <p><strong>Observe!</strong> You must upload new images to the <?= $master->publicPath ?>/static/common/caticons/ folder before you can use it here.</p><br />
 
     <table>
         <tr class="head">
@@ -35,7 +36,7 @@ show_header('Manage Categories', 'jquery');
         <form action="tools.php" method="post">
             <td>
                 <input type="hidden" name="action" value="categories_alter" />
-                <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+                <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
                 <span id="display_image0">
                     <img src="/static/common/caticons/<?= $images[2] ?>   " />
                 </span>
@@ -70,21 +71,22 @@ show_header('Manage Categories', 'jquery');
             <td width="13%">Submit</td>
         </tr>
         <?php
-        $DB->query("SELECT
+        $records = $master->db->rawQuery("SELECT
         id,
         name,
         image,
         tag,
         open
-        FROM categories");
+        FROM categories")->fetchAll(\PDO::FETCH_NUM);
 
-        while (list($id, $name, $image, $tag, $open) = $DB->next_record()) {
+        foreach ($records as $record) {
+            list($id, $name, $image, $tag, $open) = $record;
             ?>
             <tr>
             <form action="tools.php" method="post">
                 <td>
                     <input type="hidden" name="action" value="categories_alter" />
-                    <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+                    <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
                     <input type="hidden" name="id" value="<?= $id ?>" />
                     <span id="display_image<?= $id ?>">
                         <img src="/static/common/caticons/<?= $image ?>" />
@@ -104,7 +106,7 @@ show_header('Manage Categories', 'jquery');
                     <input type="text" class="long"  name="tag" value="<?= display_str($tag) ?>" />
                 </td>
                 <td>
-                    <input type="checkbox" name="open" value="1" <?php  if($open)echo ' checked="checked"';?>/>
+                    <input type="checkbox" name="open" value="1" <?php  if ($open)echo ' checked="checked"';?>/>
                 </td>
                 <td>
                     <input type="submit" name="submit" value="Edit" />

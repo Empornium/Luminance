@@ -39,7 +39,6 @@ CREATE TABLE IF NOT EXISTS `xbt_files_users` (
   `fid` int(11) NOT NULL,
   `ctime` int(11) DEFAULT NULL,
   `mtime` int(11) NOT NULL,
-  `ip` varchar(15) NOT NULL DEFAULT '',
   `ipv4` varbinary(4) DEFAULT NULL,
   `ipv6` varbinary(16) DEFAULT NULL,
   `port` int(6) NOT NULL DEFAULT '0',
@@ -47,7 +46,8 @@ CREATE TABLE IF NOT EXISTS `xbt_files_users` (
   KEY `remaining_idx` (`remaining`),
   KEY `fid_idx` (`fid`),
   KEY `mtime_idx` (`mtime`),
-  KEY `uid_active` (`uid`,`active`)
+  KEY `active_idx` (`active`)
+  KEY `uid_active_idx` (`uid`,`active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

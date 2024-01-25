@@ -1,8 +1,8 @@
 {
-    "name": "luminance/luminance",
+    "name": "empornium/luminance",
     "authors": [
         {
-            "name": "Empornium",
+            "name": "Empornium Devs",
             "email": "devs@www.empornium.me"
         }
     ],
@@ -12,22 +12,47 @@
             "Luminance\\Legacy\\": "application/Legacy/classes"
         }
     },
+    "repositories": [
+        {
+            "url": "https://github.com/Empornium/PHP-Cookie.git",
+            "type": "git"
+        }
+    ],
     "require": {
-        "monolog/monolog": "^1.16",
-        "twig/twig": "1.20",
-        "donatj/phpuseragentparser": "0.3.6",
-        "neutron/sphinxsearch-api": "2.0.8",
-        "pendalff/phpqrcode": "1.0.1",
+        "monolog/monolog": "^2",
+        "twig/twig": ">=2.7",
+        "twig/extensions": ">=1.5",
+        "donatj/phpuseragentparser": "^1.7",
+        "neutron/sphinxsearch-api": ">=2.0.8",
+        "chillerlan/php-qrcode": "^4.3",
         "phpgangsta/googleauthenticator": "dev-master",
-        "maennchen/zipstream-php": "^0.5.0",
-        "delight-im/cookie": "^3.1",
-        "mlocati/ip-lib": "^1.5",
-        "phpmyadmin/sql-parser": "^4.2",
-        "guzzlehttp/guzzle": "^6.3"
+        "defuse/php-encryption": "dev-master#d2c33279e3",
+        "maennchen/zipstream-php": "^2",
+        "delight-im/cookie": "dev-master",
+        "mlocati/ip-lib": ">=1.5",
+        "phpmyadmin/sql-parser": ">=4.2",
+        "guzzlehttp/guzzle": ">=6.3",
+        "sabberworm/php-css-parser": ">=8.2",
+        "wapmorgan/unified-archive": ">=0.1.2",
+        "farmani/remote-image-info": ">=0.1.2",
+        "lesha888/geophp": ">=1.2"
     },
     "require-dev": {
-        "phpunit/phpunit": "6",
-        "squizlabs/php_codesniffer": "3.*",
-        "rskuipers/php-assumptions": "^0.7.1"
+        "phpunit/phpunit": "^9.0",
+        "squizlabs/php_codesniffer": ">=3.0",
+        "dealerdirect/phpcodesniffer-composer-installer": "0.7.2",
+        "rskuipers/php-assumptions": ">=0.8.0",
+        "dancryer/php-docblock-checker": ">=1.8",
+        "vimeo/psalm": ">=3.2",
+        "phpstan/phpstan": ">=1.10",
+        "phpcompatibility/php-compatibility": "*",
+        "slevomat/coding-standard": "^8.13"
+    },
+    "prefer-stable" : true,
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "teewurst/psr4-advanced-wildcard-composer-plugin": true
+        }
     }
 }

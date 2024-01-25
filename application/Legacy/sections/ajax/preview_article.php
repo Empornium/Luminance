@@ -1,14 +1,13 @@
 <?php
 /* AJAX Previews, simple stuff. */
 
-include(SERVER_ROOT.'/Legacy/sections/articles/functions.php');
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
 $Title = $_REQUEST['title'];
 $Body = $_REQUEST['body'];
 
-$Body = $Text->full_format($Body, get_permissions_advtags($LoggedUser['ID'], $LoggedUser['CustomPermissions']), true);
-$Body = replace_special_tags($Body);
+$Body = $bbCode->full_format($Body, get_permissions_advtags($activeUser['ID'], $activeUser['CustomPermissions']), true);
+$Body = $master->getPlugin('Articles')->replaceSpecialTags($Body);
 
 echo '<div class="head">
                 <strong>'. display_str($Title).' </strong> - posted Just now

@@ -5,7 +5,7 @@
  * for that (reports.php). If you wanted to add a new view, you'd simply
  * add to the case statement(s) below and add an entry to views.php to
  * explain it.
- * Any changes made to this page within the foreach() should probably be
+ * Any changes made to this page within the foreach () should probably be
  * replicated on the auto page (reports.php).
  */
 
@@ -13,10 +13,9 @@ if (!check_perms('admin_reports')) {
     error(403);
 }
 
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
-define('REPORTS_PER_PAGE', '10');
-list($Page,$Limit) = page_limit(REPORTS_PER_PAGE);
+list($Page, $Limit) = page_limit($master->settings->pagination->reports);
 
 if (isset($_GET['view'])) {
     $View = $_GET['view'];
@@ -25,10 +24,10 @@ if (isset($_GET['view'])) {
 }
 
 if (isset($_GET['id'])) {
-    if (!is_number($_GET['id']) && $View != "type") {
+    if (!is_integer_string($_GET['id']) && $View != "type") {
         error(404);
     } else {
-        $ID = db_string($_GET['id']);
+        $ID = $_GET['id'];
     }
 } else {
     $ID = '';
@@ -36,80 +35,99 @@ if (isset($_GET['id'])) {
 
 $Order = "ORDER BY r.ReportedTime ASC";
 
+$params = [];
+
 if (!$ID) {
     switch ($View) {
         case "resolved" :
             $Title = "All the old smelly reports";
-            $Where = "WHERE r.Status = 'Resolved'";
+            $Where = "r.Status = 'Resolved'";
             $Order = "ORDER BY r.LastChangeTime DESC";
             break;
         case "unauto" :
             $Title = "New reports (unassigned)";
-            $Where = "WHERE r.Status = 'New'";
+            $Where = "r.Status = 'New'";
             break;
         default :
             error(404);
             break;
     }
 } else {
+    $params[] = $ID;
     switch ($View) {
         case "staff" :
-            $DB->query("SELECT Username FROM users_main WHERE ID=".$ID);
-            list($Username) = $DB->next_record();
+            $Username = $master->db->rawQuery(
+                "SELECT Username
+                   FROM users
+                  WHERE ID = ?",
+                [$ID]
+            )->fetchColumn();
             if ($Username) {
                 $Title = $Username."'s in progress reports";
             } else {
                 $Title = $ID."'s in progress reports";
             }
-            $Where = "WHERE r.Status = 'InProgress' AND r.ResolverID = ".$ID;
+            $Where = "r.Status = 'InProgress' AND r.ResolverID = ?";
             break;
         case "resolver" :
-            $DB->query("SELECT Username FROM users_main WHERE ID=".$ID);
-            list($Username) = $DB->next_record();
+            $Username = $master->db->rawQuery(
+                "SELECT Username
+                   FROM users
+                  WHERE ID = ?",
+                [$ID]
+            )->fetchColumn();
             if ($Username) {
                 $Title = $Username."'s in resolved reports";
             } else {
                 $Title = $ID."'s in resolved reports";
             }
-            $Where = "WHERE r.Status = 'Resolved' AND r.ResolverID = ".$ID;
+            $Where = "r.Status = 'Resolved' AND r.ResolverID = ?";
             $Order = "ORDER BY r.LastChangeTime DESC";
             break;
         case "group" :
             $Title = "Non resolved reports for the group ".$ID;
-            $Where = "WHERE r.Status != 'Resolved' AND tg.ID = ".$ID;
+            $Where = "r.Status != 'Resolved' AND tg.ID = ?";
             break;
         case "torrent" :
             $Title = "All reports for the torrent  ".$ID;
-            $Where = "WHERE r.TorrentID = ".$ID;
+            $Where = "r.TorrentID = ?";
             break;
         case "report" :
             $Title = "Seeing resolution of report ".$ID;
-            $Where = "WHERE r.ID = ".$ID;
+            $Where = "r.ID = ?";
             break;
         case "reporter" :
-            $DB->query("SELECT Username FROM users_main WHERE ID=".$ID);
-            list($Username) = $DB->next_record();
+            $Username = $master->db->rawQuery(
+                "SELECT Username
+                   FROM users
+                  WHERE ID = ?",
+                [$ID]
+            )->fetchColumn();
             if ($Username) {
                 $Title = "All torrents reported by ".$Username;
             } else {
                 $Title = "All torrents reported by user ".$ID;
             }
-            $Where = "WHERE r.ReporterID = ".$ID;
+            $Where = "r.ReporterID = ?";
             $Order = "ORDER BY r.ReportedTime DESC";
             break;
         case "uploader" :
-            $DB->query("SELECT Username FROM users_main WHERE ID=".$ID);
-            list($Username) = $DB->next_record();
+            $Username = $master->db->rawQuery(
+                "SELECT Username
+                   FROM users
+                  WHERE ID = ?",
+                [$ID]
+            )->fetchColumn();
             if ($Username) {
                 $Title = "All reports for torrents uploaded by ".$Username;
             } else {
                 $Title = "All reports for torrents uploaded by user ".$ID;
             }
-            $Where = "WHERE r.Status != 'Resolved' AND t.UserID = ".$ID;
+            $Where = "WHERE r.Status != 'Resolved' AND t.UserID = ?";
             break;
         case "type":
             $Title = "All New reports for the chosen type";
-            $Where = "WHERE r.Status = 'New' AND r.Type = '".$ID."'";
+            $Where = "r.Status = 'New' AND r.Type = ?";
             break;
             break;
         default :
@@ -118,7 +136,8 @@ if (!$ID) {
     }
 }
 
-$DB->query("SELECT SQL_CALC_FOUND_ROWS
+$Reports = $master->db->rawQuery(
+    "SELECT SQL_CALC_FOUND_ROWS
             r.ID,
             r.ReporterID,
             reporter.Username,
@@ -143,22 +162,21 @@ $DB->query("SELECT SQL_CALC_FOUND_ROWS
             t.UserID AS UploaderID,
             uploader.Username,
             t.FileCount
-            FROM reportsv2 AS r
-            LEFT JOIN torrents AS t ON t.ID=r.TorrentID
-            LEFT JOIN torrents_group AS tg ON tg.ID=t.GroupID
-            LEFT JOIN users_main AS resolver ON resolver.ID=r.ResolverID
-            LEFT JOIN users_main AS reporter ON reporter.ID=r.ReporterID
-            LEFT JOIN users_main AS uploader ON uploader.ID=t.UserID "
-            .$Where."
-            GROUP BY r.ID "
-            .$Order."
-            LIMIT ".$Limit);
+       FROM reportsv2 AS r
+  LEFT JOIN torrents AS t ON t.ID = r.TorrentID
+  LEFT JOIN torrents_group AS tg ON tg.ID = t.GroupID
+  LEFT JOIN users AS resolver ON resolver.ID = r.ResolverID
+  LEFT JOIN users AS reporter ON reporter.ID = r.ReporterID
+  LEFT JOIN users AS uploader ON uploader.ID = t.UserID
+      WHERE {$Where}
+   GROUP BY r.ID
+            {$Order}
+      LIMIT {$Limit}",
+    $params
+)->fetchAll(\PDO::FETCH_NUM);
 
-$Reports = $DB->to_array();
-
-$DB->query('SELECT FOUND_ROWS()');
-list($Results) = $DB->next_record();
-$PageLinks=get_pages($Page,$Results,REPORTS_PER_PAGE,11);
+$Results = $master->db->foundRows();
+$Pages = get_pages($Page, $Results, $master->settings->pagination->reports, 11);
 
 show_header('Reports V2!', 'reportsv2,bbcode,inbox,reports,jquery');
 include 'header.php';
@@ -171,11 +189,11 @@ include 'header.php';
         <span title="Resolves *all* checked reports with their respective resolutions"><input type="button" onclick="MultiResolve();" value="Multi-Resolve" /></span>
         <span title="Assigns all of the reports on the page to you!"><input type="button" onclick="Grab();" value="Grab All" /></span>
     <?php  } ?>
-    <?php  if ($View == "staff" && $LoggedUser['ID'] == $ID) { ?>| <span title="Un-In Progress all the reports currently displayed"><input type="button" onclick="GiveBack();" value="Give back all" /></span><?php  } ?>
+    <?php  if ($View == "staff" && $activeUser['ID'] == $ID) { ?>| <span title="Un-In Progress all the reports currently displayed"><input type="button" onclick="GiveBack();" value="Give back all" /></span><?php  } ?>
 </div>
 <br />
 <div class="linkbox">
-<?=$PageLinks?>
+<?=$Pages?>
 </div>
 <div id="all_reports" >
 
@@ -195,39 +213,42 @@ if (count($Reports) == 0) {
 } else {
     foreach ($Reports as $Report) {
 
-        list($ReportID, $ReporterID, $ReporterName, $TorrentID, $Type, $UserComment, $ResolverID, $ResolverName, $Status, $ReportedTime, $LastChangeTime,
-            $ModComment, $Tracks, $Images, $ExtraIDs, $Links, $LogMessage, $GroupName, $GroupID, $Time,
-            $Size, $UploaderID, $UploaderName, $Filecount) = display_array($Report, array("ModComment"));
+        list($ReportID, $ReporterID, $ReporterName, $torrentID, $Type, $UserComment, $ResolverID, $ResolverName, $Status, $ReportedTime, $LastChangeTime,
+            $ModComment, $Tracks, $Images, $ExtraIDs, $Links, $LogMessage, $GroupName, $GroupID, $time,
+            $Size, $UploaderID, $UploaderName, $Filecount) = display_array($Report, ["ModComment"]);
 
         if (!$GroupID && $Status != "Resolved") {
             //Torrent already deleted
-            $DB->query("UPDATE reportsv2 SET
-            Status='Resolved',
-            LastChangeTime='".sqltime()."',
-            ModComment='Report already dealt with (Torrent deleted)'
-            WHERE ID=".$ReportID);
-            $Cache->decrement('num_torrent_reportsv2');
+            $master->db->rawQuery(
+                "UPDATE reportsv2
+                    SET Status = 'Resolved',
+                        LastChangeTime = ?,
+                        ModComment = 'Report already dealt with (Torrent deleted)'
+                  WHERE ID = ?",
+                [sqltime(), $ReportID]
+            );
+            $master->cache->decrementValue('num_torrent_reportsv2');
 ?>
     <div id=report<?=$ReportID?>>
         <table>
             <tr>
                 <td class='center'>
-                    <a href="/reportsv2.php?view=report&amp;id=<?=$ReportID?>">Report <?=$ReportID?></a> for torrent <?=$TorrentID?> (deleted) has been automatically resolved. <input type="button" value="Hide" onclick="ClearReport(<?=$ReportID?>);" />
+                    <a href="/reportsv2.php?view=report&amp;id=<?=$ReportID?>">Report <?=$ReportID?></a> for torrent <?=$torrentID?> (deleted) has been automatically resolved. <input type="button" value="Hide" onclick="ClearReport(<?=$ReportID?>);" />
                 </td>
             </tr>
         </table>
     </div>
 <?php
         } else {
-                        if (array_key_exists($Type, $Types)) {
-                              $ReportType = $Types[$Type];
+                        if (array_key_exists($Type, $types)) {
+                              $ReportType = $types[$Type];
                         } else {
                               //There was a type but it wasn't an option!
                               $Type = 'other';
-                              $ReportType = $Types['other'];
+                              $ReportType = $types['other'];
                         }
                         $RawName = $GroupName." (".get_size($Size).")";
-                        $LinkName = "<a href='torrents.php?id=$GroupID'>$GroupName</a> (".get_size($Size).")";
+                        $LinkName = "<a href='/torrents.php?id=$GroupID'>$GroupName</a> (".get_size($Size).")";
                         $BBName = "[url=torrents.php?id=$GroupID]$GroupName"."[/url] (".get_size($Size).")";
 
         ?>
@@ -239,10 +260,10 @@ if (count($Reports) == 0) {
                         */
                     ?>
                     <div>
-                        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                         <input type="hidden" id="newreportid" name="newreportid" value="<?=$ReportID?>" />
                         <input type="hidden" id="reportid<?=$ReportID?>" name="reportid" value="<?=$ReportID?>" />
-                        <input type="hidden" id="torrentid<?=$ReportID?>" name="torrentid" value="<?=$TorrentID?>" />
+                        <input type="hidden" id="torrentid<?=$ReportID?>" name="torrentid" value="<?=$torrentID?>" />
                         <input type="hidden" id="uploader<?=$ReportID?>" name="uploader" value="<?=$UploaderName?>" />
                         <input type="hidden" id="uploaderid<?=$ReportID?>" name="uploaderid" value="<?=$UploaderID?>" />
                         <input type="hidden" id="reporterid<?=$ReportID?>" name="reporterid" value="<?=$ReporterID?>" />
@@ -256,24 +277,27 @@ if (count($Reports) == 0) {
                             <td class="label"><a href="/reportsv2.php?view=report&amp;id=<?=$ReportID?>">Reported </a>Torrent:</td>
                             <td colspan="4">
             <?php 	if (!$GroupID) { ?>
-                                <a href="/log.php?search=Torrent+<?=$TorrentID?>"><?=$TorrentID?></a> (Deleted)
+                                <a href="/log.php?search=Torrent+<?=$torrentID?>"><?=$torrentID?></a> (Deleted)
             <?php   } else {
-                                $PeerInfo = get_peers($TorrentID);
+                                $PeerInfo = get_peers($torrentID);
                                 //$Torrent[5]=$PeerInfo['Snatched'];
                                 echo $LinkName; ?>
-                                <a href="/torrents.php?action=download&amp;id=<?=$TorrentID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
-                                uploaded by <a href="/user.php?id=<?=$UploaderID?>"><?=$UploaderName?></a> <?=time_diff($Time)?>
-                                &nbsp;(<?=str_plural('file',$Filecount)?>)&nbsp;[ <span title="Seeders"><?=$PeerInfo['Seeders']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="seeders" title="seeders" /></span> | <span title="Leechers"><?=$PeerInfo['Leechers']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="leechers" title="leechers" /></span> ]
+                                <a href="/torrents.php?action=download&amp;id=<?=$torrentID?>&amp;authkey=<?=$activeUser['AuthKey']?>&amp;torrent_pass=<?=$activeUser['torrent_pass']?>" title="Download">[DL]</a>
+                                uploaded by <a href="/user.php?id=<?=$UploaderID?>"><?=$UploaderName?></a> <?=time_diff($time)?>
+                                &nbsp;(<?=str_plural('file', $Filecount)?>)&nbsp;[ <span title="Seeders"><?=$PeerInfo['Seeders']?> <img src="/static/styles/<?=$activeUser['StyleName'] ?>/images/seeders.png" alt="seeders" title="seeders" /></span> | <span title="Leechers"><?=$PeerInfo['Leechers']?> <img src="/static/styles/<?=$activeUser['StyleName'] ?>/images/leechers.png" alt="leechers" title="leechers" /></span> ]
                                 &nbsp;[<a href="/torrents.php?action=dupe_check&amp;id=<?=$GroupID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
                                 <br />
             <?php 	if ($Status != 'Resolved') {
 
-                    $DB->query("SELECT r.ID
-                                FROM reportsv2 AS r
-                                LEFT JOIN torrents AS t ON t.ID=r.TorrentID
-                                WHERE r.Status != 'Resolved'
-                                AND t.GroupID=$GroupID");
-                    $GroupOthers = ($DB->record_count() - 1);
+                    $master->db->rawQuery(
+                        "SELECT r.ID
+                           FROM reportsv2 AS r
+                      LEFT JOIN torrents AS t ON t.ID = r.TorrentID
+                          WHERE r.Status != 'Resolved'
+                            AND t.GroupID = ?",
+                        [$GroupID]
+                    );
+                    $GroupOthers = ($master->db->foundRows() - 1);
 
                     if ($GroupOthers > 0) { ?>
                                 <div style="text-align: right;">
@@ -281,12 +305,15 @@ if (count($Reports) == 0) {
                                 </div>
             <?php  		}
 
-                    $DB->query("SELECT t.UserID
-                                FROM reportsv2 AS r
-                                JOIN torrents AS t ON t.ID=r.TorrentID
-                                WHERE r.Status != 'Resolved'
-                                AND t.UserID=$UploaderID");
-                    $UploaderOthers = ($DB->record_count() - 1);
+                    $master->db->rawQuery(
+                        "SELECT t.UserID
+                           FROM reportsv2 AS r
+                           JOIN torrents AS t ON t.ID = r.TorrentID
+                          WHERE r.Status != 'Resolved'
+                            AND t.UserID = ?",
+                        [$UploaderID]
+                    );
+                    $UploaderOthers = ($master->db->foundRows() - 1);
 
                     if ($UploaderOthers > 0) { ?>
                                 <div style="text-align: right;">
@@ -294,20 +321,24 @@ if (count($Reports) == 0) {
                                 </div>
             <?php  		}
 
-                    $DB->query("SELECT DISTINCT req.ID,
+                    $requests = $master->db->rawQuery(
+                        "SELECT DISTINCT req.ID,
                                 req.FillerID,
-                                um.Username,
+                                u.Username,
                                 req.TimeFilled
-                                FROM requests AS req
-                                LEFT JOIN torrents AS t ON t.ID=req.TorrentID
-                                LEFT JOIN reportsv2 AS rep ON rep.TorrentID=t.ID
-                                JOIN users_main AS um ON um.ID=req.FillerID
-                                WHERE rep.Status != 'Resolved'
-                                AND req.TimeFilled > '2010-03-04 02:31:49'
-                                AND req.TorrentID = $TorrentID");
-                    $Requests = ($DB->record_count());
-                    if ($Requests > 0) {
-                        while (list($RequestID, $FillerID, $FillerName, $FilledTime) = $DB->next_record()) {
+                           FROM requests AS req
+                      LEFT JOIN torrents AS t ON t.ID = req.TorrentID
+                      LEFT JOIN reportsv2 AS rep ON rep.TorrentID = t.ID
+                           JOIN users AS u ON u.ID = req.FillerID
+                          WHERE rep.Status != 'Resolved'
+                            AND req.TimeFilled > '2010-03-04 02:31:49'
+                            AND req.TorrentID = ?",
+                        [$torrentID]
+                    )->fetchAll(\PDO::FETCH_NUM);
+                    $requestCount = $master->db->foundRows();
+                    if ($requestCount > 0) {
+                        foreach ($requests as $request) {
+                            list($RequestID, $FillerID, $FillerName, $FilledTime) = $request;
                 ?>
                                     <div style="text-align: right;">
                                         <a href="/user.php?id=<?=$FillerID?>"><?=$FillerName?></a> used this torrent to fill <a href="/requests.php?action=view&amp;id=<?=$RequestID?>">this request</a> <?=time_diff($FilledTime)?>
@@ -343,7 +374,7 @@ if (count($Reports) == 0) {
                     $Links = explode(" ", $Links);
                     foreach ($Links as $Link) {
 
-                        if ($local_url = $Text->local_url($Link)) {
+                        if ($local_url = $bbCode->local_url($Link)) {
                             $Link = $local_url;
                         }
             ?>
@@ -367,34 +398,43 @@ if (count($Reports) == 0) {
                     $First = true;
                     $Extras = explode(" ", $ExtraIDs);
                     foreach ($Extras as $ExtraID) {
-                        if(!is_number($ExtraID)) error(0);
+                        if (!is_integer_string($ExtraID)) error(0);
 
-                        $DB->query("SELECT
-                                    tg.Name,
+                        $nextRecord = $master->db->rawQuery(
+                            "SELECT tg.Name,
                                     tg.ID,
                                     t.Time,
                                     t.Size,
                                     t.UserID AS UploaderID,
                                     uploader.Username,
                                     t.FileCount
-                                    FROM torrents AS t
-                                    LEFT JOIN torrents_group AS tg ON tg.ID=t.GroupID
-                                    LEFT JOIN users_main AS uploader ON uploader.ID=t.UserID
-                                    WHERE t.ID='$ExtraID'
-                                    GROUP BY tg.ID");
+                               FROM torrents AS t
+                          LEFT JOIN torrents_group AS tg ON tg.ID = t.GroupID
+                          LEFT JOIN users AS uploader ON uploader.ID = t.UserID
+                              WHERE tg.ID = ?
+                           GROUP BY tg.ID",
+                           [$ExtraID]
+                        )->fetch(\PDO::FETCH_NUM);
 
-                        list($ExtraGroupName, $ExtraGroupID, $ExtraTime,
-                            $ExtraSize, $ExtraUploaderID, $ExtraUploaderName, $ExtraFilecount) = display_array($DB->next_record());
+                        list(
+                            $ExtraGroupName,
+                            $ExtraGroupID,
+                            $ExtraTime,
+                            $ExtraSize,
+                            $ExtraUploaderID,
+                            $ExtraUploaderName,
+                            $ExtraFilecount
+                        ) = $nextRecord;
 
                         if ($ExtraGroupName) {
-                            $ExtraLinkName = "<a href='torrents.php?id=$ExtraGroupID'>$ExtraGroupName</a> (". get_size($ExtraSize).")"; // number_format($ExtraSize/(1024*1024), 2)." MB)";
+                            $ExtraLinkName = "<a href='/torrents.php?id=$ExtraGroupID'>$ExtraGroupName</a> (". get_size($ExtraSize).")"; // number_format($ExtraSize/(1024*1024), 2)." MB)";
 
                             $ExtraPeerInfo = get_peers($ExtraID);
                             echo ($First ? "" : "<br />");
                             echo $ExtraLinkName;            ?>
-                            <a href="/torrents.php?action=download&amp;id=<?=$ExtraID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" title="Download">[DL]</a>
-                            uploaded by <a href="/user.php?id=<?=$ExtraUploaderID?>"><?=$ExtraUploaderName?></a>  <?=time_diff($ExtraTime)?> [<a title="Close this report and create a new dupe report with this torrent as the reported one" href="#" onclick="Switch(<?=$ReportID?>, <?=$ReporterID?>, '<?=urlencode($UserComment)?>', <?=$TorrentID?>, <?=$ExtraID?>); return false;">Switch</a>]
-                            &nbsp;(<?=str_plural('file',$ExtraFilecount)?>)&nbsp;[ <span title="Seeders"><?=$ExtraPeerInfo['Seeders']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/seeders.png" alt="seeders" title="seeders" /></span> | <span title="Leechers"><?=$ExtraPeerInfo['Leechers']?> <img src="static/styles/<?=$LoggedUser['StyleName'] ?>/images/leechers.png" alt="leechers" title="leechers" /></span> ]
+                            <a href="/torrents.php?action=download&amp;id=<?=$ExtraID?>&amp;authkey=<?=$activeUser['AuthKey']?>&amp;torrent_pass=<?=$activeUser['torrent_pass']?>" title="Download">[DL]</a>
+                            uploaded by <a href="/user.php?id=<?=$ExtraUploaderID?>"><?=$ExtraUploaderName?></a>  <?=time_diff($ExtraTime)?> [<a title="Close this report and create a new dupe report with this torrent as the reported one" href="#" onclick="Switch(<?=$ReportID?>, <?=$ReporterID?>, '<?=urlencode($UserComment)?>', <?=$torrentID?>, <?=$ExtraID?>); return false;">Switch</a>]
+                            &nbsp;(<?=str_plural('file', $ExtraFilecount)?>)&nbsp;[ <span title="Seeders"><?=$ExtraPeerInfo['Seeders']?> <img src="/static/styles/<?=$activeUser['StyleName'] ?>/images/seeders.png" alt="seeders" title="seeders" /></span> | <span title="Leechers"><?=$ExtraPeerInfo['Leechers']?> <img src="/static/styles/<?=$activeUser['StyleName'] ?>/images/leechers.png" alt="leechers" title="leechers" /></span> ]
                             &nbsp;[<a href="/torrents.php?action=dupe_check&amp;id=<?=$ExtraID ?>" target="_blank" title="Check for exact matches in filesize">Dupe check</a>]
                 <?php
                             $First = false;
@@ -430,7 +470,7 @@ if (count($Reports) == 0) {
             ?>
                         <tr>
                             <td class="label">User Comment:</td>
-                            <td colspan="4"><?=$Text->full_format($UserComment)?></td>
+                            <td colspan="4"><?=$bbCode->full_format($UserComment)?></td>
                         </tr>
                         <?php  // END REPORTED STUFF :|: BEGIN MOD STUFF ?>
             <?php
@@ -459,8 +499,8 @@ if (count($Reports) == 0) {
                             <td colspan="4">
                                 <select name="resolve_type" id="resolve_type<?=$ReportID?>" onchange="ChangeResolve('<?=$ReportID?>')">
     <?php
-                            $TypeList = $Types;
-                            $Priorities = array();
+                            $TypeList = $types;
+                            $Priorities = [];
                             foreach ($TypeList as $Key => $Value) {
                                 $Priorities[$Key] = $Value['priority'];
                             }
@@ -534,7 +574,7 @@ if (count($Reports) == 0) {
                                             $Extras = explode(" ", $ExtraIDs);
                                             $Value = "";
                                             foreach ($Extras as $ExtraID) {
-                                                $Value .= "/details.php?id={$ExtraID} ";
+                                                $Value .= "/torrents.php?id={$ExtraID} ";
                                             }
                                             echo 'value="'.trim($Value).'"';
                                         } ?>/>
@@ -548,7 +588,7 @@ if (count($Reports) == 0) {
                             <td colspan="5" style="text-align: center;">
                                 <input type="button" value="Invalid Report" onclick="Dismiss(<?=$ReportID?>);" title="Dismiss this as an invalid Report" />
                                 <input type="button" value="Report resolved manually" onclick="ManualResolve(<?=$ReportID?>);" title="Set status to Resolved but take no automatic action" />
-            <?php 		if ($Status == "InProgress" && $LoggedUser['ID'] == $ResolverID) { ?>
+            <?php 		if ($Status == "InProgress" && $activeUser['ID'] == $ResolverID) { ?>
                                 | <input type="button" value="Give back" onclick="GiveBack(<?=$ReportID?>);" />
             <?php  		} else { ?>
                                 | <input id="grab<?=$ReportID?>" type="button" value="Grab!" onclick="Grab(<?=$ReportID?>);" />
@@ -560,20 +600,28 @@ if (count($Reports) == 0) {
                              <?php
 
                 // get the conversations
-                $Conversations = array();
-                $DB->query("SELECT rc.ConvID, pm.UserID, um.Username,
-                                (CASE WHEN UserID='$ReporterID' THEN 'Reporter'
-                                      WHEN UserID='$UploaderID' THEN 'Offender'
-                                      ELSE 'other'
-                                 END) AS ConvType, pm.Date
-                                FROM reportsv2_conversations AS rc
-                                JOIN staff_pm_conversations AS pm ON pm.ID=rc.ConvID
-                                LEFT JOIN users_main AS um ON um.ID=pm.UserID
-                            WHERE ReportID=" . $ReportID . "
-                                ORDER BY pm.Date ASC");
-                $Conversations = $DB->to_array();
+                $Conversations = $master->db->rawQuery(
+                    "SELECT rc.ConvID,
+                            pm.UserID,
+                            u.Username,
+                            (
+                                CASE
+                                    WHEN UserID = ? THEN 'Reporter'
+                                    WHEN UserID = ? THEN 'Offender'
+                                    ELSE 'other'
+                                END
+                            ) AS ConvType,
+                            pm.Date
+                       FROM reportsv2_conversations AS rc
+                       JOIN staff_pm_conversations AS pm ON pm.ID = rc.ConvID
+                  LEFT JOIN users AS u ON u.ID = pm.UserID
+                      WHERE ReportID = ?
+                   ORDER BY pm.Date ASC",
+                    [$ReporterID, $UploaderID, $ReportID]
+                )->fetchAll(\PDO::FETCH_BOTH);
+                $conversationCount = $master->db->foundRows();
 
-                if (count($Conversations)>0) {
+                if ($conversationCount > 0) {
                 ?>
                     <tr class="rowa">
                         <td colspan="5" style="border-right: none">
@@ -620,27 +668,32 @@ if (count($Reports) == 0) {
                                                 <option id="first_common_response<?= $ReportID ?>">Select a message</option>
                                                 <?php
                                                 // List common responses
-                                                $DB->query("SELECT ID, Name FROM staff_pm_responses");
-                                                while (list($crID, $crName) = $DB->next_record()) {
+                                                $staffPMs = $master->db->rawQuery(
+                                                    "SELECT ID,
+                                                            Name
+                                                       FROM staff_pm_responses"
+                                                )->fetchAll(\PDO::FETCH_NUM);
+                                                foreach ($staffPMs as $staffPM) {
+                                                    list($crID, $crName) = $staffPM;
                                                     ?>
                                                     <option value="<?= $crID ?>"><?= $crName ?></option>
                                                 <?php  } ?>
                                             </select>
                                             <input type="button" value="Set message" onClick="Set_Message(<?=$ReportID?>);" />
-                                            <input type="button" value="Create new / Edit" onClick="location.href='staffpm.php?action=responses&convid=<?= $ConvID ?>'" />
+                                            <input type="button" value="Create new / Edit" onClick="location.href='/staffpm.php?action=responses&convid=<?=($ConvID ?? 0)?>'" />
                                         </div>
                                     </div>
                                         <div id="quickpost<?= $ReportID ?>">
 
                                             <input type="hidden" name="prependtitle" value="Staff PM - " />
 
-                                            <label for="subject"><h3>Subject</h3></label>
-                                            <input class="long" type="text" name="subject" id="subject<?= $ReportID ?>" value="<?= display_str($Subject) ?>" />
+                                            <label for="subject<?= $ReportID ?>"><h3>Subject</h3></label>
+                                            <input class="long" type="text" name="subject" id="subject<?= $ReportID ?>" value="<?= display_str($Subject ?? '') ?>" />
                                             <br />
 
-                                            <label for="message"><h3>Message</h3></label>
-                                            <?php  $Text->display_bbcode_assistant("message$ReportID"); ?>
-                                            <textarea rows="6" class="long" name="message" id="message<?= $ReportID ?>"><?= display_str($Message) ?></textarea>
+                                            <label for="message<?= $ReportID ?>"><h3>Message</h3></label>
+                                            <?php  $bbCode->display_bbcode_assistant("message$ReportID"); ?>
+                                            <textarea rows="6" class="long" name="message" id="message<?= $ReportID ?>"><?= display_str($Message ?? '') ?></textarea>
                                             <br />
 
                                         </div>
@@ -677,7 +730,7 @@ if (count($Reports) == 0) {
                         <tr>
                             <td class="label">Log Message</td>
                             <td colspan="3">
-                                <?=$LogMessage?>
+                                <?=$bbCode->full_format($LogMessage)?>
                             </td>
                         </tr>
             <?php  if ($GroupID) { ?>
@@ -688,20 +741,29 @@ if (count($Reports) == 0) {
                         </tr>
             <?php 	}
             // get the conversations
-                $Conversations = array();
-                $DB->query("SELECT rc.ConvID, pm.UserID, um.Username,
-                                (CASE WHEN UserID='$ReporterID' THEN 'Reporter'
-                                      WHEN UserID='$UploaderID' THEN 'Offender'
-                                      ELSE 'other'
-                                 END) AS ConvType, pm.Date
-                                FROM reportsv2_conversations AS rc
-                                JOIN staff_pm_conversations AS pm ON pm.ID=rc.ConvID
-                                LEFT JOIN users_main AS um ON um.ID=pm.UserID
-                            WHERE ReportID=" . $ReportID . "
-                                ORDER BY pm.Date ASC");
-                $Conversations = $DB->to_array();
+                $Conversations = $master->db->rawQuery(
+                    "SELECT rc.ConvID,
+                            pm.UserID,
+                            u.Username,
+                            (
+                                CASE
+                                    WHEN UserID = ? THEN 'Reporter'
+                                    WHEN UserID = ? THEN 'Offender'
+                                    ELSE 'other'
+                                END
+                            ) AS ConvType,
+                            pm.Date
+                       FROM reportsv2_conversations AS rc
+                       JOIN staff_pm_conversations AS pm ON pm.ID = rc.ConvID
+                  LEFT JOIN users AS u ON u.ID = pm.UserID
+                      WHERE ReportID = ?
+                   ORDER BY pm.Date ASC",
+                    [$ReporterID, $UploaderID, $ReportID]
+                );
 
-                if (count($Conversations)>0) {
+                $conversationCount = $master->db->foundRows();
+
+                if ($conversationCount > 0) {
                 ?>
                     <tr class="rowa">
                         <td colspan="5" style="border-right: none">
@@ -729,7 +791,11 @@ if (count($Reports) == 0) {
                 </form>
                 <br />
             </div>
-            <script type="text/javascript">Load('<?=$ReportID?>');</script>
+            <script type="text/javascript">
+                document.addEventListener('LuminanceLoaded', function() {
+                    Load('<?=$ReportID?>');
+                });
+            </script>
         <?php
         }
     }
@@ -737,7 +803,7 @@ if (count($Reports) == 0) {
 ?>
 </div>
 <div class="linkbox">
-    <?=$PageLinks?>
+    <?=$Pages?>
 </div>
 </div>
 <?php

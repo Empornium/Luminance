@@ -1,7 +1,7 @@
 <?php
-$P = db_array($_REQUEST);
+$P = $_REQUEST;
 enforce_login();
-if (!empty($_REQUEST['friendid']) && !is_number($_REQUEST['friendid'])) {
+if (!empty($_REQUEST['friendid']) && !is_integer_string($_REQUEST['friendid'])) {
     error(404);
 }
 
@@ -19,11 +19,8 @@ if (!empty($_REQUEST['action'])) {
             authorize();
             include(SERVER_ROOT.'/Legacy/sections/friends/comment.php');
             break;
-        case 'whois':
-            include(SERVER_ROOT.'/Legacy/sections/friends/whois.php');
-            break;
         case 'Contact':
-            header('Location: inbox.php?action=compose&to='.$_POST['friendid']);
+            header('Location: /user/'.$_POST['friendid'].'/inbox/compose');
             break;
         default :
             error(404);

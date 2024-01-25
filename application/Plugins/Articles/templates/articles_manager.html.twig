@@ -1,0 +1,88 @@
+{% extends "core/private_page.html.twig" %}
+{% import "@Articles/list.html.twig" as list %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    Manage articles
+{% endblock %}
+
+{% block main_content %}
+    <div id="quickreplypreview">
+        <div id="contentpreview" class="preview_content" style="text-align:left;"></div>
+    </div>
+    {% if article is not null %}
+        <form  id="quickpostform" action="/articles/edit" method="post">
+    {% else %}
+        <form  id="quickpostform" action="/articles/create" method="post">
+    {% endif %}
+        <div class="head">{{ article is null ? "New Article" : "Edit Article : #{article.Title}" }}</div>
+        <div class="box pad">
+            <div id="quickreplytext">
+                {% if article is not null %}
+                    <input type="hidden" name="token" value="{{ secretary.getToken('article.edit') }}" />
+                    <input type="hidden" name="id" value="{{ article.ID }}" />
+                {% else %}
+                    <input type="hidden" name="token" value="{{ secretary.getToken('article.create') }}" />
+                {% endif %}
+                <div style="display:inline-block;margin-right:20px;vertical-align: top;">
+                    <h3>Topic ID</h3>
+                    <input type="text" name="topicid" value="{{ article.TopicID }}" />
+                </div>
+                <div style="display:inline-block;margin-right:20px;vertical-align: top;">
+                    <h3>Permission Level</h3>
+                    <select name="level">
+                        <option value="0" {{ article.MinClass<500 ? 'selected="selected"' }}>All Users</option>
+                        {% if staffClass >= 500 %}
+                            <option value="500" {{ article.MinClass==500 ? 'selected="selected"' }}>Staff &amp; FLS</option>
+                        {% endif %}
+                        {% if staffClass >= 600 %}
+                            <option value="600" {{ article.MinClass==600 ? 'selected="selected"' }}>Admins</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <div style="display:inline-block;margin-right:20px;vertical-align: top;">
+                    <h3>Category</h3>
+                    <select name="category">
+                        {% for key, category in articleCats %} as $Key => $Value) { ?>
+                            <option value="{{ key }}" {{ article.Category == key ? 'selected="selected"' }}>{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="display:inline-block;margin-right:20px;vertical-align: top;">
+                    <h3>Sub-Category</h3>
+                    <select name="subcat">
+                        {% for key, subCategory in subCats %} as $Key => $Value) { ?>
+                            <option value="{{ key }}" {{ article.SubCat == key ? 'selected="selected"' }}>{{ subCategory }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="display:inline-block;">
+                    <ul>
+                        <li><strong>Rules/Tutorials</strong> appears in the rules/help section</li>
+                        <li><strong>Hidden</strong> used for content on other site pages<br/>(don't delete hidden content without being sure the topic is not needed)</li>
+                    </ul>
+                </div>
+                <h3>Title</h3>
+                <input type="text" name="title" class="long" value="{{ article.Title }}" />
+                <h3>Description</h3>
+                <input type="text" name="description" class="long" value="{{ article.Description }}" />
+                <br />
+                <h3>Body</h3>
+                  &nbsp; special article tags allowed: &nbsp; [whitelist] &nbsp; [clientlist] &nbsp; [ratiolist] &nbsp; [dnulist]
+                  {{ bbcode.display_bbcode_assistant('textbody', get_permissions_advtags(ActiveUser.ID, ActiveUser.legacy.CustomPermissions)) }}
+                  <textarea id="textbody" name="body" class="long" rows="15">{{ article.Body }}</textarea>
+            </div>
+            <br />
+            <div class="center">
+                <input id="post_preview" type="button" value="Preview" onclick="if (this.preview) {Edit_Article();} else {Preview_Article();}" />
+                <input type="submit" value="{{ request.getGetString('action') == 'articles' ? 'Create new article' : 'Save changes' }}" />
+            </div>
+        </div>
+    </form>
+    <br /><br />
+    <h2>Other articles</h2>
+    {{ list.print(master, articles, staffClass, articleCats, subCats, article.SubCat) }}
+{% endblock %}

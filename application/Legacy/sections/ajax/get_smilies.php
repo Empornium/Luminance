@@ -7,14 +7,14 @@
 // set the output to be served as xml
 header("Content-type: text/xml");
 
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
 $indexfrom = $_REQUEST['indexfrom'];
-if ( !is_number($indexfrom)) { $indexfrom = 0; }
+if ( !is_integer_string($indexfrom)) { $indexfrom = 0; }
 $indexto = -1;
 if (isset($_REQUEST['indexto'])) {
     $indexto = $_REQUEST['indexto'];
-    if ( !is_number($indexto)) { $indexto = -1; }
+    if ( !is_integer_string($indexto)) { $indexto = -1; }
 }
 
-$Text->draw_smilies_from_XML($indexfrom, $indexto);
+$bbCode->draw_smilies_from_XML($indexfrom, $indexto);

@@ -3,10 +3,27 @@ namespace Luminance\Entities;
 
 use Luminance\Core\Entity;
 
+/**
+ * Session Entity representing rows from the `sessions` DB table.
+ */
 class Session extends Entity {
 
+    /**
+     * $table contains a string identifying the DB table this entity is related to.
+     * @var string
+     *
+     * @access public
+     * @static
+     */
     public static $table = 'sessions';
 
+    /**
+     * DB rows and their respective parameters.
+     * @var array
+     *
+     * @access public
+     * @static
+     */
     public static $properties = [
         'ID'       => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'primary' => true, 'auto_increment' => true ],
         'IPID'     => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'nullable' => false],
@@ -18,6 +35,13 @@ class Session extends Entity {
         'Updated'  => [ 'type' => 'timestamp', 'nullable' => true ],
     ];
 
+    /**
+     * DB indexes.
+     * @var array
+     *
+     * @access public
+     * @static
+     */
     public static $indexes = [
         'UserID'   => [ 'columns' => [ 'UserID' ] ],
         'ClientID' => [ 'columns' => [ 'ClientID' ] ],
@@ -31,4 +55,14 @@ class Session extends Entity {
     const IP_LOCKED      = 1 << 1;
     const TWO_FACTOR     = 1 << 2;
     const LEGACY         = 1 << 7;
+
+    /**
+     * isTwoFactor Returns wether this session object has a TWO_FACTOR flag set.
+     * @return bool    True or false.
+     *
+     * @access public
+     */
+    public function isTwoFactor() {
+        return $this->getFlag(self::TWO_FACTOR);
+    }
 }

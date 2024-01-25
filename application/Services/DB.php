@@ -3,97 +3,108 @@ namespace Luminance\Services;
 
 use Luminance\Core\Master;
 use Luminance\Core\Service;
-use Luminance\Core\Entity;
+
 use Luminance\Errors\SystemError;
-use Luminance\Services\DB\LegacyWrapper;
 
-function db_is_number($Str) {
-    $Return = true;
-    if ($Str < 0) {
-        $Return = false;
+use Luminance\Services\Debug;
+
+function dbIsIntegerString($str) {
+    $return = true;
+    if ($str < 0) {
+        $return = false;
     }
-    // We're converting input to a int, then string and comparing to original
-    $Return = ($Str == strval(intval($Str)) ? true : false);
+    # We're converting input to a int, then string and comparing to original
+    $return = ($str === strval(intval($str)) ? true : false);
 
-    return $Return;
+    return $return;
 }
 
-function db_is_utf8($Str) {
+function dbIsUTF8($str) {
     return preg_match('%^(?:
-        [\x09\x0A\x0D\x20-\x7E]			 // ASCII
-        | [\xC2-\xDF][\x80-\xBF]			// non-overlong 2-byte
-        | \xE0[\xA0-\xBF][\x80-\xBF]		// excluding overlongs
-        | [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2} // straight 3-byte
-        | \xED[\x80-\x9F][\x80-\xBF]		// excluding surrogates
-        | \xF0[\x90-\xBF][\x80-\xBF]{2}	 // planes 1-3
-        | [\xF1-\xF3][\x80-\xBF]{3}		 // planes 4-15
-        | \xF4[\x80-\x8F][\x80-\xBF]{2}	 // plane 16
-        )*$%xs', $Str);
+        [\x09\x0A\x0D\x20-\x7E]			        # ASCII
+        | [\xC2-\xDF][\x80-\xBF]			      # non-overlong 2-byte
+        | \xE0[\xA0-\xBF][\x80-\xBF]		    # excluding overlongs
+        | [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2} # straight 3-byte
+        | \xED[\x80-\x9F][\x80-\xBF]		    # excluding surrogates
+        | \xF0[\x90-\xBF][\x80-\xBF]{2}	    # planes 1-3
+        | [\xF1-\xF3][\x80-\xBF]{3}		      # planes 4-15
+        | \xF4[\x80-\x8F][\x80-\xBF]{2}	    # plane 16
+        )*$%xs', $str);
 }
 
-function db_make_utf8($Str) {
-    if ($Str != "") {
-        if (db_is_utf8($Str)) {
-            $Encoding = "UTF-8";
+function dbMakeUTF8($str) {
+    if (!($str === '')) {
+        if (dbIsUTF8($str)) {
+            $encoding = 'UTF-8';
         }
-        if (empty($Encoding)) {
-            $Encoding = mb_detect_encoding($Str, 'UTF-8, ISO-8859-1');
+        if (empty($encoding)) {
+            $encoding = mb_detect_encoding($str, 'UTF-8, ISO-8859-1');
         }
-        if (empty($Encoding)) {
-            $Encoding = "ISO-8859-1";
+        if (empty($encoding)) {
+            $encoding = 'ISO-8859-1';
         }
-        if ($Encoding == "UTF-8") {
-            return $Str;
+        if ($encoding === 'UTF-8') {
+            return $str;
         } else {
-            return @mb_convert_encoding($Str, "UTF-8", $Encoding);
+            return @mb_convert_encoding($str, 'UTF-8', $encoding);
         }
     }
 }
 
-function db_display_str($Str) {
-    if ($Str === null || $Str === false || is_array($Str)) {
+function dbDisplayStr($str) {
+    if ($str === null || $str === false || is_array($str)) {
         return '';
     }
-    if ($Str != '' && !db_is_number($Str)) {
-        $Str = db_make_utf8($Str);
-        $Str = mb_convert_encoding($Str, "HTML-ENTITIES", "UTF-8");
-        $Str = preg_replace("/&(?![A-Za-z]{0,4}\w{2,3};|#[0-9]{2,5};)/m", "&amp;", $Str);
+    if (!($str === '') && !dbIsIntegerString($str)) {
+        $str = dbMakeUTF8($str);
+        $str = htmlspecialchars_decode(htmlentities($str));
+        $str = preg_replace("/&(?![A-Za-z]{0,4}\w{2,3};|#[0-9]{2,6};)/m", '&amp;', $str);
 
-        $Replace = array(
+        $replace = [
             "'", '"', "<", ">",
-            '&#128;', '&#130;', '&#131;', '&#132;', '&#133;', '&#134;', '&#135;', '&#136;', '&#137;', '&#138;', '&#139;', '&#140;', '&#142;', '&#145;', '&#146;', '&#147;', '&#148;', '&#149;', '&#150;', '&#151;', '&#152;', '&#153;', '&#154;', '&#155;', '&#156;', '&#158;', '&#159;'
-        );
+            '&#128;', '&#130;', '&#131;', '&#132;', '&#133;', '&#134;', '&#135;',
+            '&#136;', '&#137;', '&#138;', '&#139;', '&#140;', '&#142;', '&#145;',
+            '&#146;', '&#147;', '&#148;', '&#149;', '&#150;', '&#151;', '&#152;',
+            '&#153;', '&#154;', '&#155;', '&#156;', '&#158;', '&#159;'
+        ];
 
-        $With = array(
+        $with = [
             '&#39;', '&quot;', '&lt;', '&gt;',
-            '&#8364;', '&#8218;', '&#402;', '&#8222;', '&#8230;', '&#8224;', '&#8225;', '&#710;', '&#8240;', '&#352;', '&#8249;', '&#338;', '&#381;', '&#8216;', '&#8217;', '&#8220;', '&#8221;', '&#8226;', '&#8211;', '&#8212;', '&#732;', '&#8482;', '&#353;', '&#8250;', '&#339;', '&#382;', '&#376;'
-        );
+            '&#8364;', '&#8218;', '&#402;', '&#8222;', '&#8230;', '&#8224;', '&#8225;',
+            '&#710;', '&#8240;', '&#352;', '&#8249;', '&#338;', '&#381;', '&#8216;',
+            '&#8217;', '&#8220;', '&#8221;', '&#8226;', '&#8211;', '&#8212;', '&#732;',
+            '&#8482;', '&#353;', '&#8250;', '&#339;', '&#382;', '&#376;'
+        ];
 
-        $Str = str_replace($Replace, $With, $Str);
+        $str = str_replace($replace, $with, $str);
     }
 
-    return $Str;
+    return $str;
 }
 
-function db_display_array($Array, $Escape = array()) {
-    foreach ($Array as $Key => $Val) {
-        if ((!is_array($Escape) && $Escape == true) || !in_array($Key, $Escape)) {
-            $Array[$Key] = db_display_str($Val);
+function dbDisplayArray($array, $escape = []) {
+    foreach ($array as $key => $val) {
+        if ((!is_array($escape) && $escape === true) || !in_array($key, $escape)) {
+            $array[$key] = dbDisplayStr($val);
         }
     }
 
-    return $Array;
+    return $array;
 }
 
 class DB extends Service {
 
     public $pdo;
-    public $Queries = array();
-    public $Time = 0.0;
-    protected $enable_debug = true;
+    public $queries = [];
+    public $time = 0.0;
+
+    public function __construct(Master $master) {
+        parent::__construct($master);
+        $this->connect();
+    }
 
     public function connect() {
-        if (is_null($this->pdo)) {
+        if (!($this->pdo instanceof \PDO)) {
             # Test for presence of PDO driver
             if (!(extension_loaded('mysqlnd') || extension_loaded('mysql'))) {
                 throw new SystemError(null, 'MySQL/MariaDB driver not found, please install php-mysqlnd');
@@ -105,6 +116,7 @@ class DB extends Service {
                 \PDO::ATTR_PERSISTENT => $dbc->persistent_connections,
                 \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
                 \PDO::ATTR_EMULATE_PREPARES => false,
+                \PDO::MYSQL_ATTR_LOCAL_INFILE => true,
             ];
 
             if ($dbc->strict_mode) {
@@ -115,20 +127,12 @@ class DB extends Service {
 
             if (defined('\PDO::MYSQL_ATTR_MAX_BUFFER_SIZE')) {
                 $options[\PDO::MYSQL_ATTR_MAX_BUFFER_SIZE] = $dbc->buffer_size;
+                $options[\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
             }
 
-
             # TODO: specify port & socket in case they differ from default
-            $this->pdo = new \PDO("mysql:host={$dbc->host};dbname={$dbc->db}", $dbc->username, $dbc->password, $options);
+            $this->pdo = new \PDO("mysql:host={$dbc->host};dbname={$dbc->db};port={$dbc->port}", $dbc->username, $dbc->password, $options);
         }
-    }
-
-    public function enable_debug() {
-        $this->enable_debug = true;
-    }
-
-    public function disable_debug() {
-        $this->enable_debug = false;
     }
 
     /**
@@ -141,15 +145,20 @@ class DB extends Service {
      * @return string The interpolated query
      */
     public static function interpolateQuery($query, $params) {
-        $keys = array();
+        $keys = [];
 
         # Ensure $params is an array using a blind cast
         $params = (array) $params;
 
         # build a regular expression for each parameter
-        foreach ($params as $key => $value) {
+        foreach ($params as $key => &$value) {
+            if (is_null($value)) {
+                $value = 'NULL';
+            } else {
+                $value = (string) $value;
+            }
             if (is_string($key)) {
-                $keys[] = '/'.$key.'/';
+                $keys[] = (string)'/'.$key.'/';
             } else {
                 $keys[] = '/[?]/';
             }
@@ -158,74 +167,81 @@ class DB extends Service {
         return $query;
     }
 
-    public function raw_query($sql, $parameters = array()) {
-        $QueryStartTime=microtime(true);
-        $this->connect();
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($parameters);
-        $QueryEndTime=microtime(true);
-        if ($this->enable_debug) {
-            if (count($this->Queries) < 200) {
-                $this->Queries[]=[db_display_str(self::interpolateQuery($sql, $parameters)),($QueryEndTime-$QueryStartTime)*1000];
+    public function rawQuery($sql, $parameters = []) {
+        $queryStartTime=microtime(true);
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $this->execute($stmt, $parameters, 6);
+        } catch (\PDOException $e) {
+            $message = "Failed query ({$e->getMessage()}): " . PHP_EOL .
+            self::interpolateQuery($sql, $parameters) . PHP_EOL;
+            throw new SystemError($message);
+        }
+        $queryEndTime=microtime(true);
+        if (Debug::getEnabled()) {
+            if (count($this->queries) < 200) {
+                $this->queries[] = [
+                    'query'     => dbDisplayStr(self::interpolateQuery($sql, $parameters)),
+                    'microtime' => ($queryEndTime-$queryStartTime)*1000,
+                ];
             }
-            $this->Time+=($QueryEndTime-$QueryStartTime)*1000;
+            $this->time+=($queryEndTime-$queryStartTime)*1000;
         }
         return $stmt;
     }
 
-    public function legacy_query($sql) {
-        try {
-            $QueryStartTime=microtime(true);
-            $this->connect();
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute();
-            $QueryEndTime=microtime(true);
-            if ($this->enable_debug) {
-                if (count($this->Queries) < 200) {
-                    $this->Queries[]=array(db_display_str($sql),($QueryEndTime-$QueryStartTime)*1000);
+    public function execute(&$stmt, $parameters, int $retries = 0) {
+        for ($i=0; $i<=$retries; $i++) {
+            try {
+                $stmt->execute($parameters);
+            } catch (\PDOException $e) {
+                if (!in_array($e->errorInfo[1], [1213, 1205])) {
+                    throw $e;
                 }
-                $this->Time+=($QueryEndTime-$QueryStartTime)*1000;
+                trigger_error("Database deadlock, attempt $i");
+                sleep($i*rand(2, 5)); # Wait longer as attempts increase
+                continue;
             }
-            $wrapper = new LegacyWrapper($stmt);
-        } catch (PDOException $pdo_except) {
-            error_log("Failed query! \n".$sql);
-            throw $pdo_except;
+            break;
         }
-        return $wrapper;
     }
 
-    public function last_insert_id() {
+    public function lastInsertID() {
         return $this->pdo->lastInsertId();
     }
 
-    public function found_rows() {
+    public function foundRows() {
         $count = $this->pdo->query('SELECT FOUND_ROWS()')->fetchColumn();
         return $count;
     }
 
-    public function in_transaction() {
+    public function inTransaction() {
         return $this->pdo->inTransaction();
     }
 
-    public function begin_transaction() {
+    public function beginTransaction() {
         return $this->pdo->beginTransaction();
     }
 
-    public function commit_transaction() {
+    public function commit() {
         return $this->pdo->commit();
     }
 
-    public function rollback_transaction() {
+    public function rollback() {
         return $this->pdo->rollBack();
     }
 
-    // a helper function to build a param array and param String for use in an IN ( ) clause
+    public function exec($query) {
+        return $this->pdo->exec($query);
+    }
+
+    # a helper function to build a param array and param String for use in an IN ( ) clause
     public function bindParamArray($prefix, $values, &$params) {
         $str = "";
         foreach ($values as $index => $value) {
-            // build named param string in form ':id0,:id1',
+            # build named param string in form ':id0,:id1',
             $str .= ":".$prefix.$index.",";
-            // $params are returned in form [':id0'=>$val[0], ':id1'=>$val[1] ]
+            # $params are returned in form [':id0'=>$val[0], ':id1'=>$val[1] ]
             $params[$prefix.$index] = $value;
         }
         return rtrim($str, ",");

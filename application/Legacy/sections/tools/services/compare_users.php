@@ -31,35 +31,36 @@ if (empty($UserA['ID']) || empty($UserB['ID'])) {
     error('Unable to find one of the given users. Please check the IDs.');
 }
 
-$UserA['Level'] = $Classes[$UserA['PermissionID']]['Level'];
-$UserB['Level'] = $Classes[$UserB['PermissionID']]['Level'];
-$CurUserLevel   = $LoggedUser['Class'];
+$UserA['Level'] = $classes[$UserA['PermissionID']]['Level'];
+$UserB['Level'] = $classes[$UserB['PermissionID']]['Level'];
+$CurUserLevel   = $activeUser['Class'];
 
 // Staff cannot compare users above their rank
 if ($CurUserLevel < $UserA['Level'] || $CurUserLevel < $UserB['Level']) {
     error('You cannot compare users above your rank.');
 }
 
-require SERVER_ROOT.'/common/functions.php';
-
 # Shared E-Mails
-$UserA['Emails'] = $master->db->raw_query("SELECT Address FROM emails WHERE UserID = :UserID", [':UserID' => $UserA['ID']])->fetchAll(PDO::FETCH_COLUMN);
-$UserB['Emails'] = $master->db->raw_query("SELECT Address FROM emails WHERE UserID = :UserID", [':UserID' => $UserB['ID']])->fetchAll(PDO::FETCH_COLUMN);
+$UserA['Emails'] = $master->db->rawQuery("SELECT Address FROM emails WHERE UserID = :UserID", [':UserID' => $UserA['ID']])->fetchAll(PDO::FETCH_COLUMN);
+$UserB['Emails'] = $master->db->rawQuery("SELECT Address FROM emails WHERE UserID = :UserID", [':UserID' => $UserB['ID']])->fetchAll(PDO::FETCH_COLUMN);
 
 # Shared IPs
-$SharedIPs = $master->db->raw_query("SELECT uh.IP
-                                     FROM users_history_ips AS uh
-                                     INNER JOIN (SELECT IP FROM users_history_ips WHERE UserID = :UserA_ID) AS me ON uh.IP = me.IP
-                                     WHERE uh.IP != '127.0.0.1' AND uh.IP !='' AND uh.UserID = :UserB_ID
-                                     GROUP BY uh.IP",
-                                     [':UserA_ID' => $UserA['ID'], ':UserB_ID' => $UserB['ID']])->fetchAll(PDO::FETCH_COLUMN);
+$SharedIPs = $master->db->rawQuery(
+    "SELECT INET6_NTOA(ips.StartAddress)
+       FROM users_history_ips AS uh
+       JOIN ips ON uh.IPID=ips.ID
+ INNER JOIN (SELECT IPID FROM users_history_ips WHERE UserID = ?) AS me ON uh.IPID = me.IPID
+      WHERE uh.IPID IS NOT NULL AND uh.UserID = ?
+   GROUP BY uh.IPID",
+    [$UserA['ID'], $UserB['ID']]
+)->fetchAll(PDO::FETCH_COLUMN);
 
 # Shared Torrents
 // Users' downloads count
-$UserA['Downloads'] = $master->db->raw_query("SELECT COUNT(*) FROM users_downloads WHERE UserID = :UserID", [':UserID' => $UserA['ID']])->fetch(PDO::FETCH_COLUMN);
-$UserB['Downloads'] = $master->db->raw_query("SELECT COUNT(*) FROM users_downloads WHERE UserID = :UserID", [':UserID' => $UserB['ID']])->fetch(PDO::FETCH_COLUMN);
+$UserA['Downloads'] = $master->db->rawQuery("SELECT COUNT(*) FROM users_downloads WHERE UserID = :UserID", [':UserID' => $UserA['ID']])->fetch(PDO::FETCH_COLUMN);
+$UserB['Downloads'] = $master->db->rawQuery("SELECT COUNT(*) FROM users_downloads WHERE UserID = :UserID", [':UserID' => $UserB['ID']])->fetch(PDO::FETCH_COLUMN);
 
-$SharedTorrents = $master->db->raw_query("SELECT ud.TorrentID AS ID, tg.Name, t.Size, t.Time
+$SharedTorrents = $master->db->rawQuery("SELECT ud.TorrentID AS ID, tg.Name, t.Size, t.Time
                                           FROM users_downloads AS ud
                                           INNER JOIN (SELECT TorrentID FROM users_downloads WHERE UserID = :UserA_ID) AS ud2 ON ud.TorrentID = ud2.TorrentID
                                           LEFT JOIN torrents_group AS tg ON ud.TorrentID = tg.ID
@@ -69,14 +70,14 @@ $SharedTorrents = $master->db->raw_query("SELECT ud.TorrentID AS ID, tg.Name, t.
                                           [':UserA_ID' => $UserA['ID'], ':UserB_ID' => $UserB['ID']])->fetchAll(PDO::FETCH_ASSOC);
 
 # Shared Categories
-$UserA['CategoriesAll'] = $master->db->raw_query("SELECT NewCategoryID
+$UserA['CategoriesAll'] = $master->db->rawQuery("SELECT NewCategoryID
                                                FROM users_downloads AS ud
                                                LEFT JOIN torrents_group AS tg ON ud.TorrentID = tg.ID
                                                LEFT JOIN torrents AS t ON tg.ID = t.GroupID
                                                WHERE ud.UserID = :UserID AND NewCategoryID IS NOT NULL",
                                                [':UserID' => $UserA['ID']])->fetchAll(PDO::FETCH_COLUMN);
 
-$UserB['CategoriesAll'] = $master->db->raw_query("SELECT NewCategoryID
+$UserB['CategoriesAll'] = $master->db->rawQuery("SELECT NewCategoryID
                                                FROM users_downloads AS ud
                                                LEFT JOIN torrents_group AS tg ON ud.TorrentID = tg.ID
                                                LEFT JOIN torrents AS t ON tg.ID = t.GroupID
@@ -98,14 +99,14 @@ $SharedCategories = array_intersect($UserA['CategoriesUnique'], $UserB['Categori
 // Set how "rare" a tag should be
 $MaxUses = isset($_GET['maxuses']) ? (int) $_GET['maxuses'] : 50;
 
-$UserA['RareTagsAll'] = $master->db->raw_query("SELECT t.Name
+$UserA['RareTagsAll'] = $master->db->rawQuery("SELECT t.Name
                                            FROM tags AS t
                                            INNER JOIN torrents_tags AS tt ON tt.TagID = t.ID
                                            INNER JOIN users_downloads AS ud ON ud.TorrentID = tt.GroupID
                                            WHERE t.Uses <= :MaxUses AND ud.UserID = :UserID",
                                            [':MaxUses' => $MaxUses, ':UserID' => $UserA['ID']])->fetchAll(PDO::FETCH_COLUMN);
 
-$UserB['RareTagsAll'] = $master->db->raw_query("SELECT t.Name
+$UserB['RareTagsAll'] = $master->db->rawQuery("SELECT t.Name
                                            FROM tags AS t
                                            INNER JOIN torrents_tags AS tt ON tt.TagID = t.ID
                                            INNER JOIN users_downloads AS ud ON ud.TorrentID = tt.GroupID
@@ -122,6 +123,22 @@ $UserB['RareTagsCount'] = array_count_values($UserB['RareTagsAll']);
 
 // Users' shared rare tags
 $SharedRareTags = array_intersect($UserA['RareTagsUnique'], $UserB['RareTagsUnique']);
+
+//Users' Agent & Browser Info
+$UserA['Session'] = $master->db->rawQuery("SELECT ca.String
+                                        FROM sessions AS s
+                                        LEFT JOIN clients AS c ON s.ClientID=c.ID
+                                        LEFT JOIN client_user_agents AS ca ON c.ClientUserAgentID=ca.ID
+                                        LEFT JOIN client_screens AS cs ON c.ClientScreenID=cs.ID
+                                        WHERE s.UserID=:userid", [':userid' => $UserA['ID']])->fetchColumn();
+
+$UserB['Session'] = $master->db->rawQuery("SELECT ca.String
+                                        FROM sessions AS s
+                                        LEFT JOIN clients AS c ON s.ClientID=c.ID
+                                        LEFT JOIN client_user_agents AS ca ON c.ClientUserAgentID=ca.ID
+                                        LEFT JOIN client_screens AS cs ON c.ClientScreenID=cs.ID
+                                        WHERE s.UserID=:userid", [':userid' => $UserB['ID']])->fetchColumn();
+
 
 show_header('Users comparison'); ?>
 
@@ -146,14 +163,37 @@ show_header('Users comparison'); ?>
             </table>
     </div>
 
+    <div class="head">User Agent</div>
+    <div class="box pad shadow">
+        <table>
+            <thead>
+                    <tr>
+                        <th><?= display_str($UserA['Username']) ?></th>
+                        <th><?= display_str($UserB['Username']) ?></th>
+                    </tr>
+                </thead>
+            <tbody>
+                <tr>
+                    <th><?= display_str($UserA['Session'])?> </th>
+                    <th><?= display_str($UserB['Session'])?> </th>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
     <div class="head">Shared IPs (<?= count($SharedIPs) ?>)</div>
     <div class="box pad shadow">
         <?php if (empty($SharedIPs)): ?>
             <p>These users have never shared the same IP.</p>
         <?php else: ?>
-            <?php foreach($SharedIPs as $SharedIP): ?>
-                <?= display_ip($SharedIP, geoip($SharedIP)) ?><br>
+            <?php if (check_perms('users_view_ips')) { ?>
+            <?php foreach ($SharedIPs as $SharedIP): ?>
+                <?= display_ip($SharedIP) ?><br>
             <?php endforeach; ?>
+            <?php } else { ?>
+                <p>These users share <?= count($SharedIPs) ?> addresses.<br>
+                We're unable to render the addresses as you're not authorized to view IPs</p>
+            <?php } ?>
         <?php endif; ?>
     </div>
 
@@ -182,7 +222,7 @@ show_header('Users comparison'); ?>
                         <td>Time</td>
                         <td>Size</td>
                     </tr>
-                    <?php foreach($SharedTorrents as $SharedTorrent): ?>
+                    <?php foreach ($SharedTorrents as $SharedTorrent): ?>
                     <tr class="torrent">
                         <td class="center cats_col"><div title="CATEGORY"></div></td>
                         <td><a href="/torrents.php?id=<?= $SharedTorrent['ID'] ?>"><?= display_str($SharedTorrent['Name']) ?></a></td>
@@ -207,10 +247,10 @@ show_header('Users comparison'); ?>
                     <td><?= display_str($UserA['Username']) ?>'s uses</td>
                     <td><?= display_str($UserB['Username']) ?>'s uses</td>
                 </tr>
-                <?php foreach($SharedCategories as $SharedCategory): ?>
+                <?php foreach ($SharedCategories as $SharedCategory): ?>
                     <tr class="torrent">
-                        <td><img src="static/common/caticons/<?= $NewCategories[$SharedCategory]['image'] ?>" /></td>
-                        <td><?= display_str($NewCategories[$SharedCategory]['name']) ?></td>
+                        <td><img src="/static/common/caticons/<?= $newCategories[$SharedCategory]['image'] ?>" /></td>
+                        <td><?= display_str($newCategories[$SharedCategory]['name']) ?></td>
                         <td class="nobr"><?= (int) $UserA['CategoriesCount'][$SharedCategory] ?></td>
                         <td class="nobr"><?= (int) $UserB['CategoriesCount'][$SharedCategory] ?></td>
                     </tr>
@@ -231,7 +271,7 @@ show_header('Users comparison'); ?>
                     <td><?= display_str($UserA['Username']) ?>'s uses</td>
                     <td><?= display_str($UserB['Username']) ?>'s uses</td>
                 </tr>
-                <?php foreach($SharedRareTags as $SharedRareTag): ?>
+                <?php foreach ($SharedRareTags as $SharedRareTag): ?>
                     <tr class="torrent">
                         <td><?= display_str($SharedRareTag) ?></td>
                         <td class="nobr"><?= (int) $UserA['RareTagsCount'][$SharedRareTag] ?></td>

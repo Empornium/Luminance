@@ -10,6 +10,8 @@ class Settings extends Service {
     protected $defaults = [
         'main' => [
             'site_name'                => '',
+            'site_short_name'          => '',
+            'site_motto'               => 'Here be Porn',
             'nonssl_site_url'          => '',
             'ssl_site_url'             => '',
             'site_ip'                  => '',
@@ -23,7 +25,8 @@ class Settings extends Service {
             'additional_domains'       => null,
             'internal_urls_regex'      => null,
             'non_anon_domains'         => null,
-            'non_anon_urls_regex'      => null
+            'non_anon_urls_regex'      => null,
+            'site_logo'                => 'styles/public/images/logo.svg'
         ],
         'modes' => [
             'profiler'                 => false
@@ -34,7 +37,8 @@ class Settings extends Service {
         'keys' => [
             'enckey'                   => null,
             'crypto_key'               => null,
-            'rss_hash'                 => null
+            'rss_hash'                 => null,
+            'apcu_prefix'              => null
         ],
         'database' => [
             'host'                     => 'localhost',
@@ -81,7 +85,9 @@ class Settings extends Service {
             'help_url'                 => '',
             'advert_html'              => '',
             'image_proxy_url'          => null,
-            'anonymizer_url'           => 'http://anonym.to/?'
+            'anonymizer_url'           => 'http://anonym.es/?',
+            'geoip_city'               => false,
+            'geoip_license_key'        => null,
         ],
         'users' => [
             'classes'                  => 'APPRENTICE =2,PERV =3,GOOD_PERV =4,GREAT_PERV =24,DONOR =20,SEXTREME_PERV =5,SMUT_PEDDLER =6,ADMIN =1,SYSOP =15',
@@ -91,11 +97,13 @@ class Settings extends Service {
         'pagination' => [
             'torrent_comments'         => 10,
             'posts'                    => 25,
-            'topics'                   => 50,
+            'threads'                  => 50,
             'torrents'                 => 50,
+            'collages'                 => 25,
             'requests'                 => 25,
             'messages'                 => 25,
-            'log_entries'              => 50
+            'log_entries'              => 50,
+            'reports'                  => 20,
         ],
         'irc' => [
             'nick'                     => '',
@@ -112,7 +120,7 @@ class Settings extends Service {
             'lab_chan'                 => '',
             'status_chan'              => '',
             'nickserv_pass'            => '',
-            'listen_port'              => 51010,
+            'listen_port'              => 6659,
             'listen_address'           => 'localhost'
         ],
         'forums' => [
@@ -121,7 +129,7 @@ class Settings extends Service {
             'title_maxword_length'     => 42,
             'announcement_forum_id'    => 5,
             'staff_forum_id'           => 0,
-            'trash_forum_id'           => 18,
+            'trash_forum_id'           => null,
             'exclude_forums'           => '',
             'forums_reveal_voters'     => '15,21',
             'forums_double_post'       => ''
@@ -142,9 +150,16 @@ class Settings extends Service {
             'page_file'                => null,
             'page_level'               => 200
         ],
+        'bitcoin' => [
+            'auto_generate'            => false,
+            'host'                     => 'localhost',
+            'port'                     => 8332,
+            'username'                 => '',
+            'password'                 => ''
+        ],
     ];
 
-    protected $legacy_constant_names = [
+    protected $legacyConstantNames = [
         'main' => [
             'site_name'                => 'SITE_NAME',
             'nonssl_site_url'          => 'NONSSL_SITE_URL',
@@ -210,7 +225,7 @@ class Settings extends Service {
         'pagination' => [
             'torrent_comments'         => 'TORRENT_COMMENTS_PER_PAGE',
             'posts'                    => 'POSTS_PER_PAGE',
-            'topics'                   => 'TOPICS_PER_PAGE',
+            'threads'                  => 'TOPICS_PER_PAGE',
             'torrents'                 => 'TORRENTS_PER_PAGE',
             'requests'                 => 'REQUESTS_PER_PAGE',
             'messages'                 => 'MESSAGES_PER_PAGE',
@@ -254,89 +269,123 @@ class Settings extends Service {
             'request_approval_size'    => 'REQUEST_APPROVAL_SIZE',
             'request_filler_share'     => 'REQUEST_FILLER_SHARE'
         ],
-
+        'bitcoin' => [
+            'auto_generate'            => 'BTC_LOCAL',
+            'host'                     => 'BTC_HOST',
+            'port'                     => 'BTC_PORT',
+            'username'                 => 'BTC_USER',
+            'password'                 => 'BTC_PASS'
+        ],
     ];
+
+    # for counting filetypes
+    public static $knownFileTypes = [
+        'audio' => [
+            'flac', 'mp3', 'mpa', 'ogg', 'wav', 'wma'
+        ],
+        'video' => [
+            '3gp', 'aaf', 'asf', 'avi', 'divx', 'f4v', 'flv', 'hdmov',
+            'm2v', 'm4v', 'mpeg', 'm1v', 'mkv', 'mov', 'mp4', 'mpg', 'ogv',
+            'qt', 'rm', 'rmvb', 'swf', 'ts', 'vid', 'webm', 'wmv'
+        ],
+        'image' => [
+            'bmp', 'gif', 'jfif', 'jpe', 'jpeg', 'jpg', 'jxl', 'png'
+        ],
+        'disc'  => [
+            'bdmv', 'bup', 'clpi', 'img', 'iso', 'm2ts', 'mds', 'mpls', 'vob'
+        ],
+        'text'  => [
+            'ass', 'azw', 'azw3', 'doc', 'docx', 'epub', 'inf', 'ini', 'js', 'json', 'log', 'mobi', 'nfo', 'opf', 'pdf', 'rtf', 'srt', 'txt'
+        ],
+        'executable'  => [
+            'app', 'bat', 'com', 'exe', 'scr'
+        ],
+        'compressed'  => [
+            '7', '7z', 'gz', 'gzip', 'rar', 'z', 'zip'
+        ],
+    ];
+
 
     protected $settings;
 
     public function __construct(Master $master) {
         parent::__construct($master);
         $this->settings = $this->defaults;
-        $this->settings_file = $this->master->application_path . '/settings.ini';
-        $this->read_settings_file();
-        $this->fill_settings();
+        $this->settingsFile = $this->master->applicationPath . '/settings.ini';
+        $this->readSettingsFile();
+        $this->fillSettings();
     }
 
-    protected function check_cryptoKey() {
+    protected function checkCryptoKey() {
         if (is_null($this->settings['keys']['crypto_key'])) {
             $cryptoKey = bin2hex(openssl_random_pseudo_bytes(16, $strong));
-            if (!$strong) throw new ConfigurationError("Cannot generate strong crypto_key!");
+            if (!($strong === true)) throw new ConfigurationError("Cannot generate strong crypto_key!");
             $this->settings['keys']['crypto_key'] = $cryptoKey;
         }
     }
 
-    protected function read_settings_file() {
-        $filename = $this->settings_file;
+    protected function readSettingsFile() {
+        $filename = $this->settingsFile;
         if (!is_file($filename) || !is_readable($filename)) {
-            // Test for CLI mode, no request object is ready yet though
+            # Test for CLI mode, no request object is ready yet though
             if (php_sapi_name() === "cli") {
                 print_r("CAUTION! No settings file is present, generating new crypto key.\n\n");
-                $this->check_cryptoKey();
+                $this->checkCryptoKey();
                 return;
             } else {
                 throw new ConfigurationError("Unable to read settings file: {$filename}");
             }
         }
-        $file_settings = parse_ini_file($filename, true);
-        foreach ($file_settings as $section_name => $section) {
+        $fileSettings = parse_ini_file($filename, true);
+        foreach ($fileSettings as $sectionName => $section) {
             foreach ($section as $setting => $value) {
-                $this->settings[$section_name][$setting] = $value;
+                $this->settings[$sectionName][$setting] = $value;
             }
         }
     }
 
-    protected function write_settings_file($file_settings) {
-        $filename = $this->settings_file;
+    protected function writeSettingsFile($fileSettings) {
+        $filename = $this->settingsFile;
         if (!is_writable(dirname($filename))) {
             throw new ConfigurationError("Unable to write settings file: {$filename}");
         }
         if (is_file($filename)) {
             throw new ConfigurationError("Settings file: {$filename} already exists!");
         }
-        $settings_file = fopen($filename, "w");
-        fwrite($settings_file, $file_settings);
-        fclose($settings_file);
+        $settingsFile = fopen($filename, "w");
+        fwrite($settingsFile, $fileSettings);
+        fclose($settingsFile);
     }
 
-    public function generateConfig($settings) {
+    public function generateConfig($settings, $compact = true) {
         $this->settings = $this->defaults;
-        foreach ($this->settings as $section_name => $section) {
+        foreach ($this->settings as $sectionName => $section) {
             foreach ($section as $setting => $value) {
-                if (isset($settings[$section_name][$setting]))
-                    $this->settings[$section_name][$setting] = $settings[$section_name][$setting];
+                if (isset($settings[$sectionName][$setting]))
+                    $this->settings[$sectionName][$setting] = $settings[$sectionName][$setting];
             }
         }
-        $this->check_cryptoKey();
-        $this->fill_settings();
+        $this->checkCryptoKey();
+        $this->fillSettings();
         ob_start();
-        $this->print_settings(false, true);
-        $file_settings = ob_get_contents();
+        $this->printSettings(false, $compact);
+        $fileSettings = ob_get_contents();
         ob_end_clean();
-        $this->write_settings_file($file_settings);
+        $this->writeSettingsFile($fileSettings);
     }
 
-    public function print_settings($print_legacy = true, $print_minimal = false) {
+    public function printSettings($printLegacy = true, $printMinimal = false) {
         print("; Settings which don't have to be changed from the default can be left commented\n"
              ."; out or deleted entirely.\n");
 
-        foreach ($this->settings as $section_name => $section) {
+        foreach ($this->settings as $sectionName => $section) {
             $sectionHasContent = false;
             foreach ($section as $setting => $value) {
-                // Filter out constants and defaults
-                if ($value===@$this->defaults[$section_name][$setting] && $print_minimal) continue;
-                if ($value===@$this->legacy_constant_names[$section_name][$setting] && $print_minimal) continue;
-                if (!$sectionHasContent) {
-                     print("\n[{$section_name}]\n");
+                # Filter out constants and defaults
+                if ($value===@$this->defaults[$sectionName][$setting] && $printMinimal === true) continue;
+                if ($value===@$this->legacyConstantNames[$sectionName][$setting] && $printMinimal === true) continue;
+                if (!($sectionHasContent === true)) {
+                     print("\n[{$sectionName}]\n");
                      $sectionHasContent = true;
                 }
                 if ($value===true) {
@@ -349,31 +398,35 @@ class Settings extends Service {
                     $valstr = "'" . strval($value) . "'";
                 }
                 print("{$setting} = {$valstr}\n");
-                if (array_key_exists($section_name, $this->legacy_constant_names)
-                 && array_key_exists($setting, $this->legacy_constant_names[$section_name])
-                 && $print_legacy) {
-                    print("; (was: {$this->legacy_constant_names[$section_name][$setting]})\n");
+                if (array_key_exists($sectionName, $this->legacyConstantNames) === true
+                 && array_key_exists($setting, $this->legacyConstantNames[$sectionName]) === true
+                 && $printLegacy === true) {
+                    print("; (was: {$this->legacyConstantNames[$sectionName][$setting]})\n");
                 }
             }
         }
     }
 
-    public function __get($section_name) {
+    public function __get($sectionName) {
         # this allows settings to be read as ->section_name->setting_name
-        if (is_array($this->settings[$section_name])) {
-            $section_object = (object) $this->settings[$section_name];
-            return $section_object;
+        if (array_key_exists($sectionName, $this->settings)) {
+            if (is_array($this->settings[$sectionName])) {
+                $sectionObject = (object) $this->settings[$sectionName];
+                return $sectionObject;
+            }
         }
+        return parent::__get($sectionName);
     }
 
-    public function __isset($section_name) {
-        if (is_array($this->settings[$section_name])) {
+    public function __isset($sectionName) {
+        if (is_array($this->settings[$sectionName])) {
             return true;
         }
+        return parent::__isset($sectionName);
     }
 
-    protected function fill_settings() {
-        // Remove http(s):// from site URLs
+    protected function fillSettings() {
+        # Remove http(s):// from site URLs
         if (!is_null($this->settings['main']['nonssl_site_url'])) {
             $this->settings['main']['nonssl_site_url'] = preg_replace('|http(s)?://|i', '', $this->settings['main']['nonssl_site_url']);
         }
@@ -388,12 +441,12 @@ class Settings extends Service {
             $this->settings['main']['announce_url'] = 'http://' . $this->settings['main']['nonssl_site_url'] . ':' . $this->settings['tracker']['port'];
         }
 
-        $is_ssl = (array_key_exists('SERVER_PORT', $this->master->server) && intval($this->master->server['SERVER_PORT']) != 80);
+        $isHTTPS = (array_key_exists('SERVER_PORT', $this->master->server) === true && !(intval($this->master->server['SERVER_PORT']) === 80));
         if (is_null($this->settings['main']['site_url'])) {
-            $this->settings['main']['site_url'] = ($is_ssl) ? $this->settings['main']['ssl_site_url'] : $this->settings['main']['nonssl_site_url'];
+            $this->settings['main']['site_url'] = ($isHTTPS === true) ? $this->settings['main']['ssl_site_url'] : $this->settings['main']['nonssl_site_url'];
         }
         if (is_null($this->settings['main']['static_server'])) {
-            $this->settings['main']['static_server'] = ($is_ssl) ? $this->settings['main']['ssl_static_server'] : $this->settings['main']['nonssl_static_server'];
+            $this->settings['main']['static_server'] = ($isHTTPS === true) ? $this->settings['main']['ssl_static_server'] : $this->settings['main']['nonssl_static_server'];
         }
         if (is_null($this->settings['main']['mail_domain'])) {
             $this->settings['main']['mail_domain'] = $this->settings['main']['site_url'];
@@ -401,55 +454,61 @@ class Settings extends Service {
 
 
         if (is_null($this->settings['main']['internal_urls_regex'])) {
-            $internal_urls_regex = '@^https?:\/\/' . $this->settings['main']['site_url'] . '\/';
+            $internalURLsRegex = '@^https?:\/\/' . $this->settings['main']['site_url'] . '\/';
             foreach (explode(',', $this->main->additional_domains) as $domain) {
-                $internal_urls_regex .= '|^https?:\/\/' .str_replace('.', '\.', $domain). '\/';
+                $internalURLsRegex .= '|^https?:\/\/' .str_replace('.', '\.', $domain). '\/';
             }
-            $internal_urls_regex .= '@';
-            $this->settings['main']['internal_urls_regex'] = $internal_urls_regex;
+            $internalURLsRegex .= '@';
+            $this->settings['main']['internal_urls_regex'] = $internalURLsRegex;
         }
 
         if (is_null($this->settings['main']['non_anon_urls_regex'])) {
-            $non_anon_urls_regex = '@^https?:\/\/' . $this->settings['main']['site_url'];
+            $nonAnonURLsRegex = '@^https?:\/\/' . $this->settings['main']['site_url'];
             foreach (explode(',', $this->main->non_anon_domains) as $domain) {
-                $non_anon_urls_regex .= '|^https?:\/\/' . str_replace('.', '\.', $domain);
+                $nonAnonURLsRegex .= '|^https?:\/\/' . str_replace('.', '\.', $domain);
             }
-            $non_anon_urls_regex .= '@';
-            $this->settings['main']['non_anon_urls_regex'] = $non_anon_urls_regex;
+            $nonAnonURLsRegex .= '@';
+            $this->settings['main']['non_anon_urls_regex'] = $nonAnonURLsRegex;
         }
+
+        # bit of a bodge, but necessary for older sites when migrating
+        $this->settings['keys']['enckey'] = str_pad($this->settings['keys']['enckey'], 16, '\0');
     }
 
-    public function get_legacy_constants() {
+    public function getLegacyConstants() {
         $settings = $this->defaults;
-        foreach ($this->legacy_constant_names as $section_name => $section) {
-            foreach ($section as $key => $constant_name) {
-                if (defined($constant_name)) {
-                    $settings[$section_name][$key] = constant($constant_name);
+        foreach ($this->legacyConstantNames as $sectionName => $section) {
+            foreach ($section as $key => $constantName) {
+                if (defined($constantName)) {
+                    $settings[$sectionName][$key] = constant($constantName);
                 }
             }
         }
         return $settings;
     }
 
-    public function set_legacy_constants() {
-        global $ForumsRevealVoters, $ForumsDoublePost, $CollageCats, $CollageIcons, $ArticleCats, $ArticleSubCats, $BadgeTypes, $AutoAwardTypes, $ShopActions, $Video_FileTypes, $Image_FileTypes, $Zip_FileTypes, $ExcludeForums, $DonateLevels, $ExcludeBytesDupeCheck, $CaptchaFonts, $CaptchaBGs, $SpecialChars;
+    public function setLegacyConstants() {
+        global $forumsRevealVoters, $forumsDoublePost,
+               $badgeTypes, $autoAwardTypes,
+               $shopActions, $excludeForums, $donateLevels,
+               $excludeBytesDupeCheck, $specialChars, $knownFileTypes;
 
-        foreach ($this->legacy_constant_names as $section_name => $section) {
-            foreach ($section as $key => $constant_name) {
-                $value = $this->settings[$section_name][$key];
-                define($constant_name, $value);
+        foreach ($this->legacyConstantNames as $sectionName => $section) {
+            foreach ($section as $key => $constantName) {
+                $value = $this->settings[$sectionName][$key];
+                define($constantName, $value);
             }
         }
 
         $userclasses = $this->settings['users']['classes'];
         foreach (explode(',', $userclasses) as $userclass) {
-            list($constant_name, $value) = explode('=', $userclass);
-            define($constant_name, $value);
+            list($constantName, $value) = explode('=', $userclass);
+            define($constantName, $value);
         }
 
-        $ExcludeForums = explode(',', $this->settings['forums']['exclude_forums']);
-        $ForumsRevealVoters = explode(',', $this->settings['forums']['forums_reveal_voters']);
-        $ForumsDoublePost = explode(',', $this->settings['forums']['forums_double_post']);
+        $excludeForums = explode(',', $this->settings['forums']['exclude_forums']);
+        $forumsRevealVoters = explode(',', $this->settings['forums']['forums_reveal_voters']);
+        $forumsDoublePost = explode(',', $this->settings['forums']['forums_double_post']);
 
         define('STAFF_LEVEL', LEVEL_STAFF);
         define('ADMIN_LEVEL', LEVEL_ADMIN);
@@ -457,58 +516,36 @@ class Settings extends Service {
         # The rest we just leave plain & hardcoded for now
         # To either be changed into a setting in the future, or solved in a different way altogether
 
-        //kind of random var but testing/changing this with live data is required
-        //- this is the % under which results are aggregated by the clients graph,
-        //if its too low (num clients depending) it breaks the google url api
-        define('CLIENT_GRAPH_OTHER_PERCENT', 0.5);
+        define('MAX_FILE_SIZE_BYTES', 2097152); # the max filesize (enforced in client side and server side using this value)
 
-        define('MAX_FILE_SIZE_BYTES', 2097152); // the max filesize (enforced in client side and server side using this value)
+        # BTC STUFF
+        define('BTC_ADDRESS_REGEX', "/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,59}$/");
 
-        // BTC STUFF
-        define('BTC_LOCAL', false);
-        define('BTC_ADDRESS_REGEX', "/^[13]{1}[a-km-zA-HJ-NP-Z1-9]{26,34}$/");
+        # badge types
+        $badgeTypes = ['Single', 'Multiple', 'Shop', 'Unique','Donor'];
+        $autoAwardTypes  = ['NumPosts', 'NumComments', 'NumUploaded', 'NumNewTags', 'NumTags', 'NumTagVotes',
+                          'RequestsFilled', 'UploadedTB', 'DownloadedTB', 'MaxSnatches', 'NumBounties', 'AccountAge'];
 
-        $CollageCats = array(0=>'Personal', 1=>'Theme', 2=>'Porn Star', 3=>'Studio', 4=>'Staff picks');
-        $CollageIcons = array(0=>'col_personal.png', 1=>'col_themed.png', 2=>'col_pornstar.png', 3=>'col_studio.png', 4=>'col_staffpicks.png');
+        $shopActions = ['gb','givegb','givecredits','slot','title','badge','pfl','ufl','invite'];
 
-        $ArticleCats = array(0=>'Rules', 1=>'Help', 2=>'Hidden');
-        $ArticleSubCats = array(0=>'Intro', 1=>'Other', 2=>'Rules', 3=>'Torrenting', 4=>'IRC', 5=>'Uploading', 6=>'Site', 7=>'Bitcoin Guides', 8=>'Staff');
+        $donateLevels = [1 => 1.0, 10 => 1.5, 50 => 2.0, 100 => 5];
 
-        // badge types
-        $BadgeTypes = array ('Single', 'Multiple', 'Shop', 'Unique','Donor');
-        $AutoAwardTypes  = array ('NumPosts', 'NumComments', 'NumUploaded', 'NumNewTags', 'NumTags', 'NumTagVotes',
-                          'RequestsFilled', 'UploadedTB', 'DownloadedTB', 'MaxSnatches', 'NumBounties', 'AccountAge');
+        # key should be bytesize to exclude from dupe via bytesize check, value is reason displayed to user
+        $excludeBytesDupeCheck = [734015488=>'a standard cd size', 1065353216=>'a standard vob size',  1073739776 => 'a standard vob size'];
 
-        $ShopActions = array('gb','givegb','givecredits','slot','title','badge','pfl','ufl');
-
-        // for counting filetypes
-        $Video_FileTypes = array('3gp','aaf','asf','avi','divx','f4v','flv','hdmov','m2v','m4v','mpeg','m1v','mkv','mov','mp4','mpg','ogg','ogv','qt','rm','rmvb','swf','wmv','webm','vob');
-        $Image_FileTypes = array('bmp','gif','jpeg','jpg','png');
-        $Zip_FileTypes = array('7','7z','gz','gzip','rar','z','zip');
-
-
-        $DonateLevels = array ( 1 => 1.0, 10 => 1.5, 50 => 2.0, 100 => 5 );
-
-        // key should be bytesize to exclude from dupe via bytesize check, value is reason displayed to user
-        $ExcludeBytesDupeCheck = array ( 734015488=>'a standard cd size', 1065353216=>'a standard vob size',  1073739776 => 'a standard vob size' );
-
-        //
-        //Captcha fonts should be located in /classes/fonts
-        $CaptchaFonts=array('ARIBLK.TTF','IMPACT.TTF','TREBUC.TTF','TREBUCBD.TTF','TREBUCBI.TTF','TREBUCIT.TTF','VERDANA.TTF','VERDANAB.TTF','VERDANAI.TTF','VERDANAZ.TTF');
-        //Captcha images should be located in /captcha
-        $CaptchaBGs=array('captcha1.png','captcha2.png','captcha3.png','captcha4.png','captcha5.png','captcha6.png','captcha7.png','captcha8.png','captcha9.png');
-
-        // Special characters, and what they should be converted to
-        // Used for torrent searching
-        $SpecialChars = array(
+        # Special characters, and what they should be converted to
+        # Used for torrent searching
+        $specialChars = [
                 '&' => 'and'
-        );
+        ];
 
-        $this->set_regex_constants();
+        $knownFileTypes = self::$knownFileTypes;
+
+        $this->setRegexConstants();
     }
 
-    public function set_regex_constants() {
-        //resource_type://username:password@domain:port/path?query_string#anchor
+    public function setRegexConstants() {
+        # resource_type://username:password@domain:port/path?query_string#anchor
         define('RESOURCE_REGEX', '(https?|ftps?):\/\/');
         define('IP_REGEX', '(\d{1,3}\.){3}\d{1,3}');
         define('DOMAIN_REGEX', '(ssl.)?(www.)?[a-z0-9-\.]{1,255}\.[a-zA-Z]{2,6}');

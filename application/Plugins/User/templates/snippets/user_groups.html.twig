@@ -1,0 +1,64 @@
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : false,
+    'noGroup'   : true,
+    'noClass'   : false,
+    'noTitle'   : true,
+} %}
+
+<div class="head">
+    <span style="float:left;"> User Groups </span>
+    <span style="float:right;"><a href="#" id="groupedbutton" onclick="return Toggle_view('grouped');">(Hide)</a></span>&nbsp;
+</div>
+<div class="box">
+    <form method="POST" id="groupedform" action="/user.php">
+        <input type="hidden" name="action" value="groups" />
+        <input type="hidden" name="groupaction" value="update" />
+        <input type="hidden" name="userid" value="{{ user.ID }}" />
+        <input type="hidden" id="auth" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+            <table width="100%"  id="groupeddiv" class="groupedaccounts shadow">
+            {% if joinedGroups > 0 %}
+                {% for joinedGroup in joinedGroups %}
+                    <tr><td colspan="1">
+                    User is in <a href="/groups.php?groupid={{ joinedGroup.GroupID }}">{{ joinedGroup.GroupName }}</a></td>
+                    <td colspan="3"><b>Comment:</b>
+                        {% if joinedGroup.Comment %}
+                                {{ joinedGroup.Comment }}
+                        {% endif %}
+                        <a href="#" onclick="$('#groupCommentDiv').toggle(); this.innerHTML=(this.innerHTML=='(Modify)'?'(Hide)':'(Modify)'); return false;">(Modify)</a>
+                        <input type="hidden" name="gid" value="{{ joinedGroup.GroupID }}">
+                        <div class="hidden" id="groupCommentDiv">
+                        <input type="text" size="40" name="groupComment" value="{{ joinedGroup.Comment }}" placeholder="No comment yet"/>
+                        <input type="submit" name="updateComment" value="Update Comment" title="Update Comment">
+                        </div>
+                    </td></tr>
+                {% endfor %}
+            {% endif %}
+            {% for group in groups %}
+                {% if loop.index0 is divisible by(4) %}
+                    <tr>
+                {% endif %}
+                <td class="row{{ loop.index % 2 ? 'b' : 'a' }}" align="left">
+                    <a href="/groups.php?groupid={{ group.ID }}">{{ group.Name }}</a>
+                    {% for joinedGroup in joinedGroups %}
+                        {% if joinedGroup.GroupID == group.ID %}
+                            [<a href="/user.php?action=groups&groupaction=remove&auth={{ ActiveUser.legacy.AuthKey }}&userid={{ user.ID }}&removegid={{ group.ID }}" onClick="return confirm('Are you sure you wish to remove {{ user.Username }} from {{ group.Name }}?');">x</a>]
+                        {% endif %}
+                    {% endfor %}
+                    {% if indexof.joinedGroup is null and joinedGroup.GroupID != group.ID %}
+                            [<a href="/user.php?action=groups&groupaction=add&auth={{ ActiveUser.legacy.AuthKey }}&userid={{ user.ID }}&addgid={{ group.ID }}" onClick="return confirm('Are you sure you wish to add {{ user.Username }} to {{ group.Name }}?');">+</a>]
+                    {% endif %}
+                </td>
+                {% if loop.index is not divisible by(4) and loop.last %}
+                    <td colspan={{ 5 - loop.index % 5 }}></td>
+                {% endif %}
+                {% if (loop.index is divisible by(4) and not loop.first) or loop.last %}
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </table>
+    </form>
+</div>

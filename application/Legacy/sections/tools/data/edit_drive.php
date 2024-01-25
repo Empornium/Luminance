@@ -3,17 +3,23 @@ authorize();
 
 if (!check_perms('admin_donor_drives'))  error(403);
 
-if (!$_REQUEST['driveid'] || !is_number($_REQUEST['driveid'])) {
+if (!$_REQUEST['driveid'] || !is_integer_string($_REQUEST['driveid'])) {
     error(0);
 }
 
-$SET_SQL = array();
+$SET_SQL = [];
+$params = [];
 
 $id = (int) ($_REQUEST['driveid']);
 
-$DB->query("SELECT state, start_time FROM donation_drives WHERE ID='$id'" );
-if($DB->record_count()<1) error("No Donation drive with ID=$id could be found!");
-list($state,$start_time)=$DB->next_record();
+list($state, $start_time) = $master->db->rawQuery(
+    "SELECT state,
+            start_time
+       FROM donation_drives
+      WHERE ID = ?",
+    [$id]
+)->fetch(\PDO::FETCH_NUM);
+if ($master->db->foundRows() < 1) error("No Donation drive with ID={$id} could be found!");
 
 if ($state=='finished') {
     error("You cannot edit a finished donation drive! (why you try hax0r?)");
@@ -23,98 +29,135 @@ if (!$_REQUEST['drivename'] || strlen($_REQUEST['drivename']) < 1) {
         error("Error: title was not provided");
 }
 
-if (!$_REQUEST['target'] || !is_number($_REQUEST['target']) || $_REQUEST['target'] < 1) {
+if (!$_REQUEST['target'] || !is_integer_string($_REQUEST['target']) || $_REQUEST['target'] < 1) {
         error("Error: target euros was not provided");
 }
 
-$name = db_string($_REQUEST['drivename']);
-$description = db_string($_REQUEST['body']);
-if ($state == 'notstarted') $SET_SQL[] = "description='$description'";
+$name = $_REQUEST['drivename'];
+$description = $_REQUEST['body'];
+if ($state == 'notstarted') {
+    $SET_SQL[] = "description = ?";
+    $params[] = $description;
+}
 
 if ($_REQUEST['submit']=='Start Donation Drive') {
-    if($state!='notstarted') error("haX0r?");
+    if ($state!='notstarted') error("haX0r?");
 
-    $DB->query("SELECT name FROM donation_drives WHERE state='active'" );
-    if ($DB->record_count()>0) {
-        list($old)=$DB->next_record();
+    $old = $master->db->rawQuery(
+        "SELECT name
+           FROM donation_drives
+          WHERE state='active'"
+    )->fetchColumn();
+    if ($master->db->foundRows() > 0) {
         error("There is already an active drive!<br/><br/>You must close the '$old' donation drive before you can start this one");
     }
 
     if ($_REQUEST['autothread'] == '0') {
 
         $ForumID = (int) $_POST['forumid'];
-        $DB->query("SELECT ID FROM forums WHERE ID=$ForumID");
-        if ($DB->record_count() < 1) {
-            error("No forum with id=$ForumID exists!");
+        $count = $master->db->rawQuery(
+            "SELECT COUNT(ID)
+               FROM forums
+              WHERE ID = ?",
+            [$ForumID]
+        )->fetchColumn();
+        if ($count < 1) {
+            error("No forum with id={$ForumID} exists!");
         }
-        $thread_id = create_thread($ForumID, $LoggedUser['ID'], $name, $description);
+        $thread_id = create_thread($ForumID, $activeUser['ID'], $name, $description);
         if ($thread_id < 1) {
             error(0);
         }
     } else {
 
         $thread_id = (int) ($_REQUEST['threadid']);
-        if (!$thread_id || !is_number($thread_id)) {
+        if (!$thread_id || !is_integer_string($thread_id)) {
             error("No thread with id=$thread_id exists!");
         } else {
-            $DB->query("SELECT ForumID FROM forums_topics WHERE ID=" . $thread_id);
-            if ($DB->record_count() < 1) {
-                error("No thread with id=$thread_id exists!");
+            $count = $master->db->rawQuery(
+                "SELECT COUNT(ForumID)
+                   FROM forums_threads
+                  WHERE ID = ?",
+                [$thread_id]
+            )->fetchColumn();
+            if ($count < 1) {
+                error("No thread with id={$thread_id} exists!");
             }
         }
     }
 
     if ($_REQUEST['autodate'] == '0') {  // use now()
 
-        $start_time = db_string(sqltime());
+        $start_time = sqltime();
 
     } else {
 
         $timestamp = strtotime($_REQUEST['starttime']);
-        if ($timestamp === -1 || $timestamp === false)
-            error("Error: could not parse date '$_REQUEST[startdate]'");
-        $start_time = db_string(sqltime($timestamp));
+        if ($timestamp === -1 || $timestamp === false) {
+            error("Error: could not parse date '{$_REQUEST['startdate']}'");
+        }
+        $start_time = sqltime($timestamp);
     }
 
-    $SET_SQL[] = "start_time='$start_time'";
+    $SET_SQL[] = "start_time = ?";
+    $params[] = $start_time;
 
-    $SET_SQL[] = "state='active'";
+    $SET_SQL[] = "state = 'active'";
 
-    $Cache->delete_value('active_drive');
+    $master->cache->deleteValue('active_drive');
 
 } else {
 
     $thread_id = (int) ($_REQUEST['threadid']);
 
     if ($_REQUEST['submit']=='Finish Donation Drive') {
-        if($state!='active') error("haX0r?");
+        if ($state!='active') error("haX0r?");
 
-        $DB->query("SELECT SUM(amount_euro), Count(ID) FROM bitcoin_donations WHERE state!='unused' AND received > '$start_time'");
-        list($raised, $count)=$DB->next_record();
-        $raised=db_string($raised);
+        list($raised, $count) = $master->db->rawQuery(
+            "SELECT SUM(amount_euro),
+                    Count(ID)
+               FROM bitcoin_donations
+              WHERE state != 'unused'
+                AND received > ?",
+            [$start_time]
+        )->fetch(\PDO::FETCH_NUM);
 
-        $SET_SQL[] = "state='finished'";
-        $SET_SQL[] = "end_time='".db_string(sqltime())."'";
-        $SET_SQL[] = "raised_euros='$raised'";
+        $SET_SQL[] = "state = 'finished'";
+        $SET_SQL[] = "end_time = ?";
+        $params[] = sqltime();
+        $SET_SQL[] = "raised_euros = ?";
+        $params[] = $raised;
 
-        $Cache->delete_value('active_drive');
+        $master->cache->deleteValue('active_drive');
 
     } else {
 
         $timestamp = strtotime($_REQUEST['starttime']);
-        if ($timestamp === -1 || $timestamp === false)
-            error("Error: could not parse date '$_REQUEST[starttime]'");
-        $start_time = db_string(sqltime($timestamp));    // $_REQUEST['startdate']);
-        $SET_SQL[] = "start_time='$start_time'";
+        if ($timestamp === -1 || $timestamp === false) {
+            error("Error: could not parse date '{$_REQUEST['starttime']}'");
+        }
+        $start_time = sqltime($timestamp);    // $_REQUEST['startdate']);
+        $SET_SQL[] = "start_time = ?";
+        $params[] = $start_time;
     }
 }
 
 $target_euros = (int) ($_REQUEST['target']);
 
-$SET_SQL[] = "threadid='$thread_id'";
-$SET_SQL[] = "name='$name'";
-$SET_SQL[] = "target_euros='$target_euros'";
+$SET_SQL[] = "threadid = ?";
+$params[] = $thread_id;
+$SET_SQL[] = "name = ?";
+$params[] = $name;
+$SET_SQL[] = "target_euros = ?";
+$params[] = $target_euros;
 
-$DB->query("UPDATE donation_drives SET ".implode(',', $SET_SQL)." WHERE ID='$id';");
+$params[] = $id;
+
+$master->db->rawQuery(
+    "UPDATE donation_drives
+        SET ".implode(', ', $SET_SQL)."
+      WHERE ID = ?",
+    $params
+);
 
 header("Location: tools.php?action=donation_drives#drive$id");

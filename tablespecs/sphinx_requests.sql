@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `sphinx_requests` (
   `ReleaseType` tinyint(2) DEFAULT NULL,
   `FillerID` int(10) unsigned NOT NULL DEFAULT '0',
   `TorrentID` int(10) unsigned NOT NULL DEFAULT '0',
-  `TimeFilled` int(12) unsigned NOT NULL,
+  `TimeFilled` int(12) unsigned NULL,
   `Visible` binary(1) NOT NULL DEFAULT '1',
   `Bounty` bigint(20) unsigned NOT NULL DEFAULT '0',
   `Votes` int(10) unsigned NOT NULL DEFAULT '0',

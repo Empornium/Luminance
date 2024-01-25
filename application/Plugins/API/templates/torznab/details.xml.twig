@@ -1,0 +1,71 @@
+{% extends "@API/torznab/rss_base.xml.twig" %}
+
+{% block rss %}
+{% for torrent in items %}
+{% set guid = 'https://' ~ settings.main.site_url ~ '/torrents.php?id=' ~ torrent.GroupID ~ '&torrentid=' ~ torrent.ID %}
+{% set link = 'https://' ~ settings.main.site_url ~ '/torrents.php?action=download&id=' ~ torrent.ID ~ '&authkey=' ~ ActiveUser.legacy.AuthKey ~ '&torrent_pass=' ~ ActiveUser.legacy.torrent_pass %}
+  <item>
+    <title>{{ torrent.Title }}</title>
+    <guid isPermaLink="true">{{ guid }}</guid>
+    <link>{{ link }}</link>
+    <comments>{{ guid }}</comments>
+    <pubDate>{{ torrent.Time|date('D, j M Y H:i:s +0000') }}</pubDate>
+    <category>{{ torrent.Category }}</category>
+{% if torrent.group.metadata.data.show.Synopsis %}
+    <description>{{ torrent.group.metadata.data.show.Synopsis }}</description>
+{% else %}
+    <description>{{ torrent.group.metadata.data.Synopsis }}</description>
+{% endif %}
+{#  it's not entirely clear what length is supposed to represent, size of torrent file or
+    size of torrent release. per RSS spec, this implementation opts for size of torrent file.
+#}
+    <enclosure url="{{ link }}" length="{{ torrent.fileSize }}" type="application/x-bittorrent" />
+{% if torrent.CategoryIDs is not empty %}
+{% for categoryID in torrent.CategoryIDs %}
+    <torznab:attr name="category" value="{{ categoryID }}"/>
+{% endfor %}
+{% endif %}
+    <torznab:attr name="size" value="{{ torrent.Size }}" />
+    <torznab:attr name="files" value="{{ torrent.FileCount }}" />
+    <torznab:attr name="poster" value="{{ torrent.Anonymous ? 'anon' : (torrent.uploader.Username ?? torrent.Username) }}" />
+{#    <torznab:attr name="teams" value="" /> #}
+    <torznab:attr name="grabs" value="{{ torrent.Snatched }}" />
+    <torznab:attr name="seeders" value="{{ torrent.Seeders }}" />
+    <torznab:attr name="leechers" value="{{ torrent.Leechers }}" />
+    <torznab:attr name="peers" value="{{ torrent.Leechers + torrent.Seeders }}" />
+    <torznab:attr name="infohash" value="{{ torrent.InfoHash }}" />
+    <torznab:attr name="downloadvolumefactor" value="1.0" />
+    <torznab:attr name="uploadvolumefactor" value="1.0" />
+{% for tag in torrent.Tags %}
+    <torznab:attr name="tag" value="{{ tag }}" />
+{% endfor %}
+{#    <torznab:attr name="nfo" value="" /> #}
+{#    <torznab:attr name="info" value="" /> #}
+{#    <torznab:attr name="year" value="" /> #}
+{#    <torznab:attr name="coverurl" value="" /> #}
+{#    <torznab:attr name="backdropurl" value="" /> #}
+{#    <torznab:attr name="review" value="" /> #}
+{#    <torznab:attr name="season" value="" /> #}
+{#    <torznab:attr name="episode" value="" /> #}
+{#    <torznab:attr name="tvtitle" value="" /> #}
+{#    <torznab:attr name="tvairdate" value="" /> #}
+{#    <torznab:attr name="tvdbid" value="" /> #}
+{#    <torznab:attr name="tvmazeid" value="" /> #}
+{#    <torznab:attr name="genre" value="" /> #}
+{#    <torznab:attr name="video" value="" /> #}
+{#    <torznab:attr name="audio" value="" /> #}
+{#    <torznab:attr name="resolution" value="" /> #}
+{#    <torznab:attr name="framerate" value="" /> #}
+{#    <torznab:attr name="language" value="" /> #}
+{#    <torznab:attr name="subs" value="" /> #}
+{#    <torznab:attr name="imdb" value="" /> #}
+{#    <torznab:attr name="imdbscore" value="" /> #}
+{#    <torznab:attr name="imdbtitle" value="" /> #}
+{#    <torznab:attr name="imdbtagline" value="" /> #}
+{#    <torznab:attr name="imdbplot" value="" /> #}
+{#    <torznab:attr name="imdbyear" value="" /> #}
+{#    <torznab:attr name="imdbdirector" value="" /> #}
+{#    <torznab:attr name="imdbactors" value="" /> #}
+  </item>
+{% endfor %}
+{% endblock %}

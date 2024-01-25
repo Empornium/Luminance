@@ -1,0 +1,30 @@
+<div class="post_content">{{ bbcode.full_format(body, true)|raw }}</div>
+<div class="post_footer">
+    {% if depth < edits|length %}
+        <a href="#edit_info_{{ postID }}" onclick="LoadEdit({{ postID }}, {{ depth + 1 }}); return false;">&laquo;</a>
+        <span class="editedby">{{ depth == 0 ? 'Last edited by' : 'Edited by' }}
+            {% set usernameOptions = {
+                'drawInBox' : false,
+                'colorname' : false,
+                'dropDown'  : false,
+                'useSpan'   : true,
+                'noIcons'   : true,
+                'noGroup'   : true,
+                'noClass'   : true,
+                'noTitle'   : true,
+            } %}
+            {{ render.username(edits[depth].EditUser, usernameOptions)|raw }} {{ time_diff(edits[depth].EditTime, 2, true, true)|raw }}
+        </span>
+    {% else %}
+        <em>Original Post</em>
+    {% endif %}
+    {% if depth > 0 %}
+        <span class="editedby">
+            <a href="#edit_info_{{ postID }}" onclick="LoadEdit({{ postID }}, {{ depth - 1 }}); return false;">&raquo;</a>
+        </span>
+    {% endif %}
+    {% if (section == 'forum'           and depth == 0 and auth.isAllowed('forum_post_restore'))
+       or (section == 'collage comment' and depth == 0 and auth.isAllowed('collage_post_restore')) %}
+        &nbsp;&nbsp;<a href="#content{{ postID }}" onclick="RevertEdit({{ postID }}, '{{ secretary.getToken('post.revert') }}'); return false;" title="remove last edit">&reg;</a>
+    {% endif %}
+</div>

@@ -3,13 +3,11 @@ if (!check_perms('site_debug')) { error(403); }
 
 //View schemas
 if (!empty($_GET['table'])) {
-    $DB->query('SHOW TABLES');
-    $Tables =$DB->collect('Tables_in_'.SQLDB);
+    $Tables = $master->db->rawQuery("SHOW TABLES")->fetchAll(\PDO::FETCH_COLUMN);
     if (!in_array($_GET['table'], $Tables)) {
         error(0);
     }
-    $DB->query('SHOW CREATE TABLE '.db_string($_GET['table']));
-    list(,$Schema) = $DB->next_record(MYSQLI_NUM, false);
+    list(, $Schema) = $master->db->rawQuery("SHOW CREATE TABLE {$_GET['table']}")->fetch(\PDO::FETCH_NUM);
 
     if (!empty($_GET['json'])) {
         header('Content-type: application/json');
@@ -22,16 +20,15 @@ if (!empty($_GET['table'])) {
 }
 
 //Cache the tables for 4 hours, makes sorting faster
-if (!$Tables = $Cache->get_value('database_table_stats')) {
-    $DB->query('SHOW TABLE STATUS');
-    $Tables =$DB->to_array();
-    $Cache->cache_value('database_table_stats',$Tables,3600*4);
+if (!$Tables = $master->cache->getValue('database_table_stats')) {
+    $Tables = $master->db->rawQuery("SHOW TABLE STATUS")->fetchAll();
+    $master->cache->cacheValue('database_table_stats', $Tables, 3600 * 4);
 }
 
-$Pie = new Luminance\Legacy\PieChart(750,400,array('Other'=>1,'Percentage'=>1,'Sort'=>1));
+$Pie = $master->plotly->newPieChart();
 
 //Begin sorting
-$Sort = array();
+$Sort = [];
 switch (empty($_GET['order_by'])?'':$_GET['order_by']) {
     case 'name':
         foreach ($Tables as $Key => $Value) {
@@ -76,7 +73,8 @@ switch (empty($_GET['order_by'])?'':$_GET['order_by']) {
             $Sort[$Key] = $Value[6] + $Value[8];
         }
 }
-$Pie->generate();
+$Pie->color('FF9900');
+$pieData = $Pie->generate();
 
 if (!empty ($_GET['order_way']) && $_GET['order_way'] == 'asc') {
     $SortWay = SORT_ASC;
@@ -87,11 +85,16 @@ if (!empty ($_GET['order_way']) && $_GET['order_way'] == 'asc') {
 array_multisort($Sort, $SortWay, $Tables);
 //End sorting
 
-show_header('Database Specifics');
+show_header('Database Specifics', 'plotly,charts,jquery');
 ?>
 <h3>Breakdown</h3>
 <div class="box pad center">
-    <img src="<?=$Pie->url()?>" />
+    <div id="chart_div"></div>
+    <script type="text/javascript">
+        document.addEventListener('LuminanceLoaded', function() {
+            drawChart('chart_div', <?=json_encode($pieData)?>);
+        });
+    </script>
 </div>
 <br />
 <table>
@@ -111,7 +114,7 @@ $TotalDataSize = 0;
 $TotalIndexSize = 0;
 $Row = 'a';
 foreach ($Tables as $Table) {
-    list($Name,$Engine,,,$Rows,$RowSize,$DataSize,,$IndexSize) = $Table;
+    list($Name, $Engine, , , $Rows, $RowSize, $DataSize,, $IndexSize) = $Table;
     $Row = ($Row == 'a') ? 'b' : 'a';
 
     $TotalRows += $Rows;

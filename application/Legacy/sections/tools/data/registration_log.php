@@ -6,47 +6,49 @@ show_header('Registration log');
     <h2>Registration Log</h2>
 <?php
 define('USERS_PER_PAGE', 50);
-list($Page,$Limit) = page_limit(USERS_PER_PAGE);
+list($Page, $Limit) = page_limit(USERS_PER_PAGE);
 
-$RS = $DB->query("SELECT
-    SQL_CALC_FOUND_ROWS
-    m.ID,
-    u.IPID,
-    m.Email,
-    m.Username,
-    m.PermissionID,
-    m.Uploaded,
-    m.Downloaded,
-    m.Enabled,
-    i.Donor,
-    i.JoinDate,
-    im.ID,
-    iu.IPID,
-    im.Email,
-    im.Username,
-    im.PermissionID,
-    im.Uploaded,
-    im.Downloaded,
-    im.Enabled,
-    ii.Donor,
-    ii.JoinDate
-    FROM users_main AS m
-    LEFT JOIN users_info AS i ON i.UserID=m.ID
-    LEFT JOIN users AS u ON u.ID=m.ID
-    LEFT JOIN users_main AS im ON i.Inviter = im.ID
-    LEFT JOIN users_info AS ii ON i.Inviter = ii.UserID
-    LEFT JOIN users AS iu ON iu.ID=im.ID
-    WHERE i.JoinDate > '".time_minus(3600*24*7)."'
-    ORDER BY i.Joindate DESC LIMIT $Limit");
-$DB->query("SELECT FOUND_ROWS()");
-list($Results) = $DB->next_record();
-$DB->set_query_id($RS);
+$records = $master->db->rawQuery(
+    "SELECT SQL_CALC_FOUND_ROWS
+            u.ID,
+            u.IPID,
+            e.Address,
+            u.Username,
+            um.PermissionID,
+            um.Uploaded,
+            um.Downloaded,
+            um.Enabled,
+            ui.Donor,
+            ui.JoinDate,
+            iu.ID,
+            iu.IPID,
+            ie.Address,
+            iu.Username,
+            ium.PermissionID,
+            ium.Uploaded,
+            ium.Downloaded,
+            ium.Enabled,
+            iui.Donor,
+            iui.JoinDate
+       FROM users AS u
+  LEFT JOIN users_main AS um ON um.ID=u.ID
+  LEFT JOIN users_info AS ui ON ui.UserID=u.ID
+  LEFT JOIN emails AS e ON e.ID=u.EmailID
+  LEFT JOIN users AS iu ON iu.ID=ui.Inviter
+  LEFT JOIN users_main AS ium ON ium.ID=ui.Inviter
+  LEFT JOIN users_info AS iui ON iui.UserID=ui.Inviter
+  LEFT JOIN emails AS ie ON ie.ID=iu.EmailID
+      WHERE ui.JoinDate > '".time_minus(3600*24*14)."'
+   ORDER BY ui.Joindate DESC
+      LIMIT {$Limit}"
+)->fetchAll(\PDO::FETCH_NUM);
+$Results = $master->db->foundRows();
 
-if ($DB->record_count()) {
+if ($Results > 0) {
 ?>
     <div class="linkbox">
 <?php
-    $Pages=get_pages($Page,$Results,USERS_PER_PAGE,11) ;
+    $Pages = get_pages($Page, $Results, USERS_PER_PAGE, 11);
     echo $Pages;
 ?>
     </div>
@@ -60,27 +62,47 @@ if ($DB->record_count()) {
             <td>Registered</td>
         </tr>
 <?php
-    $Records = $DB->to_array();
-    foreach ($Records as $Record) {
-        list($UserID, $IPID, $Email, $Username, $PermissionID, $Uploaded, $Downloaded, $Enabled, $Donor, $Joined, $InviterID, $InviterIPID, $InviterEmail, $InviterUsername, $InviterPermissionID, $InviterUploaded, $InviterDownloaded, $InviterEnabled, $InviterDonor, $InviterJoined)=$Record;
+    foreach ($records as $record) {
+        list(
+            $userID,
+            $IPID,
+            $Email,
+            $Username,
+            $PermissionID,
+            $Uploaded,
+            $Downloaded,
+            $enabled,
+            $Donor,
+            $Joined,
+            $InviterID,
+            $InviterIPID,
+            $InviterEmail,
+            $InviterUsername,
+            $InviterPermissionID,
+            $InviterUploaded,
+            $InviterDownloaded,
+            $InviterEnabled,
+            $InviterDonor,
+            $InviterJoined
+        ) = $record;
 
         $IP = $master->repos->ips->load($IPID);
         $InviterIP = $master->repos->ips->load($InviterIPID);
         $Row = ($IP == $InviterIP) ? 'a' : 'b';
 ?>
         <tr class="row<?=$Row?>">
-            <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?><br /><?=format_username($InviterID, $InviterUsername, $InviterDonor, true, $InviterEnabled, $InviterPermissionID)?></td>
-            <td><?=ratio($Uploaded,$Downloaded)?><br /><?=ratio($InviterUploaded,$InviterDownloaded)?></td>
+            <td><?=format_username($userID, $Donor, true, $enabled, $PermissionID)?><br /><?=format_username($InviterID, $InviterDonor, true, $InviterEnabled, $InviterPermissionID)?></td>
+            <td><?=ratio($Uploaded, $Downloaded)?><br /><?=ratio($InviterUploaded, $InviterDownloaded)?></td>
             <td>
                 <span style="float:left;"><?=display_str($Email)?></span>
-                <span style="float:right;">[<a href="/userhistory.php?action=email&amp;userid=<?=$UserID?>" title="History">H</a>|<a href="/user.php?action=search&email_history=on&email=<?=display_str($Email)?>" title="Search">S</a>]</span><br />
+                <span style="float:right;">[<a href="/userhistory.php?action=email&amp;userid=<?=$userID?>" title="History">H</a>|<a href="/user.php?action=search&email_history=on&email=<?=display_str($Email)?>" title="Search">S</a>]</span><br />
                 <span style="float:left;"><?=display_str($InviterEmail)?></span>
                 <span style="float:right;">[<a href="/userhistory.php?action=email&amp;userid=<?=$InviterID?>" title="History">H</a>|<a href="/user.php?action=search&amp;email_history=on&amp;email=<?=display_str($InviterEmail)?>" title="Search">S</a>]</span><br />
             </td>
             <td>
-                <span style="float:left;"><?php  $CC = geoip($IP);  echo display_ip($IP, $CC); ?></span>
-                <span style="float:right;">[<a href="/userhistory.php?action=ips&amp;userid=<?=$UserID?>" title="History">H</a>|<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="Search">S</a>]</span><br />
-                <span style="float:left;"><?php  $InviterCC = geoip($InviterIP);  echo display_ip($InviterIP, $InviterCC); ?></span>
+                <span style="float:left;"><?= display_ip($IP) ?></span>
+                <span style="float:right;">[<a href="/userhistory.php?action=ips&amp;userid=<?=$userID?>" title="History">H</a>|<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="Search">S</a>]</span><br />
+                <span style="float:left;"><?= display_ip($InviterIP) ?></span>
                 <span style="float:right;">[<a href="/userhistory.php?action=ips&amp;userid=<?=$InviterID?>" title="History">H</a>|<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($InviterIP)?>" title="Search">S</a>]</span><br />
             </td>
             <td>
@@ -95,7 +117,7 @@ if ($DB->record_count()) {
 <?=$Pages; ?>
     </div>
 <?php } else { ?>
-    <h2 align="center">There have been no new registrations in the past 168 hours (1 week).</h2>
+    <h2 align="center">There have been no new registrations in the past 336 hours (2 weeks).</h2>
 <?php } ?>
 </div>
 <?php

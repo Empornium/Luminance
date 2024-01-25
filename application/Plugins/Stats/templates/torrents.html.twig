@@ -1,0 +1,20 @@
+{% extends "@Stats/stats.html.twig" %}
+
+{% block title %}
+    Torrent statistics
+{% endblock %}
+
+{% block stats_content %}
+    <div class="head">Uploads daily</div>
+    <div class="box pad center">
+        <h1>Uploads daily</h1>
+        <div id="chart_div" data-load_chart="/stats/torrent_flow_chart"></div>
+    </div>
+    <br/>
+    <br/>
+    <div class="head">Torrents by category</div>
+    <div class="box pad center">
+        <h1>Torrents by category</h1>
+        <div id="pie_div" class="center" data-load_chart="/stats/torrent_category_chart"></div>
+    </div>
+{% endblock %}

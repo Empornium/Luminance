@@ -5,14 +5,14 @@
 
 authorize();
 
-if(!check_perms('site_submit_requests')) error(403);
+if (!check_perms('site_submit_requests')) error(403);
 
 if ($_POST['action'] != "takenew" &&  $_POST['action'] != "takeedit") {
     error(0);
 }
 
 include(SERVER_ROOT . '/Legacy/sections/torrents/functions.php');
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
 $NewRequest = ($_POST['action'] == "takenew");
 
@@ -21,30 +21,47 @@ if (!$NewRequest) {
 }
 
 if ($NewRequest) {
-    if (!check_perms('site_submit_requests') || $LoggedUser['BytesUploaded'] < 250*1024*1024) {
+    if (!check_perms('site_submit_requests') || $activeUser['BytesUploaded'] < 250*1024*1024) {
         error(403);
     }
 } else {
     $RequestID = $_POST['requestid'];
-    if (!is_number($RequestID)) {
+    if (!is_integer_string($RequestID)) {
         error(0);
     }
 
-    $Request = get_requests(array($RequestID));
+    $Request = get_requests([$RequestID]);
     $Request = $Request['matches'][$RequestID];
     if (empty($Request)) {
         error(404);
     }
 
-    list($RequestID, $RequestorID, $RequestorName, $TimeAdded, $LastVote, $CategoryID, $Title, $Image, $Description,
-         $FillerID, $FillerName, $TorrentID, $TimeFilled, $GroupID) = $Request;
+     list(
+         'ID'          => $RequestID,
+         'UserID'      => $RequestorID,
+         'Username'    => $RequestorName,
+         'TimeAdded'   => $timeAdded,
+         'LastVote'    => $LastVote,
+         'CategoryID'  => $CategoryID,
+         'Title'       => $Title,
+         'Image'       => $Image,
+         'Description' => $Description,
+         'FillerID'    => $FillerID,
+         'TorrentID'   => $torrentID,
+         'TimeFilled'  => $timeFilled,
+         'GroupID'     => $GroupID,
+         'UploaderID'  => $UploaderID,
+         'Anonymous'   => $IsAnon,
+         'Tags'        => $Tags
+     ) = $Request;
+
     $VoteArray = get_votes_array($RequestID);
     $VoteCount = count($VoteArray['Voters']);
 
-    $IsFilled = !empty($TorrentID);
+    $IsFilled = !empty($torrentID);
 
     $ProjectCanEdit = (check_perms('site_project_team') && !$IsFilled && (($CategoryID == 0)));
-    $CanEdit = ((!$IsFilled && $LoggedUser['ID'] == $RequestorID && $VoteCount < 2) || $ProjectCanEdit || check_perms('site_moderate_requests'));
+    $CanEdit = ((!$IsFilled && $activeUser['ID'] == $RequestorID && $VoteCount < 2) || $ProjectCanEdit || check_perms('site_moderate_requests'));
 
     if (!$CanEdit) {
         error(403);
@@ -56,7 +73,7 @@ if (empty($_POST['category'])) {
     error("You forgot to enter a category!");
 }
 $CategoryID = $_POST['category'];
-if (!is_number($CategoryID)) {
+if (!is_integer_string($CategoryID)) {
     error(0);
 }
 
@@ -77,13 +94,13 @@ if ($NewRequest) {
         $Err = "You forgot to enter any bounty!";
     } else {
         $Bounty = trim($_POST['amount']);
-        if (!is_number($Bounty)) {
+        if (!is_integer_string($Bounty)) {
             $Err = "Your entered bounty is not a number";
 
         } elseif ($Bounty < 100*1024*1024) {
             $Err = "Minumum bounty is 100MB";
 
-        } elseif ($Bounty > ($LoggedUser['BytesUploaded'] - $LoggedUser['BytesDownloaded'])) {
+        } elseif ($Bounty > ($activeUser['BytesUploaded'] - $activeUser['BytesDownloaded'])) {
             // check users cannot go below 1.0 ratio!
             $Err = "You do not have sufficient upload credit to add " . get_size($Bounty) . " to this request";
         }
@@ -100,56 +117,78 @@ if (empty($_POST['image'])) {
     $Image = "";
 } else {
       $Result = validate_imageurl($_POST['image'], 12, 255, get_whitelist_regex());
-      if($Result!==TRUE) $Err = display_str($Result);
+      if ($Result!==TRUE) $Err = display_str($Result);
       else $Image = trim($_POST['image']);
 }
 
-$Text->validate_bbcode($_POST['description'],  get_permissions_advtags($LoggedUser['ID']));
+$bbCode->validate_bbcode($_POST['description'],  get_permissions_advtags($activeUser['ID']));
 
 if (!empty($Err)) {
     error($Err);
 }
 
 if ($NewRequest) {
-        $DB->query("INSERT INTO requests (
-                            UserID, TimeAdded, LastVote, CategoryID, Title, Image, Description, Visible)
-                    VALUES
-                            (".$LoggedUser['ID'].", '".sqltime()."', '".sqltime()."',  ".$CategoryID.", '".db_string($Title)."', '".db_string($Image)."', '".db_string($Description)."', '1')");
+        $master->db->rawQuery(
+            "INSERT INTO requests (UserID, TimeAdded, LastVote, CategoryID, Title, Image, Description, Visible)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+            [
+                $activeUser['ID'],
+                sqltime(),
+                sqltime(),
+                $CategoryID,
+                $Title,
+                $Image,
+                $Description,
+            ]
+        );
 
-        $RequestID = $DB->inserted_id();
+        $RequestID = $master->db->lastInsertID();
 } else {
-        $DB->query("UPDATE requests
-        SET CategoryID = ".$CategoryID.",
-                Title = '".db_string($Title)."',
-                Image = '".db_string($Image)."',
-                Description = '".db_string($Description)."'
-        WHERE ID = ".$RequestID);
+        $master->db->rawQuery(
+            "UPDATE requests
+                SET CategoryID = ?,
+                    Title = ?,
+                    Image = ?,
+                    Description = ?
+              WHERE ID = ?",
+            [$CategoryID, $Title, $Image, $Description, $RequestID]
+        );
 }
 
 //Tags
 if (!$NewRequest) {
-    $DB->query("DELETE FROM requests_tags WHERE RequestID = ".$RequestID);
+    $master->db->rawQuery(
+        "DELETE
+           FROM requests_tags
+          WHERE RequestID = ?",
+        [$RequestID]
+    );
 }
 
-$Tags = explode(' ', strtolower($OpenCategories[$CategoryID]['tag']." ".$Tags));
+$Tags = explode(' ', strtolower($openCategories[$CategoryID]['tag']." ".$Tags));
 
-$TagsAdded=array();
+$TagsAdded = [];
 foreach ($Tags as $Tag) {
-        $Tag = strtolower(trim($Tag,'.')); // trim dots from the beginning and end
+        $Tag = strtolower(trim($Tag, '.')); // trim dots from the beginning and end
         if (!is_valid_tag($Tag) || !check_tag_input($Tag)) continue;
         $Tag = get_tag_synonym($Tag);
         if (!empty($Tag)) {
             if (!in_array($Tag, $TagsAdded)) { // and to create new tags as Uses=1 which seems more correct
                 $TagsAdded[] = $Tag;
-                $DB->query("INSERT INTO tags
-                            (Name, UserID, Uses) VALUES
-                            ('$Tag', $LoggedUser[ID], 1)
-                            ON DUPLICATE KEY UPDATE Uses=Uses+1;");
-                $TagID = $DB->inserted_id();
+                $master->db->rawQuery(
+                    "INSERT INTO tags (Name, UserID, Uses)
+                          VALUES (?, ?, 1)
+                              ON DUPLICATE KEY
+                          UPDATE Uses = Uses + 1",
+                    [$Tag, $activeUser['ID']]
+                );
+                $TagID = $master->db->lastInsertID();
 
-                $DB->query("INSERT IGNORE INTO requests_tags
-                    (TagID, RequestID) VALUES
-                    ($TagID, $RequestID)");
+                $master->db->rawQuery(
+                    "INSERT IGNORE INTO requests_tags (TagID, RequestID)
+                                 VALUES (?, ?)",
+                    [$TagID, $RequestID]
+                );
             }
         }
 }
@@ -158,26 +197,33 @@ $Tags = $TagsAdded;
 
 if ($NewRequest) {
     //Remove the bounty and create the vote
-    $DB->query("INSERT INTO requests_votes
-                    (RequestID, UserID, Bounty)
-                VALUES
-                    (".$RequestID.", ".$LoggedUser['ID'].", ".$Bounty.")");
+    $master->db->rawQuery(
+        "INSERT INTO requests_votes (RequestID, UserID, Bounty)
+              VALUES (?, ?, ?)",
+        [$RequestID, $activeUser['ID'], $Bounty]
+    );
 
-    $DB->query("UPDATE users_main SET Uploaded = (Uploaded - ".$Bounty.") WHERE ID = ".$LoggedUser['ID']);
-    $Cache->delete_value('user_stats_'.$LoggedUser['ID']);
-    $Cache->delete_value('_entity_User_legacy_'.$LoggedUser['ID']);
-    $Cache->delete_value('recent_requests_'.$LoggedUser['ID']);
+    $master->db->rawQuery(
+        "UPDATE users_main
+            SET Uploaded = (Uploaded - ?)
+          WHERE ID = ?",
+        [$Bounty, $activeUser['ID']]
+    );
+    $master->cache->deleteValue('user_stats_'.$activeUser['ID']);
+    $master->cache->deleteValue('_entity_User_legacy_'.$activeUser['ID']);
+    $master->cache->deleteValue('recent_requests_'.$activeUser['ID']);
 
-    write_user_log($LoggedUser['ID'], "Removed -". get_size($Bounty). " for new request [url=/requests.php?action=view&id={$RequestID}]{$Title}[/url]");
+    write_user_log($activeUser['ID'], "Removed -". get_size($Bounty). " for new request [url=/requests.php?action=view&id={$RequestID}]{$Title}[/url]");
 
     $Announce = "'".$Title."' - http://".SITE_URL."/requests.php?action=view&id=".$RequestID." - ".implode(" ", $Tags);
 
-    send_irc('PRIVMSG #'.SITE_URL.'-requests :'.$Announce);
+    $Announce = "'".$Title."' - https://".SSL_SITE_URL."/requests.php?action=view&id=".$RequestID." - ".implode(" ", $Tags);
+    $master->irker->announceRequest("Help a user out by filling their request! " .$Announce);
 
-    write_log("Request $RequestID ($Title) created with " . get_size($Bounty). " bounty by ".$LoggedUser['Username']);
+    write_log("Request $RequestID ($Title) created with " . get_size($Bounty). " bounty by ".$activeUser['Username']);
 
 } else {
-    $Cache->delete_value('request_'.$RequestID);
+    $master->cache->deleteValue('request_'.$RequestID);
 
     // Resolve what changed
     $ChangedFields = [];
@@ -188,7 +234,7 @@ if ($NewRequest) {
     if ($Request['Description'] != $Description) { $ChangedFields[] = 'Description'; }
 
     $LogDetails = implode(', ', $ChangedFields);
-    write_log("Request {$RequestID} was edited by {$LoggedUser['Username']} ({$LogDetails})");
+    write_log("Request {$RequestID} was edited by {$activeUser['Username']} ({$LogDetails})");
 }
 
 update_sphinx_requests($RequestID);

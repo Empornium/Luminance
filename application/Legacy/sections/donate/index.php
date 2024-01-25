@@ -21,7 +21,7 @@ if (!isset($_REQUEST['action'])) {
 
         case 'test_btc':
             // for testign webservice
-            if(!check_perms('site_debug')) error(403);
+            if (!check_perms('site_debug')) error(403);
 
             switch ($_REQUEST['service']) {
                 case 'coindesk':

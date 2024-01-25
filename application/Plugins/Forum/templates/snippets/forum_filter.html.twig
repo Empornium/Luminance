@@ -1,0 +1,25 @@
+<button type="button" onclick="check(true)">Select All</button>
+<button type="button" onclick="check(false)">Unselect All</button>
+<br>
+<table cellpadding="6" cellspacing="1" border="0" class="border" width="100%">
+    {% for category in categories %}
+        <tr>
+            <td class="colhead" colspan="5">{{ category.Name }}</td>
+        </tr>
+        {% for forum in category.forums %}
+            {% if loop.index0 is divisible by(5) %}
+                <tr>
+            {% endif %}
+            <td style="width: 20%">
+                <input id="forum_{{ forum.ID }}" name="forums[{{ forum.ID }}]" type="checkbox" value="{{ forum.ID }}"  {{ selected(forum.ID, '1', 'checked', forums) }}>
+                <label for="forum_{{ forum.ID }}">{{ forum.Name|truncate(25) }}</label>
+            </td>
+            {% if loop.index is not divisible by(5) and loop.last %}
+                <td colspan={{ 5 - loop.index % 5 }}></td>
+            {% endif %}
+            {% if (loop.index is divisible by(5) and not loop.first) or loop.last %}
+                </tr>
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+</table>

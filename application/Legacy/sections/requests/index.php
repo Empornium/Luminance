@@ -2,7 +2,7 @@
 enforce_login();
 include(SERVER_ROOT.'/Legacy/sections/requests/functions.php');
 
-$master->repos->restrictions->check_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::REQUEST);
+$master->repos->restrictions->checkRestricted($activeUser['ID'], Luminance\Entities\Restriction::REQUEST);
 
 if (!isset($_REQUEST['action'])) {
     include(SERVER_ROOT.'/Legacy/sections/requests/requests.php');
@@ -28,7 +28,7 @@ if (!isset($_REQUEST['action'])) {
             break;
         case 'delete':
         case 'unfill':
-	case 'delete_vote':
+        case 'delete_vote':
             include(SERVER_ROOT.'/Legacy/sections/requests/interim.php');
             break;
         case 'takeunfill':
@@ -51,7 +51,7 @@ if (!isset($_REQUEST['action'])) {
             authorize();
             enforce_login();
 
-            if (!isset($_POST['requestid']) || !is_number($_POST['requestid'])) {
+            if (!isset($_POST['requestid']) || !is_integer_string($_POST['requestid'])) {
                 error(0);
             }
 
@@ -59,54 +59,57 @@ if (!isset($_REQUEST['action'])) {
                 error('You cannot post a comment with no content.');
             }
 
-            $master->repos->restrictions->check_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::POST);
+            $master->repos->restrictions->checkRestricted($activeUser['ID'], Luminance\Entities\Restriction::POST);
+            $master->repos->restrictions->checkRestricted($activeUser['ID'], Luminance\Entities\Restriction::COMMENT);
 
-            $Text = new Luminance\Legacy\Text;
-            $Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
+            $bbCode = new \Luminance\Legacy\Text;
+            $bbCode->validate_bbcode($_POST['body'],  get_permissions_advtags($activeUser['ID']));
 
             $RequestID = $_POST['requestid'];
             if (!$RequestID) { error(404); }
 
             flood_check('requests_comments');
 
-            $DB->query("SELECT CEIL((SELECT COUNT(ID)+1 FROM requests_comments AS rc WHERE rc.RequestID='".$RequestID."')/".TORRENT_COMMENTS_PER_PAGE.") AS Pages");
-            list($Pages) = $DB->next_record();
+            $Pages = ceil($master->db->rawQuery(
+                "SELECT COUNT(ID) + 1 / ?
+                   FROM requests_comments AS rc
+                  WHERE rc.RequestID = ?",
+                [TORRENT_COMMENTS_PER_PAGE, $RequestID]
+            )->fetchColumn());
 
-            $DB->query("INSERT INTO requests_comments (RequestID,AuthorID,AddedTime,Body) VALUES (
-                '".$RequestID."', '".db_string($LoggedUser['ID'])."','".sqltime()."','".db_string($_POST['body'])."')");
-            $PostID=$DB->inserted_id();
+            $master->db->rawQuery(
+                "INSERT INTO requests_comments (RequestID, AuthorID, AddedTime, Body)
+                      VALUES (?, ?, ?, ?)",
+                [$RequestID, $activeUser['ID'], sqltime(), $_POST['body']]
+            );
+            $PostID = $master->db->lastInsertID();
 
             $CatalogueID = floor((TORRENT_COMMENTS_PER_PAGE*$Pages-TORRENT_COMMENTS_PER_PAGE)/THREAD_CATALOGUE);
-            $Cache->begin_transaction('request_comments_'.$RequestID.'_catalogue_'.$CatalogueID);
-            $Post = array(
-                'ID'=>$PostID,
-                'AuthorID'=>$LoggedUser['ID'],
-                'AddedTime'=>sqltime(),
-                'Body'=>$_POST['body'],
-                'EditedUserID'=>0,
-                'EditedTime'=>'0000-00-00 00:00:00',
-                'Username'=>''
-                );
-            $Cache->insert('', $Post);
-            $Cache->commit_transaction(0);
-            $Cache->increment('request_comments_'.$RequestID);
+            $master->cache->deleteValue('request_comments_'.$RequestID.'_catalogue_'.$CatalogueID);
+            $master->cache->incrementValue('request_comments_'.$RequestID);
 
             // Comments notification
-            $Sql          = 'SELECT r.UserID, r.Title, CommentsNotify FROM requests AS r LEFT JOIN users_info AS u ON u.UserID = r.UserID WHERE r.ID = :ID';
-            $Prepare      = [':ID' => $RequestID];
-            $RequestInfos = $master->db->raw_query($Sql, $Prepare)->fetch(\PDO::FETCH_ASSOC);
-            if ($RequestInfos['UserID'] != $LoggedUser['ID'] && $RequestInfos['CommentsNotify']) {
+            $RequestInfos = $master->db->rawQuery(
+                'SELECT r.UserID,
+                        r.Title,
+                        CommentsNotify
+                   FROM requests AS r
+              LEFT JOIN users_info AS u ON u.UserID = r.UserID
+                  WHERE r.ID = ?',
+                [$RequestID]
+            )->fetch(\PDO::FETCH_ASSOC);
+            if ($RequestInfos['UserID'] != $activeUser['ID'] && $RequestInfos['CommentsNotify']) {
                 $ToID    = (int) $RequestInfos['UserID'];
                 $FromID  = 0; // System
-                $Author  = "[url=/user.php?id={$LoggedUser['ID']}]{$LoggedUser['Username']}[/url]";
-                $Request = "[url=/requests.php?action=view&id={$RequestID}&page={$Pages}#post{$PostID}]{$RequestInfos['Title']}[/url]";
-                $Subject = "Comment received on your request by {$LoggedUser['Username']}";
+                $Author  = "[url=/user.php?id={$activeUser['ID']}]{$activeUser['Username']}[/url]";
+                $Request = "[url=/requests.php?action=view&id={$RequestID}&postid={$PostID}#post{$PostID}]{$RequestInfos['Title']}[/url]";
+                $Subject = "Comment received on your request by {$activeUser['Username']}";
                 $Body    = "[br]You have received a comment from {$Author} on your request {$Request}[br][br]";
-                $Body   .= "[quote={$LoggedUser['Username']},r{$RequestID},{$PostID}]{$_POST['body']}[/quote]";
-                send_pm($RequestInfos['UserID'], $FromID, db_string($Subject), db_string($Body));
+                $Body   .= "[quote={$activeUser['Username']},r{$RequestID},{$PostID}]{$_POST['body']}[/quote]";
+                send_pm($RequestInfos['UserID'], $FromID, $Subject, $Body);
             }
 
-            header('Location: requests.php?action=view&id='.$RequestID.'&page='.$Pages."#post$PostID");
+            header("Location: /requests.php?action=view&id={$RequestID}&postid={$PostID}#post{$PostID}");
             break;
 
         case 'get_post':
@@ -117,50 +120,117 @@ if (!isset($_REQUEST['action'])) {
             include(SERVER_ROOT.'/Legacy/sections/requests/takeedit_comment.php');
             break;
 
+        case 'add_comment':
+            require(SERVER_ROOT.'/Legacy/sections/requests/add_comment.php');
+            break;
+
+        case 'trash_post':
+            enforce_login();
+            authorize();
+            $RequestID = (int) $_GET['id'];
+            $postID = (int) $_GET['postid'];
+
+            if (!$_GET['postid'] || !is_integer_string($_GET['postid'])) { error(0); }
+            $post = $this->master->repos->requestcomments->load($postID);
+            if ($this->auth->isAllowed('request_post_trash')) {
+                $post->setFlags(\Luminance\Entities\RequestComment::TRASHED);
+                $this->master->repos->requestcomments->save($post);
+                $master->irker->announcelab('Comment '.$postID.' has been trashed on request '.$groupID);
+                $master->flasher->success("Post ".$postID." has been successfully trashed");
+            }
+            elseif (!($this->auth->isAllowed('request_post_trash'))) {
+                $master->flasher->warning("You do not have this permission.");
+            }
+            header("Location: requests.php?action=view&id=".$RequestID);
+        break;
+
+        case 'restore_post':
+            enforce_login();
+            authorize();
+            $RequestID = (int) $_GET['id'];
+            $postID = (int) $_GET['postid'];
+            if (!$_GET['postid'] || !is_integer_string($_GET['postid'])) { error(0); }
+            if ($this->auth->isAllowed('torrent_post_edit')) {
+                $post = $this->master->repos->requestcomments->load($postID);
+                $post->unsetFlags(\Luminance\Entities\RequestComment::TRASHED);
+                $this->master->repos->requestcomments->save($post);
+                $master->irker->announcelab('Comment '.$postID.' has been restored on request '.$groupID);
+                $master->flasher->success("Post ".$postID." has been successfully restored");
+            }
+            elseif (!($this->auth->isAllowed('torrent_post_edit'))) {
+                $master->flasher->warning("You do not have this permission.");
+            }
+            header("Location: requests.php?action=view&id=".$RequestID);
+            break;
+
         case 'delete_comment':
             enforce_login();
             authorize();
 
             // Quick SQL injection check
-            if (!$_GET['postid'] || !is_number($_GET['postid'])) { error(0); }
+            if (!$_GET['postid'] || !is_integer_string($_GET['postid'])) { error(0); }
 
-            // Make sure they are moderators
-            if (!check_perms('site_moderate_forums')) { error(403); }
+            // Make sure they are moderators forum_TODO
+            if (!check_perms('forum_moderate')) { error(403); }
 
-            // Get topicid, forumid, number of pages
-            $DB->query("SELECT DISTINCT
-                RequestID,
-                CEIL((SELECT COUNT(rc1.ID) FROM requests_comments AS rc1 WHERE rc1.RequestID=rc.RequestID)/".TORRENT_COMMENTS_PER_PAGE.") AS Pages,
-                CEIL((SELECT COUNT(rc2.ID) FROM requests_comments AS rc2 WHERE rc2.ID<'".db_string($_GET['postid'])."')/".TORRENT_COMMENTS_PER_PAGE.") AS Page
-                FROM requests_comments AS rc
-                WHERE rc.RequestID=(SELECT RequestID FROM requests_comments WHERE ID='".db_string($_GET['postid'])."')");
-            list($RequestID,$Pages,$Page)=$DB->next_record();
+            $RequestID = $master->db->rawQuery(
+                "SELECT RequestID
+                   FROM requests_comments
+                  WHERE ID = ?",
+                [$_GET['postid']]
+            )->fetchColumn();
+
+            // Get threadid, forumid, number of pages
+            $Page = ceil($master->db->rawQuery(
+                'SELECT COUNT(ID) / ?
+                   FROM requests_comments
+                  WHERE RequestID = ?',
+                [TORRENT_COMMENTS_PER_PAGE, $RequestID]
+            )->fetchColumn());
+
+            $Pages = ceil($master->db->rawQuery(
+                'SELECT COUNT(ID) / ?
+                   FROM requests_comments
+                  WHERE RequestID = ?
+                    AND ID < ?',
+                [TORRENT_COMMENTS_PER_PAGE, $RequestID, $_GET['postid']]
+            )->fetchColumn());
 
             // $Pages = number of pages in the thread
             // $Page = which page the post is on
             // These are set for cache clearing.
+            $master->db->rawQuery(
+                "DELETE
+                   FROM requests_comments
+                  WHERE ID = ?",
+                [$_GET['postid']]
+            );
 
-            $DB->query("DELETE FROM requests_comments WHERE ID='".db_string($_GET['postid'])."'");
-
-            //We need to clear all subsequential catalogues as they've all been bumped with the absence of this post
-            $ThisCatalogue = floor((TORRENT_COMMENTS_PER_PAGE*$Page-TORRENT_COMMENTS_PER_PAGE)/THREAD_CATALOGUE);
-            $LastCatalogue = floor((TORRENT_COMMENTS_PER_PAGE*$Pages-TORRENT_COMMENTS_PER_PAGE)/THREAD_CATALOGUE);
-            for ($i=$ThisCatalogue;$i<=$LastCatalogue;$i++) {
-                $Cache->delete('request_comments_'.$RequestID.'_catalogue_'.$i);
+            // We need to clear all subsequential catalogues as they've all been bumped with the absence of this post
+            $ThisCatalogue = floor((TORRENT_COMMENTS_PER_PAGE*$Page)/THREAD_CATALOGUE);
+            $LastCatalogue = floor((TORRENT_COMMENTS_PER_PAGE*$Pages)/THREAD_CATALOGUE);
+            for ($i=$ThisCatalogue; $i<=$LastCatalogue; $i++) {
+                $master->cache->deleteValue('request_comments_'.$RequestID.'_catalogue_'.$i);
             }
 
             // Delete thread info cache (eg. number of pages)
-            $Cache->delete('request_comments_'.$GroupID);
+            $master->cache->deleteValue('request_comments_'.$GroupID);
         break;
 
         case 'next':
             enforce_login();
 
-            if(empty($_GET['id']) || !is_number($_GET['id'])) error(0);
+            if (empty($_GET['id']) || !is_integer_string($_GET['id'])) error(0);
 
-            $DB->query("SELECT ID FROM requests WHERE ID>'".$_GET['id']."' ORDER BY ID ASC LIMIT 1" );
-            list($RequestID) = $DB->next_record();
-            if(!$RequestID) error('Cannot find a next record after <a href="/requests.php?action=view&id='.$_GET['id'].'">the request you came from</a>');
+            $RequestID = $master->db->rawQuery(
+                "SELECT ID
+                   FROM requests
+                  WHERE ID > ?
+               ORDER BY ID ASC
+                  LIMIT 1",
+                [$_GET['id']]
+            )->fetchColumn();
+            if (!$RequestID) error('Cannot find a next record after <a href="/requests.php?action=view&id='.$_GET['id'].'">the request you came from</a>');
 
             header("Location: requests.php?action=view&id=".$RequestID);
             break;
@@ -168,11 +238,17 @@ if (!isset($_REQUEST['action'])) {
         case 'prev':
             enforce_login();
 
-            if(empty($_GET['id']) || !is_number($_GET['id'])) error(0);
+            if (empty($_GET['id']) || !is_integer_string($_GET['id'])) error(0);
 
-            $DB->query("SELECT ID FROM requests WHERE ID<'".$_GET['id']."' ORDER BY ID DESC LIMIT 1" );
-            list($RequestID) = $DB->next_record();
-            if(!$RequestID) error('Cannot find a previous record to <a href="/requests.php?action=view&id='.$_GET['id'].'">the request you came from</a>');
+            $RequestID = $master->db->rawQuery(
+                "SELECT ID
+                   FROM requests
+                  WHERE ID < ?
+               ORDER BY ID DESC
+                  LIMIT 1",
+                [$_GET['id']]
+            )->fetchColumn();
+            if (!$RequestID) error('Cannot find a previous record to <a href="/requests.php?action=view&id='.$_GET['id'].'">the request you came from</a>');
 
             header("Location: requests.php?action=view&id=".$RequestID);
             break;

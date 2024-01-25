@@ -11,17 +11,17 @@ if (!check_perms('users_manage_cheats')) { error(403); }
 $Action = 'speed_zerocheats';
 
 if (!empty($_GET['order_way']) && $_GET['order_way'] == 'asc') {
-    $OrderWay = 'asc'; // For header links
+    $orderWay = 'asc'; // For header links
 } else {
     $_GET['order_way'] = 'desc';
-    $OrderWay = 'desc';
+    $orderWay = 'desc';
 }
 
-if (empty($_GET['order_by']) || !in_array($_GET['order_by'], array('Username', 'peercount', 'grabbed', 'history', 'time' ,'JoinDate' ))) {
+if (empty($_GET['order_by']) || !in_array($_GET['order_by'], ['Username', 'peercount', 'grabbed', 'history', 'time', 'JoinDate'])) {
     $_GET['order_by'] = 'upspeed';
-    $OrderBy = 'upspeed';
+    $orderBy = 'upspeed';
 } else {
-    $OrderBy = $_GET['order_by'];
+    $orderBy = $_GET['order_by'];
 }
 
 $NumGrabbed = isset($_GET['grabbed']) ? (int) $_GET['grabbed'] : 2;
@@ -38,7 +38,7 @@ if (isset($_GET['viewbanned']) && $_GET['viewbanned']) {
     $ViewInfo .= ' (enabled only)';
 }
 
-show_header('Zero Stat Cheats','watchlist');
+show_header('Zero Stat Cheats', 'watchlist');
 
 ?>
 <div class="thin">
@@ -54,7 +54,7 @@ show_header('Zero Stat Cheats','watchlist');
 
     <div class="head">options</div>
     <table class="box pad">
-        <tr class="colhead"><td colspan="3">view settings: <span style="float:right;font-weight: normal"><?=$ViewInfo?> &nbsp; (order: <?="$OrderBy $OrderWay"?>)</span> </td></tr>
+        <tr class="colhead"><td colspan="3">view settings: <span style="float:right;font-weight: normal"><?=$ViewInfo?> &nbsp; (order: <?="$orderBy $orderWay"?>)</span> </td></tr>
             <tr class="rowb">
                 <td class="center">
                             <label for="viewbanned" title="Keep Speed">show disabled users </label>
@@ -87,51 +87,52 @@ show_header('Zero Stat Cheats','watchlist');
 
 //---------- print records
 
-list($Page,$Limit) = page_limit(50);
+list($Page, $Limit) = page_limit(50);
 
-$DB->query("SELECT SQL_CALC_FOUND_ROWS
-                   uid, Username, COUNT(x.fid) as Peercount, Count(DISTINCT ud.TorrentID) as Grabbed,
+$Records = $master->db->rawQuery("SELECT SQL_CALC_FOUND_ROWS
+                   uid, u.Username, COUNT(x.fid) as Peercount, Count(DISTINCT ud.TorrentID) as Grabbed,
                             MAX(x.upspeed) as upspeed, MAX(x.mtime) as time, ui.JoinDate,
                              GROUP_CONCAT(DISTINCT LEFT(x.peer_id,8) SEPARATOR '|'),
                              GROUP_CONCAT(DISTINCT INET6_NTOA(x.ipv4) SEPARATOR '|'),
-                             ui.Donor, um.Enabled, um.PermissionID, IF(w.UserID,'1','0'), IF(nc.UserID,'1','0'),
-                             IF(ui.SeedHistory,'true','false') as history
+                             ui.Donor, um.Enabled, um.PermissionID, IF(w.UserID, '1', '0'), IF(nc.UserID, '1', '0'),
+                             IF(ui.SeedHistory, 'true', 'false') as history
                FROM xbt_files_users AS x
                JOIN torrents AS t ON t.ID=x.fid AND x.active=1
+               JOIN users AS u ON u.ID=x.uid
                JOIN users_main AS um ON um.ID=x.uid AND  um.Downloaded=0 AND ( um.Uploaded=524288000 OR  um.Uploaded=0)
                JOIN users_info AS ui ON ui.UserID=um.ID
                LEFT JOIN users_downloads AS ud ON ud.UserID=um.ID
                LEFT JOIN users_watch_list AS w ON w.UserID=x.uid
                LEFT JOIN users_not_cheats AS nc ON nc.UserID=x.uid
-                         WHERE ui.JoinDate<'".time_minus(3600*24*$ViewDays)."' $WHERE
+                         WHERE ui.JoinDate<'".time_minus(3600*24*$ViewDays)."' {$WHERE}
                       GROUP BY x.uid
-                        HAVING Grabbed >= '$NumGrabbed'
-                      ORDER BY $OrderBy $OrderWay
-                         LIMIT $Limit");
+                        HAVING Grabbed >= ?
+                      ORDER BY {$orderBy} {$orderWay}
+                         LIMIT {$Limit}",
+    [$NumGrabbed]
+)->fetchAll(\PDO::FETCH_NUM);
 
-$Records = $DB->to_array();
-$DB->query("SELECT FOUND_ROWS()");
-list($NumResults) = $DB->next_record();
+$NumResults = $master->db->foundRows();
 
-$Pages=get_pages($Page,$NumResults,50,9);
+$Pages = get_pages($Page, $NumResults, 50, 9);
 
 ?>
 
-    <div class="linkbox"><?=$Pages?></div>
+    <div class="linkbox pager"><?= $Pages ?></div>
 
     <div class="head"><?=$NumResults?> users with suspicious zero stats</div>
         <table>
             <tr class="colhead">
                 <td style="width:20px"></td>
-                <td class="center"><a href="/<?=header_link('Username') ?>">User</a></td>
-                <!--<td class="center"><a href="/<?=header_link('upspeed') ?>">Max UpSpeed</a></td>-->
-                <td class="center" title="number of current peer records"><a href="/<?=header_link('peercount') ?>">peer on</a></td>
-                <td class="center" title="number of grabbed files"><a href="/<?=header_link('grabbed') ?>">grabbed</a></td>
-                <td class="center" title="has seed history"><a href="/<?=header_link('history') ?>">tracker history</a></td>
+                <td class="center"><a href="<?=header_link('Username') ?>">User</a></td>
+                <!--<td class="center"><a href="<?=header_link('upspeed') ?>">Max UpSpeed</a></td>-->
+                <td class="center" title="number of current peer records"><a href="<?=header_link('peercount') ?>">peer on</a></td>
+                <td class="center" title="number of grabbed files"><a href="<?=header_link('grabbed') ?>">grabbed</a></td>
+                <td class="center" title="has seed history"><a href="<?=header_link('history') ?>">tracker history</a></td>
                 <td class="center"><span style="color:#777">-clientID-</span></td>
                 <td class="center">Client IP addresses</td>
-                <td class="center" style="min-width:120px"><a href="/<?=header_link('time') ?>">last seen</a></td>
-                <td class="center" style="min-width:120px"><a href="/<?=header_link('JoinDate') ?>">joined</a></td>
+                <td class="center" style="min-width:120px"><a href="<?=header_link('time') ?>">last seen</a></td>
+                <td class="center" style="min-width:120px"><a href="<?=header_link('JoinDate') ?>">joined</a></td>
             </tr>
 <?php
             $row = 'a';
@@ -143,45 +144,28 @@ $Pages=get_pages($Page,$NumResults,50,9);
 <?php
             } else {
                 foreach ($Records as $Record) {
-                    list( $UserID, $Username, $CountRecords, $Grabbed, $MaxUpSpeed, $LastTime, $JoinDate,  $PeerIDs, $IPs,
-                            $IsDonor, $Enabled, $ClassID, $OnWatchlist, $OnExcludelist, $HasSeedHistory) = $Record;
+                    list( $userID, $Username, $CountRecords, $Grabbed, $MaxUpSpeed, $LastTime, $JoinDate,  $PeerIDs, $IPs,
+                            $IsDonor, $enabled, $classID, $OnWatchlist, $OnExcludelist, $HasSeedHistory) = $Record;
                     $row = ($row === 'a' ? 'b' : 'a');
 
                     $PeerIDs = explode('|', $PeerIDs);
                     $IPs = explode('|', $IPs);
-
-    $DB->query(" (SELECT e.UserID AS UserID, um.IP, 'account', 'history' FROM users_main AS um JOIN users_history_ips AS e ON um.IP=e.IP
-                 WHERE um.IP != '127.0.0.1' AND um.IP !='' AND e.UserID!= $UserID AND um.ID = $UserID)
-                UNION
-                 (SELECT e.ID AS UserID, um.IP, 'account', 'account' FROM users_main AS um JOIN users_main AS e ON um.IP=e.IP
-                 WHERE um.IP != '127.0.0.1' AND um.IP !='' AND e.ID!= $UserID AND um.ID = $UserID)
-                UNION
-                 (SELECT um.ID AS UserID, um.IP, 'history', 'account' FROM users_main AS um JOIN users_history_ips AS e ON um.IP=e.IP
-                 WHERE um.IP != '127.0.0.1' AND um.IP !='' AND e.UserID = $UserID AND um.ID != $UserID)
-                UNION
-                 (SELECT um.UserID AS UserID, um.IP, 'history', 'history' FROM users_history_ips AS um JOIN users_history_ips AS e ON um.IP=e.IP
-                 WHERE um.IP != '127.0.0.1' AND um.IP !='' AND e.UserID = $UserID AND um.UserID != $UserID)
-                ORDER BY  UserID, IP
-                LIMIT 20");
-                    $IPDupeCount = $DB->record_count();
-                    $IPDupes = $DB->to_array();
-
 ?>
                     <tr class="row<?=$row?>">
                         <td>
 <?php
-                            if ($Enabled=='1') {  ?>
-                                <a href="/tools.php?action=ban_zero_cheat&banuser=1&userid=<?=$UserID?>" title="ban this user for being a big fat zero stat cheat"><img src="static/common/symbols/ban2.png" alt="ban" /></a>
+                            if ($enabled=='1') {  ?>
+                                <a href="/tools.php?action=ban_zero_cheat&banuser=1&userid=<?=$userID?>" title="ban this user for being a big fat zero stat cheat"><img src="/static/common/symbols/ban2.png" alt="ban" /></a>
 <?php                           }
                            ?>
                         </td>
                         <td class="center">
-<?php                           echo format_username($UserID, $Username, $IsDonor, true, $Enabled, $ClassID, false, false);
+<?php                           echo format_username($userID, $IsDonor, true, $enabled, $classID, false, false);
 
-                            if ($IPDupeCount>0) { ?>
+                            if (($IPDupeCount ?? 0) > 0) { ?>
 
                             <span style="float:right;">
-                                <a href="#" title="view matching ip's for this user" onclick="$('#linkeddiv<?=$UserID?>').toggle();this.innerHTML=this.innerHTML=='(hide)'?'(view)':'(hide)';return false;">(view)</a>
+                                <a href="#" title="view matching ip's for this user" onclick="$('#linkeddiv<?=$userID?>').toggle();this.innerHTML=this.innerHTML=='(hide)'?'(view)':'(hide)';return false;">(view)</a>
                             </span>
 <?php
                             }
@@ -197,8 +181,7 @@ $Pages=get_pages($Page,$NumResults,50,9);
                         </td>
                         <td class="center"><?php
                             foreach ($IPs as $IP) {
-                                $ipcc = geoip($IP);
-                                echo display_ip($IP, $ipcc)."<br/>";
+                                echo display_ip($IP)."<br/>";
                             }
                         ?>
                         </td>
@@ -206,9 +189,9 @@ $Pages=get_pages($Page,$NumResults,50,9);
                         <td class="center"><?=time_diff($JoinDate, 2, true, false, 0)?></td>
                     </tr>
 <?php
-            if ($IPDupeCount>0) {
+            if (($IPDupeCount ?? 0) > 0) {
 ?>
-                    <tr id="linkeddiv<?=$UserID?>" style="font-size:0.9em;" class="hidden row<?=$row?>">
+                    <tr id="linkeddiv<?=$userID?>" style="font-size:0.9em;" class="hidden row<?=$row?>">
                         <td colspan="10">
             <table width="100%" class="border">
 <?php
@@ -221,19 +204,19 @@ $Pages=get_pages($Page,$NumResults,50,9);
             <tr>
 
                 <td align="center">
-                    <?=format_username($EUserID, $DupeInfo['Username'], $DupeInfo['Donor'], $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
+                    <?=format_username($EUserID, $DupeInfo['Donor'], $DupeInfo['Enabled'], $DupeInfo['PermissionID'])?>
                 </td>
                 <td align="center">
                     <?=display_ip($IP, $DupeInfo['ipcc'])?>
                 </td>
                 <td align="left">
-                    <?="$Username's $EType1 <-> $DupeInfo[Username]'s $EType2"?>
+                    <?="{$Username}'s {$EType1} <-> {$DupeInfo['Username']}'s {$EType2}"?>
                 </td>
                 <td>
 <?php
-                    if ( !array_key_exists($EUserID, $Dupes) ) {
+                    if (!array_key_exists($EUserID, $Dupes)) {
 ?>
-                        [<a href="/user.php?action=dupes&dupeaction=link&auth=<?=$LoggedUser['AuthKey']?>&userid=<?=$UserID?>&targetid=<?=$EUserID?>" title="link this user to <?=$Username?>">link</a>]
+                        [<a href="/user.php?action=dupes&dupeaction=link&auth=<?=$activeUser['AuthKey']?>&userid=<?=$userID?>&targetid=<?=$EUserID?>" title="link this user to <?=$Username?>">link</a>]
 <?php
                     }
 ?>
@@ -255,7 +238,7 @@ $Pages=get_pages($Page,$NumResults,50,9);
             }
             ?>
         </table>
-    <div class="linkbox"><?=$Pages?></div>
+    <div class="linkbox pager"><?= $Pages ?></div>
 </div>
 <?php
 show_footer();

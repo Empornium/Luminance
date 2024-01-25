@@ -3,20 +3,20 @@ if (!check_perms('site_mass_pm_snatchers')) {
     error(403);
 }
 
-if ( !isset($_GET['torrentid']) || !is_number($_GET['torrentid']) ) {
+if (!isset($_GET['torrentid']) || !is_integer_string($_GET['torrentid'])) {
     error(0);
 }
 
-$TorrentID = $_GET['torrentid'];
+$torrentID = $_GET['torrentid'];
 
-$DB->query("SELECT
-        tg.Name AS Title,
-        t.GroupID
-        FROM torrents AS t
-        JOIN torrents_group AS tg ON tg.ID=t.GroupID
-        WHERE t.ID='$TorrentID'");
-
-list($Properties) = $DB->to_array(false,MYSQLI_BOTH);
+$Properties = $master->db->rawQuery(
+    "SELECT tg.Name AS Title,
+            t.GroupID
+       FROM torrents AS t
+       JOIN torrents_group AS tg ON tg.ID = t.GroupID
+      WHERE t.ID = ?",
+    [$torrentID]
+)->fetch(\PDO::FETCH_BOTH);
 
 if (!$Properties) { error(404); }
 
@@ -45,7 +45,7 @@ if (!empty($Subject)) $MessageTitle = $Subject;
 
 show_header('Send Mass PM', 'upload,bbcode,inbox');
 
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
 ?>
 <div class="thin">
@@ -57,14 +57,14 @@ $Text = new Luminance\Legacy\Text;
             <br/>
             <div class="box pad">
                 <input type="hidden" name="action" value="takemasspm" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-                <input type="hidden" name="torrentid" value="<?=$TorrentID?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
+                <input type="hidden" name="torrentid" value="<?=$torrentID?>" />
                 <input type="hidden" name="groupid" value="<?=$Properties['GroupID']?>" />
                 <h3>Subject</h3>
                 <input type="text" name="subject" class="long" value="<?= display_str($MessageTitle) ?>"/>
                 <br />
                 <h3>Message</h3>
-                <?php  $Text->display_bbcode_assistant("message", get_permissions_advtags($LoggedUser['ID'], $LoggedUser['CustomPermissions'])); ?>
+                <?php  $bbCode->display_bbcode_assistant("message", get_permissions_advtags($activeUser['ID'], $activeUser['CustomPermissions'])); ?>
                 <textarea id="message" name="message" class="long" rows="10"><?= display_str($Message) ?></textarea>
             </div>
         </div>

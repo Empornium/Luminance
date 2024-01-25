@@ -6,10 +6,10 @@ if (!check_perms('admin_create_users')) {
 if (!empty($_POST['submit'])) {
     authorize();
 
-    $Val->SetFields('username', true, 'regex', 'You did not enter a valid username.', array('regex' => '/^[a-z0-9_?]{1,20}$/iD'));
+    $Val->SetFields('username', true, 'regex', 'You did not enter a valid username.', ['regex' => '/^[a-z0-9_?]{1,20}$/iD']);
     $Val->SetFields('email', true, 'email', 'You did not enter a valid email address.');
-    $Val->SetFields('password', true, 'string', 'You did not enter a valid password (6 - 40 characters).', array('minlength' => 6, 'maxlength' => 40));
-    $Val->SetFields('confirm_password', true, 'compare', 'Your passwords do not match.', array('comparefield' => 'password'));
+    $Val->SetFields('password', true, 'string', 'You did not enter a valid password (6 - 40 characters).', ['minlength' => 6, 'maxlength' => 40]);
+    $Val->SetFields('confirm_password', true, 'compare', 'Your passwords do not match.', ['comparefield' => 'password']);
 
     $Err = $Val->ValidateForm($_POST);
     if ($Err) error($Err);
@@ -36,7 +36,7 @@ if (!empty($_POST['submit'])) {
 
         <form method="post" action="" name="create_user">
             <input type="hidden" name="action" value="create_user" />
-            <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+            <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
             <table cellpadding="2" cellspacing="1" border="0" align="center">
                 <tr valign="top">
                     <td align="right" class="label">Username&nbsp;</td>

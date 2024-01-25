@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `staff_pm_messages` (
   `EditedUserID` int(11) DEFAULT NULL,
   `EditedTime` datetime DEFAULT NULL,
   `SentDate` datetime DEFAULT NULL,
-  `Message` text,
+  `Message` mediumtext NOT NULL,
   `IsNotes` tinyint(1) DEFAULT '0',
   `ConvID` int(11) DEFAULT NULL,
   PRIMARY KEY (`ID`),

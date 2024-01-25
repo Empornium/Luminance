@@ -1,11 +1,11 @@
 <?php
 
-if (!check_perms('torrents_review_manage')) error(403);
+if (!check_perms('torrent_review_manage')) error(403);
 
 
 show_header('Manage torrents marked for deletion', 'bbcode,marked_reasons,jquery');
 
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
 ?>
 <div class="thin">
@@ -27,7 +27,7 @@ $Text = new Luminance\Legacy\Text;
                 <div class="box pad hidden" id="response_div_0" style="text-align:left;">
                 </div>
                 <div  class="pad" id="response_editor_0" >
-                            <?php  $Text->display_bbcode_assistant("response_message_0", true); ?>
+                            <?php  $bbCode->display_bbcode_assistant("response_message_0", true); ?>
                     <textarea class="long" onfocus="if (this.value == 'New message') this.value='';"
                               rows="10" name="description" id="response_message_0">New message</textarea>
                 </div>
@@ -46,8 +46,9 @@ $Text = new Luminance\Legacy\Text;
 <?php
 
 // List common responses
-$DB->query("SELECT ID, Sort, Name, Description FROM review_reasons ORDER BY Sort ASC");
-while (list($ID, $Sort, $Name, $Description) = $DB->next_record()) {
+$records = $master->db->rawQuery("SELECT ID, Sort, Name, Description FROM review_reasons ORDER BY Sort ASC")->fetchAll(\PDO::FETCH_NUM);
+foreach ($records as $record) {
+list($ID, $Sort, $Name, $Description) = $record;
 
 ?>
         <div class="messagecontainer" id="container_<?=$ID?>"><div id="ajax_message_<?=$ID?>" class="hidden center messagebar"></div></div>
@@ -63,10 +64,10 @@ while (list($ID, $Sort, $Name, $Description) = $DB->next_record()) {
             <div id="response_<?=$ID?>" class="box">
                 <form id="response_form_<?=$ID?>" action="">
                     <div class="box pad" id="response_div_<?=$ID?>" style="text-align:left;">
-                        <?=$Text->full_format($Description, true, true)?>
+                        <?=$bbCode->full_format($Description, true, true)?>
                     </div>
                     <div class="pad hidden" id="response_editor_<?=$ID?>" >
-                        <?php  $Text->display_bbcode_assistant("response_message_".$ID, true); ?>
+                        <?php  $bbCode->display_bbcode_assistant("response_message_".$ID, true); ?>
                         <textarea class="long" onfocus="if (this.value == 'New message') this.value='';"
                            rows="10" id="response_message_<?=$ID?>" name="description"><?=display_str($Description)?></textarea>
                     </div>
@@ -83,7 +84,7 @@ while (list($ID, $Sort, $Name, $Description) = $DB->next_record()) {
 if (isset($_GET['added'])) {
 ?>
     <script type="text/javascript">
-        addDOMLoadEvent(function () { Display_Message(<?=(int) $_GET['added']?>) } );
+        addDOMLoadEvent(function () { Display_Message(<?=(int) $_GET['added']?>) });
     </script>
 <?php
 }

@@ -1,53 +1,77 @@
 <?php
-include(SERVER_ROOT.'/Legacy/sections/staffpm/functions.php');
-include(SERVER_ROOT.'/common/functions.php');
+include_once(SERVER_ROOT.'/Legacy/sections/staffpm/functions.php');
 
 show_header('Staff Inbox');
 
 $View = display_str($_GET['view']);
-$UserLevel = $LoggedUser['Class'];
+$user = $this->master->request->user;
 
-list($NumMy, $NumUnanswered, $NumOpen) = get_num_staff_pms($LoggedUser['ID'], $UserLevel);
+list($NumMy, $NumUnanswered, $NumOpen) = get_num_staff_pms($user->ID, $user->class->Level);
 
+$Show = isset($_REQUEST['show'])?($_REQUEST['show']==1?1:0):0;
+$Assign = isset($_REQUEST['assign'])?$_REQUEST['assign']:'';
+if ($Assign !== '' && !in_array($Assign, ['mod', 'smod', 'admin'])) $Assign = '';
+$Subject = isset($_REQUEST['sub'])?$_REQUEST['sub']:'';
+$Msg = isset($_REQUEST['msg'])?$_REQUEST['msg']:'';
+?>
+<div class="thin">
+    <?php if (!$master->repos->restrictions->isRestricted($user->ID, Luminance\Entities\Restriction::STAFFPM)):
+        if(!$user->class->DisplayStaff) { ?>
+            <div class="head">Staff PMs</div>
+            <div class="box pad">
+              <div class="center">
+                    <a href="#" onClick="jQuery('#compose').slideToggle('slow');">[Compose New]</a>
+              </div>
+            <?php  print_compose_staff_pm(!$Show, $Assign, $Subject, $Msg);  ?>
+            </div>
+        <?php } ?>
+    <?php endif; ?>
+<?php
 // Setup for current view mode & search
-$SortStr = "IF(AssignedToUser = ".$LoggedUser['ID'].",0,1) ASC, ";
+$SortStr = "IF(AssignedToUser = ".$user->ID.",0,1) ASC, ";
 
 if (!empty($_GET['order_way']) && $_GET['order_way'] == 'asc') {
-    $OrderWay = 'asc'; // For header links
+    $orderWay = 'asc'; // For header links
 } else {
     $_GET['order_way'] = 'desc';
-    $OrderWay = 'desc';
+    $orderWay = 'desc';
 }
 
-if (empty($_GET['order_by']) || !in_array($_GET['order_by'], array('Subject', 'UserID', 'Date', 'Level', 'ResolverID', 'Status'))) {
-    $OrderBy = 'Status';
+if (empty($_GET['order_by']) || !in_array($_GET['order_by'], ['Subject', 'UserID', 'Date', 'Level', 'ResolverID', 'Status'])) {
+    $orderBy = 'Status';
 } else {
-    $OrderBy = $_GET['order_by'];
+    $orderBy = $_GET['order_by'];
 }
 
 $WhereCondition = "";
+$params = [];
 if (!empty($_GET['search']) && $_GET['searchtype'] == "message") {
     $WhereCondition .=     " JOIN staff_pm_messages AS m ON c.ID=m.ConvID";
 } elseif (!empty($_GET['search']) && $_GET['searchtype'] == "user") {
-    $WhereCondition .=     " JOIN users_main AS um ON um.ID=c.UserID";
+    $WhereCondition .=     " JOIN users AS u ON u.ID=c.UserID";
 }
 
 $InternalView = $View;
 
 $WhereCondition .= " WHERE ";
 if (!empty($_GET['search'])) {
-        if(isset($_GET['allfolders']) && $_GET['allfolders'] == '1'){
+        if (isset($_GET['allfolders']) && $_GET['allfolders'] == '1') {
             $InternalView = 'allfolders';
         }
-        $Search = db_string($_GET['search']);
+        $Search = $_GET['search'];
        if ($_GET['searchtype'] == "subject") {
             $Words = explode(' ', $Search);
-            $WhereCondition .= "c.Subject LIKE '%".implode("%' AND c.Subject LIKE '%", $Words)."%' AND ";
+            $subjectConditions = implode(' AND ', array_fill(0, count($Words), 'c.Subject LIKE ?'));
+            $WhereCondition .= "{$subjectConditions} AND ";
+            $params = array_merge($params, array_map(function($w) { return "%{$w}%"; }, $Words));
         } elseif ($_GET['searchtype'] == "user") {
-            $WhereCondition .= "um.Username LIKE '".$Search."' AND ";
+            $WhereCondition .= "u.Username LIKE ? AND ";
+            $params[] = $Search;
         } elseif ($_GET['searchtype'] == "message") {
             $Words = explode(' ', $Search);
-            $WhereCondition .= "m.Message LIKE '%".implode("%' AND m.Message LIKE '%", $Words)."%' AND ";
+            $messageConditions = implode(' AND ', array_fill(0, count($Words), 'm.Message LIKE ?'));
+            $WhereCondition .= "{$messageConditions} AND ";
+            $params = array_merge($params, array_map(function($w) { return "%{$w}%"; }, $Words));
         }
 }
 
@@ -57,63 +81,66 @@ if (($View == 'stealthresolved') && !(check_perms('admin_stealth_resolve'))) $Vi
 switch ($InternalView) {
     case 'open':
         $ViewString = "All open";
-        $WhereCondition .= "(Level <= $UserLevel OR AssignedToUser='".$LoggedUser['ID']."') AND Status IN ('Open', 'Unanswered', 'User Resolved') AND StealthResolved=False";
+        $WhereCondition .= "(Level <= ? OR AssignedToUser = ?) AND Status IN ('Open', 'Unanswered', 'User Resolved') AND StealthResolved=False";
         $SortStr = '';
         break;
     case 'resolved':
         $ViewString = "Resolved";
-        $WhereCondition .= "(Level <= $UserLevel OR AssignedToUser='".$LoggedUser['ID']."') AND Status='Resolved' AND StealthResolved=False";
+        $WhereCondition .= "(Level <= ? OR AssignedToUser = ?) AND Status='Resolved' AND StealthResolved=False";
         $SortStr = '';
         break;
     case 'stealthresolved':
         $ViewString = "Stealth Resolved";
-        $WhereCondition .= "(Level <= $UserLevel OR AssignedToUser='".$LoggedUser['ID']."') AND StealthResolved=True";
+        $WhereCondition .= "(Level <= ? OR AssignedToUser = ?) AND StealthResolved=True";
         $SortStr = '';
         break;
     case 'my':
         $ViewString = "My unanswered";
-        $WhereCondition .= "(Level = $UserLevel OR AssignedToUser='".$LoggedUser['ID']."') AND Status IN ('Unanswered', 'User Resolved') AND StealthResolved=False";
+        $WhereCondition .= "(Level = ? OR AssignedToUser = ?) AND Status IN ('Unanswered', 'User Resolved') AND StealthResolved=False";
         break;
     case 'unanswered':
         $ViewString = "All unanswered";
-        $WhereCondition .= "(Level <= $UserLevel OR AssignedToUser='".$LoggedUser['ID']."') AND Status IN ('Unanswered', 'User Resolved') AND StealthResolved=False";
+        $WhereCondition .= "(Level <= ? OR AssignedToUser = ?) AND Status IN ('Unanswered', 'User Resolved') AND StealthResolved=False";
         break;
     case 'allfolders':
     default:
         $ViewString = "All folders";
-        if(!check_perms('admin_stealth_resolve')) {
-            $WhereCondition .= "(Level <= $UserLevel OR AssignedToUser='".$LoggedUser['ID']."') AND StealthResolved=False";
+        if (!check_perms('admin_stealth_resolve')) {
+            $WhereCondition .= "(Level <= ? OR AssignedToUser = ?) AND StealthResolved=False";
         } else {
-            $WhereCondition .= "(Level <= $UserLevel OR AssignedToUser='".$LoggedUser['ID']."')";
+            $WhereCondition .= "(Level <= ? OR AssignedToUser = ?)";
         }
         break;
 }
+$params = array_merge($params, [$user->class->Level, $user->ID]);
+if (isset($_GET['ResolverID']) && is_integer_string($_GET['ResolverID'])) {
+    $WhereCondition .= " AND (c.ResolverID = ?)";
+    $params[] = $_GET['ResolverID'];
+}
 
-list($Page,$Limit) = page_limit(MESSAGES_PER_PAGE);
+list($Page, $Limit) = page_limit(MESSAGES_PER_PAGE);
 // Get messages
-$StaffPMs = $DB->query("
-    SELECT
-        SQL_CALC_FOUND_ROWS
-        c.ID,
-        c.Subject,
-        c.UserID,
-        c.Status,
-        c.Level,
-        c.AssignedToUser,
-        c.Date,
-        c.Unread,
-        c.ResolverID,
-        c.Urgent
-    FROM staff_pm_conversations AS c
-    $WhereCondition
-    GROUP BY c.ID
-    ORDER BY $SortStr $OrderBy $OrderWay, Date $OrderWay
-    LIMIT $Limit
-");
+$StaffPMs = $master->db->rawQuery(
+    "SELECT SQL_CALC_FOUND_ROWS
+            c.ID,
+            c.Subject,
+            c.UserID,
+            c.Status,
+            c.Level,
+            c.AssignedToUser,
+            c.Date,
+            c.Unread,
+            c.ResolverID,
+            c.Urgent
+       FROM staff_pm_conversations AS c
+       {$WhereCondition}
+   GROUP BY c.ID
+   ORDER BY {$SortStr} {$orderBy} {$orderWay}, Date {$orderWay}
+      LIMIT {$Limit}",
+    $params
+)->fetchAll();
 
-$DB->query('SELECT FOUND_ROWS()');
-list($NumResults) = $DB->next_record();
-$DB->set_query_id($StaffPMs);
+$NumResults = $master->db->foundRows();
 
 $CurURL = get_url();
 if (empty($CurURL)) {
@@ -121,7 +148,7 @@ if (empty($CurURL)) {
 } else {
     $CurURL = "staffpm.php?".$CurURL."&";
 }
-$Pages=get_pages($Page,$NumResults,MESSAGES_PER_PAGE,9);
+$Pages = get_pages($Page, $NumResults, MESSAGES_PER_PAGE, 9);
 
 $Row = 'a';
 
@@ -130,17 +157,17 @@ $Row = 'a';
 <div class="thin">
     <div class="linkbox">
 <?php  	if ($IsStaff) {
-            echo view_link($View, 'my',         "<a href='staffpm.php?view=my'>My unanswered". ($NumMy > 0 ? "($NumMy)":"") ."</a>");
+            echo view_link($View, 'my',         "<a href='/staffpm.php?view=my'>My unanswered". ($NumMy > 0 ? "($NumMy)":"") ."</a>");
         }
-            echo view_link($View, 'unanswered', "<a href='staffpm.php?view=unanswered'>All unanswered". ($NumUnanswered > 0 ? " ($NumUnanswered)":"") ."</a>");
-            echo view_link($View, 'open',       "<a href='staffpm.php?view=open'>Open" . ($NumOpen > 0 ? " ($NumOpen)":"") ."</a>");
-            echo view_link($View, 'resolved',   "<a href='staffpm.php?view=resolved'>Resolved</a>");
+            echo view_link($View, 'unanswered', "<a href='/staffpm.php?view=unanswered'>All unanswered". ($NumUnanswered > 0 ? " ($NumUnanswered)":"") ."</a>");
+            echo view_link($View, 'open',       "<a href='/staffpm.php?view=open'>Open" . ($NumOpen > 0 ? " ($NumOpen)":"") ."</a>");
+            echo view_link($View, 'resolved',   "<a href='/staffpm.php?view=resolved'>Resolved</a>");
         if (check_perms('admin_stealth_resolve')) {
-            echo view_link($View, 'stealthresolved', "<a href='staffpm.php?view=stealthresolved'>Stealth Resolved</a>");
+            echo view_link($View, 'stealthresolved', "<a href='/staffpm.php?view=stealthresolved'>Stealth Resolved</a>");
         }
-            echo view_link($Action, 'responses',     "<a href='staffpm.php?action=responses'>Common Answers</a>");
+            echo view_link($Action, 'responses',     "<a href='/staffpm.php?action=responses'>Common Answers</a>");
         if (check_perms('admin_staffpm_stats')) {
-            echo view_link($Action, 'stats',         "<a href='staffpm.php?action=stats'>StaffPM Stats</a>");
+            echo view_link($Action, 'stats',         "<a href='/staffpm.php?action=stats'>StaffPM Stats</a>");
         } ?>
         <br />
         <br />
@@ -150,7 +177,7 @@ $Row = 'a';
     <div class="box pad" id="inbox">
 <?php
 
-if ($DB->record_count() == 0) {
+if ($NumResults == 0) {
     // No messages
 ?>
         <h2>No messages</h2>
@@ -165,8 +192,8 @@ if ($DB->record_count() == 0) {
                 <input type="radio" name="searchtype" value="message" /> Message
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <input type="checkbox" name="allfolders" value="1" <?php
-                         if (isset($_GET['allfolders']) && $_GET['allfolders'] )echo' checked="checked"'?>/> All Folders
-                <input type="text" name="search" value="<?=$_GET['search']?>" style="width: 98%;"
+                         if (isset($_GET['allfolders']) && $_GET['allfolders'])echo' checked="checked"'?>/> All Folders
+                <input type="text" name="search" value="<?=($_GET['search'] ?? '')?>" style="width: 98%;"
                     onfocus="if (this.value == 'Search') this.value='';"
                     onblur="if (this.value == '') this.value='Search';"
                 />
@@ -191,42 +218,50 @@ if ($DB->record_count() == 0) {
 <?php  				if ($ViewString != 'Resolved' && $IsStaff) { ?>
                     <td width="10"><input type="checkbox" onclick="toggleChecks('messageform',this)" /></td>
 <?php  				} ?>
-                    <td><a href="/<?=header_link('Subject') ?>">Subject</td>
-                    <td width="14%"><a href="/<?=header_link('UserID') ?>">User</td>
-                    <td width="14%"><a href="/<?=header_link('Date') ?>">Date</td>
-                    <td width="14%"><a href="/<?=header_link('Level') ?>">Assigned to</td>
+                    <td><a href="<?=header_link('Subject') ?>">Subject</td>
+                    <td width="14%"><a href="<?=header_link('UserID') ?>">User</td>
+<?php               if (check_perms('users_view_ips')) { ?>
+                    <td width="4%">Actions</td>
+<?php               } ?>
+                    <td width="14%"><a href="<?=header_link('Date') ?>">Date</td>
+                    <td width="14%"><a href="<?=header_link('Level') ?>">Assigned to</td>
 <?php 				if ($ViewString == 'Resolved') { ?>
-                    <td width="14%"><a href="/<?=header_link('ResolverID') ?>">Resolved by</td>
+                    <td width="14%"><a href="<?=header_link('ResolverID') ?>">Resolved by</td>
 <?php 				} else { ?>
-                    <td width="14%"><a href="/<?=header_link('Status') ?>">Status</td>
+                    <td width="14%"><a href="<?=header_link('Status') ?>">Status</td>
 <?php 				}  ?>
                 </tr>
 <?php
 
     // List messages
-    while (list($ID, $Subject, $UserID, $Status, $Level, $AssignedToUser, $Date, $Unread, $ResolverID, $Urgent) = $DB->next_record()) {
+    foreach ($StaffPMs as $staffPM) {
+        list($ID, $Subject, $userID, $Status, $Level, $AssignedToUser, $Date, $Unread, $ResolverID, $Urgent) = $staffPM;
 
         if (empty($Urgent)) $Urgent = 'No';
         $Row = ($Row === 'a') ? 'b' : 'a';
         $RowClass = ($Unread==1 ? 'unreadpm' : 'row'.$Row);
 
-        $UserInfo = user_info($UserID);
-        $UserStr = format_username($UserID, $UserInfo['Username'], $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
+        $UserInfo = user_info($userID);
+        $UserStr = format_username($userID, $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
 
-        // Unused and triggers a PHP Warning
-        //$AssignedStr = format_username();
+        $class = $master->db->rawQuery(
+            "SELECT Level
+               FROM permissions
+              WHERE ID = ?",
+            [$UserInfo['PermissionID']]
+        )->fetchColumn();
 
         // Get assigned
         if ($AssignedToUser == '') {
             // Assigned to class
-            $Assigned = ($Level == 0) ? '<span class="rank" style="color:#49A5FF">First Line Support</span>' : make_class_string($ClassLevels[$Level]['ID'], TRUE);
+            $Assigned = ($Level == 0) ? '<span class="rank" style="color:#49A5FF">First Line Support</span>' : make_class_string($classLevels[$Level]['ID'], TRUE);
             // No + on Sysops
             if ($Level != 1000) { $Assigned .= "+"; }
 
         } else {
             // Assigned to user
             $UserInfo = user_info($AssignedToUser);
-            $Assigned = format_username($AssignedToUser, $UserInfo['Username'], $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
+            $Assigned = format_username($AssignedToUser, $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
 
         }
 
@@ -250,7 +285,7 @@ if ($DB->record_count() == 0) {
         // Get resolver
         if ($ViewString == 'Resolved') {
             $UserInfo = user_info($ResolverID);
-            $StatusStr = format_username($ResolverID, $UserInfo['Username'], $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
+            $StatusStr = format_username($ResolverID, $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
             if ($Urgent !='No') $UserStr .= '<br/><span style="color:red; font-weight:bold;">(User must '.$Urgent.')</span>';
         } else {
             if ($Urgent !='No') $StatusStr .= '<br/><span style="color:red; font-weight:bold;">(User must '.$Urgent.')</span>';
@@ -266,13 +301,18 @@ if ($DB->record_count() == 0) {
 <?php  				} ?>
                     <td><a href="/staffpm.php?action=viewconv&amp;id=<?=$ID?>"><?=display_str($Subject)?></a></td>
                     <td><?=$UserStr?></td>
+<?php               if (check_perms('users_view_ips')) {
+                        if (check_perms('users_view_ips', $class) && $userID > 0) { ?>
+                            <td>[<a href="/userhistory.php?action=ips&userid=<?=$userID?>">IPs</a>]</td>
+<?php   				        } else { ?>
+                            <td></td>
+<?php                   }
+                    } ?>
                     <td><?=time_diff($Date, 2, true)?></td>
                     <td><?=$Assigned?></td>
                     <td><?=$StatusStr?></td>
                 </tr>
 <?php
-
-        $DB->set_query_id($StaffPMs);
     }
 
     // Close table and multiresolve form

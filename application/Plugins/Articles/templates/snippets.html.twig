@@ -1,0 +1,65 @@
+{% block clientlist %}
+    <table cellpadding="5" cellspacing="1" border="0" class="border" width="100%">
+        <tr class="colhead">
+            <td style="width:150px;">
+                <strong>Banned Clients</strong>
+            </td>
+        </tr>
+        {% for blacklistedClient in blacklistedClients %}
+            <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                <td>{{ blacklistedClient.vstring }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}
+
+{% block whitelist %}
+    <table id="whitelist">
+        <tr class="colhead">
+            <td style="width:50%;">
+                <strong>Imagehost</strong>
+            </td>
+            <td>
+                <strong>Comment</strong>
+            </td>
+        </tr>
+        {% for imagehost in imageWhitelist %}
+            <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                <td>
+                    {{ bbcode.full_format(imagehost.Imagehost)|raw }}
+                    {% if imagehost.Link and bbcode.valid_url(imagehost.Link) %}
+                        <a href="{{ imagehost.Link }}"  target="_blank">
+                            <img src="/static/common/symbols/offsite.gif" width="16" height="16" alt="Goto {{ imagehost.Imagehost }}" />
+                        </a>
+                    {% endif %}
+                </td>
+                <td>
+                    {{ bbcode.full_format(imagehost.Comment)|raw }}
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}
+
+{% block dnulist %}
+    <table id="dnulist">
+        <tr class="colhead">
+            <td style="width:50%;">
+                <strong>Name</strong>
+            </td>
+            <td>
+                <strong>Comment</strong>
+            </td>
+        </tr>
+        {% for forbiddenContent in forbiddenContentList %}
+            <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                <td>
+                    {{ bbcode.full_format(forbiddenContent.Name)|raw }}
+                </td>
+                <td>
+                    {{ bbcode.full_format(forbiddenContent.Comment)|raw }}
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

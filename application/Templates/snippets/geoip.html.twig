@@ -1,0 +1,35 @@
+{%- apply spaceless|multitrim|replace({'\n':''})|raw -%}
+
+    {%- if getHost -%}
+        {{- get_host(ip)|raw -}}
+    {%- else -%}
+        {{- ip -}}
+    {%- endif -%}
+
+    {%- set isp -%}
+        {%- if ip.network.ISP is defined -%}
+            {{- ip.network.ISP -}},
+        {%- endif -%}
+    {%- endset -%}
+
+    <span title="{{ isp }}{{ ip.geoip.location }}">
+        ({{- ip.geoip -}})
+    </span>
+    <img style="margin-bottom:-3px;" title="{{ country }}" src="/static/common/flags/iso16/{{ ip.geoip|lower }}.png" alt="" />
+    {% if (ActiveUser.options('DumpData') is null or ActiveUser.options('DumpData') == 0) and ('dump' not in request.uri) %}
+    [<a href="/user.php?action=search&amp;ip_history=on&amp;ip={{ ip }}&amp;matchtype=fuzzy" title="Search IP History">S</a>]
+    [<a href="/user.php?action=search&amp;tracker_ip={{ ip }}&amp;matchtype=fuzzy" title="Search Tracker IP's">S</a>]
+
+        {% if ActiveUser.options('ExtendedIPSearch') == 1 %}
+            [<a href="/tools.php?action=login_watch&searchips={{ ip }}" title="Search Login Watch">LW</a>]
+            [<a href="/tools.php?action=security_logs&ip={{ ip }}" title="Search Security Logs">SL</a>]
+        {% endif %}
+        {% if ActiveUser.options('ExtendedIPSearch') == 1 and auth.isAllowed('admin_manage_ipbans') %}
+            [<a href="/tools.php?action=ip_ban&ip={{ ip }}" title="Search IP Bans">SB</a>]
+        {% endif %}
+
+    {% if banIPLink and auth.isAllowed('admin_manage_ipbans') %}
+        [<a href="/tools.php?action=ip_ban&uip={{ ip }}" title="Ban this users current IP ({{ ip }})">B</a>]
+    {% endif %}
+    {% endif %}
+{%- endapply -%}

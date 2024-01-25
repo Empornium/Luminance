@@ -2,7 +2,7 @@
 if (!check_perms('admin_data_viewer')) { error(403); }
 
 
-show_header('Data Viewer','dataviewer,jquery');
+show_header('Data Viewer', 'dataviewer,jquery');
 
 require(SERVER_ROOT.'/Legacy/sections/tools/data/data_viewer_queries.php');
 
@@ -50,14 +50,14 @@ if (isset($_REQUEST['query']) && array_key_exists($_REQUEST['query'], $data_view
 
 <?php
 define('ROWS_PER_PAGE', 100);
-list($Page,$Limit) = page_limit(ROWS_PER_PAGE);
+list($Page, $Limit) = page_limit(ROWS_PER_PAGE);
 
 if ($selected_query) {
     $sql = $data_viewer_queries[$selected_query]['sql'];
 
-    $master->db->raw_query("SET group_concat_max_len=16777216");
-    $results = $master->db->raw_query("{$sql} LIMIT $Limit")->fetchAll(\PDO::FETCH_ASSOC);
-    $total = $master->db->raw_query('SELECT FOUND_ROWS()')->fetchColumn();
+    $master->db->rawQuery("SET group_concat_max_len=16777216");
+    $results = $master->db->rawQuery("{$sql} LIMIT $Limit")->fetchAll(\PDO::FETCH_ASSOC);
+    $total = $master->db->rawQuery('SELECT FOUND_ROWS()')->fetchColumn();
 
 ?>
     <br />
@@ -74,10 +74,10 @@ if ($selected_query) {
 ?>
         <div class="linkbox">
 <?php
-        $Pages=get_pages($Page, $total, ROWS_PER_PAGE, 11, "&amp;action=data_viewer&amp;query={$selected_query}") ;
+        $Pages = get_pages($Page, $total, ROWS_PER_PAGE, 11, "&action=data_viewer&query={$selected_query}") ;
         echo $Pages;
         $rowidx = 0;
-        foreach($results as $row) {
+        foreach ($results as $row) {
             $rowstyle = ($rowidx % 2) ? 'a' : 'b';
             if ($rowidx == 0) {
 ?>

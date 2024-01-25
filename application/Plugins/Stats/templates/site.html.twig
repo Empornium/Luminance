@@ -1,0 +1,13 @@
+{% extends "@Stats/stats.html.twig" %}
+
+{% block title %}
+    Site statistics
+{% endblock %}
+
+{% block stats_content %}
+    <div class="head">Site history</div>
+    <div class="box pad center">
+        <h1>Site history</h1>
+        <div id="chart_div" data-load_chart="/stats/site_flow_chart"></div>
+    </div>
+{% endblock %}

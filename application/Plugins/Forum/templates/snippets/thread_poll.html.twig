@@ -1,0 +1,165 @@
+{% import "macros/icon.html.twig" as icon %}
+
+<div class="box clear">
+    <div class="colhead_dark"><strong>Poll {{ (thread.poll.Closed) ? '[Closed]': '' }} {{ (thread.poll.Featured) ? '[Featured]' : '' }}</strong>
+        <a href="#" onclick="$('#threadpoll').toggle(); this.innerHTML=(this.innerHTML=='(Hide)'?'(View)':'(Hide)'); return false;"> {{ (thread.IsLocked) ? '(View)' : '(Hide)' }}</a>
+    </div>
+    <div class="pad {{ thread.IsLocked ? 'hidden' : '' }} ?>" id="threadpoll">
+        <p><strong>{{ thread.poll.Question|decode }}</strong></p>
+        {% set show = ( thread.poll.userVotes(ActiveUser.ID) is not empty or thread.poll.Closed or thread.IsLocked) %}
+        {% if show or auth.isAllowed('forum_polls_admin') %}
+            <div id="poll_votes_container">
+            {% if not show %}
+                <a href="#" onclick="$('#poll_votes').toggle(); this.innerHTML=(this.innerHTML=='(Hide Results)'?'(View Results)':'(Hide Results)'); return false;">(View Results)</a><br/>
+            {% endif %}
+        {% endif %}
+        {% if thread.poll.userVotes(ActiveUser.ID) or auth.isAllowed('forum_polls_admin') %}
+            <div id="poll_votes" {{ (show) ? '' : 'class="hidden"' }}>
+                {% if auth.isAllowed('forum_polls_admin') %}
+                    <ul style="list-style: none;" id="poll_options">
+                {% else %}
+                    <ul class="poll nobullet">
+                {% endif %}
+                {% for index, answer in thread.poll.answers() %}
+                    {% if thread.poll.votes[index] is not empty and thread.poll.totalVotes > 0 %}
+                        {% set ratio = thread.poll.votes[index].total/thread.poll.maxVotes %}
+                        {% set percent = thread.poll.votes[index].total/thread.poll.totalVotes %}
+                    {% else %}
+                        {% set ratio = 0 %}
+                        {% set percent = 0 %}
+                    {% endif %}
+                    {% if auth.isAllowed('forum_polls_admin') %}
+                        <li>
+                            {% if index in thread.poll.userVotes(ActiveUser.ID) %}
+                                &raquo;
+                            {% endif %}
+                            <a href="#" onclick="pollVote({{ thread.ID }}, {{ index }}, '{{ secretary.getToken("thread.poll.vote") }}');">
+                                {{ answer == '' ? "Blank" : answer }}
+                            </a>
+                            - {{ thread.poll.votes[index].names }}&nbsp;({{ (percent*100)|number_format(2) }}%)
+                            <a href="#" onclick="removePollOption({{ thread.ID }}, {{ index }}, '{{ secretary.getToken("thread.poll.remove") }}');">
+                                {{ icon.render("forum_icon", ['misc_trash']) }}
+                            </a>
+                        </li>
+                    {% else %}
+                        <li>
+                            {% if index in thread.poll.userVotes(ActiveUser.ID) %}
+                                &raquo;
+                            {% endif %}
+                            {{ answer|decode }} ({{ (percent*100)|number_format(2) }}%)
+                        </li>
+                        <li class="graph">
+                            <span class="left_poll"></span>
+                            <span class="center_poll" style="width:{{ ratio*750|round }}px;"></span>
+                            <span class="right_poll"></span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                {% if thread.poll.answers()[0].votes > 0 %}
+                    {% if auth.isAllowed('forum_polls_admin') %}
+                        <li>
+                            {% if 0 in thread.poll.userVotes(ActiveUser.ID) %}
+                                &raquo;
+                            {% endif %}
+                            <a href="#" onclick="pollVote({{ thread.ID }}, 0, '{{ secretary.getToken("thread.poll.vote") }}');">
+                                Blank
+                            </a>
+                            - {{ thread.poll.votes[0].names }}&nbsp;({{ (answer.ratio*100)|number_format(2) }}%)
+                        </li>
+                    {% else %}
+                        <li>
+                            {% if 0 in thread.poll.userVotes(ActiveUser.ID) %}
+                                &raquo;
+                            {% endif %}
+                            (Blank) ({{ (percent*100)|number_format(2) }}%)
+                        </li>
+                        <li class="graph">
+                            <span class="left_poll"></span>
+                            <span class="center_poll" style="width:{{ratio*750|round }}px;"></span>
+                            <span class="right_poll"></span>
+                        </li>
+                    {% endif %}
+                {% endif %}
+                </ul>
+                {% if forum.ID == settings.forums.staff_forum_id and auth.isAllowed('forum_polls_admin') %}
+                <br />
+                <strong>Staff Votes:</strong> {{ (thread.poll.totalVotes)|number_format() }} / {# TODO Total Number of StaffCount #}
+                <br />
+                <strong>Missing Votes:</strong> {# TODO List Missing staff votes #}
+                <br /><br />
+                {% else %}
+                <strong>Votes:</strong> {{ (thread.poll.totalVotes)|number_format() }}<br /><br />
+                {% endif %}
+                {% if auth.isAllowed('forum_polls_admin') %}
+                    <a href="#" onclick="addPollOption({{ thread.ID }}, '{{ secretary.getToken("thread.poll.add") }}'); return false;">[+]</a>
+                {% endif %}
+            </div>
+        {% endif %}
+        {% if thread.poll.userVotes(ActiveUser.ID) is empty and not thread.poll.Closed and not thread.IsLocked %}
+            <div id="poll_results">
+                <form id="polls" action="/forum/thread/{{ thread.ID }}/poll/vote" method="post">
+                    <input type="hidden" name="token" value="{{ secretary.getToken("thread.poll.vote") }}" />
+                    <ul style="list-style: none;" id="poll_options">
+                        {% for index, answer in thread.poll.answers() %}
+                            <li>
+                                <input type="radio" name="vote" id="answer_{{ index }}" value="{{ index }}" />
+                                <label for="answer_{{ index }}">{{ answer }}</label>
+                            </li>
+                        {% endfor %}
+                        <li>
+                            <br />
+                            <input type="radio" name="vote" id="answer_blank" value="0" /> <label for="answer_blank">Blank - Show the results - note: counts as a vote</label><br />
+                        </li>
+                    </ul>
+                    {% if thread.forumID == settings.forums.staff_forum_id %}
+                        <a href="#" onclick="AddPollOption({{ thread.ID }}); return false;">[+]</a>
+                        <br />
+                        <br />
+                    {% endif %}
+                    <input type="button" style="float: left;" onclick="ajax.post('/forum/thread/{{ thread.ID }}/poll/vote','polls',function () {location.reload();});" value="Vote" />
+                </form>
+            </div>
+        {% endif %}
+
+        {% if auth.isAllowed('forum_polls_admin') %}
+            {% if not thread.poll.isFeatured()  %}
+                <form id='poll_feature' action="" method="post">
+                    <input type="hidden" name="token" value="{{ secretary.getToken("thread.poll.feature") }}" />
+                    <input type="button" style="float: left;" onclick="
+                        if (confirm('Are you sure you want to feature this poll?')) {
+                            ajax.post('/forum/thread/{{ thread.ID }}/poll/feature','poll_feature',function () {
+                                location.reload();
+                            });
+                        }"
+                        value="Feature"
+                    />
+                </form>
+            {% endif %}
+            {% if thread.poll.Closed %}
+                <form id='poll_open' action="" method="post">
+                    <input type="hidden" name="token" value="{{ secretary.getToken("thread.poll.open") }}" />
+                    <input type="button" style="float: left;" onclick="ajax.post('/forum/thread/{{ thread.ID }}/poll/open','poll_open',function () {location.reload();});" value="Open" />
+                </form>
+            {% else %}
+                <form id='poll_close' action="" method="post">
+                    <input type="hidden" name="token" value="{{ secretary.getToken("thread.poll.close") }}" />
+                    <input type="button" style="float: left;" onclick="ajax.post('/forum/thread/{{ thread.ID }}/poll/close','poll_close',function () {location.reload();});" value="Close" />
+                </form>
+            {% endif %}
+            <form id='poll_delete' action="" method="post">
+                <input type="hidden" name="token" value="{{ secretary.getToken("thread.poll.delete") }}" />
+                <input type="button" style="float: left;" onclick="
+                    if (confirm('Are you sure you want to delete this poll?')) {
+                        ajax.post('/forum/thread/{{ thread.ID }}/poll/delete','poll_delete',function () {
+                            location.reload();
+                        });
+                    }"
+                    value="Delete"
+                />
+            </form>
+        {% endif %}
+        {% if show or auth.isAllowed('forum_polls_admin') %}
+            </div>
+        {% endif %}
+    </div>
+</div>

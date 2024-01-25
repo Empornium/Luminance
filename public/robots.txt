@@ -1,5 +1,2 @@
 User-agent: *
-Allow: /index
-Allow: /login
-Allow: /register
 Disallow: /

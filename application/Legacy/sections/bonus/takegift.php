@@ -1,17 +1,17 @@
 <?php
 enforce_login();
 authorize();
-if ( !check_perms('site_give_specialgift') ) {
+if (!check_perms('site_give_specialgift')) {
     error(404);
 }
 
-$ClassOptions = [
-    'any'                     => "<= {$Classes[SMUT_PEDDLER]['Level']}",
-    'Apprentice'              => " = {$Classes[APPRENTICE]['Level']}",
-    'Perv or lower'           => "<= {$Classes[PERV]['Level']}",
-    'Good Perv or lower'      => "<= {$Classes[GOOD_PERV]['Level']}",
-    'Good Perv or higher'     => ">= {$Classes[GOOD_PERV]['Level']}",
-    'Sextreme Perv or higher' => ">= {$Classes[SEXTREME_PERV]['Level']}",
+$classOptions = [
+    'any'                     => "<= {$classes[SMUT_PEDDLER]['Level']}",
+    'Apprentice'              => " = {$classes[APPRENTICE]['Level']}",
+    'Perv or lower'           => "<= {$classes[PERV]['Level']}",
+    'Good Perv or lower'      => "<= {$classes[GOOD_PERV]['Level']}",
+    'Good Perv or higher'     => ">= {$classes[GOOD_PERV]['Level']}",
+    'Sextreme Perv or higher' => ">= {$classes[SEXTREME_PERV]['Level']}",
 ];
 
 $RatioOptions = [
@@ -37,7 +37,7 @@ $ActivityOptions = [
 ];
 
 /* We should validate these.*/
-if (empty($_POST['class']) || !array_key_exists($_POST['class'], $ClassOptions)) {
+if (empty($_POST['class']) || !array_key_exists($_POST['class'], $classOptions)) {
     $REQUIRED_CLASS    = 'any';
 } else {
     $REQUIRED_CLASS    = $_POST['class'];
@@ -65,87 +65,99 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
     list($ItemID, $Title, $Description, $Action, $Value, $Cost) = $ShopItem;
 }
 
-$DB->query("SELECT MIN(Level) FROM permissions WHERE DisplayStaff='1'");
-list($Max) = $DB->next_record();
+$Max = $master->db->rawQuery(
+    "SELECT MIN(Level)
+       FROM permissions
+      WHERE DisplayStaff = '1'"
+)->fetchColumn();;
 
-$DB->query("SELECT
-                um.ID AS UserID
-            FROM
-                users_main as um
-            LEFT JOIN
-                permissions AS perm ON um.PermissionID=perm.ID
-            WHERE
-                perm.Level {$ClassOptions[$REQUIRED_CLASS]}
-                AND perm.Level < {$Max}
-                AND IFNULL((um.Uploaded / um.Downloaded), ~0) {$RatioOptions[$REQUIRED_RATIO]}
-                AND um.Credits {$CreditOptions[$REQUIRED_CREDITS]}
-                AND um.LastAccess >= DATE_SUB(NOW(), INTERVAL {$ActivityOptions[$REQUIRED_ACTIVITY]} HOUR)
-                AND um.Enabled = '1'
-                AND um.ID != {$UserID}");
-$Eligible_Users = array_column($DB->to_array(), 'UserID');
-if(empty($Eligible_Users)) {
+$eligibleUsers = $master->db->rawQuery(
+    "SELECT um.ID AS UserID
+       FROM users_main as um
+       JOIN users_wallets AS uw ON um.ID=uw.UserID
+  LEFT JOIN permissions AS perm ON um.PermissionID=perm.ID
+      WHERE perm.Level {$classOptions[$REQUIRED_CLASS]}
+        AND perm.Level < {$Max}
+        AND IFNULL((um.Uploaded / um.Downloaded), ~0) {$RatioOptions[$REQUIRED_RATIO]}
+        AND uw.Balance {$CreditOptions[$REQUIRED_CREDITS]}
+        AND um.LastAccess >= DATE_SUB(NOW(), INTERVAL {$ActivityOptions[$REQUIRED_ACTIVITY]} HOUR)
+        AND um.Enabled = '1'
+        AND um.ID != ?",
+    [$userID]
+)->fetchAll(\PDO::FETCH_COLUMN);
+if (empty($eligibleUsers)) {
     $master->flasher->error("No users match this criteria");
     header("Location: bonus.php?action=gift&class={$REQUIRED_CLASS}&ratio={$REQUIRED_RATIO}&credits={$REQUIRED_CREDITS}&activity={$REQUIRED_ACTIVITY}");
     die();
 }
-$OtherID = array_rand($Eligible_Users,1);
-$OtherID = $Eligible_Users[$OtherID];
+$OtherID = $eligibleUsers[array_rand($eligibleUsers)];
 
 // Do this now so we get values before the gift.
-$DB->query("SELECT
-                PermissionID as Current_Class,
-                IFNULL((Uploaded / Downloaded), '&infin;') AS Current_Ratio,
-                Credits AS Current_Credits,
-                LastAccess AS Current_LastAccess
-            FROM
-                users_main
-            WHERE
-                ID = {$OtherID}");
+$nextRecord = $master->db->rawQuery(
+    "SELECT pm.Name,
+            IFNULL((um.Uploaded / um.Downloaded), '&infin;') AS Current_Ratio,
+            uw.balance AS Current_Credits,
+            um.LastAccess AS Current_LastAccess
+       FROM users_main as um
+       JOIN users_wallets AS uw ON um.ID=uw.UserID
+       JOIN permissions as pm ON pm.ID = um.PermissionID
+      WHERE um.ID = ?",
+    [$OtherID]
+)->fetch(\PDO::FETCH_NUM);
 
-list($Current_Class, $Current_Ratio, $Current_Credits, $Current_LastAccess) = $DB->next_record();
+list($Class_Name, $Current_Ratio, $Current_Credits, $Current_LastAccess) = $nextRecord;
 
-$DB->query("SELECT Credits From users_main WHERE ID='$UserID'");
-list($Credits) = $DB->next_record();
+$wallet = $master->repos->userWallets->get('UserID = ?', [$activeUser['ID']]);
+
+$CreditsGiven = 0;
+$GBsGiven = 0;
 
 // again lets not trust the check on the previous page as to whether they can afford it
-if ($OtherID && ($Cost <= $Credits)) {
+if ($OtherID && ($Cost <= $wallet->Balance)) {
 
-    $UpdateSet = array();
-    $UpdateSetOther = array();
+    $sender = $master->repos->users->load($userID);
+    $receiver = $master->repos->users->load($OtherID);
 
-    Switch($Action){  // atm hardcoded in db:  givecredits, givegb, gb, slot, title, badge
+    Switch($Action) {  // atm hardcoded in db:  givecredits, givegb, gb, slot, title, badge
         case 'givecredits':
             $CreditsGiven = $Value;
+            $GBsGiven = 0;
 
-            $Summary = sqltime().' | +'.number_format($Value)." credits | You received a special gift of ".number_format($Value)." credits from an anonymous perv";
-            $UpdateSetOther[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
-            $UpdateSetOther[]="m.Credits=(m.Credits+'$Value')";
+            $Summary = ' | +'.number_format($Value)." credits | You received a special gift of ".number_format($Value)." credits from an anonymous perv";
+            $receiver->wallet->adjustBalance($Value);
+            $receiver->wallet->addLog($Summary);
 
-            $Summary = sqltime().' | - '.number_format($Cost)." credits | You gave a special gift of ".number_format($Value)." credits to an anonymous perv";
-            $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
-            $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
+            $Summary = ' | - '.number_format($Cost)." credits | You gave a special gift of ".number_format($Value)." credits to an anonymous perv";
+            $sender->wallet->adjustBalance(-$Cost);
+            $sender->wallet->addLog($Summary);
 
             $ResultMessage="Your gift has been given and gratefully received.\n\n".
-                           "The recipient has the rank of ".$Classes[$Current_Class]['Name']." and a ratio of $Current_Ratio,\n".
+                           "The recipient has the rank of $Class_Name and a ratio of $Current_Ratio,\n".
                            "he had $Current_Credits credits and was last seen at $Current_LastAccess";
 
             break;
 
         case 'givegb':  // no test if user had download to remove as this could violate privacy settings
             $GBsGiven = $Value;
+            $CreditsGiven = 0;
 
-            $Summary = sqltime()." | You received a special gift of -$Value gb from an anonymous perv";
-            $UpdateSetOther[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
+            $Summary = " | You received a special gift of -$Value gb from an anonymous perv";
+            $receiver->wallet->addLog($Summary);
 
-            $Summary = sqltime()." | -$Cost credits | You gave a special gift of -$Value gb to an anonymous perv";
-            $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
-            $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
+            $Summary = " | -$Cost credits | You gave a special gift of -$Value gb to an anonymous perv";
+            $sender->wallet->adjustBalance(-$Cost);
+            $sender->wallet->addLog($Summary);
 
             $ValueBytes = get_bytes($Value.'gb');
-            $UpdateSetOther[]="m.Downloaded=(m.Downloaded-'$ValueBytes')";
+            $master->db->rawQuery(
+                "UPDATE users_main
+                    SET Downloaded = (Downloaded - ?)
+                  WHERE ID = ?",
+                [$ValueBytes, $OtherID]
+            );
 
             $ResultMessage="Your gift has been given and gratefully received.\n\n".
-                           "The recipient has the rank of ".$Classes[$Current_Class]['Name']." and a ratio of $Current_Ratio,\n".
+                           "The recipient has the rank of $Class_Name and a ratio of $Current_Ratio,\n".
                            "he had $Current_Credits credits and was last seen at $Current_LastAccess";
 
             break;
@@ -155,28 +167,17 @@ if ($OtherID && ($Cost <= $Credits)) {
            $ResultMessage ="No valid action!";
            break;
     }
-
-    if ($UpdateSetOther) {
-        $SET = implode(', ', $UpdateSetOther);
-        $sql = "UPDATE users_main AS m JOIN users_info AS i ON m.ID=i.UserID SET $SET WHERE m.ID='$OtherID'";
-        $DB->query($sql);
-        $master->repos->users->uncache($UserID);
-    }
-
-    if ($UpdateSet) {
-        $SET = implode(', ', $UpdateSet);
-        $sql = "UPDATE users_main AS m JOIN users_info AS i ON m.ID=i.UserID SET $SET WHERE m.ID='$UserID'";
-        $DB->query($sql);
-        $master->repos->users->uncache($UserID);
-    }
 }
 
 $PMText = get_gift_pm()['Body'];
 $PMText = str_replace('[$1]', $Title, $PMText);
 send_pm($OtherID, 0, 'You received a Special Gift', $PMText);
 
-$DB->query("INSERT INTO users_special_gifts (UserID, CreditsSpent, CreditsGiven, GBsGiven, Recipient)
-                                    VALUES('$UserID', '$Cost', '$CreditsGiven', '$GBsGiven', '$OtherID')");
+$master->db->rawQuery(
+    "INSERT INTO users_special_gifts (UserID, CreditsSpent, CreditsGiven, GBsGiven, Recipient)
+          VALUES(?, ?, ?, ?, ?)",
+    [$userID, $Cost, $CreditsGiven, $GBsGiven, $OtherID]
+);
 
 $master->flasher->notice($ResultMessage);
 header("Location: bonus.php?action=gift&class={$REQUIRED_CLASS}&ratio={$REQUIRED_RATIO}&credits={$REQUIRED_CREDITS}&activity={$REQUIRED_ACTIVITY}");

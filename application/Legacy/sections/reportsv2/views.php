@@ -13,8 +13,13 @@ show_header('Reports V2!', 'reportsv2');
 include 'header.php';
 
 //Grab owners ID, just for examples
-$DB->query("SELECT ID, Username FROM users_main ORDER BY ID ASC LIMIT 1");
-list($OwnerID, $Owner) = $DB->next_record();
+list($OwnerID, $Owner) = $master->db->rawQuery(
+    "SELECT ID,
+            Username
+       FROM users
+   ORDER BY ID ASC
+      LIMIT 1"
+)->fetch(\PDO::FETCH_NUM);
 $Owner = display_str($Owner);
 
 ?>
@@ -25,8 +30,16 @@ $Owner = display_str($Owner);
 <div class="box pad">
     <table><tr><td style="width: 50%;">
 <?php
-$DB->query("SELECT um.ID, um.Username, COUNT(r.ID) AS Reports FROM reportsv2 AS r JOIN users_main AS um ON um.ID=r.ResolverID WHERE r.LastChangeTime > NOW() - INTERVAL 24 HOUR GROUP BY r.ResolverID ORDER BY Reports DESC");
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(
+    "SELECT u.ID,
+            u.Username,
+            COUNT(r.ID) AS Reports
+       FROM reportsv2 AS r
+       JOIN users AS u ON u.ID=r.ResolverID
+      WHERE r.LastChangeTime > NOW() - INTERVAL 24 HOUR
+   GROUP BY r.ResolverID
+   ORDER BY Reports DESC"
+)->fetchAll(\PDO::FETCH_NUM);
 ?>
         <strong>Reports resolved in the last 24 hours</strong>
         <table class="border">
@@ -35,18 +48,25 @@ $Results = $DB->to_array();
                 <td>Reports</td>
             </tr>
 <?php  foreach ($Results as $Result) {
-    list($UserID, $Username, $Reports) = $Result;
+    list($userID, $Username, $Reports) = $Result;
 ?>
             <tr>
-                <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$userID?>"><?=$Username?></a></td>
                 <td><?=$Reports?></td>
             </tr>
 <?php  } ?>
         </table>
         <br />
 <?php
-$DB->query("SELECT um.Username, COUNT(r.ID) AS Reports FROM reportsv2 AS r JOIN users_main AS um ON um.ID=r.ResolverID WHERE r.LastChangeTime > NOW() - INTERVAL 1 WEEK GROUP BY r.ResolverID ORDER BY Reports DESC");
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(
+    "SELECT u.Username,
+            COUNT(r.ID) AS Reports
+       FROM reportsv2 AS r
+       JOIN users AS u ON u.ID=r.ResolverID
+      WHERE r.LastChangeTime > NOW() - INTERVAL 1 WEEK
+   GROUP BY r.ResolverID
+   ORDER BY Reports DESC"
+)->fetchAll(\PDO::FETCH_NUM);
 ?>
         <strong>Reports resolved in the last week</strong>
         <table class="border">
@@ -65,8 +85,15 @@ $Results = $DB->to_array();
         </table>
         <br />
 <?php
-$DB->query("SELECT um.Username, COUNT(r.ID) AS Reports FROM reportsv2 AS r JOIN users_main AS um ON um.ID=r.ResolverID WHERE r.LastChangeTime > NOW() - INTERVAL 1 MONTH GROUP BY r.ResolverID ORDER BY Reports DESC");
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(
+    "SELECT u.Username,
+            COUNT(r.ID) AS Reports
+       FROM reportsv2 AS r
+       JOIN users AS u ON u.ID=r.ResolverID
+      WHERE r.LastChangeTime > NOW() - INTERVAL 1 MONTH
+   GROUP BY r.ResolverID
+   ORDER BY Reports DESC"
+)->fetchAll(\PDO::FETCH_NUM);
 ?>
         <strong>Reports resolved in the last month</strong>
         <table class="border">
@@ -85,8 +112,14 @@ $Results = $DB->to_array();
         </table>
         <br />
 <?php
-$DB->query("SELECT um.Username, COUNT(r.ID) AS Reports FROM reportsv2 AS r JOIN users_main AS um ON um.ID=r.ResolverID GROUP BY r.ResolverID ORDER BY Reports DESC");
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(
+    "SELECT u.Username,
+            COUNT(r.ID) AS Reports
+       FROM reportsv2 AS r
+       JOIN users AS u ON u.ID=r.ResolverID
+   GROUP BY r.ResolverID
+   ORDER BY Reports DESC"
+)->fetchAll(\PDO::FETCH_NUM);
 ?>
         <strong>Reports resolved since reportsv2 (2009-07-27)</strong>
         <table class="border">
@@ -152,14 +185,15 @@ $Results = $DB->to_array();
     </td>
     <td style="vertical-align: top;">
 <?php
-    $DB->query("SELECT r.ResolverID,
-                        um.Username,
-                        COUNT(r.ID) AS Count
-                FROM reportsv2 AS r
-                LEFT JOIN users_main AS um ON r.ResolverID=um.ID
-                WHERE r.Status = 'InProgress'
-                GROUP BY r.ResolverID");
-    $Staff = $DB->to_array();
+    $Staff = $master->db->rawQuery(
+        "SELECT r.ResolverID,
+                u.Username,
+                COUNT(r.ID) AS Count
+           FROM reportsv2 AS r
+      LEFT JOIN users AS u ON r.ResolverID=u.ID
+          WHERE r.Status = 'InProgress'
+       GROUP BY r.ResolverID"
+    )->fetchAll(\PDO::FETCH_ASSOC);
 ?>
         <strong>Currently assigned reports by staff member</strong>
         <table>
@@ -183,12 +217,13 @@ $Results = $DB->to_array();
         <br />
         <h3>Different view modes by report type</h3>
 <?php
-    $DB->query("SELECT 	r.Type,
-                        COUNT(r.ID) AS Count
-                FROM reportsv2 AS r
-                WHERE r.Status='New'
-                GROUP BY r.Type");
-    $Current = $DB->to_array();
+    $Current = $master->db->rawQuery(
+        "SELECT r.Type,
+                COUNT(r.ID) AS Count
+           FROM reportsv2 AS r
+          WHERE r.Status='New'
+       GROUP BY r.Type"
+    )->fetchAll(\PDO::FETCH_ASSOC);
     if (!empty($Current)) {
 ?>
         <table>
@@ -199,8 +234,8 @@ $Results = $DB->to_array();
 <?php
         foreach ($Current as $Array) {
             //Ugliness
-                if (!empty($Types[$Array['Type']])) {
-                    $Title = $Types[$Array['Type']]['title'];
+                if (!empty($types[$Array['Type']])) {
+                    $Title = $types[$Array['Type']]['title'];
                 }
 ?>
             <tr>

@@ -9,21 +9,9 @@ header('Last-Modified: '.date('D, d-M-Y H:i:s \U\T\C',time()));
 
 if (!check_perms('users_view_ips')) { die('Access denied.'); }
 
-$Octets = explode(".", $_GET['ip']);
-if(
-    empty($_GET['ip']) ||
-    !preg_match('/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/', $_GET['ip']) ||
-    $Octets[0] < 0 ||
-    $Octets[0] > 255 ||
-    $Octets[1] < 0 ||
-    $Octets[1] > 255 ||
-    $Octets[2] < 0 ||
-    $Octets[2] > 255 ||
-    $Octets[3] < 0 ||
-    $Octets[3] > 255 ||
-    $Octets[0] == 127 ||
-    ($Octets[0] == 192 && $Octets[1] == 168)
-) {
+$ip = $_GET['ip'] ?? null;
+
+if (!validate_ip($ip)) {
     die('Invalid IP.');
 }
 

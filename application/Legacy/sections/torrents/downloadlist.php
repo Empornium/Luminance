@@ -1,49 +1,61 @@
 <?php
-if (!isset($_GET['torrentid']) || !is_number($_GET['torrentid'])) {
+if (!isset($_GET['torrentid']) || !is_integer_string($_GET['torrentid'])) {
     error(404);
 }
 if ( !check_perms('site_view_torrent_snatchlist')) {
     error(403);
 }
-$TorrentID = $_GET['torrentid'];
+$torrentID = $_GET['torrentid'];
 
-if (!empty($_GET['page']) && is_number($_GET['page'])) {
-    $Page = $_GET['page'];
-    $Limit = (string) (($Page - 1) * 100) . ', 100';
+if (isset($activeUser['TorrentsPerPage'])) {
+    $torrentsPerPage = $activeUser['TorrentsPerPage'];
 } else {
-    $Page = 1;
-    $Limit = 100;
+    $torrentsPerPage = TORRENTS_PER_PAGE;
 }
 
+list($page, $limit) = page_limit($torrentsPerPage);
 if (!$master->options->EnableDownloads) {
     error("Downloads are currently disabled.");
 }
 
-$DB->query("SELECT SQL_CALC_FOUND_ROWS
-        ud.UserID,
-        ud.Time
-        FROM users_downloads AS ud
-        WHERE ud.TorrentID='$TorrentID'
-        ORDER BY ud.Time DESC
-        LIMIT $Limit");
-$UserIDs = $DB->collect('UserID');
-$Results = $DB->to_array('UserID', MYSQLI_ASSOC);
+$results = $master->db->rawQuery(
+    "SELECT SQL_CALC_FOUND_ROWS
+            ud.UserID,
+            ud.UserID,
+            ud.Time
+       FROM users_downloads AS ud
+      WHERE ud.TorrentID = ?
+   ORDER BY ud.Time DESC
+      LIMIT {$limit}",
+    [$torrentID]
+)->fetchAll(\PDO::FETCH_UNIQUE | \PDO::FETCH_OBJ);
+$userIDs = array_keys($results);
 
-$DB->query("SELECT FOUND_ROWS()");
-list($NumResults) = $DB->next_record();
+$NumResults = $master->db->foundRows();
 
-if (count($UserIDs) > 0) {
-    $UserIDs = implode(',', $UserIDs);
-    $DB->query("SELECT uid FROM xbt_snatched WHERE fid='$TorrentID' AND uid IN($UserIDs)");
-    $Snatched = $DB->to_array('uid');
+if (count($userIDs) > 0) {
+    $inQuery = implode(', ', array_fill(0, count($userIDs), '?'));
+    $Snatched = $master->db->rawQuery(
+        "SELECT uid
+           FROM xbt_snatched
+          WHERE fid = ?
+            AND uid IN ({$inQuery})",
+        array_merge([$torrentID], $userIDs)
+    )->fetchAll(\PDO::FETCH_COLUMN);
 
-    $DB->query("SELECT uid FROM xbt_files_users WHERE fid='$TorrentID' AND Remaining=0 AND uid IN($UserIDs)");
-    $Seeding = $DB->to_array('uid');
+    $Seeding = $master->db->rawQuery(
+        "SELECT uid
+           FROM xbt_files_users
+          WHERE fid = ?
+            AND Remaining = 0
+            AND uid IN ({$inQuery})",
+        array_merge([$torrentID], $userIDs)
+    )->fetchAll(\PDO::FETCH_COLUMN);
 }
 ?>
 
 <?php  if ($NumResults > 100) { ?>
-    <div class="linkbox"><?= js_pages('show_downloads', $_GET['torrentid'], $NumResults, $Page) ?></div>
+    <div class="linkbox"><?= js_pages('show_downloads', $_GET['torrentid'], $NumResults, $page) ?></div>
 <?php  } ?>
 <table>
     <?php
@@ -69,15 +81,14 @@ if (count($UserIDs) > 0) {
             <?php
             $i = 0;
 
-            foreach ($Results as $ID => $Data) {
-                list($SnatcherID, $Timestamp) = array_values($Data);
-                $UserInfo = user_info($SnatcherID);
+            foreach ($results as $result) {
+                $UserInfo = user_info($result->UserID);
 
-                $User = format_username($SnatcherID, $UserInfo['Username'], $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
+                $User = format_username($result->UserID, $UserInfo['Donor'], true, $UserInfo['Enabled'], $UserInfo['PermissionID']);
 
-                if (!array_key_exists($SnatcherID, $Snatched) && $SnatcherID != $UserID) {
+                if (!array_key_exists($result->UserID, $Snatched) && $result->UserID != $userID) {
                     $User = '<em>' . $User . '</em>';
-                    if (array_key_exists($SnatcherID, $Seeding)) {
+                    if (array_key_exists($result->UserID, $Seeding)) {
                         $User = '<strong>' . $User . '</strong>';
                     }
                 }
@@ -89,7 +100,7 @@ if (count($UserIDs) > 0) {
                 }
                 ?>
                 <td><?= $User ?></td>
-                <td><?= time_diff($Timestamp) ?></td>
+                <td><?= time_diff($result->Time) ?></td>
                 <?php
                 $i++;
             }
@@ -100,5 +111,5 @@ if (count($UserIDs) > 0) {
     ?>
 </table>
 <?php  if ($NumResults > 100) { ?>
-    <div class="linkbox"><?= js_pages('show_downloads', $_GET['torrentid'], $NumResults, $Page) ?></div>
+    <div class="linkbox"><?= js_pages('show_downloads', $_GET['torrentid'], $NumResults, $page) ?></div>
 <?php  }

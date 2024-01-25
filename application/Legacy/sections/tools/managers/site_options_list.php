@@ -14,15 +14,15 @@ show_header('Manage Site Options');
         <div>
             <form action="tools.php" method="post">
                 <input type="hidden" name="action" value="take_site_options" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
 <?php
-foreach($master->options->getSections() as $section) {
+foreach ($master->options->getSections() as $section) {
     ?>
                 <div class="site_option_section">
                     <h2><?=ucfirst($section)?></h2>
     <?php
     $displayRow=1;
-    foreach($master->options->getAll($section) as $name => $option) {
+    foreach ($master->options->getAll($section) as $name => $option) {
         if (isset($option['displayRow']) && ($option['displayRow'] > $displayRow)) {
             $displayRow = $option['displayRow'];
         ?>
@@ -36,6 +36,9 @@ foreach($master->options->getSections() as $section) {
                             <input type="text" title="<?=$option['description']?>" name="<?=$name?>" size="5" value="<?=$option['value']?>" />
 
                         <?php } elseif ($option['type'] == 'date') {
+                            if (!is_numeric($option['value'])) {
+                                $option['value'] = strtotime($option['value']);
+                            }
                             $option['value'] = date('Y-m-d\TH:i', $option['value']);
                             ?>
                             <input type="datetime-local" title="<?=$option['description']?>" name="<?=$name?>" size="20" value="<?=$option['value']?>" />
@@ -46,7 +49,7 @@ foreach($master->options->getSections() as $section) {
                             </label>
                         <?php } elseif ($option['type'] == 'enum') { ?>
                             <select name="<?=$name?>">
-                            <?php foreach($option['validation']['inarray'] as $value) {?>
+                            <?php foreach ($option['validation']['inarray'] as $value) {?>
                                 <option value="<?=$value?>" <?=($option['value']==$value)?'selected':''?>><?=$value?></option>
                             <?php } ?>
                             </select>

@@ -1,54 +1,54 @@
 <?php
-if(!check_perms('site_view_torrent_peerlist')) error(403,true);
+if (!check_perms('site_view_torrent_peerlist')) error(403,true);
 
-if (!isset($_GET['torrentid']) || !is_number($_GET['torrentid'])) {
+if (!isset($_GET['torrentid']) || !is_integer_string($_GET['torrentid'])) {
     error(404, true);
 }
-$TorrentID = $_GET['torrentid'];
+$torrentID = $_GET['torrentid'];
 
-if (!empty($_GET['page']) && is_number($_GET['page'])) {
-    $Page = $_GET['page'];
-    $Limit = (string) (($Page - 1) * 100) . ', 100';
-} else {
-    $Page = 1;
-    $Limit = 100;
-}
 
-$DB->query("SELECT UserID, Anonymous FROM torrents WHERE ID='$TorrentID' ");
-list($AuthorID, $IsAnon) = $DB->next_record();
+list($page, $limit) = page_limit(100);
+list($AuthorID, $IsAnon) = $master->db->rawQuery(
+    "SELECT UserID,
+            Anonymous
+       FROM torrents
+      WHERE ID = ?",
+    [$torrentID]
+)->fetch(\PDO::FETCH_NUM);
 
- // swapped xu.timespent, for xu.mtime - see if that is more enlightening to the user
-
-$Result = $DB->query("SELECT SQL_CALC_FOUND_ROWS
-    xu.uid,
-    t.Size,
-    um.Username,
-    xu.active,
-    IF(ucs.Status IS NULL,'unset',ucs.Status) AS Status,
-    xu.uploaded,
-    xu.remaining,
-    xu.useragent,
-    IF(xu.remaining=0,1,0) AS IsSeeder,
-    xu.timespent,
-    xu.upspeed,
-    xu.downspeed,
-    IF(xu.ipv6=\"\", INET6_NTOA(xu.ipv4), INET6_NTOA(xu.ipv6)) AS IP,
-    xu.Port
-    FROM xbt_files_users AS xu
-    LEFT JOIN users_main AS um ON um.ID=xu.uid
-    LEFT JOIN users_connectable_status AS ucs ON ucs.UserID=xu.uid AND INET6_NTOA(xu.ipv4)=ucs.IP
-    JOIN torrents AS t ON t.ID=xu.fid
-    WHERE xu.fid='$TorrentID'
-    AND um.Visible='1'
-    ORDER BY IsSeeder DESC, xu.uploaded DESC
-    LIMIT $Limit");
-$DB->query("SELECT FOUND_ROWS()");
-list($NumResults) = $DB->next_record();
-$DB->set_query_id($Result);
+$records = $master->db->rawQuery(
+    "SELECT SQL_CALC_FOUND_ROWS
+            xu.uid,
+            t.Size,
+            u.Username,
+            xu.active,
+            IF(ucs.Status IS NULL, 'unset',ucs.Status) AS Status,
+            xu.uploaded,
+            xu.remaining,
+            xu.useragent,
+            IF(xu.remaining=0,1,0) AS IsSeeder,
+            xu.timespent,
+            xu.upspeed,
+            xu.downspeed,
+            IF(xu.ipv6=\"\", INET6_NTOA(xu.ipv4), INET6_NTOA(xu.ipv6)) AS IP,
+            xu.Port
+       FROM xbt_files_users AS xu
+  LEFT JOIN users AS u ON u.ID = xu.uid
+  LEFT JOIN users_main AS um ON um.ID = xu.uid
+  LEFT JOIN users_connectable_status AS ucs ON ucs.UserID = xu.uid AND INET6_NTOA(xu.ipv4) = ucs.IP
+       JOIN torrents AS t ON t.ID = xu.fid
+      WHERE xu.fid = ?
+        AND um.Visible = '1'
+   ORDER BY IsSeeder DESC,
+            xu.uploaded DESC
+      LIMIT {$limit}",
+    [$torrentID]
+)->fetchAll(\PDO::FETCH_NUM);
+$NumResults = $master->db->foundRows();
 ?>
 
 <?php  if ($NumResults > 100) { ?>
-    <div class="linkbox"><?= js_pages('show_peers', $_GET['torrentid'], $NumResults, $Page) ?></div>
+    <div class="linkbox"><?= js_pages('show_peers', $_GET['torrentid'], $NumResults, $page) ?></div>
     <?php  } ?>
 <table>
     <?php
@@ -60,8 +60,9 @@ $DB->set_query_id($Result);
             <?php
     }
     $LastIsSeeder = -1;
-    while (list($PeerUserID, $Size, $Username, $Active, $Connectable, $Uploaded, $Remaining, $UserAgent,
-            $IsSeeder, $Timespent, $UpSpeed, $DownSpeed, $IP, $Port) = $DB->next_record()) {
+    foreach ($records as $record) {
+        list($PeerUserID, $Size, $Username, $Active, $Connectable, $Uploaded, $Remaining, $UserAgent,
+            $IsSeeder, $timespent, $UpSpeed, $DownSpeed, $IP, $Port) = $record;
 
         if ($IsSeeder != $LastIsSeeder) {
             ?>
@@ -89,11 +90,11 @@ $DB->set_query_id($Result);
         }
         ?>
         <tr>
-            <td><?= torrent_username($PeerUserID, $Username, $IsAnon && $PeerUserID == $AuthorID ) ?></td>
+            <td><?= torrent_username($PeerUserID, $IsAnon && $PeerUserID == $AuthorID) ?></td>
             <td><?= ($Active) ? '<span style="color:green">Yes</span>' : '<span style="color:red">No</span>' ?></td>
 
             <td><?php
-                if ($Active && $Port && (check_perms('users_mod') || $PeerUserID==$LoggedUser['ID'] ) ) {
+                if ($Active && $Port && (check_perms('users_mod') || $PeerUserID==$activeUser['ID'])) {
                     $link = 'user.php?action=connchecker&checkuser='.$PeerUserID.'&checkip='.$IP.'&checkport='.$Port;
                     if ($Connectable=='yes') echo '<a href="/'.$link.'" style="color:green">Yes</a>' ;
                     elseif ($Connectable=='no') echo'<a href="/'.$link.'" style="color:red">No</a>';
@@ -111,7 +112,7 @@ $DB->set_query_id($Result);
             <td><?= get_size($DownSpeed, 2)?>/s</td>
             <td><?= number_format(($Size - $Remaining) / $Size * 100, 2) ?></td>
             <td><?= number_format(($Size - $Remaining) > 0 ? $Uploaded / ($Size - $Remaining) : 0, 3) ?></td>
-            <td><?= time_span($Timespent) ?></td>
+            <td><?= time_span($timespent) ?></td>
             <td><?= display_str($UserAgent) ?></td>
         </tr>
         <?php
@@ -119,5 +120,5 @@ $DB->set_query_id($Result);
     ?>
 </table>
 <?php  if ($NumResults > 100) { ?>
-    <div class="linkbox"><?= js_pages('show_peers', $_GET['torrentid'], $NumResults, $Page) ?></div>
+    <div class="linkbox"><?= js_pages('show_peers', $_GET['torrentid'], $NumResults, $page) ?></div>
 <?php  }

@@ -1,5 +1,5 @@
 <?php
-include(SERVER_ROOT.'/Legacy/sections/staffpm/functions.php');
+include_once(SERVER_ROOT.'/Legacy/sections/staffpm/functions.php');
 
 if ($ConvID = (int) ($_GET['id'])) {
     // Is the user allowed to access this StaffPM
@@ -7,11 +7,16 @@ if ($ConvID = (int) ($_GET['id'])) {
 
     if (check_perms('admin_stealth_resolve')) {
         // Conversation belongs to user or user is staff, resolve it
-        $DB->query("UPDATE staff_pm_conversations SET StealthResolved=1 WHERE ID=$ConvID");
-        $Cache->delete_value('staff_pm_new_'.$LoggedUser['ID']);
+        $master->db->rawQuery(
+            "UPDATE staff_pm_conversations
+                SET StealthResolved = 1
+              WHERE ID = ?",
+            [$ConvID]
+        );
+        $master->cache->deleteValue('staff_pm_new_'.$activeUser['ID']);
 
         // Add a log message to the StaffPM
-        $Message = sqltime()." - Stealth Resolved by ".$LoggedUser['Username'];
+        $Message = sqltime()." - Stealth Resolved by ".$activeUser['Username'];
         make_staffpm_note($Message, $ConvID);
 
         header('Location: staffpm.php?view=open');

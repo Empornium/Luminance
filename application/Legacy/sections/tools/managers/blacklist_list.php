@@ -4,7 +4,7 @@ if (!check_perms('admin_whitelist')) {
 }
 
 show_header('Client Blacklist Management');
-$DB->query('SELECT id, vstring, peer_id FROM xbt_client_blacklist ORDER BY peer_id ASC');
+$records = $master->db->rawQuery('SELECT id, vstring, peer_id FROM xbt_client_blacklist ORDER BY peer_id ASC')->fetchAll(\PDO::FETCH_NUM);
 ?>
 <div class="thin">
     <h2>Blacklisted Clients</h2>
@@ -21,7 +21,7 @@ $DB->query('SELECT id, vstring, peer_id FROM xbt_client_blacklist ORDER BY peer_
         <form action="" method="post">
             <td>
                 <input type="hidden" name="action" value="client_blacklist_alter" />
-                <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+                <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
                 <input class="long" type="text" size="10" name="peer_id" />
             </td>
             <td>
@@ -45,7 +45,7 @@ $DB->query('SELECT id, vstring, peer_id FROM xbt_client_blacklist ORDER BY peer_
         <form action="" method="post">
             <td>
                 <input type="hidden" name="action" value="client_blacklist_alter" />
-                <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+                <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
                 <textarea name="clients" class="long" title="On each line enter the peerID and then the text description. NOTE: The line will be split on the first space."><?=$Clients?></textarea><br/>
                 <input type="submit" name="submit"  value="Add client" />
                 You can only add one client at a time but this interface makes it slightly less painful to add many (it adds the first line and returns with that line removed)
@@ -65,14 +65,15 @@ $DB->query('SELECT id, vstring, peer_id FROM xbt_client_blacklist ORDER BY peer_
         </tr>
         <?php
         $Row = 'b';
-        while (list($ID, $Client, $Peer_ID) = $DB->next_record()) {
+        foreach ($records as $record) {
+            list($ID, $Client, $Peer_ID) = $record;
             $Row = ($Row === 'a' ? 'b' : 'a');
             ?>
             <tr class="row<?= $Row ?>">
             <form action="" method="post">
                 <td>
                     <input type="hidden" name="action" value="client_blacklist_alter" />
-                    <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+                    <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
                     <input type="hidden" name="id" value="<?= $ID ?>" />
                     <input class="long" type="text" size="10" name="peer_id" value="<?= $Peer_ID ?>" />
                 </td>

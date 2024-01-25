@@ -1,0 +1,17 @@
+{% if donation_drive %}
+<div id="active_drive">
+    <div id="donorbar">
+        <div>
+            <a href="/forum/thread/{{ donation_drive.threadid }}" title="click for details">{{ donation_drive.name }}</a>
+            <a class="link" href="/donate.php" title="click to donate"><!--so far we have raised <strong>&euro;{{ donation_drive.raised_euros|number_format(2) }}</strong> out of-->
+                target: <strong>&euro;{{ donation_drive.target_euros|number_format(2) }}</strong> - to help support the site click to donate
+            </a>
+            <div>
+                <a href="/donate.php" title="click to donate">
+                    <div id="donorbargreen" style="width:{{ donation_drive.percentdone }}%;"> {% if donation_drive.percent_done > 94 %}{{ donation_drive.percentdone }}%{% endif %} &nbsp;</div><div id="donorbarred" style="width:{{ 100 - donation_drive.percentdone }}%;"> &nbsp;{% if donation_drive.percent_done <= 94 %}{{ percentdone }}%{% endif %}</div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}

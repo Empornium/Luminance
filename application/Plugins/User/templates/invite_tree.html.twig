@@ -1,0 +1,22 @@
+{% extends "core/private_page.html.twig" %}
+
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : true,
+    'noGroup'   : true,
+    'noClass'   : true,
+    'noTitle'   : true,
+} %}
+
+{% block title %}
+    {{ render.username(user.ID, usernameOptions) }}
+    &gt; <a href="/user/{{ user.ID }}/invite">Invites</a>
+    &gt; Tree
+{% endblock %}
+
+{% block main_content %}
+    {{ tree.makeTree(user.ID) }}
+{% endblock %}

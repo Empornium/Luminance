@@ -1,0 +1,70 @@
+
+
+<table width="100%">
+    <tr class="colhead">
+        <td class="center"></td>
+        <td><a href="{{ header_link('Name')|raw }}">Collage</a></td>
+        <td class="center"><a href="{{ header_link('NumTorrents')|raw }}">Torrents</a></td>
+        <td><a href="{{ header_link('Subscribers')|raw }}">Subscribers</a></td>
+        <td><a href="{{ header_link('StartDate')|raw }}">Started</a></td>
+        <td class="nobr"><a href="{{ header_link('LastDate')|raw }}">Last Added</a></td>
+        <td class="center"><a href="{{ header_link('Username')|raw }}">Author</a></td>
+    </tr>
+    {% for collage in collages %}
+        {% block collage_table_row %}
+            {% import "macros/icon.html.twig" as icon %}
+            {% if collage.isTrashed() == true %}
+                <tr id="collage{{ collage.ID }}" class="trashed">
+            {% else %}
+                <tr id="collage{{ collage.ID }}" class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+            {% endif %}
+                <td class="center">
+                    <a href="/collage/?searchCategories[{{ collage.CategoryID }}]=1">
+                        <img src="/static/common/collageicons/{{ collage.category.Image }}" alt="{{ collage.category.Name }}" title="{{ collage.category.Name }}" />
+                    </a>
+                </td>
+                <td>
+                    <a href="/collage/{{ collage.ID }}">{{ collage.Name }}</a>
+                    <span class="icon" style="float:right">
+                        {% if auth.isAllowed('collage_trash') or (collage.UserID == ActiveUser.ID and (collage.category.isPersonal() or collage.userCount == 0 or (collage.userCount == 1 and collage.users[collage.userID] is defined ))) %}
+                            <a href="/collage/{{ collage.ID }}/remove" rel="modal:open">
+                                <button id="remove{{ collage.ID }}" type="button" title="remove this collage" style="all:unset">
+                                    {{ icon.render('torrent_icon', ['misc_trash']) }}
+                                </button>
+                            </a>
+                        {% endif %}
+                        {% if collage.isBookmarked(ActiveUser.ID) %}
+                            {% set data = {
+                                'title'                   : "You have this torrent bookmarked",
+                                'data-action'             : "unbookmark",
+                                'data-action-confirm'     : null,
+                                'data-action-parameters'  : {'type' : 'collage', 'id' : collage.ID}|json_encode
+                            }%}
+                            {% set classes = 'torrent_icons clickable bookmark bookmarked' %}
+                        {% else %}
+                            {% set data = {
+                                'title'                   : "Bookmark this torrent",
+                                'data-action'             : "bookmark",
+                                'data-action-parameters'  : {'type' : 'collage', 'id' : collage.ID}|json_encode
+                            }%}
+                            {% set classes = 'torrent_icons clickable bookmark' %}
+                        {% endif %}
+                        {{ icon.render(classes, ['nav_bookmarks'], data) }}
+                    </span>
+                    {% if ActiveUser.options('HideTagsInLists', 0) == 0 %}
+                        <div class="tags">
+                            {% for tag in collage.TagList|split(', ') %}
+                                <a href="/collage/?tags={{ tag }}">{{ tag }}</a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </td>
+                <td class="center">{{ collage.count }}</td>
+                <td class="center">{{ collage.subCount }}</td>
+                <td class="">{{ time_diff(collage.StartDate)|raw }}</td>
+                <td class="">{{ time_diff(collage.lastAdded)|raw }}</td>
+                <td class="center">{{ render.username(collage.UserID, usernameOptions) }}</td>
+            </tr>
+        {% endblock %}
+    {% endfor %}
+</table>

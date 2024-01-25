@@ -1,0 +1,21 @@
+<div id="modal_content">
+    <div class="thin">
+        <h2>Remove Collage</h2>
+        <div class="twofa_code box pad center">
+            <form method="post">
+                <strong>Reason: </strong>
+                <input autofocus id="remove_reason" type="text" name="reason" size="30" />
+                <br/>
+                <br/>
+                {% if collage.getFlag(constant('Luminance\\Entities\\Collage::TRASHED')) %}
+                    <a href="#collage{{ collage.ID }}" onclick="TrashCollage('{{ collage.ID }}', {{ 0 }}, '{{ secretary.getToken('collage.trash') }}');" class="button greenButton" title="restore this collage" rel="modal:close">Restore</a>
+                {% else %}
+                    <a href="#collage{{ collage.ID }}" onclick="TrashCollage('{{ collage.ID }}', {{ 1 }}, '{{ secretary.getToken('collage.trash') }}');" class="button blueButton" title="trash this collage" rel="modal:close">Trash</a>
+                {% endif %}
+                {% if auth.isAllowed('collage_delete') %}
+                    <a href="#collage{{ collage.ID }}" onclick="DeleteCollage('{{ collage.ID }}', '{{ secretary.getToken('collage.delete') }}');" class="button redButton" title="permenantly delete this collage">Delete</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>

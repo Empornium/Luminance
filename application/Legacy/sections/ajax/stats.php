@@ -1,6 +1,4 @@
 <?php
-if (in_array($_GET['stat'], array('inbox', 'uploads', 'bookmarks', 'notifications', 'subscriptions', 'comments', 'friends', 'logs', 'bonus','sandbox','conncheck'))) {
-    $Cache->begin_transaction('stats_links');
-    $Cache->update_row(false, array($_GET['stat'] => '+1'));
-    $Cache->commit_transaction(0);
+if (in_array($_GET['stat'], ['inbox', 'uploads', 'bookmarks', 'notifications', 'subscriptions', 'comments', 'friends', 'logs', 'bonus', 'sandbox', 'conncheck'])) {
+    $master->cache->deleteValue('stats_links');
 }

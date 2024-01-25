@@ -1,0 +1,50 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/chat">Chat</a>
+{% endblock %}
+
+{% block main_content %}
+    <div class="head">IRC Rules - Please read these carefully!</div>
+    <div class="box pad" style="padding:10px 10px 10px 20px;">
+        {% set chatRules = get_article('chatrules') %}
+        {% if chatRules is not empty %}
+            {{ bbcode.full_format(chatRules, true)|raw }}
+        {% endif %}
+    </div>
+    <form method="post" action="/chat" onsubmit="return ($('#channel1').raw().checked || $('#channel2').raw().checked || $('#channel3').raw().checked);">
+        <input type="hidden" name="token" value="{{ secretary.getToken('irc.rules') }}" />
+        <table>
+            <tr>
+                <td class="noborder right" width="60%">
+                    {% if settings.irc.chan is not empty %}
+                        connect to the <strong>{{ settings.irc.chan }}</strong> general chat channel
+                        <input type="checkbox" id="channel1" name="main" value="1" checked="checked" /><br/>
+                    {% endif %}
+                    {% if settings.irc.help_chan is not empty %}
+                        connect to the <strong>{{ settings.irc.help_chan }}</strong> channel*
+                        <input type="checkbox" id="channel2" name="help" value="1" /><br/>
+                    {% endif %}
+                    {% if settings.irc.staff_chan is not empty %}
+                        {% if ActiveUser.legacy.SupportFor is not empty or ActiveUser.class.DisplayStaff == 1 %}
+                            connect to the <strong>{{ settings.irc.staff_chan }}</strong> channel*
+                            <input type="checkbox" id="channel3" name="staff" value="1" />
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td class="noborder">
+                    <input type="submit" id="connect" name="connect" style="width:160px" value="I agree to the rules" />
+                </td>
+            </tr>
+            <tr>
+                <td class="noborder right" colspan="2">
+                    *note: Please be patient we are not around 24/7. &nbsp;&nbsp;
+                </td>
+            </tr>
+        </table>
+    </form>
+{% endblock %}

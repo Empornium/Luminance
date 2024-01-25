@@ -6,14 +6,14 @@ authorize();
 if (!check_perms('admin_manage_site_options')) error(403);
 switch ($_POST['submit']) {
     case 'Save Site Options':
-        $Validate = new Luminance\Legacy\Validate;
+        $Validate = new \Luminance\Legacy\Validate;
 
         // Load the site options table
         $currentOptions = $master->options->getAll();
 
         // Populate the new values into the SiteOptions array
         // and prepare the validation class
-        foreach($currentOptions as $name => $option) {
+        foreach ($currentOptions as $name => $option) {
             switch ($option['type']) {
                 case 'bool':
                     $SiteOptionsUpdate[$name] = ($_POST[$name] ? true : false);
@@ -42,7 +42,7 @@ switch ($_POST['submit']) {
         if ($Err) error($Err);
 
         // Update the ORM
-        foreach($currentOptions as $name => $currentOption) {
+        foreach ($currentOptions as $name => $currentOption) {
             $master->options->$name = $SiteOptionsUpdate[$name];
         }
         break;

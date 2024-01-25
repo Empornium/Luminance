@@ -1,19 +1,17 @@
 <?php
 if (!check_perms('admin_manage_tags')) error(403, true);
 
-function get_rejected_message4($Tag, $Item, $Reason)
-{
+function get_rejected_message4($Tag, $Item, $Reason) {
     $Result = "<span class=\"red\">[rejected]</span> '$Tag'";
-    if($Item!== $Tag) $Result .= "&nbsp; <--&nbsp; '$Item'";
+    if ($Item!== $Tag) $Result .= "&nbsp; <--&nbsp; '$Item'";
     $Result .= "&nbsp; $Reason<br />";
 
     return $Result ;
 }
 
-function get_rejected_message3($Tag, $Item, $NumUses, $Reason)
-{
+function get_rejected_message3($Tag, $Item, $NumUses, $Reason) {
     $Result = "<span class=\"red\">[rejected]</span> '$Tag'";
-    if($Item!== $Tag) $Result .= "&nbsp; <--&nbsp; '$Item'";
+    if ($Item!== $Tag) $Result .= "&nbsp; <--&nbsp; '$Item'";
     $Result .= "&nbsp; ($NumUses) $Reason<br />";
 
     return $Result ;
@@ -21,102 +19,122 @@ function get_rejected_message3($Tag, $Item, $NumUses, $Reason)
 
 // ======================================
 
-function Add_Synonyms($ParentTagItem, $TagsItems, &$Result)
-{
-    global $DB, $LoggedUser, $Cache;
+function Add_Synonyms($ParentTagItem, $TagsItems, &$Result) {
+    global $master, $activeUser;
 
     if (!is_array($ParentTagItem)) return;
 
     list($ParentTagID, $ParentTagName, $pitem, $pNumUses) = $ParentTagItem;
     if ($ParentTagID>0) {
-        $DB->query("UPDATE tags SET TagType='genre' WHERE ID='$ParentTagID'");
+        $master->db->rawQuery(
+            "UPDATE tags
+                SET TagType = 'genre'
+              WHERE ID = ?",
+            [$ParentTagID]
+        );
         $Result .= "Set parent tag: $ParentTagName (id=$ParentTagID)<br/>";
-        write_log("Set parent tag $ParentTagName (id=$ParentTagID)" );
+        write_log("Set parent tag $ParentTagName (id=$ParentTagID)");
     } else {
-        $DB->query("INSERT INTO tags (Name, UserID, TagType, Uses)
-                    VALUES ('" . $ParentTagName . "', " . $LoggedUser['ID'] . ", 'genre', 0)");
-        $ParentTagID = $DB->inserted_id();
+        $master->db->rawQuery(
+            "INSERT INTO tags (Name, UserID, TagType, Uses)
+                  VALUES (?, ?, 'genre', 0)",
+            [$ParentTagName, $activeUser['ID']]
+        );
+        $ParentTagID = $master->db->lastInsertID();
         //$ParentTagItem[0] = $ParentTagID;
         $Result .= "Created parent tag: $ParentTagName (id=$ParentTagID)<br/>";
-        write_log("Created parent tag $ParentTagName (id=$ParentTagID)" );
+        write_log("Created parent tag $ParentTagName (id=$ParentTagID)");
     }
     // add synonyms
     foreach ($TagsItems as $TagItem) {
         list($TagID, $TagName, $item, $NumUses) = $TagItem;
 
-        $DB->query("INSERT INTO tag_synomyns (Synomyn, TagID, UserID)
-                         VALUES ('" . $TagName . "', " . $ParentTagID . ", " . $LoggedUser['ID'] . " )");
+        $master->db->rawQuery(
+            "INSERT INTO tags_synonyms (Synonym, TagID, UserID)
+                  VALUES (?, ?, ?)",
+            [$TagName, $ParentTagID, $activeUser['ID']]
+        );
 
         $Result .= "Created tag synonym $TagName for $ParentTagName<br/>";
-        write_log("Created synonym $TagName for tag $ParentTagName by ".$LoggedUser['Username'] );
+        write_log("Created synonym $TagName for tag $ParentTagName by ".$activeUser['Username']);
 
         if ($TagID>0) {
-            // 'convert refrences to the original tag to parenttag and cleanup db
-            $DB->query("SELECT tt.GroupID, tt.PositiveVotes, tt.NegativeVotes,
-                                           Count(tt2.TagID) AS Count, tt.UserID AS AdderID
-                                                      FROM torrents_tags AS tt
-                                                 LEFT JOIN torrents_tags AS tt2 ON tt2.GroupID=tt.GroupID
-                                                            AND tt2.TagID=$ParentTagID
-                                                     WHERE tt.TagID=$TagID
-                                                  GROUP BY tt.GroupID");
+            // 'convert references to the original tag to parenttag and cleanup db
+            $GroupInfos = $master->db->rawQuery(
+                "SELECT tt.GroupID,
+                        tt.PositiveVotes,
+                        tt.NegativeVotes,
+                        Count(tt2.TagID) AS Count,
+                        tt.UserID AS AdderID
+                   FROM torrents_tags AS tt
+              LEFT JOIN torrents_tags AS tt2 ON tt2.GroupID=tt.GroupID AND tt2.TagID = ?
+                  WHERE tt.TagID = ?
+               GROUP BY tt.GroupID",
+                [$ParentTagID, $TagID]
+            )->fetchAll(\PDO::FETCH_NUM);
 
-            $GroupInfos = $DB->to_array(false, MYSQLI_BOTH);
             $NumAffectedTorrents = count($GroupInfos);
             $NumChangedFilelists = 0;
             $MsgGroups = '';
             if ($NumAffectedTorrents > 0) {
 
                 $SQL = '';
+                $params = [];
                 $Div = '';
                 $Div2 = '';
                 $MsgGroups = "torrents ";
                 foreach ($GroupInfos as $Group) {
                     list($GroupID, $PVotes, $NVotes, $Count, $AdderID) = $Group;
                     if ($Count == 0) { // only insert parenttag into groups where not already present
-                        $SQL .= "$Div ('$ParentTagID', '$GroupID', '$PVotes', '$NVotes', '$AdderID')";
+                        $SQL .= "{$Div} (?, ?, ?, ?, ?)";
+                        $params = array_merge($params, [$ParentTagID, $GroupID, $PVotes, $NVotes, $AdderID]);
                         $Div = ',';
                         $NumChangedFilelists++;
                     }
-                    $MsgGroups .= "$Div2$GroupID";
+                    $MsgGroups .= "{$Div2}{$GroupID}";
                     $Div2 = ',';
                 }
 
                 // update torrents_tags with entries for parentTagID
                 if ($SQL != '') {
-                    $SQL = "INSERT IGNORE INTO torrents_tags
-                                                  (TagID, GroupID, PositiveVotes, NegativeVotes, UserID) VALUES $SQL";
-                    $DB->query($SQL);
+                    $SQL = "INSERT IGNORE INTO torrents_tags (TagID, GroupID, PositiveVotes, NegativeVotes, UserID) VALUES {$SQL}";
+                    $master->db->rawQuery($SQL, $params);
                 }
                 // update the Uses where parenttag has been added as a replacement for tag
                 if ($NumChangedFilelists > 0)
-                    $DB->query("UPDATE tags SET Uses=(Uses+$NumChangedFilelists) WHERE ID='$ParentTagID'");
+                    $master->db->rawQuery(
+                        "UPDATE tags
+                            SET Uses = (Uses + {$NumChangedFilelists})
+                          WHERE ID = ?",
+                        [$ParentTagID]
+                    );
 
-                $DB->query("DELETE FROM torrents_tags WHERE TagID = '$TagID'");
+                $master->db->rawQuery("DELETE FROM torrents_tags WHERE TagID = ?", [$TagID]);
             }
             //// remove old entries for tagID
-            $DB->query("DELETE FROM tags WHERE ID = '$TagID'");
+            $master->db->rawQuery("DELETE FROM tags WHERE ID = ?", [$TagID]);
             // Delete tag cache entry
-            $Cache->delete_value('tag_id_'.$TagName);
+            $master->cache->deleteValue('tag_id_'.$TagName);
 
             foreach ($GroupInfos as $Group) {
                 update_hash($Group[0]);
             }
             $Result .= "Converted tag $TagName to synonym in $NumAffectedTorrents torrents, updated $MsgGroups<br/>";
             // probably we should log this action in some way
-            write_log("Tag $TagName converted to synonym $TagName for parent tag $ParentTagName, $NumAffectedTorrents tag-torrent links updated $MsgGroups by " . $LoggedUser['Username']);
+            write_log("Tag $TagName converted to synonym $TagName for parent tag $ParentTagName, $NumAffectedTorrents tag-torrent links updated $MsgGroups by " . $activeUser['Username']);
         }
     }
 }
 
 $ListInput = $_POST['taglist'];
-$ListInput = str_replace(array("\r\n", "\n\n\n", "\n\n", "\n"), ' ', $ListInput);
+$ListInput = str_replace(["\r\n", "\n\n\n", "\n\n", "\n"], ' ', $ListInput);
 $ListInput = explode(' ', $ListInput);
 
 if (!$ListInput) error("Nothing in list", true);
 
 $Result = '';
-$AllTags = array();
-$TagInfos = array();
+$AllTags = [];
+$TagInfos = [];
 $ParentTag = '';
 $numparents = 0;
 $numtags = 0;
@@ -135,7 +153,7 @@ foreach ($ListInput as $item) {
         // if parenttag and tags are set then add them
         Add_Synonyms($ParentTag, $TagInfos, $Result);
 
-        $TagInfos = array();
+        $TagInfos = [];
         $ParentTag = '';
     }
 
@@ -146,19 +164,31 @@ foreach ($ListInput as $item) {
     }
 
     // check this tag is not in syn table
-    $DB->query("SELECT t.Name FROM tag_synomyns AS ts JOIN tags AS t ON ts.TagID=t.ID WHERE ts.Synomyn = '$Tag'");
-    list($ExistingParent) = $DB->next_record();
+    $ExistingParent = $master->db->rawQuery(
+        "SELECT t.Name
+           FROM tags_synonyms AS ts
+           JOIN tags AS t ON ts.TagID=t.ID
+          WHERE ts.Synonym = ?",
+        [$Tag]
+    )->fetchColumn();
     if ($ExistingParent) {
         $Result .= get_rejected_message4($Tag, $item, "(already exists as a synonym for '$ExistingParent')");   // "<span class=\"red\">[rejected]</span> '$Tag'  <--  '$item' (already exists as a synonym for '$ExistingParent')<br />";
         continue;
     }
 
-    $DB->query("SELECT t.ID, t.Uses, t.TagType, Count(ts.ID)
-                      FROM tags AS t LEFT JOIN tag_synomyns AS ts ON ts.TagID=t.ID
-                     WHERE t.Name = '$Tag'
-                  GROUP BY t.ID");
-    if ($DB->record_count() > 0) {
-        list($TagID, $NumUses, $TagType, $NumSyns) = $DB->next_record();
+    $nextRecord = $master->db->rawQuery(
+        "SELECT t.ID,
+                t.Uses,
+                t.TagType,
+                Count(ts.ID)
+           FROM tags AS t
+      LEFT JOIN tags_synonyms AS ts ON ts.TagID=t.ID
+          WHERE t.Name = ?
+       GROUP BY t.ID",
+        [$Tag]
+    )->fetch(\PDO::FETCH_NUM);
+    if ($master->db->foundRows() > 0) {
+        list($TagID, $NumUses, $TagType, $NumSyns) = $nextRecord;
     } else {
         $TagID=0;
         $TagType='';
@@ -177,9 +207,9 @@ foreach ($ListInput as $item) {
 
         // set new parent tag
         $AllTags[] = $Tag;
-        $ParentTag = array($TagID, $Tag, substr($item, 1), $NumUses);
+        $ParentTag = [$TagID, $Tag, substr($item, 1), $NumUses];
         $numparents++;
-        //$Tags = array();
+        //$Tags = [];
     } else {
 
         // check this synonym to be is not an official tag
@@ -196,13 +226,13 @@ foreach ($ListInput as $item) {
 
         $numtags++;
         $AllTags[] = $Tag;
-        $TagInfos[] = array($TagID, $Tag, $item, $NumUses);
+        $TagInfos[] = [$TagID, $Tag, $item, $NumUses];
     }
 }
 
 Add_Synonyms($ParentTag, $TagInfos, $Result);
 
-$Cache->delete_value('all_synomyns');
+$master->cache->deleteValue('all_synonyms');
 
 $Result = "<div class=\"box pad\"><span style=\"font-weight:bold\">Inputted: $numparents parents, $numtags synonyms</span></div>$Result";
-echo json_encode(array($numtags, $Result));
+echo json_encode([$numtags, $Result]);

@@ -1,111 +1,133 @@
 <?php
 
 require_once(SERVER_ROOT.'/Legacy/sections/blog/functions.php');
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
-list($Page,$Limit) = page_limit(5);
+list($Page, $Limit) = page_limit(5);
 
-if (!$NumResults = $Cache->get_value("news_totalnum") ) {
-    $DB->query("SELECT Count(*) FROM news");
-    list($NumResults) = $DB->next_record();
-    $Cache->cache_value("news_totalnum",$NumResults);
+if (!$numResults = $master->cache->getValue("news_totalnum")) {
+    $numResults = $master->db->rawQuery(
+        "SELECT Count(*)
+           FROM news"
+    )->fetchColumn();
+    $master->cache->cacheValue("news_totalnum", $numResults);
 }
 
-if ($Page!=1 || !$News = $Cache->get_value("news")) {
+if ($Page!=1 || !$news = $master->cache->getValue("news")) {
 
-    $DB->query("SELECT ID,
-                       Title,
-                       Body,
-                       Time
-                  FROM news
-              ORDER BY Time DESC
-                 LIMIT $Limit");
-    $News = $DB->to_array(false,MYSQLI_NUM,false);
+    $news = $master->db->rawQuery(
+        "SELECT ID,
+                Title,
+                Body,
+                Time
+           FROM news
+       ORDER BY Time DESC
+          LIMIT {$Limit}"
+    )->fetchAll(\PDO::FETCH_OBJ);
     if ($Page==1) {
-        $Cache->cache_value("news",$News);
-        $Cache->cache_value('news_latest_id', $News[0][0], 0);
+        $master->cache->cacheValue("news", $news);
+        $master->cache->cacheValue('news_latest_id', $news[0]->ID, 0);
     }
 }
 
-$Pages=get_pages($Page,$NumResults,5,9);
+$Pages = get_pages($Page, $numResults, 5, 9);
 
-if ($Page==1 && $LoggedUser['LastReadNews'] != $News[0][0]) {
-    $DB->query("UPDATE users_info SET LastReadNews = '".$News[0][0]."' WHERE UserID = ".$UserID);
-    $master->repos->users->uncache($UserID);
-    $LoggedUser['LastReadNews'] = $News[0][0];
+if ($Page==1 && $activeUser['LastReadNews'] != $news[0]->ID) {
+    $master->db->rawQuery(
+        "UPDATE users_info
+            SET LastReadNews = ?
+          WHERE UserID = ?",
+        [$news[0]->ID, $userID]
+    );
+    $master->repos->users->uncache($userID);
+    $activeUser['LastReadNews'] = $news[0]->ID;
 }
 
-show_header('News','bbcode');
+show_header('News', 'bbcode');
 ?>
 <div class="thin">
     <h2>
-        <a style="float:left;margin-top:4px" href="/feeds.php?feed=feed_news&amp;user=<?=$LoggedUser['ID']?>&amp;auth=<?=$LoggedUser['RSS_Auth']?>&amp;passkey=<?=$LoggedUser['torrent_pass']?>&amp;authkey=<?=$LoggedUser['AuthKey']?>" title="<?=SITE_NAME?> : News" ><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
-    <?=SITE_NAME?> <?=((strtolower(substr( SITE_NAME,0,1))===substr( SITE_NAME,0,1))?'news':'News'); ?></h2>
+        <a style="float:left;margin-top:4px" href="/feeds.php?feed=feed_news&amp;user=<?=$activeUser['ID']?>&amp;auth=<?=$activeUser['RSS_Auth']?>&amp;passkey=<?=$activeUser['torrent_pass']?>&amp;authkey=<?=$activeUser['AuthKey']?>" title="<?=SITE_NAME?> : News" ><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
+    <?=SITE_NAME?> <?=((strtolower(substr( SITE_NAME,0,1)) === substr( SITE_NAME,0,1))?'news':'News'); ?></h2>
 
 <?php  print_latest_forum_topics(); ?>
 
     <div class="sidebar">
 <?php
-    $FeaturedAlbum = $Cache->get_value('featured_album');
-    if ($FeaturedAlbum === false) {
-        $DB->query("SELECT fa.GroupID, tg.Name, tg.Image, fa.ThreadID, fa.Title FROM featured_albums AS fa JOIN torrents_group AS tg ON tg.ID=fa.GroupID WHERE Ended = 0");
-        $FeaturedAlbum = $DB->next_record();
-
-        $Cache->cache_value('featured_album', $FeaturedAlbum, 0);
+    $featuredAlbum = $master->cache->getValue('featured_album');
+    if ($featuredAlbum === false) {
+        $featuredAlbum = $master->db->rawQuery(
+            "SELECT fa.GroupID,
+                    tg.Name,
+                    tg.Image,
+                    fa.ThreadID,
+                    fa.Title
+               FROM featured_albums AS fa
+               JOIN torrents_group AS tg ON tg.ID=fa.GroupID
+              WHERE Ended = 0"
+        )->fetch(\PDO::FETCH_BOTH);
+        $master->cache->cacheValue('featured_album', $featuredAlbum, 0);
     }
-    if (is_number($FeaturedAlbum['GroupID'])) {
+    if (is_integer_string($featuredAlbum['GroupID'] ?? null)) {
 ?>
-                <div class="head colhead_dark"><strong>Featured Torrent</strong></div>
         <div class="box">
-            <div class="center pad"><a href="/torrents.php?id=<?=$FeaturedAlbum['GroupID']?>"><?=$FeaturedAlbum['Name']?></a></div>
-            <div class="center"><a href="/torrents.php?id=<?=$FeaturedAlbum['GroupID']?>" title="<?=$FeaturedAlbum['Name']?>"><img src="<?=$FeaturedAlbum['Image']?>" alt="<?=$FeaturedAlbum['Name']?>" width="100%" /></a></div>
-            <div class="center pad"><a href="/forums.php?action=viewthread&amp;threadid=<?=$FeaturedAlbum['ThreadID']?>"><em>Read the interview with the band, discuss here</em></a></div>
+            <div class="head colhead_dark"><strong>Featured Torrent</strong></div>
+            <div class="box">
+                <div class="center pad"><a href="/torrents.php?id=<?=$featuredAlbum['GroupID']?>"><?=$featuredAlbum['Name']?></a></div>
+                <div class="center"><a href="/torrents.php?id=<?=$featuredAlbum['GroupID']?>" title="<?=$featuredAlbum['Name']?>"><img src="<?=$featuredAlbum['Image']?>" alt="<?=$featuredAlbum['Name']?>" width="100%" /></a></div>
+                <div class="center pad"><a href="/forum/thread/<?=$featuredAlbum['ThreadID']?>"><em>Read the interview with the band, discuss here</em></a></div>
+            </div>
         </div>
 <?php
     }
     if (check_perms('users_mod')) {
 ?>
 
-        <div class="head colhead_dark"><a href="/staffblog.php">Latest staff blog posts</a></div>
+        <div class="head colhead_dark"><a href="/staff/blog">Latest staff blog posts</a></div>
         <div class="box">
 
 <?php
-        if (($Blog = $Cache->get_value('staff_blog')) === false) {
-            $DB->query("SELECT
-                b.ID,
-                um.Username,
-                b.Title,
-                b.Body,
-                b.Time
-                FROM staff_blog AS b LEFT JOIN users_main AS um ON b.UserID=um.ID
-                ORDER BY Time DESC
-                LIMIT 20");
-            $Blog = $DB->to_array();
-            $Cache->cache_value('staff_blog',$Blog,1209600);
+        if (($blog = $master->cache->getValue('staff_blog')) === false) {
+            $blog = $master->db->rawQuery(
+                "SELECT b.ID,
+                        u.Username,
+                        b.Title,
+                        b.Body,
+                        b.Time
+                   FROM staff_blog AS b LEFT JOIN users AS u ON b.UserID=u.ID
+               ORDER BY Time DESC
+                  LIMIT 20"
+            )->fetchAll(\PDO::FETCH_BOTH);
+            $master->cache->cacheValue('staff_blog', $blog, 1209600);
         }
 
-        if (($ReadTime = $Cache->get_value('staff_blog_read_'.$LoggedUser['ID'])) === false) {
-            $DB->query("SELECT Time FROM staff_blog_visits WHERE UserID = ".$LoggedUser['ID']);
-            if (list($ReadTime) = $DB->next_record()) {
-                $ReadTime = strtotime($ReadTime);
+        if (($readTime = $master->cache->getValue('staff_blog_read_'.$activeUser['ID'])) === false) {
+            $readTime = $master->db->rawQuery(
+                "SELECT Time
+                   FROM staff_blog_visits
+                  WHERE UserID = ?",
+                [$activeUser['ID']]
+            )->fetchColumn();
+            if (!($readTime === false)) {
+                $readTime = strtotime($readTime);
             } else {
-                $ReadTime = 0;
+                $readTime = 0;
             }
-            $Cache->cache_value('staff_blog_read_'.$LoggedUser['ID'],$ReadTime,1209600);
+            $master->cache->cacheValue("staff_blog_read_{$activeUser['ID']}", $readTime, 1209600);
         }
 ?>
             <ul class="stats nobullet">
 <?php
-        if (count($Blog) < 5) {
-            $Limit = count($Blog);
+        if (count($blog) < 5) {
+            $Limit = count($blog);
         } else {
             $Limit = 5;
         }
         for ($i = 0; $i < $Limit; $i++) {
-            list($BlogID, $Author, $Title, $Body, $BlogTime, $ThreadID) = $Blog[$i];
+            list($BlogID, $Author, $Title, $Body, $BlogTime) = $blog[$i];
 ?>
                 <li>
-                    <?=($ReadTime < strtotime($BlogTime))?'<strong>':''?><?=($i + 1)?>. <a href="/staffblog.php#blog<?=$BlogID?>"><?=$Title?></a><?=($ReadTime < strtotime($BlogTime))?'</strong>':''?>
+                    <?=($readTime < strtotime($BlogTime))?'<strong>':''?><?=($i + 1)?>. <a href="/staffblog.php#blog<?=$BlogID?>"><?=$Title?></a><?= ($readTime < strtotime($BlogTime)) ? '</strong>' : '' ?>
                 </li>
 <?php
 }
@@ -126,11 +148,12 @@ show_header('News','bbcode');
 <?php       if (check_perms('site_view_stats')) { ?>
                 <li class="center">
 <?php           if (check_perms('site_stats_advanced')) { ?>
-                    [<a href="/stats.php?action=users">Users</a>] &nbsp;
+                    [<a href="/stats/users">Users</a>] &nbsp;
+                    [<a href="/stats/forum">Forum</a>] &nbsp;
 <?php           }   ?>
-                    [<a href="/stats.php?action=site">Site History</a>]
+                    [<a href="/stats/site">Site</a>]
 <?php           if (check_perms('site_stats_advanced')) { ?>
-                    &nbsp;[<a href="/stats.php?action=torrents">Torrents</a>]
+                    &nbsp;[<a href="/stats/torrents">Torrents</a>]
 <?php           }   ?>
                 </li>
 <?php       }
@@ -139,132 +162,183 @@ show_header('News','bbcode');
                 <li>Maximum Users: <?=number_format($master->options->UsersLimit) ?></li>
 <?php       }
 
-if (($UserCount = $Cache->get_value('stats_user_count')) === false) {
-    $DB->query("SELECT COUNT(ID) FROM users_main WHERE Enabled='1'");
-    list($UserCount) = $DB->next_record();
-    $Cache->cache_value('stats_user_count', $UserCount, 0); //inf cache
+if (($userCount = $master->cache->getValue('stats_user_count')) === false) {
+    $userCount = $master->db->rawQuery(
+        "SELECT COUNT(ID)
+           FROM users_main
+          WHERE Enabled = '1'"
+    )->fetchColumn();
+    $master->cache->cacheValue('stats_user_count', $userCount, 0); //inf cache
 }
-$UserCount = (int) $UserCount;
+$userCount = (int) $userCount;
 ?>
-                <li>Enabled Users: <?=number_format($UserCount)?></li>
+                <li>Enabled Users: <?= number_format($userCount) ?></li>
 <?php
 
-if (($UserStats = $Cache->get_value('stats_users')) === false) {
-    $DB->query("SELECT COUNT(ID) FROM users_main WHERE Enabled='1' AND LastAccess>'".time_minus(3600*24)."'");
-    list($UserStats['Day']) = $DB->next_record();
+$query = "SELECT COUNT(ID) FROM users_main WHERE Enabled = '1' AND LastAccess > ?";
+if (($userStats = $master->cache->getValue('stats_users')) === false) {
+    $userStats['Day'] = $master->db->rawQuery(
+        $query,
+        [time_minus(3600 * 24)]
+    )->fetchColumn();
 
-    $DB->query("SELECT COUNT(ID) FROM users_main WHERE Enabled='1' AND LastAccess>'".time_minus(3600*24*7)."'");
-    list($UserStats['Week']) = $DB->next_record();
+    $userStats['Week'] = $master->db->rawQuery(
+        $query,
+        [time_minus(3600 * 24 * 7)]
+    )->fetchColumn();
 
-    $DB->query("SELECT COUNT(ID) FROM users_main WHERE Enabled='1' AND LastAccess>'".time_minus(3600*24*30)."'");
-    list($UserStats['Month']) = $DB->next_record();
+    $userStats['Month'] = $master->db->rawQuery(
+        $query,
+        [time_minus(3600 * 24 * 30)]
+    )->fetchColumn();
 
-    $Cache->cache_value('stats_users',$UserStats,0);
+    $master->cache->cacheValue('stats_users', $userStats, 0);
 }
 ?>
-                <li>Users active today: <?=number_format($UserStats['Day'])?> (<?=number_format($UserStats['Day']/$UserCount*100,2)?>%)</li>
-                <li>Users active this week: <?=number_format($UserStats['Week'])?> (<?=number_format($UserStats['Week']/$UserCount*100,2)?>%)</li>
-                <li>Users active this month: <?=number_format($UserStats['Month'])?> (<?=number_format($UserStats['Month']/$UserCount*100,2)?>%)</li>
+                <li>Users active today: <?=number_format($userStats['Day'])?> (<?=number_format($userStats['Day']/$userCount*100,2)?>%)</li>
+                <li>Users active this week: <?=number_format($userStats['Week'])?> (<?=number_format($userStats['Week']/$userCount*100,2)?>%)</li>
+                <li>Users active this month: <?=number_format($userStats['Month'])?> (<?=number_format($userStats['Month']/$userCount*100,2)?>%)</li>
 <?php
 
 // overall data stats
 if (check_perms('site_stats_advanced')) {
 
-    if (($DataStats = $Cache->get_value('stats_data')) === false) {
+    if (($dataStats = $master->cache->getValue('stats_data')) === false) {
 
-        $DB->query("SELECT Sum(Size) FROM torrents ");
-        list($DataStats['TotalSize']) = $DB->next_record();
-        $Cache->cache_value('stats_data',$DataStats,3600*24);
+        $dataStats['TotalSize'] = $master->db->rawQuery(
+            "SELECT Sum(Size)
+               FROM torrents"
+        )->fetchColumn();
+        $master->cache->cacheValue('stats_data', $dataStats,3600*24);
     }
 ?>
-                <li>Total Data: <?=get_size($DataStats['TotalSize'])?></li>
+                <li>Total Data: <?= get_size($dataStats['TotalSize']) ?></li>
 <?php
 }
 
 // torrent stats
-if (($TorrentCountLastDay = $Cache->get_value('stats_torrent_count_daily')) === false) {
-      $DB->query("SELECT COUNT(ID) FROM torrents WHERE Time > '".time_minus(3600*24,true)."'");
-      list($TorrentCountLastDay) = $DB->next_record();
-      $Cache->cache_value('stats_torrent_count_daily', $TorrentCountLastDay, 0); //inf cache
+if (($torrentCountLastDay = $master->cache->getValue('stats_torrent_count_daily')) === false) {
+      $torrentCountLastDay = $master->db->rawQuery(
+          "SELECT COUNT(ID)
+             FROM torrents
+            WHERE Time > ?",
+          [time_minus(3600 * 24, true)]
+      )->fetchColumn();
+      $master->cache->cacheValue('stats_torrent_count_daily', $torrentCountLastDay, 0); //inf cache
 }
 
 ?>
-                <li>new Torrents last day: <?=number_format($TorrentCountLastDay)?></li>
+                <li>New Torrents last day: <?= number_format($torrentCountLastDay) ?></li>
 <?php
-if (($TorrentCount = $Cache->get_value('stats_torrent_count')) === false) {
-    $DB->query("SELECT COUNT(ID) FROM torrents");
-    list($TorrentCount) = $DB->next_record();
-    $Cache->cache_value('stats_torrent_count', $TorrentCount, 0); //inf cache
+if (($torrentCount = $master->cache->getValue('stats_torrent_count')) === false) {
+    $torrentCount = $master->db->rawQuery(
+        "SELECT COUNT(ID)
+           FROM torrents"
+    )->fetchColumn();
+    $master->cache->cacheValue('stats_torrent_count', $torrentCount, 0); //inf cache
 }
 
 ?>
-                <li>Torrents: <?=number_format($TorrentCount)?></li>
+                <li>Torrents: <?= number_format($torrentCount) ?></li>
 <?php
 //End Torrent Stats
 
-if (($RequestStats = $Cache->get_value('stats_requests')) === false) {
-    $DB->query("SELECT COUNT(ID) FROM requests");
-    list($RequestCount) = $DB->next_record();
-    $DB->query("SELECT COUNT(ID) FROM requests WHERE FillerID > 0");
-    list($FilledCount) = $DB->next_record();
-    $Cache->cache_value('stats_requests',array($RequestCount,$FilledCount),11280);
+if (($requestStats = $master->cache->getValue('stats_requests')) === false) {
+    $requestCount = $master->db->rawQuery(
+        "SELECT COUNT(ID)
+           FROM requests"
+    )->fetchColumn();
+    $filledCount = $master->db->rawQuery(
+        "SELECT COUNT(ID)
+           FROM requests
+          WHERE FillerID > 0"
+    )->fetchColumn();
+    $master->cache->cacheValue('stats_requests', [$requestCount, $filledCount], 11280);
 } else {
-    list($RequestCount,$FilledCount) = $RequestStats;
+    list($requestCount, $filledCount) = $requestStats;
 }
 
 ?>
-                <li>Requests: <?=number_format($RequestCount)?> (<?=number_format($FilledCount/$RequestCount*100, 2)?>% filled)</li>
+                <li>Requests: <?= number_format($requestCount) ?> (<?= ($requestCount > 0 ? number_format($filledCount / $requestCount * 100, 2) : '0') ?>% filled)</li>
 <?php
 
-if ($SnatchStats = $Cache->get_value('stats_snatches')) {
+if ($SnatchStats = $master->cache->getValue('stats_snatches')) {
 ?>
                 <li>Snatches: <?=number_format($SnatchStats)?></li>
 <?php
 }
 
-if (($PeerStats = $Cache->get_value('stats_peers')) === false) {
+if (($PeerStats = $master->cache->getValue('stats_peers')) === false) {
     //Cache lock!
-    $Lock = $Cache->get_value('stats_peers_lock');
+    $Lock = $master->cache->getValue('stats_peers_lock');
     if ($Lock) {
         ?><script type="script/javascript">setTimeout('window.location="//<?=SITE_URL?><?=$_SERVER['REQUEST_URI']?>"', 5)</script><?php
     } else {
-        $Cache->cache_value('stats_peers_lock', '1', 10);
-        $DB->query("SELECT IF(remaining=0,'Seeding','Leeching') AS Type, COUNT(uid) FROM xbt_files_users WHERE active=1 GROUP BY Type");
-        $PeerCount = $DB->to_array(0, MYSQLI_NUM, false);
-        $SeederCount = isset($PeerCount['Seeding'][1]) ? $PeerCount['Seeding'][1] : 0;
-        $LeecherCount = isset($PeerCount['Leeching'][1]) ? $PeerCount['Leeching'][1] : 0;
-        $Cache->cache_value('stats_peers',array($LeecherCount,$SeederCount),0);
+        $master->cache->cacheValue('stats_peers_lock', '1', 10);
+        $peerCount = $master->db->rawQuery(
+            "SELECT IF (remaining = 0, 'Seeding', 'Leeching') AS Type,
+                    COUNT(uid)
+               FROM xbt_files_users
+              WHERE active = 1
+           GROUP BY Type"
+        )->fetchAll(\PDO::FETCH_KEY_PAIR);
+        $SeederCount = $peerCount['Seeding'] ?? 0;
+        $LeecherCount = $peerCount['Leeching'] ?? 0;
+        $master->cache->cacheValue('stats_peers', [$LeecherCount, $SeederCount], 0);
     }
 } else {
-    list($LeecherCount,$SeederCount) = $PeerStats;
+    list($LeecherCount, $SeederCount) = $PeerStats;
 }
+
+$SeederCount = $SeederCount ?? 0;
+$LeecherCount = $LeecherCount ?? 0;
 
 $Ratio = ratio($SeederCount, $LeecherCount);
 $PeerCount = $SeederCount + $LeecherCount;
 ?>
                 <li>Peers: <?=number_format($PeerCount) ?></li>
                 <li>Seeders: <?=number_format($SeederCount) ?></li>
-                <li>Leechers: <?=number_format($LeecherCount) ?></li>
+                <li>Leechers: <?=number_format($LeecherCount ) ?></li>
                 <li>Seeder/Leecher Ratio: <?=$Ratio?></li>
             </ul>
                 </div>
 <?php
-if (($TopicID = $Cache->get_value('polls_featured')) === false) {
-    $DB->query("SELECT TopicID FROM forums_polls ORDER BY Featured DESC LIMIT 1");
-    list($TopicID) = $DB->next_record();
-    $Cache->cache_value('polls_featured',$TopicID,0);
+if (($threadID = $master->cache->getValue('polls_featured')) === false) {
+    $threadID = $master->db->rawQuery(
+        "SELECT ThreadID
+           FROM forums_polls
+          WHERE Featured IS NOT NULL
+       ORDER BY Featured DESC
+          LIMIT 1"
+    )->fetchColumn();
+    $master->cache->cacheValue('polls_featured', $threadID, 0);
 }
-if ($TopicID) {
-    if (($Poll = $Cache->get_value('polls_'.$TopicID)) === false) {
-        $DB->query("SELECT Question, Answers, Featured, Closed FROM forums_polls WHERE TopicID='".$TopicID."'");
-        list($Question, $Answers, $Featured, $Closed) = $DB->next_record(MYSQLI_NUM, array(1));
+if ($threadID) {
+    if (($Poll = $master->cache->getValue("polls_{$threadID}")) === false) {
+        $nextRecord = $master->db->rawQuery(
+            "SELECT Question,
+                    Answers,
+                    Featured,
+                    Closed
+               FROM forums_polls
+              WHERE ThreadID = ?",
+            [$threadID]
+        )->fetch(\PDO::FETCH_NUM);
+        list($Question, $Answers, $Featured, $Closed) = $nextRecord;
         $Answers = unserialize($Answers);
-        $DB->query("SELECT Vote, COUNT(UserID) FROM forums_polls_votes WHERE TopicID='$TopicID' AND Vote <> '0' GROUP BY Vote");
-        $VoteArray = $DB->to_array(false, MYSQLI_NUM);
+        $voteArray = $master->db->rawQuery(
+            "SELECT Vote,
+                    COUNT(UserID)
+               FROM forums_polls_votes
+              WHERE ThreadID = ?
+                AND Vote <> '0'
+           GROUP BY Vote",
+            [$threadID]
+        )->fetch(\PDO::FETCH_NUM);
 
-        $Votes = array();
-        foreach ($VoteArray as $VoteSet) {
-            list($Key,$Value) = $VoteSet;
+        $Votes = [];
+        foreach ($voteArray as $VoteSet) {
+            list($Key, $Value) = $VoteSet;
             $Votes[$Key] = $Value;
         }
 
@@ -273,23 +347,37 @@ if ($TopicID) {
                 $Votes[$i] = 0;
             }
         }
-        $Cache->cache_value('polls_'.$TopicID, array($Question,$Answers,$Votes,$Featured,$Closed), 0);
+        $master->cache->cacheValue("polls_{$threadID}", [$Question, $Answers, $Votes, $Featured, $Closed], 0);
     } else {
-        list($Question,$Answers,$Votes,$Featured,$Closed) = $Poll;
+        list($Question, $Answers, $Votes, $Featured, $Closed) = $Poll;
+    }
+
+    $thread = $master->repos->forumthreads->load($threadID);
+    if ($thread->poll instanceof \Luminance\Entities\ForumPoll) {
+        $Votes = $thread->poll->votes;
+    } else {
+        $Votes = [];
     }
 
     if (!empty($Votes)) {
-        $TotalVotes = array_sum($Votes);
-        $MaxVotes = max($Votes);
+        $TotalVotes = array_sum(array_column($Votes, 'total'));
+        $MaxVotes = max(array_column($Votes, 'total'));
     } else {
         $TotalVotes = 0;
         $MaxVotes = 0;
     }
 
-    $DB->query("SELECT Vote FROM forums_polls_votes WHERE UserID='".$LoggedUser['ID']."' AND TopicID='$TopicID'");
-    list($UserResponse) = $DB->next_record();
-    if (!empty($UserResponse) && $UserResponse != 0) {
-        $Answers[$UserResponse] = '&raquo; '.$Answers[$UserResponse];
+    $userResponse = $master->db->rawQuery(
+        "SELECT Vote
+           FROM forums_polls_votes
+          WHERE UserID = ?
+            AND ThreadID = ?",
+        [$activeUser['ID'], $threadID]
+    )->fetchColumn();
+    if (!($userResponse === false)) {
+        if (array_key_exists($userResponse, $Answers)) {
+            $Answers[$userResponse] = '&raquo; '.$Answers[$userResponse];
+        }
     }
 
 ?>
@@ -297,12 +385,12 @@ if ($TopicID) {
         <div class="box">
             <div class="pad">
                 <p><strong><?=display_str($Question)?></strong></p>
-<?php 	if ($UserResponse !== null || $Closed) { ?>
+<?php 	if ($userResponse !== null || $Closed) { ?>
                 <ul class="poll nobullet">
 <?php 		foreach ($Answers as $i => $Answer) {
             if (!empty($Votes[$i]) && $TotalVotes > 0) {
-                $Ratio = $Votes[$i]/$MaxVotes;
-                $Percent = $Votes[$i]/$TotalVotes;
+                $Ratio = $Votes[$i]['total']/$MaxVotes;
+                $Percent = $Votes[$i]['total']/$TotalVotes;
             } else {
                 $Ratio=0;
                 $Percent=0;
@@ -320,19 +408,17 @@ if ($TopicID) {
 <?php  	} else { ?>
                 <div id="poll_results">
                 <form id="polls" action="">
-                    <input type="hidden" name="action" value="poll_vote"/>
-                    <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>"/>
-                    <input type="hidden" name="topicid" value="<?=$TopicID?>" />
+                    <input type="hidden" name="token" value="<?=$master->secretary->getToken("thread.poll.vote")?>" />
 <?php  		foreach ($Answers as $i => $Answer) { ?>
                     <input type="radio" name="vote" id="answer_<?=$i?>" value="<?=$i?>" />
                     <label for="answer_<?=$i?>"><?=display_str($Answers[$i])?></label><br />
 <?php  		} ?>
                     <br /><input type="radio" name="vote" id="answer_0" value="0" /> <label for="answer_0">Blank - Show the results!</label><br /><br />
-                    <input type="button" onclick="ajax.post('forums.php','polls',function (response) {$('#poll_results').raw().innerHTML = response});" value="Vote" />
+                    <input type="button" onclick="ajax.post('/forum/thread/<?= $threadID ?>/poll/vote', 'polls', function(response) {location.reload();});" value="Vote" />
                 </form>
                 </div>
 <?php  	} ?>
-                <br /><strong>Topic:</strong> <a href="/forums.php?action=viewthread&amp;threadid=<?=$TopicID?>">Visit</a>
+                <br /><strong>Topic:</strong> <a href="/forum/thread/<?= $threadID ?>">Visit</a>
             </div>
         </div>
 <?php
@@ -343,20 +429,19 @@ if ($TopicID) {
 <?php
 
 $Count = 0;
-foreach ($News as $NewsItem) {
-    list($NewsID,$Title,$Body,$NewsTime) = $NewsItem;
-    if (strtotime($NewsTime) > time()) {
+foreach ($news as $newsItem) {
+    if (strtotime($newsItem->Time) > time()) {
         continue;
     }
 ?>
         <div class="head">
-            <?=$Text->full_format($Title)?> <span class="small"><?=time_diff($NewsTime);?></span>
+            <?=$bbCode->full_format($newsItem->Title)?> <span class="small"><?=time_diff($newsItem->Time);?></span>
 <?php  if (check_perms('admin_manage_news')) {?>
-            - <a href="/tools.php?action=editnews&amp;id=<?=$NewsID?>">[Edit]</a>
+            - <a href="/tools.php?action=editnews&amp;id=<?=$newsItem->ID?>">[Edit]</a>
 <?php  } ?>
             </div>
-                 <div id="news<?=$NewsID?>" class="box">
-                    <div class="pad"><?=$Text->full_format($Body, true)?></div>
+                 <div id="news<?=$newsItem->ID?>" class="box">
+                    <div class="pad"><?=$bbCode->full_format($newsItem->Body, true)?></div>
         </div>
 <?php
     if (++$Count > 4) {
@@ -364,34 +449,34 @@ foreach ($News as $NewsItem) {
     }
 }
 ?>
-    <div class="linkbox"><?=$Pages?></div>
+    <div class="linkbox pager"><?= $Pages ?></div>
     </div>
     <div class="clear"></div>
 </div>
 <?php
-show_footer(array('disclaimer'=>true));
+show_footer(['disclaimer'=>true]);
 
 function contest()
 {
-    global $DB, $Cache, $LoggedUser;
+    global $master, $activeUser;
 
-    list($Contest, $TotalPoints) = $Cache->get_value('contest');
-    if (!$Contest) {
-        $DB->query("SELECT
-            UserID,
-            SUM(Points),
-            Username
-            FROM users_points AS up
-            JOIN users_main AS um ON um.ID=up.UserID
-            GROUP BY UserID
-            ORDER BY SUM(Points) DESC
-            LIMIT 20");
-        $Contest = $DB->to_array();
-
-        $DB->query("SELECT SUM(Points) FROM users_points");
-        list($TotalPoints) = $DB->next_record();
-
-        $Cache->cache_value('contest', array($Contest,$TotalPoints), 600);
+    list($contest, $totalPoints) = $master->cache->getValue('contest');
+    if (!$contest) {
+        $contest = $master->db->rawQuery(
+            "SELECT UserID,
+                    SUM(Points),
+                    Username
+               FROM users_points AS up
+               JOIN users AS u ON u.ID=up.UserID
+           GROUP BY UserID
+           ORDER BY SUM(Points) DESC
+              LIMIT 20"
+        )->fetchAll(\PDO::FETCH_BOTH);
+        $totalPoints = $master->db->rawQuery(
+            "SELECT SUM(Points)
+               FROM users_points"
+        )->fetchColumn();
+        $master->cache->cacheValue('contest', [$contest, $totalPoints], 600);
     }
 
 ?>
@@ -401,15 +486,15 @@ function contest()
             <div class="pad">
                 <ol style="padding-left:5px;">
 <?php
-    foreach ($Contest as $User) {
-        list($UserID, $Points, $Username) = $User;
+    foreach ($contest as $User) {
+        list($userID, $Points, $Username) = $User;
 ?>
-                    <li><?=format_username($UserID, $Username)?> (<?=number_format($Points)?>)</li>
+                    <li><?=format_username($userID)?> (<?=number_format($Points)?>)</li>
 <?php
     }
 ?>
                 </ol>
-                Total uploads: <?=$TotalPoints?><br />
+                Total uploads: <?=$totalPoints?><br />
                 <a href="/index.php?action=scoreboard">Full scoreboard</a>
             </div>
         </div>

@@ -1,8 +1,11 @@
 <?php
 namespace Luminance\Errors;
 
+/**
+ * InputError Error which is thrown when invalid form data is detected.
+ */
 class InputError extends UserError {
 
-    public $http_status = 400;
-    public $public_message = "Bad Request";
+    public $httpStatus = 400;
+    public $publicMessage = "Bad Request";
 }

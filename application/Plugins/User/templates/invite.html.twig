@@ -1,0 +1,136 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% block title %}User Invites{% endblock %}
+
+{% block main_content %}
+    <div class="linkbox">
+        {% if (auth.isAllowed('users_mod') and auth.isUserLevel(userID)) %}
+            [<a href="/user/{{ userID }}/invite/tree">Invite tree</a>]
+        {% endif %}
+    </div>
+
+    {% if userID == ActiveUser.ID and canInvite %}
+        <div class="box pad">
+            {{ bbcode.full_format(get_article('inviterules'))|raw }}
+        </div>
+
+        <div class="box pad">
+            <form action="/user/{{ userID }}/invite/send" method="post">
+                <input type="hidden" name="token" value="{{ secretary.getToken('user.invite.send') }}" />
+                <table cellpadding="6" cellspacing="1" border="0" class="border" width="100%">
+                    <tr>
+                        <td class="label">Email:</td>
+                        <td>
+                            <input type="email" name="email" size="60" value="{{ email }}" />
+                            <strong>Anon:</strong>
+                            <input type="checkbox" name="anon" {{ anon == true ? 'checked="checked"' }}/>
+                        </td>
+                    </tr>
+                    {% if (auth.isAllowed('users_mod') or ActiveUser.legacy.Recruiter == '1') %}
+                        <tr>
+                            <td class="label">Staff Comment:</td>
+                            <td>
+                                <input type="text" name="comment" size="60" value="{{ comment }}" />
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td class="label">How do you know them?</td>
+                            <td>
+                                <input type="text" name="comment" size="60" value="{{ comment }}" 
+                                    placeholder="Met in uni, Friend from work, Chat group, Cousin, Etc"/>
+                            </td>
+                        </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="label"></td>
+                        <td>
+                            <input type="submit" value="Invite" />
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    {% endif %}
+
+    {% if pendingInvites is not empty %}
+        <div class="head">Pending invites</div>
+        <div class="box pad">
+            <table width="100%">
+                <tr class="colhead">
+                    <td>Email</td>
+                    <td>Expires in</td>
+                    <td>Action</td>
+                </tr>
+                {% for invite in pendingInvites %}
+                    <tr class="row{{ loop.index % 2 ? 'a' : 'b' }}">
+                        <td>{{ invite.Email }}</td>
+                        <td>{{ time_diff(invite.Expires) | raw }}</td>
+                        <td>
+                            <form style="display: inline-block;" action="/user/{{ userID }}/invite/delete" method="POST">
+                                <input type="hidden" name="token" value="{{ secretary.getToken('user.invite.delete') }}" />
+                                <input type="hidden" name="inviteID" value="{{ invite.ID }}">
+                                <button style="all: unset" type="submit" value="Delete" title="Delete">
+                                    {{ icon.render('misc_icons', ['misc_trash']) }}
+                                </button>
+                            </form>
+                            {% if invite.readyToResend() %}
+                                <form style="display: inline-block;" action="/user/{{ userID }}/invite/resend" method="POST">
+                                    <input type="hidden" name="token" value="{{ secretary.getToken('user.invite.resend') }}" />
+                                    <input type="hidden" name="inviteID" value="{{ invite.ID }}">
+                                    <button style="all: unset" type="submit" value="Resend" title="Resend">
+                                        {{ icon.render('misc_icons', ['misc_send']) }}
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 13) }}
+    </div>
+    <div class="head">Invitee list</div>
+    <div class="box pad">
+        <table width="100%">
+            <tr class="colhead">
+                <td>Username</td>
+                {% if auth.isAllowed('users_view_email') %}
+                    <td>Email</td>
+                {% endif %}
+                {% if auth.isAllowed('users_view_ips') %}
+                    <td>Latest IP</td>
+                {% endif %}
+                <td>Joined</td>
+                <td>Last Seen</td>
+                <td>Uploaded</td>
+                <td>Downloaded</td>
+                <td>Ratio</td>
+            </tr>
+            {% for invitee in invitees %}
+                <tr class="row{{ loop.index % 2 ? 'a' : 'b' }}">
+                    <td>{{ render.username(invitee, {'useSpan': true}) }}</a></td>
+                    {% if auth.isAllowed('users_view_email') %}
+                        <td>{{ invitee.defaultEmail }}</td>
+                    {% endif %}
+                    {% if auth.isAllowed('users_view_ips') %}
+                        <td>{{ display_ip(invitee.ip, user.legacy.ipcc) | raw }}</td>
+                    {% endif %}
+                    <td>{{ time_diff(invitee.legacy.JoinDate, 1)|raw }}</td>
+                    <td>{{ check_paranoia('lastseen', invitee.legacy.Paranoia, invitee.class.Level, invitee.ID) ? time_diff(invitee.legacy.LastAccess, 1) | raw : '-' }}</td>
+                    <td>{{ check_paranoia('uploaded', invitee.legacy.Paranoia, invitee.class.Level, invitee.ID) ? get_size(invitee.legacy.Uploaded) : '-' }}</td>
+                    <td>{{ check_paranoia('downloaded', invitee.legacy.Paranoia, invitee.class.Level, invitee.ID) ? get_size(invitee.legacy.Downloaded) : '-' }}</td>
+                    <td>{{ check_paranoia('ratio', invitee.legacy.Paranoia, invitee.class.Level, invitee.ID) ? ratio(invitee.legacy.Uploaded, invitee.legacy.Downloaded) | raw : '-' }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 13) }}
+    </div>
+{% endblock %}

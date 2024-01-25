@@ -1,0 +1,16 @@
+<div id="modal_content">
+    <div class="thin">
+        <h2>Disable Two Factor Authentication</h2>
+        <div class="twofa_code box pad center">
+            Confirm Two Factor Authentication Disable Request.
+            <br/>
+            <form id="twofactor_confirm_form" action="/user/{{ user.ID }}/twofactor/disable" method="POST">
+                <input type="hidden" name="token" value="{{ secretary.getToken("user.twofactor.disable") }}" />
+                <input class="password" name="confirm_code" placeholder="Confirm Code">
+            </form>
+            <br/><br/>
+            <button type="submit" form="twofactor_confirm_form" value="Submit">Disable</button>
+            <div class="clear"></div>
+        </div>
+    </div>
+</div>

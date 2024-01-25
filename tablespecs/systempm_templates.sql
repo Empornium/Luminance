@@ -22,7 +22,7 @@
 CREATE TABLE IF NOT EXISTS `systempm_templates` (
   `ID` int(12) NOT NULL,
   `Help` text,
-  `Body` text,
+  `Body` mediumtext NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;

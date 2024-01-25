@@ -8,36 +8,36 @@ if (!check_perms('admin_reports')) {
     error(403, true);
 }
 
-if (is_number($_GET['id'])) {
+if (is_integer_string($_GET['id'])) {
     $ReportID = $_GET['id'];
 } else {
     error('HAX on report ID', true);
 }
-if (is_number($_GET['torrentid'])) {
-    $TorrentID = $_GET['torrentid'];
+if (is_integer_string($_GET['torrentid'])) {
+    $torrentID = $_GET['torrentid'];
 } else {
     error('HAX on report TorrentID', true);
 }
 
 if (!isset($_GET['type'])) {
     error(404, true);
-} elseif (array_key_exists($_GET['type'], $Types)) {
-    $ReportType = $Types[$_GET['type']];
+} elseif (array_key_exists($_GET['type'], $types)) {
+    $ReportType = $types[$_GET['type']];
 } else {
     //There was a type but it wasn't an option!
     error('HAX on section type', true);
 }
 
-$ufl = getTorrentUFL($TorrentID);
+$ufl = getTorrentUFL($torrentID);
 
-if ($ufl['Cost']>0) {
+if ($ufl['Cost'] > 0) {
     $RefundUFL = [($ReportType['resolve_options']['refundufl'] ? '1' : '0'), $ufl['Cost']];
 } else {
     $RefundUFL = ['-1', '0'];
 }
 
 
-$Array = array();
+$Array = [];
 $Array[0] = $ReportType['resolve_options']['delete'];
 $Array[1] = $ReportType['resolve_options']['upload'];
 $Array[2] = $ReportType['resolve_options']['warn'];

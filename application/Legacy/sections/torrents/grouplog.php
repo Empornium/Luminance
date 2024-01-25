@@ -1,16 +1,17 @@
 <?php
 $GroupID = $_GET['groupid'];
-if (!is_number($GroupID)) { error(404); }
+if (!is_integer_string($GroupID)) { error(404); }
 
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
 show_header("History for Group $GroupID");
 
-$Groups = get_groups(array($GroupID), true, true);
+$Groups = get_groups([$GroupID], true, true);
 if (!empty($Groups['matches'][$GroupID])) {
     $Group = $Groups['matches'][$GroupID];
     $Title = '<a href="/torrents.php?id='.$GroupID.'">'.display_str($Group['Name']).'</a>';
-    list($tID, $Torrents) = each($Group['Torrents']);
+    $Torrents = array_values($Group['Torrents'])[0];
+    $tID = $Torrents['ID'];
     $IsAnon = $Torrents['Anonymous'];
     $AuthorID = $Torrents['UserID'];
 } else {
@@ -30,31 +31,42 @@ if (!empty($Groups['matches'][$GroupID])) {
             <td>Info</td>
         </tr>
 <?php
-    if (!$LoggedUser['DisplayStaff']=='1' && !$LoggedUser['SupportFor']!='')
-        $XTRAWHERE = "AND Hidden='0'";
+    $extraWhere = '';
+    if (!$activeUser['DisplayStaff']=='1' && !$activeUser['SupportFor']!='') {
+        $extraWhere = "AND Hidden='0'";
+    }
 
-    $Log = $DB->query("SELECT TorrentID, t.Name, g.UserID, Username, Info, g.Time
-                         FROM group_log AS g
-                    LEFT JOIN users_main AS u ON u.ID=g.UserID
-                    LEFT JOIN torrents_group AS t ON t.ID=g.GroupID
-                        WHERE GroupID = ".$GroupID."  $XTRAWHERE
-                     ORDER BY Time DESC");
+    $logs = $master->db->rawQuery(
+        "SELECT TorrentID,
+                t.Name,
+                g.UserID,
+                Username,
+                Info,
+                g.Time
+           FROM group_log AS g
+      LEFT JOIN users AS u ON u.ID = g.UserID
+      LEFT JOIN torrents_group AS t ON t.ID = g.GroupID
+          WHERE GroupID = ? {$extraWhere}
+       ORDER BY Time DESC",
+        [$GroupID]
+    )->fetchAll(\PDO::FETCH_NUM);
 
-    while (list($TorrentID, $Name, $UserID, $Username, $Info, $Time) = $DB->next_record()) {
+    foreach ($logs as $log) {
+    list($torrentID, $Name, $userID, $Username, $Info, $time) = $log;
 ?>
         <tr class="rowa">
-            <td><?=$Time?></td>
+            <td><?=$time?></td>
             <td><?=$Name?></td>
 
 <?php
-            if ($AuthorID == $UserID) {
-                $TorrentUsername = torrent_username($UserID, $Username, $IsAnon);
+            if ($AuthorID == $userID) {
+                $TorrentUsername = torrent_username($userID, $IsAnon);
             } else {
-                $TorrentUsername = format_username($UserID, $Username);
+                $TorrentUsername = format_username($userID);
             }
 ?>
             <td><?=$TorrentUsername?></td>
-            <td><?=$Text->full_format($Info)?></td>
+            <td><?=$bbCode->full_format($Info)?></td>
         </tr>
 <?php
     }

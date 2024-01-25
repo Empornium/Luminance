@@ -24,9 +24,10 @@ CREATE TABLE IF NOT EXISTS `users_notify_filters` (
   `UserID` int(10) NOT NULL,
   `Label` varchar(128) NOT NULL DEFAULT '',
   `Users` mediumtext NOT NULL,
-  `Tags` varchar(500) NOT NULL DEFAULT '',
-  `NotTags` varchar(500) NOT NULL DEFAULT '',
+  `Tags` text NOT NULL DEFAULT '',
+  `NotTags` text NOT NULL DEFAULT '',
   `Categories` varchar(500) NOT NULL DEFAULT '',
+  `Freeleech` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`ID`),
   KEY `UserID` (`UserID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

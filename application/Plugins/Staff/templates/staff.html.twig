@@ -1,0 +1,182 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/staff">{{ settings.main.site_name }} Staff</a>
+{% endblock %}
+
+{% block main_content %}
+    {% set usernameOptions = {
+        'drawInBox' : false,
+        'colorname' : false,
+        'dropDown'  : false,
+        'useSpan'   : true,
+        'noIcons'   : true,
+        'noGroup'   : true,
+        'noClass'   : true,
+        'noTitle'   : true,
+    } %}
+    {% if master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::STAFFPM')) %}
+        <div class="box pad" align="center">
+            <b>Your staff message privileges have been revoked!</b><br><br>
+            <a href="{{ settings.links.rules }}"> View the site rules</a>
+        </div>
+    {% else %}
+        <div class="head">Contact Staff</div>
+        <div class="box pad" style="padding:10px;">
+            <div id="below_box">
+                <p>If you are looking for help with a general question, we appreciate it if you would only message through the staff inbox, where we can all help you.</p>
+                      <p>You can do that by
+                                  <a href="#"  class="contact_link" onClick="jQuery('#compose').slideToggle('slow');">sending a message to the Staff Inbox</a>
+                                  <em>Please do not PM individual staff members for support!</em> </p>
+                </div>
+                {{ print_compose_staff_pm(show, assign, subject, message) }}
+            <br />
+        </div>
+    {% endif %}
+
+    {% if auth.isAllowed('site_staff_page') %}
+        {% if fls is not empty %}
+            <div class="head">First-line Support</div>
+            <div class="box pad" style="padding:10px;">
+                <p><strong>These users are not official staff members</strong> - they're users who have volunteered their time to help people in need. Please treat them with respect and read <a href="/articles/view/ranks#fls">this</a> before contacting them. </p>
+                <table class="staff" width="100%">
+                    <tr class="colhead">
+                        <td width="300px">Username</td>
+                        <td width="150px">Last seen</td>
+                        <td colspan="3"><strong>Support For</strong></td>
+                    </tr>
+                    {% for user in fls %}
+                        <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                            <td class="nobr">
+                                {{ render.username(user.ID, usernameOptions) }}
+                            </td>
+                            <td class="nobr">
+                                {% if check_paranoia('lastseen', user.legacy['Paranoia'], user.class.Level) %}
+                                  {{ time_diff(user.legacy['LastAccess'], 2, true, false, 0)|raw }}
+                                {% else %}
+                                    Hidden by user
+                                {% endif %}
+                            </td>
+                            <td class="nobr">
+                                {{ user.legacy['SupportFor']|decode }}
+                            </td>
+                            <td width="20%" class="nobr">
+                                {{ render.userLanguages(user.ID)|raw }}
+                            </td>
+                            {% if auth.isAllowed('users_edit_2fa') %}
+                                <td width="20px" class="nobr">
+                                    {% if user.isTwoFactorEnabled() %}
+                                        &#x1F512;
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        {% endif %}
+
+        <div class="head">Staff</div>
+        <div class="box pad" style="padding:10px;">
+            {% if staff is not empty %}
+                {% set tableOpen = false %}
+                {% set lastLevel = -1 %}
+                {% for user in staff %}
+                    {% if user.class.Level != lastlevel %}
+                        {% set lastlevel = user.class.Level %}
+                        {% if tableOpen == true %}
+                            </table><br/>
+                        {% endif %}
+                        {% set tableOpen = true %}
+                        <h3>{{ user.class.Name }}s</h3>
+                        <table class="staff" width="100%">
+                            <tr class="colhead">
+                                <td width="300px">Username</td>
+                                <td width="150px">Last seen</td>
+                                <td colspan="3"><strong>Remark</strong></td>
+                            </tr>
+                    {% endif %}
+                    <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                        <td class="nobr">
+                            {{ render.username(user.ID, usernameOptions) }}
+                        </td>
+                        <td class="nobr">
+                            {% if check_paranoia('lastseen', user.legacy[Paranoia], user.class.Level) %}
+                              {{ time_diff(user.legacy['LastAccess'], 2, true, false, 0)|raw }}
+                            {% else %}
+                                Hidden by staff member
+                            {% endif %}
+                        </td>
+                        <td class="nobr">
+                            {{ user.legacy['SupportFor']|decode }}
+                        </td>
+                        <td width="20%" class="nobr">
+                            {{ render.userLanguages(user.ID)|raw }}
+                        </td>
+                        {% if auth.isAllowed('users_edit_2fa') %}
+                            <td width="20px" class="nobr">
+                                {% if user.isTwoFactorEnabled() %}
+                                    &#x1F512;
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+                </table>
+                <br/>
+            {% endif %}
+
+            {% if admins is not empty %}
+                {% set tableOpen = false %}
+                {% set lastLevel = -1 %}
+                {% for user in admins %}
+                    {% if user.class.Level != lastlevel %}
+                        {% set lastlevel = user.class.Level %}
+                        {% if tableOpen == true %}
+                            </table><br/>
+                        {% endif %}
+                        {% set tableOpen = true %}
+                        <h3>{{ user.class.Name }}s</h3>
+                        <table class="staff" width="100%">
+                            <tr class="colhead">
+                                <td width="300px">Username</td>
+                                <td width="150px">Last seen</td>
+                                <td colspan="3"><strong>Remark</strong></td>
+                            </tr>
+                    {% endif %}
+                    <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                        <td class="nobr">
+                            {{ render.username(user.ID, usernameOptions) }}
+                        </td>
+                        <td class="nobr">
+                            {% if check_paranoia('lastseen', user.legacy['Paranoia'], user.class.Level) %}
+                              {{ time_diff(user.legacy['LastAccess'], 2, true, false, 0)|raw }}
+                            {% else %}
+                                Hidden by staff member
+                            {% endif %}
+                        </td>
+                        <td class="nobr">
+                            {{ user.legacy['SupportFor']|decode }}
+                        </td>
+                        <td width="20%" class="nobr">
+                            {{ render.userLanguages(user.ID)|raw }}
+                        </td>
+                        {% if auth.isAllowed('users_edit_2fa') %}
+                            <td width="20px" class="nobr">
+                                {% if user.isTwoFactorEnabled() %}
+                                    &#x1F512;
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+            </table>
+            <br/>
+        {% endif %}
+    {% endif %}
+    </div>
+{% endblock %}

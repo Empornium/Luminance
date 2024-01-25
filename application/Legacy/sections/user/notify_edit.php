@@ -4,43 +4,52 @@ show_header('Manage notifications');
 ?>
 <div class="thin">
     <h2>
-        <a style="float:left;margin-top:4px" title="RSS Feed - All your torrent notification filters" href="/feeds.php?feed=torrents_notify_<?=$LoggedUser['torrent_pass']?>&amp;user=<?=$LoggedUser['ID']?>&amp;auth=<?=$LoggedUser['RSS_Auth']?>&amp;passkey=<?=$LoggedUser['torrent_pass']?>&amp;authkey=<?=$LoggedUser['AuthKey']?>"><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
+        <a style="float:left;margin-top:4px" title="RSS Feed - All your torrent notification filters" href="/feeds.php?feed=torrents_notify_<?=$activeUser['torrent_pass']?>&amp;user=<?=$activeUser['ID']?>&amp;auth=<?=$activeUser['RSS_Auth']?>&amp;passkey=<?=$activeUser['torrent_pass']?>&amp;authkey=<?=$activeUser['AuthKey']?>"><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
          Notification filters
     </h2>
     <div  class="linkbox">
             [<a href="/torrents.php?action=notify" title="View your current pending notifications">notifications</a>]
     </div>
 <?php
-$DB->query("SELECT ID, Label, Tags, NotTags, Categories FROM users_notify_filters WHERE UserID='$LoggedUser[ID]' UNION ALL SELECT NULL, NULL, NULL, 1, NULL");
+$notifications = $master->db->rawQuery(
+    "SELECT ID,
+            Label,
+            Tags,
+            NotTags,
+            Categories,
+            Freeleech
+       FROM users_notify_filters
+      WHERE UserID = ?
+      UNION ALL SELECT NULL, NULL, NULL, 1, NULL, 0",
+    [$activeUser['ID']]
+)->fetchAll(\PDO::FETCH_ASSOC);
 $i = 0;
-$NumFilters = $DB->record_count()-1;
+$numFilters = $master->db->foundRows()-1;
 
-$Notifications = $DB->to_array();
-
-foreach ($Notifications as $N) { //$N stands for Notifications
+foreach ($notifications as $N) { //$N stands for notifications
     $N['Tags']		= implode(' ', explode('|', substr($N['Tags'],1,-1)));
     $N['NotTags']		= implode(' ', explode('|', substr($N['NotTags'],1,-1)));
     $N['Categories'] 	= explode('|', substr($N['Categories'],1,-1));
     $i++;
 
-    if ($i>$NumFilters) { ?>
+    if ($i > $numFilters) { ?>
             <div class="head">Create a new notification filter</div>
-<?php 	} elseif ($NumFilters>0) { ?>
+<?php 	} elseif ($numFilters > 0) { ?>
             <div class="head">
-                <a title="RSS Feed - <?=$N['Label']?>" href="/feeds.php?feed=torrents_notify_<?=$N['ID']?>_<?=$LoggedUser['torrent_pass']?>&amp;user=<?=$LoggedUser['ID']?>&amp;auth=<?=$LoggedUser['RSS_Auth']?>&amp;passkey=<?=$LoggedUser['torrent_pass']?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;name=<?=urlencode($N['Label'])?>"><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
+                <a title="RSS Feed - <?=$N['Label']?>" href="/feeds.php?feed=torrents_notify_<?=$N['ID']?>_<?=$activeUser['torrent_pass']?>&amp;user=<?=$activeUser['ID']?>&amp;auth=<?=$activeUser['RSS_Auth']?>&amp;passkey=<?=$activeUser['torrent_pass']?>&amp;authkey=<?=$activeUser['AuthKey']?>&amp;name=<?=urlencode($N['Label'])?>"><img src="<?=STATIC_SERVER?>/common/symbols/rss.png" alt="RSS feed" /></a>
                 <?=display_str($N['Label'])?>
-                <a href="/user.php?action=notify_delete&amp;id=<?=$N['ID']?>&amp;auth=<?=$LoggedUser['AuthKey']?>">(Delete)</a>
+                <a href="/user.php?action=notify_delete&amp;id=<?=$N['ID']?>&amp;auth=<?=$activeUser['AuthKey']?>">(Delete)</a>
         </div>
 <?php 	} ?>
     <form action="user.php" method="post">
         <input type="hidden" name="action" value="notify_handle" />
-        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
         <table>
-<?php 	if ($i>$NumFilters) { ?>
+<?php 	if ($i > $numFilters) { ?>
             <tr>
                 <td class="label"><strong>Label</strong></td>
                 <td>
-                    <input type="text" name="label" class="long" maxlength="128" />
+                    <input type="text" name="label" class="long" maxlength="128" value="<?=$N['Label']?>"/>
                     <p class="min_padding">A label for the filter set, to tell different filters apart.</p>
                 </td>
             </tr>
@@ -56,15 +65,22 @@ foreach ($Notifications as $N) { //$N stands for Notifications
             <tr>
                 <td class="label"><strong>At least one of these tags</strong></td>
                 <td>
-                    <textarea name="tags" class="long" rows="2" maxlength="500"><?=display_str($N['Tags'])?></textarea>
+                    <textarea name="tags" class="long" rows="2" maxlength="65535"><?=display_str($N['Tags'])?></textarea>
                     <p class="min_padding">Space-separated list - eg. <em>hardcore big.tits anal</em></p>
                 </td>
             </tr>
             <tr>
                 <td class="label"><strong>None of these tags</strong></td>
                 <td>
-                    <textarea name="nottags" class="long" rows="2" maxlength="500"><?=display_str($N['NotTags'])?></textarea>
+                    <textarea name="nottags" class="long" rows="2" maxlength="65535"><?=display_str($N['NotTags'])?></textarea>
                     <p class="min_padding">Space-separated list - eg. <em>hardcore big.tits anal</em></p>
+                </td>
+            </tr>
+            <tr>
+                <td class="label"><strong>Freeleech only?</strong></td>
+                <td>
+                    <input name="freeleech" type="checkbox" <?= $N['Freeleech'] ? 'checked' : '' ?> />
+                    <p class="min_padding">Check this to get notifications only for freeleech torrents</p>
                 </td>
             </tr>
             <tr>
@@ -78,8 +94,8 @@ foreach ($Notifications as $N) { //$N stands for Notifications
                 <?php
                 $row = 'a';
                 $x = 0;
-                reset($NewCategories);
-                foreach ($NewCategories as $Category) {
+                reset($newCategories);
+                foreach ($newCategories as $Category) {
                     if ($x % 7 == 0) {
                         if ($x > 0) {
                             ?>
@@ -103,7 +119,7 @@ foreach ($Notifications as $N) { //$N stands for Notifications
             </tr>
             <tr>
                 <td colspan="2" class="center">
-                    <input type="submit" value="<?=($i>$NumFilters)?'Create filter':'Update filter'?>" />
+                    <input type="submit" value="<?= ($i > $numFilters) ? 'Create filter' : 'Update filter' ?>" />
                 </td>
             </tr>
         </table>

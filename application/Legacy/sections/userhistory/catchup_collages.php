@@ -1,12 +1,21 @@
 <?php
 authorize();
-if ($_REQUEST['collageid'] && is_number($_REQUEST['collageid'])) {
-    $Where = ' AND CollageID = '.$_REQUEST['collageid'];
-} else {
-    $Where = '';
+$where = '';
+$params = [$activeUser['ID']];
+if (array_key_exists('collageid', $_REQUEST)) {
+    if (is_integer_string($_REQUEST['collageid'])) {
+      $where = ' AND CollageID = ?';
+      $params[] = $_REQUEST['collageid'];
+    }
 }
 
-$DB->query("UPDATE users_collage_subs SET LastVisit = NOW() WHERE UserID = ".$LoggedUser['ID'].$Where);
-$Cache->delete_value('collage_subs_user_new_'.$LoggedUser['ID']);
+$master->db->rawQuery(
+    "UPDATE collages_subscriptions
+        SET LastVisit = NOW()
+      WHERE UserID = ?
+      {$where}",
+    $params
+);
+$master->cache->deleteValue('collage_subs_user_new_'.$activeUser['ID']);
 
 header('Location: userhistory.php?action=subscribed_collages');

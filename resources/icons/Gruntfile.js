@@ -1,31 +1,26 @@
 module.exports = function(grunt) {
 
   grunt.initConfig({
-    svgstore: {
-      options: {
-        prefix : '',
-      },
-      nav_icons : {
-        files: {
-          'nav_icons.svg': ['opt/nav_*.svg'],
-        }
-      },
-      forum_icons : {
-        files: {
-          'forum_icons.svg': ['opt/forum_*.svg'],
-        }
-      },
-      misc_icons : {
-        files: {
-          'misc_icons.svg': ['opt/misc_*.svg'],
+    webfont: {
+      icons: {
+        src: 'svg/*.svg',
+        dest: '../../public/static/common/',
+        options: {
+          font: 'icons',
+          embed: false,
+          htmlDemo: false,
+          types: 'woff',
+          relativeFontPath: '/static/common/',
+          template: 'font_template.css',
+          engine: 'fontforge',
+          normalize: true,
+          destCss: '../../public/static/common/',
         }
       }
     }
   });
 
-  grunt.loadNpmTasks('grunt-svgstore');
-
-  grunt.registerTask('default', ['svgstore']);
+  grunt.loadNpmTasks('grunt-webfont');
+  grunt.registerTask('default', ['webfont']);
 
 };
-

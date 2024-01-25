@@ -1,7 +1,7 @@
 <?php
 // error out on invalid requests (before caching)
 if (isset($_GET['details'])) {
-    if (in_array($_GET['details'],array('ut','ur','v'))) {
+    if (in_array($_GET['details'], ['ut', 'ur', 'v'])) {
         $Details = $_GET['details'];
     } else {
         error(404);
@@ -25,63 +25,66 @@ show_header('Top 10 Tags');
 
 // defaults to 10 (duh)
 $Limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
-$Limit = in_array($Limit, array(10,100,250,500)) ? $Limit : 10;
+$Limit = in_array($Limit, [10, 100, 250, 500]) ? $Limit : 10;
 
 if ($Details=='all' || $Details=='ut') {
-    if (!$TopUsedTags = $Cache->get_value('topusedtag_'.$Limit)) {
-        $DB->query("SELECT
-            t.ID,
-            t.Name,
-            COUNT(tt.GroupID) AS Uses,
-            SUM(tt.PositiveVotes-1) AS PosVotes,
-            SUM(tt.NegativeVotes-1) AS NegVotes
-            FROM tags AS t
-            JOIN torrents_tags AS tt ON tt.TagID=t.ID
-            GROUP BY tt.TagID
-            ORDER BY Uses DESC, PosVotes DESC, NegVotes ASC
-            LIMIT $Limit");
-        $TopUsedTags = $DB->to_array();
-        $Cache->cache_value('topusedtag_'.$Limit,$TopUsedTags,3600*12);
+    if (!$TopUsedTags = $master->cache->getValue('topusedtag_'.$Limit)) {
+        $TopUsedTags = $master->db->rawQuery(
+            "SELECT t.ID,
+                    t.Name,
+                    COUNT(tt.GroupID) AS Uses,
+                    SUM(tt.PositiveVotes-1) AS PosVotes,
+                    SUM(tt.NegativeVotes-1) AS NegVotes
+               FROM tags AS t
+               JOIN torrents_tags AS tt ON tt.TagID = t.ID
+           GROUP BY tt.TagID
+           ORDER BY Uses DESC,
+                    PosVotes DESC,
+                    NegVotes ASC
+              LIMIT {$Limit}"
+        )->fetchAll(\PDO::FETCH_BOTH);
+        $master->cache->cacheValue("topusedtag_{$Limit}", $TopUsedTags, 3600 * 12);
     }
 
     generate_tag_table('Most Used Torrent Tags', 'ut', $TopUsedTags, $Limit);
 }
 
 if ($Details=='all' || $Details=='ur') {
-    if (!$TopRequestTags = $Cache->get_value('toprequesttag_'.$Limit)) {
-        $DB->query("SELECT
-            t.ID,
-            t.Name,
-            COUNT(r.RequestID) AS Uses,
-            '',''
-            FROM tags AS t
-            JOIN requests_tags AS r ON r.TagID=t.ID
-            GROUP BY r.TagID
-            ORDER BY Uses DESC
-            LIMIT $Limit");
-        $TopRequestTags = $DB->to_array();
-        $Cache->cache_value('toprequesttag_'.$Limit,$TopRequestTags,3600*12);
+    if (!$TopRequestTags = $master->cache->getValue('toprequesttag_'.$Limit)) {
+        $TopRequestTags = $master->db->rawQuery(
+            "SELECT t.ID,
+                    t.Name,
+                    COUNT(r.RequestID) AS Uses,
+                    '',
+                    ''
+               FROM tags AS t
+               JOIN requests_tags AS r ON r.TagID = t.ID
+           GROUP BY r.TagID
+           ORDER BY Uses DESC
+              LIMIT {$Limit}"
+        )->fetchAll(\PDO::FETCH_BOTH);
+        $master->cache->cacheValue("toprequesttag_{$Limit}", $TopRequestTags, 3600 * 12);
     }
 
     generate_tag_table('Most Used Request Tags', 'ur', $TopRequestTags, $Limit, false, true);
 }
 
 if ($Details=='all' || $Details=='v') {
-    if (!$TopVotedTags = $Cache->get_value('topvotedtag_'.$Limit)) {
-        $DB->query("SELECT
-            t.ID,
-            t.Name,
-            COUNT(tt.GroupID) AS Uses,
-            SUM(tt.PositiveVotes-1) AS PosVotes,
-            SUM(tt.NegativeVotes-1) AS NegVotes,
-                    (SUM(tt.PositiveVotes-1)-SUM(tt.NegativeVotes-1)) AS Votes
-            FROM tags AS t
-            JOIN torrents_tags AS tt ON tt.TagID=t.ID
-            GROUP BY tt.TagID
-            ORDER BY Votes DESC, Uses DESC
-            LIMIT $Limit");
-        $TopVotedTags = $DB->to_array();
-        $Cache->cache_value('topvotedtag_'.$Limit,$TopVotedTags,3600*12);
+    if (!$TopVotedTags = $master->cache->getValue('topvotedtag_'.$Limit)) {
+        $TopVotedTags = $master->db->rawQuery(
+            "SELECT t.ID,
+                    t.Name,
+                    COUNT(tt.GroupID) AS Uses,
+                    SUM(tt.PositiveVotes-1) AS PosVotes,
+                    SUM(tt.NegativeVotes-1) AS NegVotes,
+                    (SUM(tt.PositiveVotes-1) - SUM(tt.NegativeVotes-1)) AS Votes
+               FROM tags AS t
+               JOIN torrents_tags AS tt ON tt.TagID = t.ID
+           GROUP BY tt.TagID
+           ORDER BY Votes DESC, Uses DESC
+              LIMIT {$Limit}"
+        )->fetchAll(\PDO::FETCH_BOTH);
+        $master->cache->cacheValue("topvotedtag_{$Limit}", $TopVotedTags, 3600 * 12);
     }
 
     generate_tag_table('Most Highly Voted Tags', 'v', $TopVotedTags, $Limit);
@@ -89,7 +92,7 @@ if ($Details=='all' || $Details=='v') {
 
 echo '</div>';
 show_footer();
-exit;
+return;
 
 // generate a table based on data from most recent query to $DB
 function generate_tag_table($Caption, $Tag, $Details, $Limit, $ShowVotes=true, $RequestsTable = false)

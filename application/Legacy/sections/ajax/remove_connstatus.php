@@ -1,32 +1,34 @@
 <?php
-if (isset($_REQUEST['ip']) && isset($_REQUEST['userid']) ) {
+if (isset($_REQUEST['ip']) && isset($_REQUEST['userid'])) {
 
-    if (!is_number($_REQUEST['userid'])) {
-        echo json_encode(array(false, 'UserID is not a number'));
+    if (!is_integer_string($_REQUEST['userid'])) {
+        echo json_encode([false, 'UserID is not a number']);
         die();
     }
-    if (!check_perms('users_mod') && $_REQUEST['userid']!=$LoggedUser['ID'] ) {
-        echo json_encode(array(false, 'You do not have permission to access this page!'));
+    if (!check_perms('users_mod') && $_REQUEST['userid']!=$activeUser['ID']) {
+        echo json_encode([false, 'You do not have permission to access this page!']);
         die();
     }
 
     $now = time();
-    $DB->query("INSERT INTO users_connectable_status (UserID, IP, Status, Time)
-                         VALUES ( '" . db_string($_REQUEST['userid']) . "','" . db_string($_REQUEST['ip']) . "', 'unset','$now' )
-                    ON DUPLICATE KEY UPDATE Status='unset'");
-
-    $result = $DB->affected_rows();
+    $result = $master->db->rawQuery(
+        "INSERT INTO users_connectable_status (UserID, IP, Status, Time)
+         VALUES (?, ?, 'unset', ?)
+             ON DUPLICATE KEY
+         UPDATE Status = 'unset'",
+        [$_REQUEST['userid'], $_REQUEST['ip'], $now]
+    )->rowCount();
 
     if ($result > 0) {
-        $Cache->delete_value('connectable_'.$_REQUEST['userid']);
-        echo json_encode(array(true, "unset status in $result record for UserID: $_REQUEST[userid]  IP: $_REQUEST[ip] "));
+        $master->cache->deleteValue('connectable_'.$_REQUEST['userid']);
+        echo json_encode([true, "unset status in $result record for UserID: $_REQUEST[userid]  IP: $_REQUEST[ip] "]);
     } elseif ($result == 0) {
-        echo json_encode(array(false, "could not unset status for UserID: $_REQUEST[userid]  IP: $_REQUEST[ip] "));
+        echo json_encode([false, "could not unset status for UserID: $_REQUEST[userid]  IP: $_REQUEST[ip] "]);
     } else {
-        echo json_encode(array(false, "error: failed to unset status for UserID: $_REQUEST[userid]  IP: $_REQUEST[ip] "));
+        echo json_encode([false, "error: failed to unset status for UserID: $_REQUEST[userid]  IP: $_REQUEST[ip] "]);
     }
 
 } else {
     // didnt get ip and port info
-    echo json_encode(array(false, 'Parameters not specified'));
+    echo json_encode([false, 'Parameters not specified']);
 }

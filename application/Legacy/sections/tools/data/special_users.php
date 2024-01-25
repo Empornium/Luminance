@@ -4,17 +4,19 @@ show_header('Special Users List');
 ?>
 <div class="thin">
 <?php
-$DB->query("SELECT
-    m.ID,
-    m.Username,
-    m.PermissionID,
-    m.Enabled,
-    i.Donor,
-    m.GroupPermissionID
-    FROM users_main AS m
-    LEFT JOIN users_info AS i ON i.UserID=m.ID
-    WHERE m.CustomPermissions != ''");
-if ($DB->record_count()) {
+$records = $master->db->rawQuery(
+    "SELECT u.ID,
+            u.Username,
+            um.PermissionID,
+            um.Enabled,
+            ui.Donor,
+            um.GroupPermissionID
+       FROM users AS u
+  LEFT JOIN users_main AS um ON um.ID=u.ID
+  LEFT JOIN users_info AS ui ON ui.UserID=u.ID
+      WHERE um.CustomPermissions != ''"
+)->fetchAll(\PDO::FETCH_NUM);
+if ($master->db->foundRows()) {
 ?>
     <table width="100%">
         <tr class="colhead">
@@ -22,11 +24,12 @@ if ($DB->record_count()) {
             <td>Access</td>
         </tr>
 <?php
-    while (list($UserID, $Username, $PermissionID, $Enabled, $Donor,$GroupPermissionID)=$DB->next_record()) {
+    foreach ($records as $record) {
+        list($userID, $Username, $PermissionID, $enabled, $Donor, $GroupPermissionID) = $record;
 ?>
         <tr>
-            <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID, '', false, $GroupPermissionID, true)?></td>
-            <td><a href="/user.php?action=permissions&amp;userid=<?=$UserID?>">Manage</a></td>
+            <td><?=format_username($userID, $Donor, true, $enabled, $PermissionID, '', false, $GroupPermissionID, true)?></td>
+            <td><a href="/user.php?action=permissions&amp;userid=<?=$userID?>">Manage</a></td>
         </tr>
 <?php } ?>
     </table>

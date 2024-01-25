@@ -13,21 +13,21 @@
 
 authorize();
 
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
 
-if (!is_number($_POST['torrentid'])) {
+if (!is_integer_string($_POST['torrentid'])) {
     error(0);
 } else {
-    $TorrentID = $_POST['torrentid'];
+    $torrentID = $_POST['torrentid'];
 }
 
 
 if (!isset($_POST['type'])) {
     error(404);
-} elseif (array_key_exists($_POST['type'], $Types)) {
+} elseif (array_key_exists($_POST['type'], $types)) {
     $Type = $_POST['type'];
-    $ReportType = $Types[$Type];
+    $ReportType = $types[$Type];
 } else {
     //There was a type but it wasn't an option!
     error(403);
@@ -42,13 +42,13 @@ foreach ($ReportType['report_fields'] as $Field => $Value) {
 }
 
 if (!empty($_POST['sitelink'])) {
-    if (preg_match_all("/".TORRENT_REGEX."/is", $_POST['sitelink'], $Matches)) {
-        $ExtraIDs = $Matches[2];
-        if (in_array($TorrentID, $ExtraIDs)) {
+    if (preg_match_all("/".TORRENT_REGEX."/is", $_POST['sitelink'], $matches)) {
+        $ExtraIDs = $matches[2];
+        if (in_array($torrentID, $ExtraIDs)) {
             error("The extra torrent links you gave included the link to the torrent you're reporting!");
         }
     } else {
-        error("Extra Torrent link was incorrect, should look like http://".SITE_URL."/torrents.php?id=12345");
+        error("Extra Torrent link was incorrect, should look like https://".SITE_URL."/torrents.php?id=12345");
     }
 } else {
     $ExtraIDs = "";
@@ -57,8 +57,8 @@ if (!empty($_POST['sitelink'])) {
 if (!empty($_POST['link'])) {
     //resource_type://domain:port/filepathname?query_string#anchor
     //                    https://          www          .foo.com                       /bar
-    if (preg_match_all('/(https?:\/\/)?[a-zA-Z0-9\-]+(\.[a-zA-Z0-9\-]+)*(:[0-9]{2,5})?(\/(\S)+)?/is', $_POST['link'], $Matches)) {
-        $Links = implode(' ', $Matches[0]);
+    if (preg_match_all('/(https?:\/\/)?[a-zA-Z0-9\-]+(\.[a-zA-Z0-9\-]+)*(:[0-9]{2,5})?(\/(\S)+)?/is', $_POST['link'], $matches)) {
+        $Links = implode(' ', $matches[0]);
     } else {
         error("The extra links you provided weren't links...");
     }
@@ -67,8 +67,8 @@ if (!empty($_POST['link'])) {
 }
 
 if (!empty($_POST['image'])) {
-    if (preg_match("/^(".IMAGE_REGEX.")( ".IMAGE_REGEX.")*$/is", trim($_POST['image']), $Matches)) {
-        $Images = $Matches[0];
+    if (preg_match("/^(".IMAGE_REGEX.")( ".IMAGE_REGEX.")*$/is", trim($_POST['image']), $matches)) {
+        $Images = $matches[0];
     } else {
         error("The extra image links you provided weren't links to images...");
     }
@@ -77,67 +77,105 @@ if (!empty($_POST['image'])) {
 }
 
 if (!empty($_POST['track'])) {
-    if (preg_match('/([0-9]+( [0-9]+)*)|All/is', $_POST['track'], $Matches)) {
-        $Tracks = $Matches[0];
+    if (preg_match('/([0-9]+( [0-9]+)*)|All/is', $_POST['track'], $matches)) {
+        $Tracks = $matches[0];
     } else {
-        error("Tracks should be given in a space seperated list of numbers (No other characters)");
+        error("Tracks should be given in a space separated list of numbers (No other characters)");
     }
 } else {
     $Tracks = "";
 }
 
 if (!empty($_POST['extra'])) {
-    $Extra = db_string($_POST['extra']);
+    $Extra = $_POST['extra'];
 } else {
     error("As useful as blank reports are, could you be a tiny bit more helpful? (Leave a comment)");
 }
 
-$DB->query("SELECT ID FROM torrents WHERE ID=".$TorrentID);
-if ($DB->record_count() < 1) {
+$torrentCount = $master->db->rawQuery(
+    "SELECT COUNT(ID)
+       FROM torrents
+      WHERE ID = ?",
+    [$torrentID]
+)->fetchColumn();
+if ($torrentCount < 1) {
     error("A torrent with that ID doesn't exist!");
 }
 
 if ($Type=='dupe') {
-    if(!$ExtraIDs) error("You must include a link to a duped torrent!");
+    if (!$ExtraIDs) error("You must include a link to a duped torrent!");
     foreach ($ExtraIDs as $DupeID) {
-        if(!is_number($DupeID)) error("Cannot parse your links for duped torrents!"); // should be weeded out by regex above but keep here in case of changes etc
-        $DB->query("SELECT Time FROM torrents WHERE ID=".$DupeID);
-        if($DB->record_count() < 1) error("The duped torrent with ID=$DupeID doesn't exist!");
-        list($TimeStamp) = $DB->next_record();
-        if (time_ago($TimeStamp) > 24*3600*EXCLUDE_DUPES_AFTER_DAYS) {
+        if (!is_integer_string($DupeID)) error("Cannot parse your links for duped torrents!"); // should be weeded out by regex above but keep here in case of changes etc
+        $timeStamp = $master->db->rawQuery(
+            "SELECT Time
+               FROM torrents
+              WHERE ID = ?",
+            [$DupeID]
+        )->fetchColumn();
+        if ($master->db->foundRows() < 1) error("The duped torrent with ID={$DupeID} doesn't exist!");
+        if (time_ago($timeStamp) > 24*3600*EXCLUDE_DUPES_AFTER_DAYS) {
             $PeerInfo = get_peers($DupeID);
             if ($PeerInfo['Seeders']< EXCLUDE_DUPES_SEEDS) {
-                error($Text->full_format("Because the duped torrent [torrent]{$DupeID}[/torrent] has less than ".EXCLUDE_DUPES_SEEDS." seeders and is over "
+                error($bbCode->full_format("Because the duped torrent /torrents.php?torrentid={$DupeID} has less than ".EXCLUDE_DUPES_SEEDS." seeders and is over "
                 . time_diff(time()+ (EXCLUDE_DUPES_AFTER_DAYS*24*3600),1,false,false,0)." old it is okay to dupe it![br]Thanks for the thought though :smile1:"));
             }
         }
     }
 }
-if($ExtraIDs) $ExtraIDs = implode(' ', $ExtraIDs);
+if ($ExtraIDs) $ExtraIDs = implode(' ', $ExtraIDs);
 
 if (!empty($Err)) {
     error($Err);
 }
 
-$DB->query("SELECT ID FROM reportsv2 WHERE TorrentID=".$TorrentID." AND ReporterID=".db_string($LoggedUser['ID'])." AND ReportedTime > '".time_minus(3)."'");
-if ($DB->record_count() > 0) {
-    header('Location: details.php?id='.$TorrentID);
+$recordCount = $master->db->rawQuery(
+    "SELECT COUNT(ID)
+       FROM reportsv2
+      WHERE TorrentID = ?
+        AND ReporterID = ?
+        AND ReportedTime > ?",
+    [$torrentID, $activeUser['ID'], time_minus(3)]
+)->fetchColumn();
+
+if ($recordCount > 0) {
+    header('Location: torrents.php?id='.$torrentID);
     die();
 }
 
-$DB->query("INSERT INTO reportsv2
-            (ReporterID, TorrentID, Type, UserComment, Status, ReportedTime, Track, Image, ExtraID, Link)
-            VALUES
-            (".db_string($LoggedUser['ID']).", $TorrentID, '".db_string($Type)."', '$Extra', 'New', '".sqltime()."', '".db_string($Tracks)."', '".db_string($Images)."', '".db_string($ExtraIDs)."', '".db_string($Links)."')");
+$master->db->rawQuery(
+    "INSERT INTO reportsv2 (ReporterID, TorrentID, Type, UserComment, Status, ReportedTime, Track, Image, ExtraID, Link)
+          VALUES (?, ?, ?, ?, 'New', ?, ?, ?, ?, ?)",
+    [
+        $activeUser['ID'],
+        $torrentID,
+        $Type,
+        $Extra,
+        sqltime(),
+        $Tracks,
+        $Images,
+        $ExtraIDs,
+        $Links,
+    ]
+);
 
-$ReportID = $DB->inserted_id();
+$ReportID = $master->db->lastInsertID();
 
-$Cache->delete_value('reports_torrent_'.$TorrentID);
-$Cache->increment('num_torrent_reportsv2');
+$master->cache->deleteValue('reports_torrent_'.$torrentID);
+$master->cache->incrementValue('num_torrent_reportsv2');
 
 // Find the group id for the torrent and delete the cached torrent.
-$DB->query("SELECT GroupID FROM torrents WHERE ID='$TorrentID'");
-list($GroupID) = $DB->next_record();
-$Cache->delete_value('torrent_group_'.$GroupID);
+$GroupID = $master->db->rawQuery(
+    "SELECT GroupID
+       FROM torrents
+      WHERE ID = ?",
+    [$torrentID]
+)->fetchColumn();
+$master->cache->deleteValue('torrent_group_'.$GroupID);
 
-header('Location: details.php?id='.$TorrentID);
+$scheme = $master->request->ssl ? 'https' : 'http';
+$message  = "[\002\00304Torrent Reported\003\002]";
+$message .= " by ".$activeUser['Username'];
+$message .= " - {$scheme}://{$master->settings->main->site_url}/reportsv2.php?view=report&id={$ReportID}";
+$master->irker->announceReport($message);
+
+header('Location: torrents.php?id='.$GroupID);

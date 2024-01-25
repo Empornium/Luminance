@@ -1,17 +1,12 @@
 Luminance
 =========
 
-[![PHP70](https://img.shields.io/badge/PHP-7.0-brightgreen.svg)]()
-[![PHP71](https://img.shields.io/badge/PHP-7.1-blue.svg)]()
-[![HHVM](https://img.shields.io/badge/HHVM-3.x-blue.svg)]()
-
-
 Note: **BETA SOFTWARE**. This software is currently in heavy development; do not use it for running a live website unless you are quite sure it's appropriate. This document will be updated to reflect changes in this situation, see the *Roadmap* section for details.
 
 Luminance is a webapplication for hosting authentication-restricted torrent tracker websites.
 It builds on the heavily altered version of the Gazelle software that has been in use by the Empornium tracker website since 2011.
 
-This document is current as of 2018-09-24.
+This document is current as of 2024-01-24.
 
 
 Goals
@@ -60,8 +55,8 @@ Roadmap
 -------
 
 -   0.5 - First version suitable for peer review and general publication.
--   0.6 - All display code rended via TWIG templates.
--   0.7 - All database accesses via ORM/PDO.
+-   0.6 - All database accesses via ORM/PDO.
+-   0.7 - All display code rendered via TWIG templates.
 -   0.8 - TBD
 -   0.9 - TBD
 -   1.0 - Stable version that can be painlessly deployed.
@@ -70,7 +65,7 @@ Roadmap
 Development
 -----------
 
-Right now, Luminance is being exclusively developed by a closed group at Empornium. Current members of the site can apply for a developer position by contacting site staff.
+Right now, Luminance is being exclusively developed by a closed group at Empornium, PornBay and MoreThanTV. Current members of the sites can apply for a developer position by contacting site staff.
 
 We expect to take a more open attitude towards contributions from others once the code has stabilized more.
 
@@ -82,15 +77,19 @@ The currently active core team consists of:
 
 -   Starbuck
 -   Unclemeat
+-   Psypher
+-   CyberSurfer
+-   Ducky
+-   humperdoo
+
+We would like to thank the following people for their contributions and/or help:
+
+-   Lanz
 -   mifune
 -   SubPixel
 -   Dax
 -   Dez
 -   Mobbo
-
-We would like to thank the following people for their contributions and/or help:
-
--   Lanz
 -   The staff and beta testers at Empornium
 -   PornBay coders for code contributions
 -   The original Gazelle developers

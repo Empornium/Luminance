@@ -3,25 +3,31 @@ Luminance Installation
 
 Dependencies
 ------------
- - PHP >= 7.0
- - MySQL >= 5.6
+ - PHP 8.2 or newer
+ - MariaDB 11 or newer
  - Memcached
- - Nginx (recommended) or Apache
+ - Nginx (recommended)
  - Sphinx 2.0.x
  - Radiance
 
 PHP Modules
 -----------
-* php-mcrypt
+* php-curl
+* php-date
+* php-igbinary
 * php-mbstring
 * php-memcache
 * php-mysqlnd
+* php-xml
+* php-zip
 
 Composer
 --------
+clone the repo into a directory of your choice.
+
 cd into the Luminance directory and follow the brief instructions on https://getcomposer.org/download/ to download composer.
 
-Once downloaded simply run the following command:
+Once downloaded, simply run the following command:
 ```
 php composer.phar install
 ```
@@ -32,24 +38,26 @@ You need to create a database before running the Luminance install:
 ```
 mysql -u root -p
 create database luminance;
+create user 'luminance'@'localhost' identified by '<DatabasePassword>';
 grant all privileges on luminance.* to 'luminance'@'localhost' identified by '<DatabasePassword>';
+flush privileges;
 ```
 Ensure the database password is both stong and unique, preferably a random string.
 
 Luminance
 ---------
-To install a brand new instance of Luminance cd into the Luminance directory and run these commands:
+To install a brand new instance of Luminance, cd into the Luminance directory and run these commands:
 ```
 php application/entry.php setup configure
 php application/entry.php setup install
 ```
 
-To upgrade an existing instance of Luminance cd into the Luminance directory and run this command:
+To upgrade an existing instance of Luminance, cd into the Luminance directory and run this command:
 ```
 php application/entry.php setup upgrade
 ```
 
-To migrate from Gazelle cd into the Luminance directory and run these commands:
+To migrate from Gazelle, cd into the Luminance directory and run these commands:
 ```
 php application/entry.php setup configure ../../path/to/gazelle/classes/config.php
 php application/entry.php setup upgrade

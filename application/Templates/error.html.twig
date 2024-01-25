@@ -1,12 +1,30 @@
-{% extends "core/base.html.twig" %}
+{% extends authenticated
+    ? 'core/private_page.html.twig'
+    : 'core/public_page.html.twig' %}
 
-{% block content %}
+{# are these really necessary? #}
+{% block stylesheets %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'common/icons.css'} %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'styles/global.css'} %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'styles/layout.css'} %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'styles/prism.css'} %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'styles/icons.css'} %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'styles/torrent_grid.css'} %}
+    {% if authenticated %}
+        {% include 'snippets/link_style.html.twig' with { 'style' : "styles/#{style.Path}/style.css"} %}
+    {% else %}
+        {% include 'snippets/link_style.html.twig' with { 'style' : "styles/public/style.css"} %}
+    {% endif %}
+    {{ parent() }}
+{% endblock %}
+
+{% block main_content %}
     <div class="thin">
-        <div class="head"><h2>{{ http_status }} {{ message|raw }}</h2></div>
+        <div><h2>{{ http_status }} {{ message|raw }}</h2></div>
         {% if description %}
-        <div class="box pad" style="margin-top: 20px;">
-            {{ description|raw }}
-        </div>
+            <div class="box pad" style="margin-top: 20px;">
+                {{ description|raw }}
+            </div>
         {% endif %}
     </div>
 {% endblock %}

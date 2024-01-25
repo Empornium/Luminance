@@ -1,0 +1,43 @@
+{% extends "core/base.html.twig" %}
+
+{% block stylesheets %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'styles/public/style.css'} %}
+    {{ parent() }}
+{% endblock %}
+
+{% block content %}
+    <div id="maincontent" class="centered flex_container">
+        <div id=content>
+            <div id="head" class="flex_item">
+                {% if request.ssl %}<span>SSL</span>{% endif %}
+            </div>
+            <div class="flex_container pad">
+                <div id="logo" class="flex_item">
+                    <img class="svg" src="{{ settings.main.static_server }}styles/public/images/logo.svg" />
+                </div>
+                {% block motto_content %}
+                {% endblock %}
+                <div id="menu" class="flex_item">
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/login">Login</a></li>
+                        {% if allow_registration %}
+                            <li><a href="/user/register">Register</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% block flashes %}
+                    {% include 'snippets/flashes.html.twig' %}
+                {% endblock %}
+                <div id="form" class="flex_item center">
+                    <h2>{{ block('title') }}</h2>
+                    {% block main_content %}
+                    {% endblock %}
+                </div>
+            </div>
+            <div id="foot" class="flex_item">
+                <span><a href="#">{{ settings.main.site_name }}</a> | <a href="https://www.github.com/Empornium/Luminance">Project Luminance</a></span>
+            </div>
+        </div>
+    </div>
+{% endblock %}

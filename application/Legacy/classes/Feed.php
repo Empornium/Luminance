@@ -6,19 +6,16 @@ class Feed
 {
     public $UseSSL = true; // If we're using SSL for blog and news links
 
-    public function open_feed()
-    {
+    public function open_feed() {
         header("Content-type: application/xml; charset=UTF-8");
         echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n","<rss version=\"2.0\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\n\t<channel>\n";
     }
 
-    public function close_feed()
-    {
+    public function close_feed() {
         echo "\t</channel>\n</rss>";
     }
 
-    public function channel($Title, $Description, $Section='')
-    {
+    public function channel($Title, $Description, $Section='') {
         $Site = $this->UseSSL ? 'https://'.SSL_SITE_URL : 'http://'.NONSSL_SITE_URL;
         echo "\t\t<title>$Title :: ". SITE_NAME. "</title>\n";
         echo "\t\t<link>$Site/$Section</link>\n";
@@ -29,10 +26,9 @@ class Feed
         echo "\t\t<generator>Gazelle Feed Class</generator>\n\n";
     }
 
-    public function item($Title, $Description, $Page, $Creator, $Comments='', $Category='', $Date='')
-    {
-        $Timestamp = !empty($Date) ? strtotime($Date) : time();
-        $Date      = date("r", $Timestamp);
+    public function item($Title, $Description, $Page, $Creator, $Comments='', $Category='', $Date='') {
+        $timestamp = !empty($Date) ? strtotime($Date) : time();
+        $Date      = date("r", $timestamp);
 
         // Parameters that need special escaping (CData)
         $Title       = $this->cdata($Title);
@@ -58,7 +54,9 @@ class Feed
     }
 
     // Specialised creator function for torrent items
-    public function torrent($Title, $Description, $Page, $DownLink, $InfoHash, $TorrentName, $TorrentSize, $ContentSize, $ContentSizeHR, $Creator, $Domain, $Category='', $Tags='', $FreeTorrent=0)
+    public function torrent($Title, $Description, $Page, $DownLink, $InfoHash,
+                            $TorrentName, $TorrentSize, $ContentSize, $ContentSizeHR,
+                            $Creator, $Domain, $Category='', $Tags='', $FreeTorrent=0)
     {
         $Date = date("r");
 
@@ -96,32 +94,28 @@ class Feed
         return $Item;
     }
 
-    public function retrieve($CacheKey,$AuthKey,$PassKey)
-    {
-        global $Cache;
-        $Entries = $Cache->get_value($CacheKey);
-        if (!$Entries) {
-            $Entries = array();
-        } else {
+    public function retrieve($CacheKey,$AuthKey,$PassKey) {
+        global $master;
+        $Entries = $master->cache->getValue($CacheKey);
+        if ($Entries) {
             foreach ($Entries as $Item) {
                 echo str_replace(array('[[PASSKEY]]','[[AUTHKEY]]'),array(display_str($PassKey),display_str($AuthKey)),$Item);
             }
         }
     }
 
-    public function populate($CacheKey,$Item)
-    {
-        global $Cache;
-        $Entries = $Cache->get_value($CacheKey,true);
+    public function populate($CacheKey,$Item) {
+        global $master;
+        $Entries = $master->cache->getValue($CacheKey, true);
         if (!$Entries) {
-            $Entries = array();
+            $Entries = [];
         } else {
             if (count($Entries)>=50) {
                 array_pop($Entries);
             }
         }
         array_unshift($Entries, $Item);
-        $Cache->cache_value($CacheKey, $Entries, 0); //inf cache
+        $master->cache->cacheValue($CacheKey, $Entries, 0); //inf cache
     }
 
     /**
@@ -133,8 +127,7 @@ class Feed
      * @param string $Value
      * @return string
      */
-    private function cdata($Value)
-    {
+    private function cdata($Value) {
         $Escaped = str_replace(']]>', ']]]]><![CDATA[>', preg_replace('/[\x00-\x1F\x7F]/', '', $Value));
         return "<![CDATA[$Escaped]]>";
     }

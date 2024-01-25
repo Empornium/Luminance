@@ -1,169 +1,230 @@
 <?php
-if (!extension_loaded('date')) {
-    error('Date Extension not loaded.');
-}
-
-function get_timestamp($TimeStamp) {
-    if ($TimeStamp instanceof \DateTime) {
-        $TimeStamp = $TimeStamp->format('Y-m-d H:i:s');
-    } elseif (is_int($TimeStamp)) {
-        $TimeStamp = date("Y-m-d H:i:s", $TimeStamp);
+function get_timestamp($timeStamp) {
+    if ($timeStamp instanceof \DateTime) {
+        $timeStamp = $timeStamp->format('Y-m-d H:i:s');
+    } elseif ($timeStamp instanceof \DateInterval) {
+        $now = new \DateTime;
+        $timeStamp = $now->add($timeStamp);
+        $timeStamp = $timeStamp->format('Y-m-d H:i:s');
+    } elseif (is_integer_string($timeStamp)) {
+        $timeStamp = date("Y-m-d H:i:s", $timeStamp);
     }
-    return $TimeStamp;
+    return $timeStamp;
 }
 
-function time_ago($TimeStamp)
-{
-    $TimeStamp = get_timestamp($TimeStamp);
-    if (!is_number($TimeStamp)) { // Assume that $TimeStamp is SQL timestamp
-        if ($TimeStamp == '0000-00-00 00:00:00' || $TimeStamp === null) {
+function time_until($timeStamp) {
+    $timeStamp = get_timestamp($timeStamp);
+    if (!is_integer_string($timeStamp)) { // Assume that $timeStamp is SQL timestamp
+        if ($timeStamp == '0000-00-00 00:00:00' || $timeStamp === null) {
             return false;
         }
-        $TimeStamp = strtotime($TimeStamp);
+        $timeStamp = strtotime($timeStamp);
     }
-    if ($TimeStamp == 0) {
+    if ($timeStamp == 0) {
         return false;
     }
 
-    return time() - $TimeStamp;
+    return $timeStamp - time();
 }
 
-function time_diff($TimeStamp, $Levels=2, $Span=true, $Lowercase=false, $ForceFormat=-1)
-{
-    global $LoggedUser;
-    $TimeNow = get_timestamp($TimeStamp);
-    $TimeStamp = time_ago($TimeStamp);
+function time_ago($timeStamp) {
+    $timeStamp = get_timestamp($timeStamp);
+    if (!is_integer_string($timeStamp)) { // Assume that $timeStamp is SQL timestamp
+        if ($timeStamp == '0000-00-00 00:00:00' || $timeStamp === null) {
+            return false;
+        }
+        $timeStamp = strtotime($timeStamp);
+    }
+    if ($timeStamp == 0) {
+        return false;
+    }
 
-    if ($TimeStamp === false) {
+    return time() - $timeStamp;
+}
+
+
+function time_span($timeStamp, $levels = 2, $lowerCase = false) {
+    if ($timeStamp === false) {
+        return 'Never';
+    }
+
+    $time = $timeStamp;
+
+    //If the time is negative, then we know that it expires in the future
+    if ($time < 0) {
+        $time = -$time;
+    }
+
+    $years = floor($time / 31556926); // seconds in a year
+    $remain = $time - $years * 31556926;
+
+    $months = floor($remain / 2629744); // seconds in a month
+    $remain = $remain - $months * 2629744;
+
+    $weeks = floor($remain / 604800); // seconds in a week
+    $remain = $remain - $weeks * 604800;
+
+    $days = floor($remain / 86400); // seconds in a day
+    $remain = $remain - $days * 86400;
+
+    $hours = floor($remain / 3600);
+    $remain = $remain - $hours * 3600;
+
+    $minutes = floor($remain / 60);
+    $remain = $remain - $minutes * 60;
+
+    $seconds = $remain;
+
+    $timeSpan = '';
+
+    if ($years > 0 && $levels > 0) {
+        if ($years > 1) {
+            $timeSpan .= $years . ' years';
+        } else {
+            $timeSpan .= $years . ' year';
+        }
+        $levels--;
+    }
+
+    if ($months > 0 && $levels > 0) {
+        if ($timeSpan != '') {
+            $timeSpan.=', ';
+        }
+        if ($months > 1) {
+            $timeSpan.=$months . ' months';
+        } else {
+            $timeSpan.=$months . ' month';
+        }
+        $levels--;
+    }
+
+    if ($weeks > 0 && $levels > 0) {
+        if ($timeSpan != "") {
+            $timeSpan.=', ';
+        }
+        if ($weeks > 1) {
+            $timeSpan.=$weeks . ' weeks';
+        } else {
+            $timeSpan.=$weeks . ' week';
+        }
+        $levels--;
+    }
+
+    if ($days > 0 && $levels > 0) {
+        if ($timeSpan != '') {
+            $timeSpan.=', ';
+        }
+        if ($days > 1) {
+            $timeSpan.=$days . ' days';
+        } else {
+            $timeSpan.=$days . ' day';
+        }
+        $levels--;
+    }
+
+    if ($hours > 0 && $levels > 0) {
+        if ($timeSpan != '') {
+            $timeSpan.=', ';
+        }
+        if ($hours > 1) {
+            $timeSpan.=$hours . ' hours';
+        } else {
+            $timeSpan.=$hours . ' hour';
+        }
+        $levels--;
+    }
+
+    if ($minutes > 0 && $levels > 0) {
+        if ($timeSpan != '') {
+            $timeSpan.=' and ';
+        }
+        if ($minutes > 1) {
+            $timeSpan.=$minutes . ' mins';
+        } else {
+            $timeSpan.=$minutes . ' min';
+        }
+        $levels--;
+    }
+
+    if ($seconds > 0 && $levels > 0) {
+        if ($timeSpan != '') {
+            $timeSpan.=' and ';
+        }
+        if ($seconds > 1) {
+            $timeSpan.=$seconds . ' secs';
+        } else {
+            $timeSpan.=$seconds . ' sec';
+        }
+        $levels--;
+    }
+
+    if ($timeSpan == '') {
+        $timeSpan = '1 min';
+        $timeSpan = '1 sec';
+    }
+
+    if ($lowerCase) {
+        $timeSpan = strtolower($timeSpan);
+    }
+
+    return $timeSpan;
+}
+
+function time_diff($timeStamp, $levels = 2, $span = true, $lowerCase = false, $forceFormat = -1) {
+    global $master;
+
+    $user = $master->request->user;
+    $timeNow = get_timestamp($timeStamp);
+    $timeStamp = time_ago($timeStamp);
+    if ($timeStamp === false) {
         return 'Forever';
     }
 
-    if (in_array($ForceFormat, array(0, 1))) {
-        $TimeFormat = $ForceFormat;
+    if (in_array($forceFormat, array(0, 1))) {
+        $timeFormat = $forceFormat;
+    } elseif ($user instanceof \Luminance\Entities\User) {
+        $timeFormat = $user->options('TimeStyle');
     } else {
-        $TimeFormat = $LoggedUser['TimeStyle'];
+        $timeFormat = 0;
     }
 
-    if ($TimeFormat == 1 && !$Span) { // shortcut if only need plain date time format returned
-        return date('M d Y, H:i', strtotime($TimeNow) - (int) $LoggedUser['TimeOffset']);
+    if ($user instanceof \Luminance\Entities\User) {
+        $timeOffset = (int) $user->timeOffset;
+    } else {
+        $timeOffset = 0;
+    }
+
+    if ($timeFormat == 1 && !$span) { // shortcut if only need plain date time format returned
+        return date('M d Y, H:i', strtotime($timeNow) - $timeOffset);
     }
 
     //If the time is negative, then we know that it expires in the future
-    if ($TimeStamp < 0) {
-        $TimeStamp = -$TimeStamp;
-        $HideAgo = true;
+    if ($timeStamp < 0) {
+        $timeStamp = -$timeStamp;
+        $hideAgo = true;
     }
 
-    $Years = floor($TimeStamp / 31556926); // seconds in a year
-    $Remain = $TimeStamp - $Years * 31556926;
+    $timeDiff = time_span($timeStamp, $levels, $lowerCase);
 
-    $Months = floor($Remain / 2629744); // seconds in a month
-    $Remain = $Remain - $Months * 2629744;
-
-    $Weeks = floor($Remain / 604800); // seconds in a week
-    $Remain = $Remain - $Weeks * 604800;
-
-    $Days = floor($Remain / 86400); // seconds in a day
-    $Remain = $Remain - $Days * 86400;
-
-    $Hours = floor($Remain / 3600);
-    $Remain = $Remain - $Hours * 3600;
-
-    $Minutes = floor($Remain / 60);
-    $Remain = $Remain - $Minutes * 60;
-
-    $Seconds = $Remain;
-
-    $TimeAgo = '';
-
-    if ($Years > 0 && $Levels > 0) {
-        if ($Years > 1) {
-            $TimeAgo .= $Years . ' years';
-        } else {
-            $TimeAgo .= $Years . ' year';
-        }
-        $Levels--;
+    if ($timeDiff == '') {
+        $timeDiff = 'Just now';
+    } elseif (!isset($hideAgo)) {
+        $timeDiff .= ' ago';
     }
 
-    if ($Months > 0 && $Levels > 0) {
-        if ($TimeAgo != '') {
-            $TimeAgo.=', ';
-        }
-        if ($Months > 1) {
-            $TimeAgo.=$Months . ' months';
-        } else {
-            $TimeAgo.=$Months . ' month';
-        }
-        $Levels--;
+    if ($lowerCase) {
+        $timeDiff = strtolower($timeDiff);
     }
 
-    if ($Weeks > 0 && $Levels > 0) {
-        if ($TimeAgo != "") {
-            $TimeAgo.=', ';
-        }
-        if ($Weeks > 1) {
-            $TimeAgo.=$Weeks . ' weeks';
-        } else {
-            $TimeAgo.=$Weeks . ' week';
-        }
-        $Levels--;
-    }
+    $timeNow = date('M d Y, H:i', strtotime($timeNow) - $timeOffset);
 
-    if ($Days > 0 && $Levels > 0) {
-        if ($TimeAgo != '') {
-            $TimeAgo.=', ';
-        }
-        if ($Days > 1) {
-            $TimeAgo.=$Days . ' days';
-        } else {
-            $TimeAgo.=$Days . ' day';
-        }
-        $Levels--;
-    }
-
-    if ($Hours > 0 && $Levels > 0) {
-        if ($TimeAgo != '') {
-            $TimeAgo.=', ';
-        }
-        if ($Hours > 1) {
-            $TimeAgo.=$Hours . ' hours';
-        } else {
-            $TimeAgo.=$Hours . ' hour';
-        }
-        $Levels--;
-    }
-
-    if ($Minutes > 0 && $Levels > 0) {
-        if ($TimeAgo != '') {
-            $TimeAgo.=' and ';
-        }
-        if ($Minutes > 1) {
-            $TimeAgo.=$Minutes . ' mins';
-        } else {
-            $TimeAgo.=$Minutes . ' min';
-        }
-        $Levels--;
-    }
-
-    if ($TimeAgo == '') {
-        $TimeAgo = 'Just now';
-    } elseif (!isset($HideAgo)) {
-        $TimeAgo .= ' ago';
-    }
-
-    if ($Lowercase) {
-        $TimeAgo = strtolower($TimeAgo);
-    }
-
-    $TimeNow = date('M d Y, H:i', strtotime($TimeNow) - (int) $LoggedUser['TimeOffset']);
-
-    if ($TimeFormat == 1) {
-        return '<span class="time" alt="' . $TimeAgo . '" title="' . $TimeAgo . '">' . $TimeNow . '</span>';
+    if ($timeFormat == 1) {
+        return '<span class="time" alt="' . $timeDiff . '" title="' . $timeDiff . '">' . $timeNow . '</span>';
     } else {
-        if ($Span) {
-            return '<span class="time" alt="' . $TimeNow . '" title="' . $TimeNow . '">' . $TimeAgo . '</span>';
+        if ($span) {
+            return '<span class="time" alt="' . $timeNow . '" title="' . $timeNow . '">' . $timeDiff . '</span>';
         } else {
-            return $TimeAgo;
+            return $timeDiff;
         }
     }
 }
@@ -173,8 +234,7 @@ function time_diff($TimeStamp, $Levels=2, $Span=true, $Lowercase=false, $ForceFo
  *    @param string $origin_tz origin timezone. If null the servers current timezone is used as the origin.
  *    @return int;
  */
-function get_timezone_offset($remote_tz, $origin_tz = null)
-{
+function get_timezone_offset($remote_tz, $origin_tz = null) {
     if ($origin_tz === null) {
         $origin_tz = "UTC";
     }
@@ -188,162 +248,75 @@ function get_timezone_offset($remote_tz, $origin_tz = null)
 }
 
 /* SQL utility functions */
-
-function time_plus($Offset)
-{
-    return date('Y-m-d H:i:s', time() + $Offset);
-}
-
-function time_minus($Offset, $Fuzzy = false)
-{
-    if ($Fuzzy) {
-        return date('Y-m-d 00:00:00', time() - $Offset);
+function time_plus($offset, $fuzzy = false) {
+    if ($fuzzy) {
+        return date('Y-m-d 00:00:00', time() + $offset);
     } else {
-        return date('Y-m-d H:i:s', time() - $Offset);
+        return date('Y-m-d H:i:s', time() + $offset);
     }
 }
 
-function sqltime($timestamp = false)
-{
+function time_minus($offset, $fuzzy = false) {
+    if ($fuzzy) {
+        return date('Y-m-d 00:00:00', time() - $offset);
+    } else {
+        return date('Y-m-d H:i:s', time() - $offset);
+    }
+}
+
+function sqltime($timestamp = false) {
     if ($timestamp === false) {
         $timestamp = time();
     }
-
+    if (!is_integer_string($timestamp)) {
+        return $timestamp;
+    }
     return date('Y-m-d H:i:s', $timestamp);
 }
 
-function validDate($DateString)
-{
-    $DateTime = explode(" ", $DateString);
-    if (count($DateTime) != 2)
+function validDate($dateString) {
+    $dateTime = explode(" ", $dateString);
+    if (count($dateTime) != 2)
         return false;
-    list($Date, $Time) = $DateTime;
-    $SplitTime = explode(":", $Time);
-    if (count($SplitTime) != 3)
+    list($date, $time) = $dateTime;
+    $splitTime = explode(":", $time);
+    if (count($splitTime) != 3)
         return false;
-    list($H, $M, $S) = $SplitTime;
-    if ($H != 0 && !(is_number($H) && $H < 24 && $H >= 0))
+    list($hours, $minutes, $seconds) = $splitTime;
+    if ($hours != 0 && !(is_integer_string($hours) && $hours < 24 && $hours >= 0)) {
         return false;
-    if ($M != 0 && !(is_number($M) && $M < 60 && $M >= 0))
+    }
+    if ($minutes != 0 && !(is_integer_string($minutes) && $minutes < 60 && $minutes >= 0)) {
         return false;
-    if ($S != 0 && !(is_number($S) && $S < 60 && $S >= 0))
+    }
+    if ($seconds != 0 && !(is_integer_string($seconds) && $seconds < 60 && $seconds >= 0)) {
         return false;
-    $SplitDate = explode("-", $Date);
-    if (count($SplitDate) != 3)
+    }
+    $splitDate = explode("-", $date);
+    if (count($splitDate) != 3)
         return false;
-    list($Y, $M, $D) = $SplitDate;
+    list($years, $months, $days) = $splitDate;
 
-    return checkDate($M, $D, $Y);
+    return checkDate($months, $days, $years);
 }
 
-function time_span($TimeStamp, $Levels=2, $Lowercase=false)
-{
-    $TimeStamp = time_ago($TimeStamp);
-    if ($TimeStamp === false) {
-        return 'Never';
-    }
+function hoursdays($totalHours) {
+    $days = (int) floor($totalHours / 24);
+    $days = ($days > 0) ? "$days days" : '';
+    $hours = modulos($totalHours, 24.0);
 
-    $Time = $TimeStamp;
-
-    //If the time is negative, then we know that it expires in the future
-    if ($Time < 0) {
-        $Time = -$Time;
-        //$HideAgo = true;
-    }
-
-    $Weeks = floor($Time / 604800); // seconds in a week
-    $Remain = $Time - $Weeks * 604800;
-
-    $Days = floor($Remain / 86400); // seconds in a day
-    $Remain = $Remain - $Days * 86400;
-
-    $Hours = floor($Remain / 3600);
-    $Remain = $Remain - $Hours * 3600;
-
-    $Minutes = floor($Remain / 60);
-    $Remain = $Remain - $Minutes * 60;
-
-    $Seconds = $Remain;
-
-    $TimeAgo = '';
-
-    if ($Weeks > 0 && $Levels > 0) {
-        if ($TimeAgo != "") {
-            $TimeAgo.=', ';
-        }
-        if ($Weeks > 1) {
-            $TimeAgo.=$Weeks . ' weeks';
-        } else {
-            $TimeAgo.=$Weeks . ' week';
-        }
-        $Levels--;
-    }
-
-    if ($Days > 0 && $Levels > 0) {
-        if ($TimeAgo != '') {
-            $TimeAgo.=', ';
-        }
-        if ($Days > 1) {
-            $TimeAgo.=$Days . ' days';
-        } else {
-            $TimeAgo.=$Days . ' day';
-        }
-        $Levels--;
-    }
-
-    if ($Hours > 0 && $Levels > 0) {
-        if ($TimeAgo != '') {
-            $TimeAgo.=', ';
-        }
-        if ($Hours > 1) {
-            $TimeAgo.=$Hours . ' hours';
-        } else {
-            $TimeAgo.=$Hours . ' hour';
-        }
-        $Levels--;
-    }
-
-    if ($Minutes > 0 && $Levels > 0) {
-        if ($TimeAgo != '') {
-            $TimeAgo.=' and ';
-        }
-        if ($Minutes > 1) {
-            $TimeAgo.=$Minutes . ' mins';
-        } else {
-            $TimeAgo.=$Minutes . ' min';
-        }
-        $Levels--;
-    }
-
-    if ($Seconds > 0 && $Levels > 0) {
-        if ($TimeAgo != '') {
-            $TimeAgo.=' and ';
-        }
-        if ($Seconds > 1) {
-            $TimeAgo.=$Seconds . ' secs';
-        } else {
-            $TimeAgo.=$Seconds . ' sec';
-        }
-        $Levels--;
-    }
-
-    if ($TimeAgo == '') {
-        $TimeAgo = '1 min';
-        $TimeAgo = '1 sec';
-    }
-
-    if ($Lowercase) {
-        $TimeAgo = strtolower($TimeAgo);
-    }
-
-    return $TimeAgo;
+    return "$days $hours hrs";
 }
 
-function hoursdays($TotalHours)
-{
-    $Days = (int) floor($TotalHours / 24);
-    $Days = ($Days > 0) ? "$Days days" : '';
-    $Hours = modulos($TotalHours, 24.0);
-
-    return "$Days $Hours hrs";
-}
+function trimDate($date)
+    /**
+    * Trim a date to remove the time
+    * Convert 2000-01-01 12:00:30 into 2000-01-01
+    */
+    {
+        $maxLength = 10;
+        if (strlen($date) > $maxLength) {
+            $date = substr($date, 0, strrpos($date, ' '));
+        }
+        return $date;
+    }

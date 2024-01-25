@@ -1,0 +1,103 @@
+{% block content %}
+    <div class="thin">
+        <h2>Bookmarks</h2>
+        {# {% include 'snippets/torrent_search.html.twig' %} #}
+        <div class="linkbox">
+            <a href="/bookmarks.php?type=torrents">[Torrents]</a>
+            <a href="/collage/bookmarks">[Collages]</a>
+            <a href="/bookmarks.php?type=requests">[Requests]</a>
+        </div>
+        {% if groups is empty %}
+            <div class="head">
+                {% if (userID == ActiveUser.ID) %}
+                    <a href="/feeds.php?feed=torrents_bookmarks_t_{{ ActiveUser.legacy.torrent_pass }}&amp;user={{ ActiveUser.ID }}&amp;auth={{ ActiveUser.legacy.RSS_Auth }}&amp;passkey={{ ActiveUser.legacy.torrent_pass }}&amp;authkey={{ ActiveUser.legacy.AuthKey }}&amp;name={{ (settings.main.site_name ~ ': Bookmarked Torrents')|url_encode }}">
+                        <img src="{{ static_uri }}common/symbols/rss.png" alt="RSS feed" />
+                    </a>&nbsp;
+                {% endif %}
+                {{ title }}
+            </div>
+            <div class="box pad" align="center">
+                <h2>You have not bookmarked any torrents.</h2>
+            </div>
+        {% else %}
+            <div class="sidebar">
+                {% if auth.isAllowed('site_zip_downloader') and (auth.isAllowed('torrent_download_override') or master.options.EnableDownloads) %}
+                    <div class="head"><strong>Collector</strong></div>
+                    <div class="box">
+                        <div class="pad">
+                            <form action="bookmarks.php" method="post">
+                            <input type="hidden" name="action" value="download" />
+                            <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                            <input type="hidden" name="userid" value="{{ userID }}" />
+                            <select name="preference" style="width:210px">
+                                <option value="0">Download All</option>
+                                <option value="1">At least 1 seeder</option>
+                                <option value="2">5 or more seeders</option>
+                            </select>
+                            <input type="submit" style="width:210px" value="Download" />
+                            </form>
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="head"><strong>Stats</strong></div>
+                <div class="box">
+                    <ul class="stats nobullet">
+                        <li>Torrents: {{ info.count }}</li>
+                        <li>Total Size: {{ get_size(info.size) }}</li>
+                    </ul>
+                </div>
+                <div class="head"><strong>Top tags</strong></div>
+                <div class="box">
+                    <div class="pad">
+                        <ol style="padding-left:5px;">
+                            {% for tag in info.tags %}
+                              <li><a href="/torrents.php?taglist={{ tag.name }}">{{ tag.name }}</a> ({{ tag.count}})</li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                </div>
+                <div class="head"><strong>Cleanup</strong></div>
+                <div class="box">
+                    <div class="pad">
+                        <form action="bookmarks.php" method="post" onsubmit="return confirm('Are you sure you want to remove the bookmarks for all items you\'ve snatched? This cannot be undone.');">
+                            <input type="hidden" name="action" value="remove_snatched" />
+                            <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                            <input type="hidden" name="userid" value="{{ userID }}" />
+                            <input type="submit" style="width:210px" value="Remove Snatched" />
+                        </form>
+                        <form action="bookmarks.php" method="post" onsubmit="return confirm('Are you sure you want to remove the bookmarks for all items you\'ve grabbed? This cannot be undone.');">
+                            <input type="hidden" name="action" value="remove_grabbed" />
+                            <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                            <input type="hidden" name="userid" value="{{ userID }}" />
+                            <input type="submit" style="width:210px" value="Remove Grabbed" />
+                        </form>
+                        <form action="bookmarks.php" method="post" onsubmit="return confirm('Are you sure you want to remove all of your bookmarks? This cannot be undone.');">
+                            <input type="hidden" name="action" value="remove_all" />
+                            <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                            <input type="hidden" name="userid" value="{{ userID }}" />
+                            <input type="submit" style="width:210px" value="Remove All" />
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="main_column">
+                {% if groups|length > 0 and ActiveUser.options('CollageCovers') is not same as(0) %}
+                    <div class="head" id="coverhead">
+                        {% if (userID == ActiveUser.ID) %}
+                            <a href="/feeds.php?feed=torrents_bookmarks_t_{{ ActiveUser.legacy.torrent_pass }}&amp;user={{ ActiveUser.ID }}&amp;auth={{ ActiveUser.legacy.RSS_Auth }}&amp;passkey={{ ActiveUser.legacy.torrent_pass }}&amp;authkey={{ ActiveUser.legacy.AuthKey }}&amp;name={{ (settings.main.site_name ~ ': Bookmarked Torrents')|url_encode }}">
+                                <img src="{{ static_uri }}common/symbols/rss.png" alt="RSS feed" />
+                            </a>&nbsp;
+                        {% endif %}
+                        <strong>Cover Art</strong>
+                    </div>
+                    {% include 'snippets/torrent_grid.html.twig' %}
+                {% endif %}
+            </div>
+            <br />
+            <div class="clear"></div><br />
+            <div class="linkbox">{{ pages|raw }}</div>
+            {% include 'snippets/torrent_table.html.twig' %}
+            <div class="linkbox">{{ pages|raw }}</div>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -2,16 +2,16 @@
 if (!check_perms('admin_dnu')) { error(403); }
 
 show_header('Manage do not upload list');
-$DB->query("SELECT
+$records = $master->db->rawQuery("SELECT
     d.ID,
     d.Name,
     d.Comment,
     d.UserID,
-    um.Username,
+    u.Username,
     d.Time
     FROM do_not_upload as d
-    LEFT JOIN users_main AS um ON um.ID=d.UserID
-    ORDER BY d.Time DESC");
+    LEFT JOIN users AS u ON u.ID=d.UserID
+    ORDER BY d.Time DESC")->fetchAll(\PDO::FETCH_NUM);
 ?>
 <div class="thin">
 <h2>Do Not Upload List</h2>
@@ -27,7 +27,7 @@ $DB->query("SELECT
     <tr class="rowa">
           <form action="tools.php" method="post">
                 <input type="hidden" name="action" value="dnu_alter" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <td>
                       <input class="long"  type="text" name="name" />
                 </td>
@@ -49,14 +49,15 @@ $DB->query("SELECT
         <td width="14%">Submit</td>
     </tr>
 <?php  $Row = 'b';
-while (list($ID, $Name, $Comment, $UserID, $Username, $DNUTime) = $DB->next_record()) {
+foreach ($records as $record) {
+list($ID, $Name, $Comment, $userID, $Username, $DNUTime) = $record;
     $Row = ($Row === 'a' ? 'b' : 'a');
 ?>
     <tr class="row<?=$Row?>">
         <form action="tools.php" method="post">
             <td>
                 <input type="hidden" name="action" value="dnu_alter" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <input type="hidden" name="id" value="<?=$ID?>" />
                 <input class="long" type="text" name="name" value="<?=display_str($Name)?>" />
             </td>
@@ -64,7 +65,7 @@ while (list($ID, $Name, $Comment, $UserID, $Username, $DNUTime) = $DB->next_reco
                 <input class="long"  type="text" name="comment" value="<?=display_str($Comment)?>" />
             </td>
             <td>
-                <?=format_username($UserID, $Username)?><br />
+                <?=format_username($userID)?><br />
                 <?=time_diff($DNUTime, 1)?></td>
             <td>
                 <input type="submit" name="submit" value="Edit" />

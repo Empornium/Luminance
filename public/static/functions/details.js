@@ -1,25 +1,23 @@
-
-function addTag()
-{
+function addTag() {
     if ( $('#taginput').raw().value =='') return false;
     var ToPost = [];
     ToPost['auth'] = authkey;
     ToPost['groupid'] = $('#groupid').raw().value;
     ToPost['tagname'] = $('#taginput').raw().value;
-    ajax.post('torrents.php?action=add_tag', ToPost, function (response) {
+    ajax.post('/torrents.php?action=add_tag', ToPost, function (response) {
         display_tag_response(response);
     });
     $('#taginput').raw().value ='';
 }
 
-function Del_Tag(tagid, groupid, tagsort){
+function Del_Tag(tagid, groupid, tagsort) {
 
     var ToPost = [];
     ToPost['tagid'] = tagid;
     ToPost['groupid'] = groupid;
     ToPost['tagsort'] = tagsort;
     ToPost['auth'] = authkey;
-    ajax.post('torrents.php?action=delete_tag', ToPost, function (response) {
+    ajax.post('/torrents.php?action=delete_tag', ToPost, function (response) {
         display_tag_response(response);
     });
     return false;
@@ -40,17 +38,16 @@ function get_tags(groupid, tagsort, order) {
   tag_name_sort  = [];
   tag_score_sort = [];
   tag_uses_sort  = [];
-  ajax.post('torrents.php?action=get_tags', ToPost, function (response) {
+  ajax.post('/torrents.php?action=get_tags', ToPost, function (response) {
     tag_list=json.decode(response);
-    //console.log(tag_list);
     for (var key in tag_list) {
       tag_name_sort.push( {key:key, name:tag_list[key].name});
       tag_score_sort.push({key:key, score:tag_list[key].score});
       tag_uses_sort.push( {key:key, uses:tag_list[key].uses});
     }
     tag_name_sort.sort(function(x,y) {return (x.name > y.name) ? 1 : ((y.name > x.name) ? -1 : 0);});
-    tag_score_sort.sort(function(x,y){return x.score - y.score});
-    tag_uses_sort.sort(function(x,y){return x.uses - y.uses});
+    tag_score_sort.sort(function(x,y) {return x.score - y.score});
+    tag_uses_sort.sort(function(x,y) {return x.uses - y.uses});
     Resort_Tags(groupid, tagsort, order)
   });
 }
@@ -58,7 +55,7 @@ function get_tags(groupid, tagsort, order) {
 function Resort_Tags(groupid, tagsort, order) {
   if (!in_array(tagsort, sort_types, false)) tagsort = 'uses'
   sort_type = tagsort;
-  if(order == undefined || (order!='asc' && order!='desc')) {
+  if (order == undefined || (order!='asc' && order!='desc')) {
     //alert(order);
     sort_order = (sort_order=='desc')?'asc':'desc';
     //alert(sort_order);
@@ -68,11 +65,11 @@ function Resort_Tags(groupid, tagsort, order) {
   // Clear the table and fetch the template
   jQuery("#torrent_tags_list").empty();
   template = jQuery("#tag_template").html();
-  if(sort_type == 'az')    tag_sort = tag_name_sort.slice(0);
-  if(sort_type == 'score') tag_sort = tag_score_sort.slice(0);
-  if(sort_type == 'uses')  tag_sort = tag_uses_sort.slice(0);
+  if (sort_type == 'az')    tag_sort = tag_name_sort.slice(0);
+  if (sort_type == 'score') tag_sort = tag_score_sort.slice(0);
+  if (sort_type == 'uses')  tag_sort = tag_uses_sort.slice(0);
 
-  if(sort_order=='desc')   tag_sort.reverse();
+  if (sort_order=='desc')   tag_sort.reverse();
 
   jQuery.each(tag_sort, function(index, tag) {
     var tag_temp = template;
@@ -94,15 +91,14 @@ function Resort_Tags(groupid, tagsort, order) {
 
   var i=0;
   for (i=0;i<4;i++) {
-    if( sort_types[i]==sort_type) $('#sort_' + sort_types[i]).add_class("sort_select");
+    if ( sort_types[i]==sort_type) $('#sort_' + sort_types[i]).add_class("sort_select");
     else $('#sort_' + sort_types[i]).remove_class("sort_select");
   }
   Write_Tagsort_Cookie();
   return false;
 }
 
-function display_tag_response(response)
-{
+function display_tag_response(response) {
     var x = json.decode(response);
     if (is_array(x)) {
         if (!is_array(x[0])) {
@@ -124,27 +120,32 @@ function display_tag_response(response)
     //$('#tags').raw().scrollIntoView();
 }
 
-function Vote_Tag(tagname, tagid, groupid, way)
-{
+function Vote_Tag(tagname, tagid, groupid, way) {
   var ToPost = [];
   ToPost['tagid'] = tagid;
   ToPost['groupid'] = groupid;
   ToPost['way'] = way;
   ToPost['auth'] = authkey;
-  ajax.post('torrents.php?action=vote_tag', ToPost, function (response) {
+  ajax.post('/torrents.php?action=vote_tag', ToPost, function (response) {
     var x = json.decode(response);
-    if ( is_array(x)){
-      if(x[0]==0){    // already voted so no vote
-        $('#messagebar').add_class('alert');
-      } else {        // vote was counted
-        $('#messagebar').remove_class('alert');
-        var score = parseInt( $('#tagscore' + tagid).raw().innerHTML) + x[0];
-        if (score<0) // remove negative scores (they are already removed from the db)
-          jQuery('#tlist' + tagid).remove();
-        else // update with new vote score
-          $('#tagscore' + tagid).html(score);
+    if (is_array(x)) {
+      if (!is_array(x[0])) { // single message only
+          x = [x];
       }
-      $('#messagebar').html(x[1] +tagname);
+      x.forEach(
+        function(x) {
+        if (x[0]==0) {    // already voted so no vote
+          $('#messagebar').add_class('alert');
+        } else {        // vote was counted
+          $('#messagebar').remove_class('alert');
+          var score = x[0];
+          if (score<0) // remove negative scores (they are already removed from the db)
+            jQuery('#tlist' + tagid).remove();
+          else // update with new vote score
+            $('#tagscore' + tagid).html(score);
+        }
+        $('#messagebar').html(x[1] +tagname);
+      });
     } else { // a non array == an error
       $('#messagebar').add_class('alert');
       $('#messagebar').html(x);
@@ -156,15 +157,31 @@ function Vote_Tag(tagname, tagid, groupid, way)
   return false;
 }
 
-function Send_Okay_Message(group_id, conv_id){
-    if(conv_id==0) conv_id = null;
-    if (confirm("Make sure you have really fixed the problem before sending this message!\n\nAre you sure it is fixed?")){
+function Quick_Notify_Tag(tagname, tagid, groupid, tagsort) {
+
+  var ToPost = [];
+  ToPost['tagid'] = tagid;
+  ToPost['groupid'] = groupid;
+  ToPost['tagname'] = tagname;
+  ToPost['auth'] = authkey;
+  ajax.post('/torrents.php?action=quick_notify_tag', ToPost, function (response) {
+      display_tag_response(response);
+  });
+  if (confirm("Tag has been saved!")) {
+    setTimeout(location.reload.bind(location), 30);
+  }
+  return false;
+}
+
+function Send_Okay_Message(group_id, conv_id) {
+    if (conv_id==0) conv_id = null;
+    if (confirm("Make sure you have really fixed the problem before sending this message!\n\nAre you sure it is fixed?")) {
 
     var ToPost = [];
     ToPost['groupid'] = group_id;
     ToPost['auth'] = authkey;
     if (conv_id) ToPost['convid'] = conv_id;
-        ajax.post('?action=send_okay_message', ToPost, function (response) {
+        ajax.post('/torrents.php?action=send_okay_message', ToPost, function (response) {
             // show  user response
             conv_id = response;
             $('#user_message').raw().innerHTML = '<div class="messagebar"><a href="staffpm.php?action=viewconv&id=' + conv_id + '">Message sent to staff</a></div>';
@@ -174,37 +191,41 @@ function Send_Okay_Message(group_id, conv_id){
     return false;
 }
 
-function Validate_Form_Reviews(status){
-    if(status == 'Warned' || status== 'Pending'){
+function Validate_Form_Reviews(status) {
+    if (status == 'Warned' || status== 'Pending') {
         return confirm("Are you sure you want to override the warning already in process?");
-    } else if(status == 'Okay'){
+    } else if (status == 'Okay') {
         return confirm("Are you sure you want to override the okay status?");
     }
     return true;
 }
 
-function Select_Reason(overwrite_warn){
+function Select_Reason(element, overwrite_warn) {
+    var form = jQuery(element).closest("form");
+    var value = form.find('[name="reasonid"]').val();
+    // Sync the other element
+    jQuery('[name="reasonid"]').val(value);
 
-    var value = $('#reasonid').raw().value;
-    //if reason == -1 (not set)
-    if(value == -1){
-        $('#mark_delete_button').disable();
-        $('#review_message').hide();
-        $('#warn_insert').html('');
+    if (value == -1) {
+        jQuery('[data-id="mfd"]').prop('disabled', true);
+        jQuery('[name="review_message"]').addClass("hidden");
+        jQuery('[name="warn_insert"]').html('');
     } else { // is set
-    var ToPost = [];
-    ToPost['groupid'] = $('#groupid').raw().value;
-    ToPost['reasonid'] = $('#reasonid').raw().value;
-        ajax.post('?action=get_review_message', ToPost, function (response) {
+        var ToPost = [];
+        ToPost['groupid'] = form.find('[name="groupid"]').val();
+        ToPost['reasonid'] = form.find('[name="reasonid"]').val();
+        ajax.post('/torrents.php?action=get_review_message', ToPost, function (response) {
             //enable button and show pm response
-            $('#mark_delete_button').disable(false);
-            //if reason == other then show textarea
-            if (value == 0 )$('#reason_other').show();
-            else $('#reason_other').hide();
-            $('#message_insert').raw().innerHTML = response;
-            $('#review_message').show();
-            if (overwrite_warn){
-                $('#warn_insert').html("Are you sure you want to override the current status?");
+            jQuery('[data-id="mfd"]').prop('disabled', false);
+            if (value == 0 ) {
+                form.find('#reason_other').removeClass("hidden");
+            } else {
+                form.find('#reason_other').addClass("hidden");
+            }
+            jQuery('[name="message_insert"]').html(response);
+            jQuery('[name="review_message"]').removeClass("hidden");
+            if (overwrite_warn) {
+                jQuery('[name="warn_insert"]').html("Are you sure you want to override the current status?");
             }
         });
     }
@@ -212,7 +233,7 @@ function Select_Reason(overwrite_warn){
 }
 
 function Tools_Toggle() {
-    if ($('#slide_tools_button').raw().innerHTML=='Hide Tools'){
+    if ($('#slide_tools_button').raw().innerHTML=='Hide Tools') {
         jQuery.cookie('torrentDetailsToolState', 'collapsed', { expires: 100 });
         $('#slide_tools_button').raw().innerHTML=('Show Tools');
         jQuery('#staff_tools').hide();
@@ -225,15 +246,14 @@ function Tools_Toggle() {
     return false;
 }
 
-
-function Load_Tools_Cookie()  {
+function Load_Tools_Cookie() {
   var panel = jQuery('#staff_tools');
   var button = jQuery('#slide_tools_button');
 
-  if(jQuery.cookie('torrentDetailsToolState') == undefined) {
+  if (jQuery.cookie('torrentDetailsToolState') == undefined) {
     jQuery.cookie('torrentDetailsToolState', 'expanded', { expires: 100 });
   }
-  if(jQuery.cookie('torrentDetailsToolState') == 'collapsed') {
+  if (jQuery.cookie('torrentDetailsToolState') == 'collapsed') {
     panel.hide();
     button.text('Show Tools');
   } else {
@@ -241,21 +261,13 @@ function Load_Tools_Cookie()  {
       }
 }
 
-
 function Details_Toggle() {
-    //var state = new Array();
-    //state[1]=((jQuery('#coverimage').is(':hidden'))?'0':'1');
-    //state[2]=((jQuery('#tag_container').is(':hidden'))?'0':'1');
-
-    jQuery('#details_top').slideToggle('700', function(){
+    jQuery('#details_top').slideToggle('700', function() {
 
         if (jQuery('#details_top').is(':hidden'))
             jQuery('#slide_button').html('Show Info');
         else
             jQuery('#slide_button').html('Hide Info');
-
-        //state[0]=((jQuery('#details_top').is(':hidden'))?'0':'1');
-        //jQuery.cookie('torrentDetailsState', json.encode(state), { expires: 100 });
 
         jQuery.cookie('torrentDetailsState', Get_Cookie(), { expires: 100 });
 
@@ -316,64 +328,65 @@ function BuyFL_Toggle() {
 }
 
 function Get_Cookie() {
-    return json.encode([((jQuery('#details_top').is(':hidden'))?'0':'1'),
-                        ((jQuery('#coverimage').is(':hidden'))?'0':'1'),
-                        ((jQuery('#tag_container').is(':hidden'))?'0':'1'),
-                        ((jQuery('#donatediv').is(':hidden'))?'0':'1'),
-                        ((jQuery('#descbox').is(':hidden'))?'0':'1')]);
+    return json.encode(
+        [
+            ((jQuery('#details_top').is(':hidden'))?'0':'1'),
+            ((jQuery('#coverimage').is(':hidden'))?'0':'1'),
+            ((jQuery('#tag_container').is(':hidden'))?'0':'1'),
+            ((jQuery('#donatediv').is(':hidden'))?'0':'1'),
+            ((jQuery('#descbox').is(':hidden'))?'0':'1')
+        ]
+    );
 }
-
 
 function Write_Tagsort_Cookie() {
     jQuery.cookie('tagsort', json.encode([sort_type, sort_order]), { expires: 100 });
 }
 
-
-function Load_Tagsort_Cookie()  {
-  if(jQuery.cookie('tagsort') == undefined) {
+function Load_Tagsort_Cookie() {
+  if (jQuery.cookie('tagsort') == undefined) {
     jQuery.cookie('tagsort', json.encode(['uses', 'desc']));
   }
   var state = json.decode( jQuery.cookie('tagsort') );
   get_tags( $('#sort_groupid').raw().value, state[0], state[1]);
 }
 
-
-function Load_Details_Cookie()  {
+function Load_Details_Cookie() {
 
   // the div that will be hidden/shown
   var panel = jQuery('#details_top');
   var button = jQuery('#slide_button');
 
-  if(jQuery.cookie('torrentDetailsState') == undefined) {
+  if (jQuery.cookie('torrentDetailsState') == undefined) {
     jQuery.cookie('torrentDetailsState', json.encode(['1', '1', '1', '1','1']));
   }
   var state = json.decode( jQuery.cookie('torrentDetailsState') );
 
-  if(state[0] == '0') {
+  if (state[0] == '0') {
     panel.hide();
     button.text('Show Info');
   } else
     button.text('Hide Info');
 
-  if(state[1] == '0') {
+  if (state[1] == '0') {
     jQuery('#coverimage').hide();
     jQuery('#covertoggle').text('(Show)');
       } else
     jQuery('#covertoggle').text('(Hide)');
 
-  if(state[2] == '0') {
+  if (state[2] == '0') {
     jQuery('#tag_container').hide();
     jQuery('#tagtoggle').text('(Show)');
       } else
     jQuery('#tagtoggle').text('(Hide)');
 
-  if(state[3] == '0') {
+  if (state[3] == '0') {
     jQuery('#donatediv').hide();
     jQuery('#donatebutton').text('(Show)');
       } else
     jQuery('#donatebutton').text('(Hide)');
 
-  if(state[4] == '0') {
+  if (state[4] == '0') {
     jQuery('#descbox').hide();
     jQuery('#desctoggle').text('(Show)');
       } else
@@ -382,13 +395,13 @@ function Load_Details_Cookie()  {
 
  function Say_Thanks() {
     $('#thanksbutton').raw().disabled=true;
-    ajax.post("torrents.php?action=thank","thanksform", function (response) {
-        if(response=='err_group'){
+    ajax.post("/torrents.php?action=thank","thanksform", function (response) {
+        if (response=='err_group') {
             alert('Error: GroupID not set!');
-        } else if(response=='err_user'){
+        } else if (response=='err_user') {
             alert('Error: You already said THANKS!');
         } else {
-            if($('#thankstext').raw().innerHTML!='') response = ', ' + response;
+            if ($('#thankstext').raw().innerHTML!='') response = ', ' + response;
             $('#thankstext').raw().innerHTML += response;
             $('#thanksdigest').raw().innerHTML = 'The following '+$('#thankstext').raw().innerHTML.split(' ').length+' people said thanks!';
             $('#thanksform').hide();
@@ -399,15 +412,15 @@ function Load_Details_Cookie()  {
 
 /* Torrent Details:  Show various tables etc dynamically */
 
-function show_peers (TorrentID, Page) {
-  if(Page>0) {
-    ajax.get('torrents.php?action=peerlist&page='+Page+'&torrentid=' + TorrentID,function(response){
+function show_peers(TorrentID, Page) {
+  if (Page>0) {
+    ajax.get('/torrents.php?action=peerlist&page='+Page+'&torrentid=' + TorrentID,function(response) {
       $('#peers_' + TorrentID).show().raw().innerHTML=response;
     });
   } else {
     if ($('#peers_' + TorrentID).raw().innerHTML === '') {
       $('#peers_' + TorrentID).show().raw().innerHTML = '<h4>Loading...</h4>';
-      ajax.get('torrents.php?action=peerlist&torrentid=' + TorrentID,function(response){
+      ajax.get('/torrents.php?action=peerlist&torrentid=' + TorrentID,function(response) {
         $('#peers_' + TorrentID).show().raw().innerHTML=response;
       });
     } else {
@@ -420,15 +433,15 @@ function show_peers (TorrentID, Page) {
   $('#reported_' + TorrentID).hide();
 }
 
-function show_snatches (TorrentID, Page){
-  if(Page>0) {
-    ajax.get('torrents.php?action=snatchlist&page='+Page+'&torrentid=' + TorrentID,function(response){
+function show_snatches(TorrentID, Page) {
+  if (Page>0) {
+    ajax.get('/torrents.php?action=snatchlist&page='+Page+'&torrentid=' + TorrentID,function(response) {
       $('#snatches_' + TorrentID).show().raw().innerHTML=response;
     });
   } else {
     if ($('#snatches_' + TorrentID).raw().innerHTML === '') {
       $('#snatches_' + TorrentID).show().raw().innerHTML = '<h4>Loading...</h4>';
-      ajax.get('torrents.php?action=snatchlist&torrentid=' + TorrentID,function(response){
+      ajax.get('/torrents.php?action=snatchlist&torrentid=' + TorrentID,function(response) {
         $('#snatches_' + TorrentID).show().raw().innerHTML=response;
       });
     } else {
@@ -441,15 +454,15 @@ function show_snatches (TorrentID, Page){
   $('#reported_' + TorrentID).hide();
 }
 
-function show_downloads (TorrentID, Page){
-  if(Page>0) {
-    ajax.get('torrents.php?action=downloadlist&page='+Page+'&torrentid=' + TorrentID,function(response){
+function show_downloads(TorrentID, Page) {
+  if (Page>0) {
+    ajax.get('/torrents.php?action=downloadlist&page='+Page+'&torrentid=' + TorrentID,function(response) {
       $('#downloads_' + TorrentID).show().raw().innerHTML=response;
     });
   } else {
     if ($('#downloads_' + TorrentID).raw().innerHTML === '') {
       $('#downloads_' + TorrentID).show().raw().innerHTML = '<h4>Loading...</h4>';
-      ajax.get('torrents.php?action=downloadlist&torrentid=' + TorrentID,function(response){
+      ajax.get('/torrents.php?action=downloadlist&torrentid=' + TorrentID,function(response) {
         $('#downloads_' + TorrentID).raw().innerHTML=response;
       });
     } else {
@@ -462,7 +475,7 @@ function show_downloads (TorrentID, Page){
   $('#reported_' + TorrentID).hide();
 }
 
-function show_files(TorrentID){
+function show_files(TorrentID) {
   $('#files_' + TorrentID).toggle();
   $('#peers_' + TorrentID).hide();
   $('#snatches_' + TorrentID).hide();
@@ -470,7 +483,7 @@ function show_files(TorrentID){
   $('#reported_' + TorrentID).hide();
 }
 
-function show_reported(TorrentID){
+function show_reported(TorrentID) {
   $('#files_' + TorrentID).hide();
   $('#peers_' + TorrentID).hide();
   $('#snatches_' + TorrentID).hide();
@@ -481,19 +494,6 @@ function show_reported(TorrentID){
 addDOMLoadEvent(Load_Details_Cookie);
 addDOMLoadEvent(Load_Tagsort_Cookie);
 
-var lastScrollTop = 0;
-
-jQuery(window).scroll(function(){
-    if (jQuery(window).scrollTop() >= 200) {
-        var thisScrollTop = jQuery(window).scrollTop();
-        if (thisScrollTop < lastScrollTop) {
-            jQuery('#details-sidebar').addClass('visible');
-        } else {
-           jQuery('#details-sidebar').removeClass('visible');
-        }
-        lastScrollTop = thisScrollTop;
-    }
-    else {
-       jQuery('#details-sidebar').removeClass('visible');
-    }
-});
+jQuery(document).ready(function() {
+    Load_Tools_Cookie();
+})

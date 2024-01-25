@@ -1,0 +1,33 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/sandbox">Sandbox</a>
+{% endblock %}
+
+{% block main_content %}
+    <div class="head"></div>
+    <form action="" method="post" id="messageform">
+            <div class="box pad">
+                <h3 class="center">Practice your bbCode skills here</h3>
+                <br/>
+                <div id="preview" class="hidden"><br/>
+                    <h3 class="left">Preview:</h3>
+                    <div class="box pad">
+                    <div id="preview_content" class="body">
+                    </div>
+                    </div>
+                </div>
+                {{ bbcode.display_bbcode_assistant("body", get_permissions_advtags(ActiveUser.ID, ActiveUser.CustomPermissions)) }}
+                <textarea id="body" name="body" class="long" rows="10" onkeyup="resize('body');" ></textarea>
+                <div class="center">
+                    <input  id="preview_button" type="button" value="Preview" onclick="Sandbox_Preview();" />
+                </div>
+                <span style="float:right"><a href="/sandbox/smilies" target="_blank">list of smileys</a></span>
+                <br/>
+            </div>
+      </form>
+{% endblock %}

@@ -2,54 +2,95 @@
 header('Content-Type: application/json; charset=utf-8');
 
 
-$master->repos->restrictions->check_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::TAGGING);
+$master->repos->restrictions->checkRestricted($activeUser['ID'], Luminance\Entities\Restriction::TAGGING);
 
 include(SERVER_ROOT . '/Legacy/sections/torrents/functions.php');
 
-$TagID = db_string($_POST['tagid']);
-$GroupID = db_string($_POST['groupid']);
+$TagID = $_POST['tagid'];
+$GroupID = $_POST['groupid'];
 
-if (!is_number($TagID) || !is_number($GroupID)) {
+if (!is_integer_string($TagID) || !is_integer_string($GroupID)) {
     error(0, true);
 }
 
-$DB->query("SELECT Name, TagType FROM tags WHERE ID='$TagID'");
-list($TagName, $TagType) = $DB->next_record();
+list($TagName, $TagType) = $master->db->rawQuery(
+    "SELECT Name,
+            TagType
+       FROM tags
+      WHERE ID = ?",
+    [$TagID]
+)->fetch(\PDO::FETCH_NUM);
 if (!$TagName) error(0, true);
 
 if (!check_perms('site_delete_tag')) {
     //only need to check this if not already permitted
-    $DB->query("SELECT t.UserID, tt.UserID
-                  FROM torrents AS t
-             LEFT JOIN torrents_tags AS tt
-                    ON t.GroupID=tt.GroupID
-                   AND tt.TagID='$TagID'
-                 WHERE t.GroupID='$GroupID'");
-    list($AuthorID,$OwnerID) = $DB->next_record();
+    list($AuthorID, $OwnerID) = $master->db->rawQuery(
+        "SELECT t.UserID,
+                tt.UserID
+           FROM torrents AS t
+      LEFT JOIN torrents_tags AS tt
+             ON t.GroupID = tt.GroupID
+            AND tt.TagID = ?
+          WHERE t.GroupID = ?",
+        [$TagID, $GroupID]
+    )->fetch(\PDO::FETCH_NUM);
     // must be both torrent owner and tag owner to delete
-    if ($AuthorID!=$OwnerID || $AuthorID!=$LoggedUser['ID']) error(403, true);
+    if ($AuthorID!=$OwnerID || $AuthorID!=$activeUser['ID']) error(403, true);
 }
 
-$DB->query("INSERT INTO group_log (GroupID, UserID, Time, Info)
-                VALUES ('$GroupID',".$LoggedUser['ID'].",'".sqltime()."','".db_string('Tag "'.$TagName.'" removed from group')."')");
-$DB->query("DELETE FROM torrents_tags_votes WHERE GroupID='$GroupID' AND TagID='$TagID'");
-$DB->query("DELETE FROM torrents_tags WHERE GroupID='$GroupID' AND TagID='$TagID'");
+$master->db->rawQuery(
+    "INSERT INTO group_log (GroupID, UserID, Time, Info)
+          VALUES (?, ?, ?, ?)",
+    [$GroupID, $activeUser['ID'], sqltime(), "Tag {$TagName} removed from group"]
+);
 
-$Cache->delete_value('torrents_details_'.$GroupID); // Delete torrent group cache
+$master->db->rawQuery(
+    "DELETE
+       FROM torrents_tags_votes
+      WHERE GroupID = ?
+        AND TagID = ?",
+    [$GroupID, $TagID]
+);
+
+$master->db->rawQuery(
+    "DELETE
+       FROM torrents_tags
+      WHERE GroupID = ?
+        AND TagID = ?",
+    [$GroupID, $TagID]
+);
+
+$master->cache->deleteValue('torrents_details_'.$GroupID); // Delete torrent group cache
 update_hash($GroupID);
 
 // Decrease the tag count, if it's not in use any longer and not an official tag, delete it from the list.
-$DB->query("SELECT COUNT(GroupID) FROM torrents_tags WHERE TagID=".$TagID);
-list($Count) = $DB->next_record();
-if ($TagType == 'genre' || $Count > 0) {
-    $Count = $Count > 0 ? $Count : 0;
-    $DB->query("UPDATE tags SET Uses=$Count WHERE ID=$TagID");
+$count = $master->db->rawQuery(
+    "SELECT COUNT(GroupID)
+       FROM torrents_tags
+      WHERE TagID = ?",
+    [$TagID]
+)->fetchColumn();
+
+if ($TagType == 'genre' || $count > 0) {
+    $count = $count > 0 ? $count : 0;
+    $master->db->rawQuery(
+        "UPDATE tags
+            SET Uses = Uses - 1
+          WHERE ID = ?",
+        [$TagID]
+    );
 } else {
-    $DB->query("DELETE FROM tags WHERE ID=".$TagID." AND TagType='other'");
+    $master->db->rawQuery(
+        "DELETE
+           FROM tags
+          WHERE ID = ?
+            AND TagType='other'",
+        [$TagID]
+    );
 
     // Delete tag cache entry
-    $Cache->delete_value('tag_id_'.$TagName);
+    $master->cache->deleteValue('tag_id_'.$TagName);
 }
 
-$Result = array(1, "Deleted tag $TagName");
-echo json_encode(array(array($Result), get_taglist_html($GroupID, $_POST['tagsort'])));
+$Result = [1, "Deleted tag $TagName"];
+echo json_encode([[$Result], get_taglist_html($GroupID, $_POST['tagsort'])]);

@@ -2,41 +2,54 @@
 authorize();
 
 
-$GroupID = $_POST['groupid'];
-$OldGroupID = $GroupID;
-$NewName = db_string( trim( $_POST['name']) );
+$groupID = $_POST['groupid'];
+$OldGroupID = $groupID;
+$NewName = trim($_POST['name']);
 
-if (!$GroupID || !is_number($GroupID)) { error(404); }
+if (!$groupID || !is_integer_string($groupID)) { error(404); }
 
-$DB->query("SELECT UserID FROM torrents WHERE GroupID='$GroupID'");
-if ($DB->record_count() > 0) {
-    list($AuthorID) = $DB->next_record();
-} else {
-    $AuthorID = null;
-}
-$CanEdit = check_perms('torrents_edit') || ($AuthorID == $LoggedUser['ID']);
+$AuthorID = $master->db->rawQuery(
+        'SELECT UserID
+           FROM torrents_group
+         WHERE ID = ?',
+        [$groupID]
+    )->fetchColumn();
+$CanEdit = check_perms('torrent_edit') || ($AuthorID == $activeUser['ID']);
 
 if (!$CanEdit) { error(403); }
 
-$Text = new Luminance\Legacy\Text;
-$Validate = new Luminance\Legacy\Validate;
+// prevent a user from editing a torrent once it is marked as "Okay", but let
+// staff edit!
+$Review = get_last_review($groupID);
+if ($Review['Status'] == 'Okay' && !check_perms('torrent_edit')) {
+    if (!check_perms('site_edit_override_review')) {
+        error("Sorry - once a torrent has been reviewed by staff and passed it is automatically locked.");
+    }
+}
 
-$Validate->SetFields('name', '1', 'string', 'You must enter a Title.', array('maxlength' => 200, 'minlength' => 2, 'maxwordlength'=>TITLE_MAXWORD_LENGTH));
+$bbCode = new \Luminance\Legacy\Text;
+$Validate = new \Luminance\Legacy\Validate;
 
-$Err = $Validate->ValidateForm($_POST, $Text); // Validate the form
+$Validate->SetFields('name', '1', 'string', 'You must enter a Title.', ['maxlength' => 200, 'minlength' => 2, 'maxwordlength'=>200]);
+
+$Err = $Validate->ValidateForm($_POST, $bbCode); // Validate the form
 
 if ($Err) error($Err);
 
-$DB->query("SELECT Name, Body FROM torrents_group WHERE ID = ".$GroupID);
-list($OldName, $Body) = $DB->next_record();
-$SearchText = $NewName . ' ' . db_string($Text->db_clean_search(trim($Body)));
+$group = $master->repos->torrentgroups->load($groupID);
+$OldName = $group->Name;
+$SearchText = "{$NewName} {$bbCode->db_clean_search(trim($group->Body))}";
 
-$DB->query("UPDATE torrents_group SET Name='$NewName', SearchText='$SearchText' WHERE ID='$GroupID'");
-$Cache->delete_value('torrents_details_'.$GroupID);
+# Update group entity
+$group->Name        = $NewName;
+$group->SearchText  = $SearchText;
+$master->repos->torrentgroups->save($group);
 
-update_hash($GroupID);
+$master->cache->deleteValue('torrents_details_'.$groupID);
 
-write_log("Torrent Group ".$GroupID." (".$OldName.")  was renamed to '".$NewName."' by ".$LoggedUser['Username']);
-write_group_log($GroupID, 0, $LoggedUser['ID'], "renamed to ".$NewName." from ".$OldName, 0);
+update_hash($groupID);
 
-header('Location: torrents.php?id='.$GroupID."&did=2");
+write_log("Torrent Group {$groupID} ({$OldName})  was renamed to '{$NewName}' by {$activeUser['Username']}");
+write_group_log($groupID, 0, $activeUser['ID'], "renamed to {$NewName} from {$OldName}", 0);
+
+header('Location: torrents.php?id='.$groupID."&did=2");

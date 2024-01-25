@@ -1,0 +1,102 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block title %}{{ request.getGetString('type') == 'group' ? 'Groups' : 'Personal' }} > Reminders{% endblock %}
+
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : true,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : true,
+    'noGroup'   : true,
+    'noClass'   : true,
+    'noTitle'   : true,
+} %}
+
+{% block main_content %}
+    <div class="thin">
+        <div class="head" align="center">
+            <a href="/user/new/reminder">Create New</a>
+            {% if (auth.isAllowed('users_fls')) %}
+                {% if request.getGetString('type') == 'group' %}
+                    &nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;
+                    <a href="/user/reminders?type=pers">View Personal Reminders</a>
+                {% else %}
+                    &nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;
+                    <a href="/user/reminders?type=group">View Group Reminders</a>
+                {% endif %}
+            {% endif %}
+            {% if request.getGetString('ext') != 'completed' %}
+                &nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;
+                <a href="/user/reminders?type={{ request.getGetString('type') }}&ext=completed">View Completed Reminders</a>
+            {% endif %}
+            {% if request.getGetString('ext') != 'cancelled' %}
+                &nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;
+                <a href="/user/reminders?type={{ request.getGetString('type') }}&ext=cancelled">View Cancelled Reminders</a>
+            {% endif %}
+        </div>
+        {% if request.getGetString('ext') == 'completed' %}
+            <h2>Completed Reminders</h2>
+        {% elseif request.getGetString('ext') == 'cancelled' %}
+            <h2>Cancelled Reminders</h2>
+        {% else %}
+            {% if total >= 1 %}
+                <h2>Active {{ request.getGetString('type') == 'group' ? 'Group' : 'Personal' }} Reminders</h2>
+            {% else %}
+                <h2>You have no active {{ request.getGetString('type') == 'group' ? 'group' : 'personal' }} reminders</h2>
+            {% endif %}
+        {% endif %}
+        <div class="linkbox">{{ pages|raw }}</div>
+        {% for entry in entries %}
+            {% set sticky = '' %}
+            {% set completed = '' %}
+            {% set cancelled = '' %}
+            {% if entry.getFlag(constant('Luminance\\Entities\\Reminder::SHARED')) %}
+                {% set sticky = 'sticky' %}
+            {% endif %}
+            {% if entry.getFlag(constant('Luminance\\Entities\\Reminder::COMPLETED')) %}
+                {% set completed = 'complete' %}
+            {% endif %}
+            {% if entry.getFlag(constant('Luminance\\Entities\\Reminder::CANCELLED')) %}
+                {% set cancelled = 'cancelled' %}
+            {% endif %}
+            {% if sticky and not cancelled and not completed %}
+                <div class="box pad"><div class="head">
+                    <strong>Group - {{ entry.Subject }}</strong>
+                    <span class="float_right">Created by {{ render.username(entry.UserID, usernameOptions) }} at {{ time_diff(entry.Created)|raw }}</span><br>
+                    <span class="float_left">
+                        <a href="/user/{{ entry.ID }}/reminder">[Edit]</a>
+                        <a href="/user/{{ entry.ID }}/cancelReminder&amp;token={{ secretary.getToken('user.reminder.cancel') }}">[Cancel]</a>
+                    </span>
+                    <span class="float_center">
+                        {% for class in classes if class.IsUserClass == '1' %}
+                            {% if entry.StaffLevel == class.Level %}
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                <b>{{ class.Name|truncate(25)}}+</b>&nbsp;&nbsp;
+                            {% endif %}
+                        {% endfor %}
+                    </span>
+                    <span class="float_right">Due <b>{{ time_diff(entry.RemindDate)|raw }}</b>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                </div>
+                <div class="box vertical_space">
+                    <div class="pad">{{ bbcode.full_format(entry.Note, true)|raw }}</div>
+                </div></div><br>
+            {% endif %}
+            {% if not sticky and not cancelled and not completed %}
+                <div class="box pad"><div class="head">
+                    <strong>{{ entry.Subject }}</strong>
+                    <span class="float_right">Created by {{ render.username(entry.UserID, usernameOptions) }} at {{ time_diff(entry.Created)|raw }}</span><br>
+                    <span class="float_left">
+                        <a href="/user/{{ entry.ID }}/reminder">[Edit]</a>
+                        <a href="/user/{{ entry.ID }}/cancelReminder&amp;token={{ secretary.getToken('user.reminder.cancel') }}">[Cancel]</a>
+                    </span>
+                    <span class="float_right">Due <b>{{ time_diff(entry.RemindDate)|raw }}</b>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                </div>
+                <div class="box vertical_space">
+                    <div class="pad">{{ bbcode.full_format(entry.Note, true)|raw }}</div>
+                </div></div><br>
+            {% endif %}
+        {% endfor %}
+        <div class="linkbox">{{ pages|raw }}</div>
+    </div>
+{% endblock %}

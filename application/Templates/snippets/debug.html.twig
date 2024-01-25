@@ -1,0 +1,268 @@
+{% set debug = master.debug %}
+{% if debug.commit is not empty %}
+    <table class="debug_table_head" width="100%">
+        <tr>
+            <td align="left">
+                <strong>
+                    <a href="#" onclick="$('#debug_commit').toggle();return false;">(View)</a>
+                    Git commit:
+                </strong>
+            </td>
+        </tr>
+    </table>
+    <table id="debug_commit" class="debug_table hidden" width="100%">
+        {% for key, value in debug.commit %}
+            <tr>
+                <td></td>
+                <td>
+                    <b>
+                        {{ key }}:
+                    </b>
+                </td>
+                <td>
+                    {{ value }}
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
+
+{% if debug.getFlags() is not empty %}
+    <table class="debug_table_head" width="100%">
+        <tr>
+            <td align="left">
+                <strong>
+                    <a href="#" onclick="$('#debug_flags').toggle();return false;">(View)</a>
+                    Flags:
+                </strong>
+            </td>
+        </tr>
+    </table>
+    <table id="debug_flags" class="debug_table hidden" width="100%">
+        {% for flag in debug.getFlags() %}
+            <tr valign="top">
+                <td align="left">{{ flag.event }}</td>
+                <td align="left">{{ flag.microtime }} ms</td>
+                <td align="left">{{ get_size(flag.memory) }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
+
+{% if debug.errors is not empty %}
+    <table class="debug_table_head" width="100%">
+        <tr>
+            <td align="left">
+                <strong>
+                    <a href="#" onclick="$('#debug_error').toggle();return false;">(View)</a>
+                    {{ debug.errors|length|number_format() }} Errors:
+                </strong>
+            </td>
+        </tr>
+    </table>
+    <table id="debug_error" class="debug_table hidden" width="100%">
+        {% for error in debug.errors %}
+            <tr valign="top">
+                <td align="left">{{ error.call|decode }}({{ error.args|decode }})</td>
+                <td class="debug_data debug_error_data" align="left">{{ error.error|decode }}</td>
+                <td align="left">{{ error.location|decode }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
+
+{% set permissions = master.auth.usedPermissions %}
+{% if permissions is not empty %}
+    <table class="debug_table_head" width="100%">
+        <tr>
+            <td align="left">
+                <strong>
+                    <a href="#" onclick="$('#debug_perms').toggle();return false;">(View)</a>
+                    {{ permissions|length|number_format() }} Permissions:
+                </strong>
+            </td>
+        </tr>
+    </table>
+    <table id="debug_perms" class="debug_table hidden" width="100%">
+        {% for permission, checked in permissions %}
+            <tr valign="top">
+                <td align="left">{{ permission }}</td>
+                <td align="left">checked {{ checked }} times</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
+
+{% set templates = static('Luminance\\Services\\TPL', 'templates') %}
+{% set templateTime = static('Luminance\\Services\\TPL', 'time') %}
+{% if templates is not empty %}
+    <table class="debug_table_head" width="100%">
+        <tr>
+            <td align="left">
+                <strong>
+                    <a href="#" onclick="$('#debug_templates').toggle();return false;">(View)</a>
+                    {{ templates|length|number_format() }} Templates ({{ templateTime|number_format(5) }} ms):
+                </strong>
+            </td>
+        </tr>
+    </table>
+    <table id="debug_templates" class="debug_table hidden" width="100%">
+        {% for key, template in templates %}
+            <tr valign="top">
+                <td>
+                    <a href="#" onclick="$('#debug_template_{{ key|decode }}').toggle(); return false;">{{ template.filename|decode }}</a>
+                </td>
+                <td align="left" class="debug_data">
+                    <pre id="debug_template_{{ key|decode }}" class="hidden">{{ var_dump(template.data) }}</pre>
+                </td>
+                <td class="rowa" style="width:130px;" align="left">{{ template.microtime|number_format(5) }} ms</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
+
+{% set bbCode = static('Luminance\\Legacy\\Text', 'bbcode') %}
+{% set bbCodeTime = static('Luminance\\Legacy\\Text', 'time') %}
+{% if bbCode is not empty %}
+    <table class="debug_table_head" width="100%">
+        <tr>
+            <td align="left">
+                <strong>
+                    <a href="#" onclick="$('#debug_bbcodes').toggle();return false;">(View)</a>
+                    {{ bbCode|length|number_format() }} BBCode ({{ bbCodeTime|number_format(5) }} ms):
+                </strong>
+            </td>
+        </tr>
+    </table>
+    <table id="debug_bbcodes" class="debug_table hidden" width="100%">
+        {% for bbcode in bbCode %}
+            <tr valign="top">
+                <td class="debug_data">
+                    <pre>
+                    {{ bbcode.bbcode|trim }}
+                    </pre>
+                </td>
+                <td class="rowa" style="width:130px;" align="left">{{ bbcode.microtime|number_format(5) }} ms</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
+
+{% set search = master.search %}
+{% if search.queries is not empty %}
+    <table class="debug_table_head" width="100%">
+        <tr>
+            <td align="left">
+                <strong>
+                    <a href="#" onclick="$('#debug_sphinx').toggle();return false;">(View)</a>
+                    {{ search.queries|length|number_format() }} Searches ({{ search.time|number_format(5) }} ms)
+                </strong>
+            </td>
+        </tr>
+    </table>
+    <table id="debug_sphinx" class="debug_table hidden" width="100%">
+        {% for query in search.queries %}
+            <tr valign="top">
+                <td class="debug_data debug_sphinx_data">
+                    <pre>{{ query.query|nl2br|decode }}</pre>
+                </td>
+                <td class="rowa" style="width:130px;" align="left">
+                    {{ query.microtime|number_format(5) }} ms
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
+
+{% set db = master.db %}
+{% if db.queries is not empty %}
+    <table class="debug_table_head" width="100%">
+        <tr>
+            <td align="left">
+                <strong>
+                    <a href="#" onclick="$('#debug_database').toggle();return false;">(View)</a>
+                    {{ db.queries|length|number_format() }} Queries ({{ db.time|number_format(5) }} ms)
+                </strong>
+            </td>
+        </tr>
+    </table>
+    <table id="debug_database" class="debug_table hidden" width="100%">
+        {% for query in db.queries %}
+            <tr valign="top">
+                <td class="debug_data debug_query_data">
+                    {{ query.query|trim|nl2br|decode|replace({"\t": '&nbsp;&nbsp;'})|raw }}
+                </td>
+                <td class="rowa" style="width:130px;" align="left">
+                    {{ query.microtime|number_format(5) }} ms
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
+
+{% set cache = master.cache %}
+{% if cache.hits is not empty %}
+    <table class="debug_table_head" width="100%">
+        <tr>
+            <td align="left">
+                <strong>
+                    <a href="#" onclick="$('#debug_cache').toggle();return false;">(View)</a>
+                    {{ cache.hits|length|number_format() }} Cache Keys ({{ cache.time|number_format(5) }} ms)
+                </strong>
+            </td>
+        </tr>
+    </table>
+    <table id="debug_cache" class="debug_table hidden" width="100%">
+        {% for key, hit in cache.hits %}
+            <tr>
+                <td align="center" style="width:40px; font-size:16px; font-weight:bold;">
+                    {% if cache.hot[key] == true %}
+                        <span style="color:red">HOT</span>
+                    {% else %}
+                        <span style="color:blue">COLD</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="#" onclick="$('#debug_cache_{{ key|decode }}').toggle(); return false;">{{ key|decode }}</a>
+                </td>
+                <td align="left" class="debug_data debug_cache_data">
+                    <pre id="debug_cache_{{ key|decode }}" class="hidden">{{ var_dump(hit) }}</pre>
+                </td>
+                <td class="rowa" style="width:130px;" align="left">{{ cache.times[key]|number_format(5) }} ms</td>
+                <td class="rowa" style="width:50px;" align="left">[<a href="/tools.php?action=clear_cache&amp;key={{ key }}&amp;type=clear&amp;auth={{ ActiveUser.legacy.AuthKey }}" title="clear {{ key }}">clear</a>]</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
+
+{% if debug.loggedVars is not empty%}
+    <table class="debug_table_head" width="100%">
+        <tr>
+            <td align="left">
+                <strong>
+                    <a href="#" onclick="$('#debug_loggedvars').toggle();return false;">(View)</a>
+                    {{ debug.loggedVars|length|number_format() }} Logged Variables
+                </strong>
+            </td>
+        </tr>
+    </table>
+    {#
+    <table id="debug_loggedvars" class="debug_table hidden" width="100%">
+        {% for id,var in debug.loggedVars %}
+            list($Key, $Data) = each($Var);
+            $Size = count($Data['data']);
+            ?>
+
+          <tr>
+              <td align="left">
+                  <a href="#" onclick="$('#debug_loggedvars_<?=$ID?>').toggle(); return false;"><?=display_str($Key)?></a> (<?=$Size . ($Size == 1 ? ' element' : ' elements')?>)
+                  <div><?=$Data['bt']['path'].':'.$Data['bt']['line'];?></div>
+              </td>
+              <td class="debug_data debug_loggedvars_data" align="left">
+                  <pre id="debug_loggedvars_<?=$ID?>" class="hidden"><?=display_str(print_r($Data['data'], true));?></pre>
+              </td>
+          </tr>
+        {% endfor %}
+    </table>
+    #}
+{% endif %}

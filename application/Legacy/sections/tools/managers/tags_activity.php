@@ -8,19 +8,17 @@ if (!check_perms('admin_manage_tags')) {
     error(403);
 }
 
-include_once(SERVER_ROOT.'/common/functions.php');
-
 if (!empty($_GET['tag'])) {
     if (isset($_GET['order_way']) && in_array($_GET['order_way'], ['asc', 'desc'])) {
-        $OrderWay = $_GET['order_way'];
+        $orderWay = $_GET['order_way'];
     } else {
-        $OrderWay = 'asc';
+        $orderWay = 'asc';
     }
 
     if (isset($_GET['order_by']) && in_array($_GET['order_by'], ['TagName', 'Username', 'Way', 'TorrentName'])) {
-        $OrderBy = $_GET['order_by'];
+        $orderBy = $_GET['order_by'];
     } else {
-        $OrderBy = 'GroupID';
+        $orderBy = 'GroupID';
     }
 
     $Where = '';
@@ -30,18 +28,18 @@ if (!empty($_GET['tag'])) {
 
     list($Page, $Limit) = page_limit($VotesPerPage);
 
-    $TagsVotes = $master->db->raw_query("
-      SELECT SQL_CALC_FOUND_ROWS ttv.TagID, tags.Name AS TagName, ttv.GroupID, ttv.UserID, ttv.Way, um.Username, tg.Name AS TorrentName
+    $TagsVotes = $master->db->rawQuery("
+      SELECT SQL_CALC_FOUND_ROWS ttv.TagID, tags.Name AS TagName, ttv.GroupID, ttv.UserID, ttv.Way, u.Username, tg.Name AS TorrentName
       FROM torrents_tags_votes AS ttv
       LEFT JOIN tags ON ttv.TagID = tags.ID
-      LEFT JOIN users_main AS um ON um.ID = ttv.UserID
+      LEFT JOIN users AS u ON u.ID = ttv.UserID
       LEFT JOIN torrents_group AS tg ON ttv.GroupID = tg.ID
       $Where
-      ORDER BY $OrderBy $OrderWay
+      ORDER BY $orderBy $orderWay
       LIMIT $Limit
     ")->fetchAll(\PDO::FETCH_ASSOC);
 
-    $TagCount = $master->db->raw_query("SELECT FOUND_ROWS()")->fetchColumn();
+    $TagCount = $master->db->rawQuery("SELECT FOUND_ROWS()")->fetchColumn();
     $Pages    = get_pages($Page, $TagCount, $VotesPerPage);
 }
 
@@ -76,25 +74,25 @@ show_header('Tags Activity');
         </form>
     </div>
 
-    <?php if(!empty($_GET['tag'])): ?>
-    <div class="linkbox"><?= $Pages ?></div>
+    <?php if (!empty($_GET['tag'])): ?>
+    <div class="linkbox pager"><?= $Pages ?></div>
     <div class="head">Tags activity</div>
     <table>
         <tr class="colhead">
             <td>
-                <a href="/<?= header_link('TagName') ?>" title="sort by number of votes">Tag</a>
+                <a href="<?=header_link('TagName')?>" title="sort by number of votes">Tag</a>
             </td>
             <td>
-                <a href="/<?= header_link('Username') ?>" title="sort by added by">User</a>
+                <a href="<?=header_link('Username')?>" title="sort by added by">User</a>
             </td>
             <td>
-                <a href="/<?= header_link('Way') ?>" title="sort by vote direction">Way</a>
+                <a href="<?=header_link('Way')?>" title="sort by vote direction">Way</a>
             </td>
             <td>
-                <a href="/<?= header_link('TorrentName') ?>" title="sort by number of votes">Torrent</a>
+                <a href="<?=header_link('TorrentName')?>" title="sort by number of votes">Torrent</a>
             </td>
         </tr>
-        <?php foreach($TagsVotes as $TagsVote): ?>
+        <?php foreach ($TagsVotes as $TagsVote): ?>
             <tr>
                 <td>
                     <a href="/torrents.php?taglist=<?= display_str($TagsVote['TagName']) ?>"><?= display_str($TagsVote['TagName']) ?></a>

@@ -31,24 +31,24 @@ metainfo file structure here: http://wiki.theory.org/BitTorrentSpecification
 
 * Lists
     - Stored as a BENCODE_LIST object.
-    - The actual list is in BENCODE_LIST::$Val, as an array with incrementing integer indices
-    - The list in BENCODE_LIST::$Val is populated by the BENCODE_LIST::dec() function
+    - The actual list is in BENCODE_LIST::$values, as an array with incrementing integer indices
+    - The list in BENCODE_LIST::$values is populated by the BENCODE_LIST::dec() function
 
 * Dictionaries
     - Stored as a BENCODE_DICT object.
-    - The actual list is in BENCODE_DICT::$Val, as an array with string indices
-    - The list in BENCODE_DICT::$Val is populated by the BENCODE_DICT::dec() function
+    - The actual list is in BENCODE_DICT::$values, as an array with string indices
+    - The list in BENCODE_DICT::$values is populated by the BENCODE_DICT::dec() function
 
 //----- BENCODE_* Objects -----//
 
 Lists and dictionaries are stored as objects. They each have the following
 functions:
 
-* decode(Type, $Key)
+* decode(Type, $key)
     - Decodes ANY bencoded element, given the type and the key
     - Gets the position and string from $this
 
-* encode($Val)
+* encode($values)
     - Encodes ANY non-bencoded element, given the value
 
 * dec()
@@ -64,72 +64,69 @@ the BENCODE_DICT class.
 
 
 *******************************************************************************/
-class Bencode
-{
-    public $Val; // Decoded array
-    public $Pos = 1; // Pointer that indicates our position in the string
-    public $Str = ''; // Torrent string
+class Bencode {
+    public $Val;       // Decoded array
+    public $Pos = 1;   // Pointer that indicates our position in the string
+    public $Str = '';  // Torrent string
 
-    public function __construct($Val, $IsParsed = false)
-    {
-        if (!$IsParsed) {
-            $this->Str = $Val;
+    public function __construct($values, $isParsed = false) {
+        if (!$isParsed) {
+            $this->Str = $values;
             $this->dec();
         } else {
-            $this->Val = $Val;
+            $this->Val = $values;
         }
     }
 
+    public function dec() {}
+
     // Decode an element based on the type. The type is really just an indicator.
-    public function decode($Type, $Key)
-    {
-        if (is_number($Type)) { // Element is a string
+    public function decode($type, $key) {
+        if (is_integer_string($type)) { // Element is a string
             // Get length of string
-            $StrLen = $Type;
+            $stringLength = $type;
 
             while ($this->Str[$this->Pos+1]!=':') {
                 $this->Pos++;
-                $StrLen.=$this->Str[$this->Pos];
+                $stringLength.=$this->Str[$this->Pos];
             }
 
-            $this->Val[$Key] = substr($this->Str, $this->Pos+2, $StrLen);
-            $this->Pos+=$StrLen;
+            $this->Val[$key] = substr($this->Str, $this->Pos+2, $stringLength);
+            $this->Pos+=$stringLength;
             $this->Pos+=2;
 
-        } elseif ($Type == 'i') { // Element is an int
+        } elseif ($type == 'i') { // Element is an int
             $this->Pos++;
 
             // Find end of integer (first occurance of 'e' after position)
-            $End = strpos($this->Str, 'e', $this->Pos);
+            $end = strpos($this->Str, 'e', $this->Pos);
 
             // Get the integer, and - IMPORTANT - cast it as an int, so we know later that it's an int and not a string
-            $this->Val[$Key] = (int) substr($this->Str, $this->Pos, $End-$this->Pos);
-            $this->Pos = $End+1;
+            $this->Val[$key] = (int) substr($this->Str, $this->Pos, $end-$this->Pos);
+            $this->Pos = $end+1;
 
-        } elseif ($Type == 'l') { // Element is a list
-            $this->Val[$Key] = new BencodeList(substr($this->Str, $this->Pos));
-            $this->Pos += $this->Val[$Key]->Pos;
+        } elseif ($type == 'l') { // Element is a list
+            $this->Val[$key] = new BencodeList(substr($this->Str, $this->Pos));
+            $this->Pos += $this->Val[$key]->Pos;
 
-        } elseif ($Type == 'd') { // Element is a dictionary
-            $this->Val[$Key] = new BencodeDict(substr($this->Str, $this->Pos));
-            $this->Pos += $this->Val[$Key]->Pos;
+        } elseif ($type == 'd') { // Element is a dictionary
+            $this->Val[$key] = new BencodeDict(substr($this->Str, $this->Pos));
+            $this->Pos += $this->Val[$key]->Pos;
             // Sort by key to respect spec
-            ksort($this->Val[$Key]->Val);
+            ksort($this->Val[$key]->Val);
 
         } else {
             die('Invalid torrent file');
         }
     }
 
-    public function encode($Val)
-    {
-        if (is_int($Val)) { // Integer
-
-            return 'i'.$Val.'e';
-        } elseif (is_string($Val)) {
-            return strlen($Val).':'.$Val;
-        } elseif (is_object($Val)) {
-            return $Val->enc();
+    public function encode($values) {
+        if (is_int($values)) { // Integer
+            return 'i'.$values.'e';
+        } elseif (is_string($values)) {
+            return strlen($values).':'.$values;
+        } elseif (is_object($values)) {
+            return $values->enc();
         } else {
             return 'fail';
         }

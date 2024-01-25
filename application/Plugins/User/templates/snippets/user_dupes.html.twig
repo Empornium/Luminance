@@ -1,0 +1,63 @@
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : false,
+    'noGroup'   : true,
+    'noClass'   : false,
+    'noTitle'   : true,
+} %}
+
+<div class="head">
+    <span style="float:left;">{{ dupes|length }} Linked Account{{ dupes|length == 1 ? '' : 's' }}</span>
+    <span style="float:right;"><a href="#" id="linkedbutton" onclick="return Toggle_view('linked');">(Hide)</a></span>&nbsp;
+</div>
+<div class="box">
+    <form method="POST" id="linkedform" action="/user.php">
+        <input type="hidden" name="action" value="dupes" />
+        <input type="hidden" name="dupeaction" value="update" />
+        <input type="hidden" name="userid" value="{{ user.ID }}" />
+        <input type="hidden" id="auth" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+        <input type="hidden" id="form_comment_hash" name="form_comment_hash" value="{{ dupeInfo.CommentHash }}" />
+            <table width="100%"  id="linkeddiv" class="linkedaccounts shadow">
+            {% for dupe in dupes %}
+                {% if loop.index0 is divisible by(4) %}
+                    <tr>
+                {% endif %}
+                <td class="row{{ loop.index % 2 ? 'b' : 'a' }}" align="left">
+                    {{ render.username(dupe.ID, usernameOptions) }}
+                    [<a href="/user.php?action=dupes&dupeaction=remove&auth={{ ActiveUser.legacy.AuthKey }}&userid={{ user.ID }}&removeid={{ dupe.ID }}" onClick="return confirm('Are you sure you wish to remove {{ dupe.Username }} from this group?');">x</a>]
+                </td>
+                {% if loop.index is not divisible by(4) and loop.last %}
+                    <td colspan={{ 5 - loop.index % 5 }}></td>
+                {% endif %}
+                {% if (loop.index is divisible by(4) and not loop.first) or loop.last %}
+                    </tr>
+                {% endif %}
+            {% endfor %}
+            <tr class="rowa">
+                <td colspan="5" align="left">
+                    <strong>Comments:</strong>
+                </td>
+            </tr>
+            <tr class="rowa">
+                <td colspan="5" align="left">
+                    <div id="dupecomments" class="{{ dupes|length == 0 ? 'hidden' : '' }}">{{ bbcode.full_format(dupeInfo.Comments)|raw }}</div>
+                    <div id="editdupecomments" class="hidden">
+                        <textarea id="dupecommentsbox" name="dupecomments" onkeyup="resize('dupecommentsbox');" cols="65" rows="5" style="width:98%;">{{ dupeInfo.Comments }}</textarea>
+                        <input type="submit" name="submitcomment" value="Save" />
+                    </div>
+                    <span style="float:right;"><a href="#" onClick="$('#dupecomments').toggle(); $('#editdupecomments').toggle(); resize('dupecommentsbox');return false;">(Edit comments)</a>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="5" align="left">
+                    <label for="target">Link this user with: </label>
+                    <input type="text" name="target" id="target" title="Enter the username of the account you wish to link this to" />
+                    <input type="submit" name="submitlink" value="Link" id="submitlink" />
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>

@@ -1,4 +1,3 @@
-
 var started = new Array(0);
 var multitaglist = new Array(0);
 
@@ -36,7 +35,7 @@ function GetTagDetails()
         $('#deletetagperm').raw().disabled = true;
         return;
     }
-    ajax.get('ajax.php?action=get_tagdetails&checktag='+checktag+'&auth='+authkey, function(response) {
+    ajax.get('/ajax.php?action=get_tagdetails&checktag='+checktag+'&auth='+authkey, function(response) {
         var x = json.decode(response);
         if ( is_array(x)){
             if(x[0]>0) {
@@ -64,7 +63,7 @@ function Get_Taglist_All(select_id, char_search) {
     started.push(char_search);
 
 
-    ajax.get('ajax.php?action=get_taglist&char='+char_search, function(response) {
+    ajax.get('/ajax.php?action=get_taglist&char='+char_search, function(response) {
         var x = json.decode(response);
         if ( is_array(x)){
             $('#'+select_id).raw().innerHTML = x[0];
@@ -86,7 +85,7 @@ function Get_Taglist(select_id, char_search) {
         if (numuses>0) uses = '&minuses=' + numuses;
     }
 
-    ajax.get('ajax.php?action=get_taglist&char='+char_search+uses, function(response) {
+    ajax.get('/ajax.php?action=get_taglist&char='+char_search+uses, function(response) {
         var x = json.decode(response);
         if ( is_array(x)){
             $('#'+select_id).raw().innerHTML = x[0];
@@ -98,18 +97,18 @@ function Get_Taglist(select_id, char_search) {
 
 
 function Check_Taglist() {
-	$('#checkresults').raw().innerHTML = '<div class=\"box pad\">checking input.</div>';
+  $('#checkresults').raw().innerHTML = '<div class=\"box pad\">checking input.</div>';
     dots=1;
     loader = setInterval(function(){ timeDots("checking input", 80); }, 1000);
     var taglist = $('#tagconvertlist').raw().value;
     var ToPost = [];
     ToPost['taglist'] = taglist;
     ToPost['auth'] = authkey;
-    ajax.post("ajax.php?action=check_synonym_list", ToPost, function(response){
+    ajax.post("/ajax.php?action=check_synonym_list", ToPost, function(response){
         var x = json.decode(response);
         clearInterval(loader);
         if ( is_array(x)){
-            $('#taglisttosynomyn').disable( parseInt(x[0]) == 0 );
+            $('#taglisttosynonym').disable( parseInt(x[0]) == 0 );
             $('#checkresults').raw().innerHTML = x[1];
 
         } else {
@@ -130,11 +129,11 @@ function Process_Taglist() {
     var ToPost = [];
     ToPost['taglist'] = taglist;
     ToPost['auth'] = authkey;
-    ajax.post("ajax.php?action=input_synonyms_list", ToPost, function(response){
+    ajax.post("/ajax.php?action=input_synonyms_list", ToPost, function(response){
         var x = json.decode(response);
         clearInterval(loader);
         if ( is_array(x)){
-            $('#taglisttosynomyn').disable( true );
+            $('#taglisttosynonym').disable( true );
             $('#checkresults').raw().innerHTML = x[1];
 
         } else {
@@ -153,7 +152,7 @@ function timeDots(message, maxdots = 60)
 }
 
 function Dirty_Taglist() {
-    $('#taglisttosynomyn').disable(true);
+    $('#taglisttosynonym').disable(true);
     resize('tagconvertlist');
 
 }

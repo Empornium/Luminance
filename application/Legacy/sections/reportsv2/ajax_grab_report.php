@@ -4,16 +4,21 @@
  * the Grab / Grab All button.
  */
 if (!check_perms('admin_reports')) {
-        //error(403);
         echo '403';
         die();
 }
 
-if (!is_number($_GET['id'])) {
+if (!is_integer_string($_GET['id'])) {
         die();
 }
-$DB->query("UPDATE reportsv2 SET Status='InProgress', ResolverID=".$LoggedUser['ID']." WHERE ID=".$_GET['id']);
-if ($DB->affected_rows() == 0) {
+$affectedRows = $master->db->rawQuery(
+    "UPDATE reportsv2
+        SET Status = 'InProgress',
+            ResolverID = ?
+      WHERE ID = ?",
+    [$activeUser['ID'], $_GET['id']]
+)->rowCount();
+if ($affectedRows == 0) {
     echo '0';
 } else {
     echo '1';

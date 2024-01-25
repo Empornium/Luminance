@@ -8,6 +8,14 @@
     overflow-x:hidden;
 }
 
+#searchforum {
+    text-align: center;
+}
+
+#searchforum > div {
+    display: inline-block;
+}
+
 .permissions {
     width:930px;
     margin-left:auto;
@@ -26,10 +34,11 @@
 
 
 code.bbcode {
-    display:inline-block;
-    padding:0px 4px;
+    display: inline-block;
+    padding: 0px 4px;
     overflow-x: auto;
-    max-width: 100%;
+    max-width: 870px;
+    vertical-align: text-bottom;
 }
 
 code.bbcodeblock {
@@ -40,8 +49,51 @@ code.bbcodeblock {
     padding: 10px;
 }
 
+
+img.bbcode {
+    vertical-align: text-bottom;
+}
+
 .head {
   white-space: nowrap;
-  overflow: hidden;
+  height: 20px;
+  /*overflow: hidden;*/
   text-overflow: ellipsis;
+}
+
+.float_right {
+  float: right;
+}
+
+.float_left {
+  float: left;
+}
+
+.align_center {
+  text-align: center;
+}
+
+/* Signatures layout */
+
+.post_container {
+    position: relative;
+    width:100%;
+    height:100%;
+}
+
+div.post_content, div.preview_content  {
+    min-height: 100px;
+    padding: 10px 10px 20px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+div.post_footer  {
+    margin-top: 4px;
+}
+
+td.sig {
+    padding: 8px;
+    vertical-align: top;
+    height: 0;
 }

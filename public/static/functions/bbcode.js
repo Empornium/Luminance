@@ -1,13 +1,25 @@
 var BBCode = {
-  spoiler: function(link) {
-    if($(link.nextSibling).has_class('hidden')) {
-      $(link.nextSibling).show();
-      $(link).html('Hide');
-    } else {
-      $(link.nextSibling).hide();
-      $(link).html('Show');
+    spoiler: function(link) {
+        function loadImages(parentNode) {
+            for (var i in parentNode.childNodes) {
+                if (parentNode.childNodes[i].nodeName === 'IMG' && parentNode.childNodes[i].dataset.src) {
+                    parentNode.childNodes[i].src = parentNode.childNodes[i].dataset.src;
+                    delete parentNode.childNodes[i].dataset.src;
+                }
+                else if ((parentNode.childNodes[i].childNodes || []).length > 0) {
+                    loadImages(parentNode.childNodes[i]);
+                }
+            }
+        }
+        if ($(link.nextSibling).has_class('hidden')) {
+            loadImages(link.nextSibling)
+            $(link.nextSibling).show();
+            $(link).html('Hide');
+        } else {
+            $(link.nextSibling).hide();
+            $(link).html('Show');
+        }
     }
-  }
 };
 
 function Validate_Form(message_div, fields) {
@@ -23,7 +35,7 @@ function Validate_Form(message_div, fields) {
         var message = jQuery.trim($('#'+fields[i]).raw().value);
 
         // Empty posts
-        if (message == null || message == ""){
+        if (message == null || message == "") {
             failed = true;
             err_mess = 'One or more fields were blank.';
             break;
@@ -47,7 +59,7 @@ function Preview_Collage() {
   if ($('#preview').has_class('hidden')) {
     var ToPost = [];
     ToPost['body'] = $('#description').raw().value;
-    ajax.post('ajax.php?action=preview', ToPost, function (data) {
+    ajax.post('/ajax.php?action=preview', ToPost, function (data) {
       $('#preview').raw().innerHTML = data;
       $('#preview').toggle();
       $('#editor').toggle();
@@ -62,7 +74,7 @@ function Preview_Collage() {
 
 function Sandbox_Preview() {
     $('#preview_button').raw().value = "Updating...";
-    ajax.post("ajax.php?action=preview","messageform", function(response){
+    ajax.post("/ajax.php?action=preview","messageform", function(response) {
         $('#preview_content').raw().innerHTML = response;
         $('#preview').show();
         $('#preview_button').raw().value = "Update Preview";
@@ -76,12 +88,12 @@ function Sandbox_Preview() {
 function Quick_Preview_Blog() {
   $('#post_preview').raw().value = "Edit";
   $('#post_preview').raw().preview = true;
-  ajax.post("ajax.php?action=preview_blog","quickpostform", function(response){
-    $('#quickreplypreview').show();
+  ajax.post("/ajax.php?action=preview_blog","quickpostform", function(response) {
+    $('#newblogpreview').show();
     $('#contentpreview').raw().innerHTML = response;
     $('#quickreplytext').hide();
     Prism.highlightAll();
-        lazy_load();
+    lazy_load();
   });
 }
 
@@ -96,12 +108,12 @@ function Quick_Edit_Blog() {
 function Preview_Article() {
   $('#post_preview').raw().value = "Edit";
   $('#post_preview').raw().preview = true;
-  ajax.post("ajax.php?action=preview_article","quickpostform", function(response){
+  ajax.post("/ajax.php?action=preview_article","quickpostform", function(response) {
     $('#quickreplypreview').show();
     $('#contentpreview').raw().innerHTML = response;
     $('#quickreplytext').hide();
     Prism.highlightAll();
-        lazy_load();
+    lazy_load();
   });
 }
 
@@ -140,7 +152,7 @@ function Open_Smilies(alreadyloaded, loadincrement, textID) {
           else {$(open_overflow_button).raw().innerHTML = "Loading smilies";}
           // get the requested smiley data as xml;
           // <smilies><smiley><bbcode>: code :</bbcode><url>http://url</url></smiley></smilies><maxsmilies>num</maxsmilies>
-          ajax.getXML("ajax.php?action=get_smilies&indexfrom=" + numLoaded + "&indexto=" + opento, function(responseXML){
+          ajax.getXML("/ajax.php?action=get_smilies&indexfrom=" + numLoaded + "&indexto=" + opento, function(responseXML) {
                 txt='';
                 // construct the html from the xml data
                 x=responseXML.documentElement.getElementsByTagName("smiley");
@@ -173,7 +185,7 @@ function Open_Smilies(alreadyloaded, loadincrement, textID) {
           Toggle_Load_Button(numLoaded < maxSmilies, textID);
       }
 }
-function Toggle_Load_Button(show, textID){
+function Toggle_Load_Button(show, textID) {
     if (show) {
         $('#open_overflow_more'+ textID).raw().isopen = true;
         $('#open_overflow_more'+ textID).raw().innerHTML = "Load more smilies";
@@ -194,7 +206,7 @@ function Close_Smilies(textID) {
 }
 
 
-function CursorToEnd(textarea){
+function CursorToEnd(textarea) {
      // set the cursor to the end of the text already present
     if (textarea.setSelectionRange) { // ff/chrome/opera
         var len = textarea.value.length * 2; //(*2 for opera stupidness)
@@ -325,7 +337,7 @@ function image_prompt(textID) {
     var img_regex = /^(https?):\/\/([a-z0-9\-\_]+\.)+([a-z]{1,5}[^\.])(\/[^<>]+)*$/i;
     do {
         link = prompt("Please enter the full URL for your image", "http://");
-        if (img_regex.test(link) == false && link != "http://" && link){
+        if (img_regex.test(link) == false && link != "http://" && link) {
             alert("Not a valid image url");
         } else break;
     } while(true)
@@ -336,22 +348,22 @@ function table(textID) {
       //return some bbcode for a table
       var input = prompt("Enter the number of columns and rows for your table\nin the format 'columns, rows'", '2,2');
       var numx = 1;var numy = 1;
-      if (input != null && input != ""){
+      if (input != null && input != "") {
           var splits = input.split(",",2);
-          if(splits.length > 0) numx = parseInt(splits[0]);
-          if(splits.length > 1) numy = parseInt(splits[1]);
+          if (splits.length > 0) numx = parseInt(splits[0]);
+          if (splits.length > 1) numy = parseInt(splits[1]);
       }
       if (numx<=0)numx=1;if (numy<=0)numy=1;
       var x=0;var y=0;
-      var opentag='[table]\n[tr]\n[td] ';
+      var opentag='[table]\n[tr][td] ';
       var closetag='';
-      for (y=0;y<numy;y++){
-          if(y>0) closetag += ' [/td]\n[/tr]\n[tr]\n[td] ';
-          for (x=1;x<numx;x++){
+      for (y=0;y<numy;y++) {
+          if (y>0) closetag += ' [/td][/tr]\n[tr][td] ';
+          for (x=1;x<numx;x++) {
               closetag += ' [/td][td] ';
           }
       }
-      closetag += ' [/td]\n[/tr]\n[/table]\n';
+      closetag += ' [/td][/tr]\n[/table]\n';
       tagwrap(opentag, closetag, textID);
       // insert("[table]\n[tr]\n[td] [/td][td] [/td]\n[/tr]\n[/table]\n", textID)
 }

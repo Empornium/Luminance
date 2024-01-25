@@ -1,0 +1,95 @@
+<?php
+namespace Luminance\Entities;
+
+use Luminance\Core\Entity;
+
+/**
+ * ForumCategory Entity representing rows from the `forums_categories` DB table.
+ */
+class ForumCategory extends Entity {
+
+    /**
+     * $table contains a string identifying the DB table this entity is related to.
+     * @var string
+     *
+     * @access public
+     * @static
+     */
+    public static $table = 'forums_categories';
+
+    /**
+     * $useServices represents a mapping of the Luminance services which should be injected into this object during creation.
+     * @var array
+     *
+     * @access protected
+     * @static
+     */
+    protected static $useServices = [
+        'repos' => 'Repos',
+    ];
+
+    /**
+     * DB rows and their respective parameters.
+     * @var array
+     *
+     * @access public
+     * @static
+     */
+    public static $properties = [
+        'ID'   => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'primary' => true, 'auto_increment' => true ],
+        'Name' => [ 'type' => 'str', 'sqltype' => 'VARCHAR(255)', 'nullable' => false, 'default' => '' ],
+        'Sort' => [ 'type' => 'int', 'sqltype' => 'INT UNSIGNED', 'nullable' => false, 'default' => '0' ],
+    ];
+
+    /**
+     * DB indexes.
+     * @var array
+     *
+     * @access public
+     * @static
+     */
+    public static $indexes = [
+        'Sort' => [ 'columns' => [ 'Sort' ] ],
+    ];
+
+    /**
+     * __isset returns whether an object property exists or not,
+     * this is necessary for lazy loading to function correctly from TWIG
+     * @param  string  $name Name of property being checked
+     * @return bool          True if property exists, false otherwise
+     *
+     * @access public
+     */
+    public function __isset($name) {
+        switch ($name) {
+            case 'allForums':
+                return true;
+
+            default:
+                return parent::__isset($name);
+        }
+    }
+
+    /**
+     * __get returns the property requested, loading it from the DB if necessary,
+     * this permits us to perform lazy loading and thus dynamically minimize both
+     * memory usage and cache/DB usage.
+     * @param  string $name Name of property being accessed
+     * @return mixed        Property data (could be anything)
+     *
+     * @access public
+     */
+    public function __get($name) {
+
+        switch ($name) {
+            case 'allForums':
+                if (!array_key_exists($name, $this->localValues)) {
+                    $this->safeSet($name, $this->repos->forums->find('CategoryID = ?', [$this->ID], 'Sort'));
+                }
+                break;
+        }
+
+        # Just return from the parent
+        return parent::__get($name);
+    }
+}

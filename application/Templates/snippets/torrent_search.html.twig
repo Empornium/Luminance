@@ -1,0 +1,56 @@
+<div class="head">Search</div>
+<form action="" method="get">
+    <table>
+        <tr>
+            <td class="label"><strong>Search for:</strong></td>
+            <td>
+                {% if type is defined %}
+                    <input type="hidden" name="type" value="{{ type }}" />
+                {% endif %}
+                {% if userID is defined %}
+                    <input type="hidden" name="userid" value="{{ userID }}" />
+                {% endif %}
+                <input type="text" name="search" size="60" value="{{ searchText }}" />
+            </td>
+        </tr>
+        <tr>
+            <td class="label"><strong>Tags:</strong></td>
+            <td>
+            <input id="taginput" type="text" name="tags" size="60" value="{{ searchTags }}" />
+            </td>
+        </tr>
+        <tr>
+            <td class="label"><strong>Order by</strong></td>
+            <td>
+                <select name="order_by">
+                    {% for order in orders %}
+                        <option value="{{ order }}" {{ selected('order_by', order) }}>{{ order }}</option>
+                    {% endfor %}
+                </select>&nbsp;
+                <select name="order_way">
+                    {% for key,way in ways %}
+                        <option value="{{ key }}" {{ selected('order_way', key) }}>{{ way }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+    </table>
+
+    <table class="cat_list">
+        {% for category in categories %}
+            {% if loop.index0 is divisible by(7) %}
+                <tr class="row{{ loop.index0 is divisible by(14) ? 'b' : 'a' }}">
+            {% endif %}
+            <td>
+                <input id="cat_{{ category.id }}" name="filter_cat[{{ category.id }}]" type="checkbox" {{ selected(category.id, '1', 'checked', master.request.values.filter_cat) }} value="1">
+                <label for="cat_{{ category.id }}"><a href="/torrents.php?filter_cat[{{ category.id }}]=1">{{ category.name }}</a></label>
+            </td>
+            {% if (loop.index is divisible by(7) and not loop.first) or loop.last %}
+                </tr>
+            {% endif %}
+        {% endfor %}
+    </table>
+    <div class="submit">
+        <input type="submit" value="Search torrents" />
+    </div>
+</form>

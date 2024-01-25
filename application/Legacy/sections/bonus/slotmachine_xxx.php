@@ -1,17 +1,19 @@
 <?php
 enforce_login();
 
-if (!check_perms( 'site_play_slots')) error ("You do not have permission to play the xxx slot machine!");
+if (!check_perms('site_play_slots')) error ("You do not have permission to play the xxx slot machine!");
 
 include(SERVER_ROOT.'/Legacy/sections/bonus/slot_xxx_arrays.php');
 
-show_header('Slot Machine','slotmachine_xxx');
+show_header('Slot Machine', 'slotmachine_xxx');
 
 $BetAmount = 10;
 
+$wallet = $master->repos->userWallets->get('UserID = ?', [$activeUser['ID']]);
+
 ?>
 <script type="text/javascript"><?php      // get the reels array from sm_arrays into js
-echo "var reelPix = ". json_encode($Reel) . ";\n"; ?>
+echo "var reelPix = ". json_encode($reel) . ";\n"; ?>
 </script>
 <audio id="wheelspin_audio" src="/static/common/casino/wheelspin.wav" autostart="false" ></audio>
 <div class="thin">
@@ -22,22 +24,22 @@ echo "var reelPix = ". json_encode($Reel) . ";\n"; ?>
         <div class="head center"> payouts </div>
         <div class="box pad">
             <div class="box pad center"><strong class="important_text">note:</strong> all winning lines must start with the left hand reel</div>
-            <span id="payout_table" class="reelsi"><?php print_payout_table($BetAmount) ?></span>
+            <span id="payout_table" class="reelsi"><?php print_payout_table($BetAmount, $payout) ?></span>
         </div>
         <div class="head center"> reels </div>
         <div class="box pad center">
             <?php
-                $Count=array();
+                $Count = [];
                 $max=0;
                 for ($i=0;$i<4;$i++) {
-                    $Count[$i]= count($Reel[$i]);
-                    $max = max($max,$Count[$i]);
+                    $Count[$i]= count($reel[$i]);
+                    $max = max($max, $Count[$i]);
                 }
                 for ($i=$max-1;$i>=0;$i--) { ?>
                     <div class="reelsi">
             <?php   for ($j=0;$j<4;$j++) {
                         if ($i<$Count[$j]) { ?>
-                        <img src="<?=STATIC_SERVER?>common/casino/icon<?=$Reel[$j][$i]?>.png" />
+                        <img src="<?=STATIC_SERVER?>common/casino/icon<?=$reel[$j][$i]?>.png" />
             <?php       }
                     } ?>
                     </div>
@@ -47,7 +49,7 @@ echo "var reelPix = ". json_encode($Reel) . ";\n"; ?>
 
     <div class=" " style="position:relative;width:664px;margin:20px 330px 50px auto;">
 
-        <div class="head center"> slot machine </div>
+        <!--<div class="head center"> slot machine </div>-->
         <div class="box pad">
             <table id="fmtop" class=" fm" >
                 <tr>
@@ -55,29 +57,29 @@ echo "var reelPix = ". json_encode($Reel) . ";\n"; ?>
                     <td class="noborder center"><input type="button" value="Plays" onclick="Change_NumBets()" /><br/><input id="numbets" type="text" size="1" value="3" disabled="disabled"/></td>
                     <td class="noborder center" style="width:50%;"><h3 id="result" style="color:blue;font-size:2.4em"></h3></td>
                     <td class="label">Credits:</td>
-                    <td class="noborder"><span style="float:right;color:#333;font-size: large" id="winnings"><?=number_format($LoggedUser['TotalCredits'])?></span></td>
+                    <td class="noborder"><span style="float:right;color:#333;font-size: large" id="winnings"><?=number_format($wallet->Balance)?></span></td>
                 </tr>
             </table>
         </div>
         <div class="box pad shadow">
             <div id="rollers" class="center">
                 <div id="reelsa" class="reels">
-                    <img id="reela0" src="<?=STATIC_SERVER?>common/casino/<?=$Reel[0][2]?>.png" />
-                    <img id="reela1" src="<?=STATIC_SERVER?>common/casino/<?=$Reel[1][2]?>.png" />
-                    <img id="reela2" src="<?=STATIC_SERVER?>common/casino/<?=$Reel[2][2]?>.png" />
-                    <img id="reela3" src="<?=STATIC_SERVER?>common/casino/<?=$Reel[3][2]?>.png" />
+                    <img id="reela0" src="<?=STATIC_SERVER?>common/casino/<?=$reel[0][2]?>.png" />
+                    <img id="reela1" src="<?=STATIC_SERVER?>common/casino/<?=$reel[1][2]?>.png" />
+                    <img id="reela2" src="<?=STATIC_SERVER?>common/casino/<?=$reel[2][2]?>.png" />
+                    <img id="reela3" src="<?=STATIC_SERVER?>common/casino/<?=$reel[3][2]?>.png" />
             </div>
                 <div id="reelsb" class="reels play">
-                    <img id="reelb0" src="<?=STATIC_SERVER?>common/casino/<?=$Reel[0][1]?>.png" />
-                    <img id="reelb1" src="<?=STATIC_SERVER?>common/casino/<?=$Reel[1][1]?>.png" />
-                    <img id="reelb2" src="<?=STATIC_SERVER?>common/casino/<?=$Reel[2][1]?>.png" />
-                    <img id="reelb3" src="<?=STATIC_SERVER?>common/casino/<?=$Reel[3][1]?>.png" />
+                    <img id="reelb0" src="<?=STATIC_SERVER?>common/casino/<?=$reel[0][1]?>.png" />
+                    <img id="reelb1" src="<?=STATIC_SERVER?>common/casino/<?=$reel[1][1]?>.png" />
+                    <img id="reelb2" src="<?=STATIC_SERVER?>common/casino/<?=$reel[2][1]?>.png" />
+                    <img id="reelb3" src="<?=STATIC_SERVER?>common/casino/<?=$reel[3][1]?>.png" />
             </div>
                 <div id="reelsc" class="reels">
-                    <img id="reelc0" src="<?=STATIC_SERVER?>common/casino/<?=$Reel[0][0]?>.png" />
-                    <img id="reelc1" src="<?=STATIC_SERVER?>common/casino/<?=$Reel[1][0]?>.png" />
-                    <img id="reelc2" src="<?=STATIC_SERVER?>common/casino/<?=$Reel[2][0]?>.png" />
-                    <img id="reelc3" src="<?=STATIC_SERVER?>common/casino/<?=$Reel[3][0]?>.png" />
+                    <img id="reelc0" src="<?=STATIC_SERVER?>common/casino/<?=$reel[0][0]?>.png" />
+                    <img id="reelc1" src="<?=STATIC_SERVER?>common/casino/<?=$reel[1][0]?>.png" />
+                    <img id="reelc2" src="<?=STATIC_SERVER?>common/casino/<?=$reel[2][0]?>.png" />
+                    <img id="reelc3" src="<?=STATIC_SERVER?>common/casino/<?=$reel[3][0]?>.png" />
             </div>
             </div>
             <div  style="float:right">
@@ -96,12 +98,18 @@ echo "var reelPix = ". json_encode($Reel) . ";\n"; ?>
         <div class="head center"> your slot machine history </div>
         <div class="box pad">
             <?php
-            $UserResults = $Cache->get_value('sm_sum_history_'.$LoggedUser['ID']);
+            $UserResults = $master->cache->getValue('sm_sum_history_'.$activeUser['ID']);
             if ($UserResults === false) {
-                $DB->query("SELECT Spins, Won, Bet, (Won/Bet)
-                          FROM sm_results WHERE UserID = $LoggedUser[ID]");
-                $UserResults = $DB->next_record();
-                $Cache->cache_value('sm_sum_history_'.$LoggedUser['ID'], $UserResults, 86400);
+                $UserResults = $master->db->rawQuery(
+                    "SELECT Spins,
+                            Won,
+                            Bet,
+                            (Won/Bet)
+                       FROM sm_results
+                      WHERE UserID = ?",
+                    [$activeUser['ID']]
+                )->fetch(\PDO::FETCH_BOTH);
+                $master->cache->cacheValue('sm_sum_history_'.$activeUser['ID'], $UserResults, 86400);
             }
             list($NumSpins, $TotalWon, $TotalBet, $TotalReturn) = $UserResults;
 
@@ -127,12 +135,16 @@ echo "var reelPix = ". json_encode($Reel) . ";\n"; ?>
         <div class="head center"> winners </div>
         <div class="box pad">
             <?php
-            $TotalResults = $Cache->get_value('sm_sum_history');
+            $TotalResults = $master->cache->getValue('sm_sum_history');
             if ($TotalResults === false) {
-                $DB->query("SELECT SUM(Spins), SUM(Won), SUM(Bet), (SUM(Won)/SUM(Bet))
-                          FROM sm_results");
-                $TotalResults = $DB->next_record();
-                $Cache->cache_value('sm_sum_history', $TotalResults, 86400);
+                $TotalResults = $master->db->rawQuery(
+                    "SELECT SUM(Spins),
+                            SUM(Won),
+                            SUM(Bet),
+                            (SUM(Won)/SUM(Bet))
+                       FROM sm_results"
+                )->fetch(\PDO::FETCH_BOTH);
+                $master->cache->cacheValue('sm_sum_history', $TotalResults, 86400);
             }
             list($NumSpins, $TotalWon, $TotalBet, $TotalReturn) = $TotalResults;
 
@@ -161,27 +173,32 @@ echo "var reelPix = ". json_encode($Reel) . ";\n"; ?>
                 </tr>
             <?php
 
-            $TopResults = $Cache->get_value('sm_top_payouts');
+            $TopResults = $master->cache->getValue('sm_top_payouts');
             if ($TopResults === false) {
-                $DB->query("SELECT s.UserID, Username, Won, Bet, Spins
-                              FROM sm_results as s
-                              JOIN users_main as u ON s.UserID=u.ID
-                             WHERE Won > 0
-                          ORDER BY Won DESC, Time DESC
-                             LIMIT 100");
-                $TopResults = $DB->to_array(false, MYSQLI_BOTH);
-                $Cache->cache_value('sm_top_payouts', $TopResults, 3600*24);
+                $TopResults = $master->db->rawQuery(
+                    "SELECT s.UserID,
+                            Username,
+                            Won,
+                            Bet,
+                            Spins
+                       FROM sm_results as s
+                       JOIN users as u ON s.UserID = u.ID
+                      WHERE Won > 0
+                   ORDER BY Won DESC, Time DESC
+                      LIMIT 100"
+                )->fetchAll(\PDO::FETCH_BOTH);
+                $master->cache->cacheValue('sm_top_payouts', $TopResults, 3600*24);
                 if (count($TopResults)<100) {
-                    $Cache->cache_value('sm_lowest_top_payout', 0, 3600*24);
+                    $master->cache->cacheValue('sm_lowest_top_payout', 0, 3600*24);
                 } else {
                     list(, , $Won) = end($TopResults);
                     reset($TopResults);
-                    $Cache->cache_value('sm_lowest_top_payout', $Won, 3600*24);
+                    $master->cache->cacheValue('sm_lowest_top_payout', $Won, 3600*24);
                 }
             }
             $i=1;
             foreach ($TopResults as $Result) {
-                list($UserID, $Username, $Won, $Bet, $Spins, $Reels, $Time) = $Result;
+                list($userID, $Username, $Won, $Bet, $Spins) = $Result;
         ?>
                 <tr>
                     <td class="noborder center"><strong><?=$i++?></strong></td>

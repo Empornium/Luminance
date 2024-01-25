@@ -6,16 +6,16 @@
  */
 authorize();
 
-if (array_key_exists($_POST['type'], $Types)) {
-    $ReportType = $Types[$_POST['type']];
+if (array_key_exists($_POST['type'], $types)) {
+    $ReportType = $types[$_POST['type']];
 } else {
     echo 'HAX IN REPORT TYPE';
     die();
 }
 
-if ( is_array($ReportType['article'])  ) {
+if (is_array($ReportType['article'] ?? null)) {
 ?>
-<p><strong>Relevant Rules section: <a href="/articles.php?topic=<?=$ReportType['article'][0]?>" title="The rule infingement you are reporting"><?=$ReportType['article'][1]?></a></strong>
+<p><strong>Relevant Rules section: <a href="/articles/view/<?=$ReportType['article'][0]?>" title="The rule infingement you are reporting"><?=$ReportType['article'][1]?></a></strong>
 </p>
 <br/>
     <?php

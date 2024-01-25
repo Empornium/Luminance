@@ -2,18 +2,18 @@
 if (!check_perms('admin_imagehosts')) { error(403); }
 
 show_header('Manage imagehost whitelist');
-$DB->query("SELECT
+$records = $master->db->rawQuery("SELECT
     w.ID,
     w.Imagehost,
     w.Link,
     w.Comment,
     w.UserID,
-    um.Username,
+    u.Username,
     w.Time ,
-      w.Hidden
+    w.Hidden
     FROM imagehost_whitelist as w
-    LEFT JOIN users_main AS um ON um.ID=w.UserID
-    ORDER BY w.Time DESC");
+    LEFT JOIN users AS u ON u.ID=w.UserID
+    ORDER BY w.Time DESC")->fetchAll(\PDO::FETCH_NUM);
 ?>
 <div class="thin">
 <h2>Imagehost Whitelist</h2>
@@ -36,7 +36,7 @@ $DB->query("SELECT
     <tr class="rowa">
     <form action="tools.php" method="post">
         <input type="hidden" name="action" value="iw_alter" />
-        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
         <td>
             <input class="long"  type="text" name="host" />
         </td>
@@ -75,14 +75,15 @@ $DB->query("SELECT
                     Submit</span></td>
     </tr>
 <?php  $Row = 'b';
-while (list($ID, $Host, $Link, $Comment, $UserID, $Username, $WLTime, $Hide) = $DB->next_record()) {
+foreach ($records as $record) {
+    list($ID, $Host, $Link, $Comment, $userID, $Username, $WLTime, $Hide) = $record;
     $Row = ($Row === 'a' ? 'b' : 'a');
 ?>
     <tr class="row<?=$Row?>">
         <form action="tools.php" method="post">
             <td>
                 <input type="hidden" name="action" value="iw_alter" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <input type="hidden" name="id" value="<?=$ID?>" />
                 <input class="long" type="text" name="host" value="<?=display_str($Host)?>" />
             </td>
@@ -93,10 +94,10 @@ while (list($ID, $Host, $Link, $Comment, $UserID, $Username, $WLTime, $Hide) = $
                 <input class="long"  type="text" name="comment" value="<?=display_str($Comment)?>" />
             </td>
         <td>
-            <input type="checkbox" name="show" value="1" <?php  if(!$Hide)echo ' checked="checked"';?> />
+            <input type="checkbox" name="show" value="1" <?php  if (!$Hide)echo ' checked="checked"';?> />
         </td>
             <td>
-                <?=format_username($UserID, $Username)?><br />
+                <?=format_username($userID)?><br />
                 <?=time_diff($WLTime, 1)?>
                   </td>
             <td>

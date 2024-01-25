@@ -1,8 +1,9 @@
 --- ERROR during CLI execution ---
-Corresponding HTTP response status: {{ http_status }}
-Error message: {{ message }}
+
 {% if description %}
---- begin description ---
 {{ description|raw }}
---- end description ---
+{% else %}
+{{ message }}
 {% endif %}
+
+----------- END ERROR ------------

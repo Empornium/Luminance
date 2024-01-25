@@ -1,15 +1,17 @@
 <?php
-if (!check_perms('torrents_review')) { error(403); }
+if (!check_perms('torrent_review')) { error(403); }
 
 $ViewStatus = isset($_REQUEST['viewstatus'])?$_REQUEST['viewstatus']:'both';
-$ViewStatus = in_array($ViewStatus, array('warned','pending','both','unmarked'))?$ViewStatus:'pending';
-$OverdueOnly = (isset($_REQUEST['overdue']) && $_REQUEST['overdue'])?1:0;
+$ViewStatus = in_array($ViewStatus, ['warned', 'pending', 'both', 'unmarked'])?$ViewStatus:'pending';
+$OverdueOnly = (isset($_REQUEST['overdue']) && $_REQUEST['overdue']) ? 1 : 0;
 
-$CanManage = check_perms('torrents_review_manage');
+$CanManage = check_perms('torrent_review_manage');
 $NumOverdue = get_num_overdue_torrents('both');
-if ($NumOverdue) //
+if ($NumOverdue) {
     $NumWarnedOverdue = get_num_overdue_torrents('warned');
-else $OverdueOnly = 0;
+} else {
+    $OverdueOnly = 0;
+}
 
 show_header('Manage torrents marked for deletion');
 
@@ -17,9 +19,9 @@ show_header('Manage torrents marked for deletion');
     <div class="thin">
         <h2>Torrents marked for deletion</h2>
 <?php
-    if ($NumDeleted) {
+    if ($NumDeleted ?? false) {
           $ResultMessage ="Successfully Deleted $NumDeleted Torrent";
-          if($NumDeleted>1) $ResultMessage .= 's';
+          if ($NumDeleted>1) $ResultMessage .= 's';
           if ($ResultMessage) {
 ?>
             <div id="messagebar" class="messagebar"><?=$ResultMessage?></div><br />
@@ -32,15 +34,15 @@ show_header('Manage torrents marked for deletion');
             <tr>
                 <form action="tools.php?action=marked_for_deletion" method="post">
                         <input type="hidden" name="action" value="save_mfd_options" />
-                        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                         <input type="hidden" name="viewstatus" value="<?=$ViewStatus?>" />
                         <input type="hidden" name="overdue" value="<?=$OverdueOnly?>" />
                         <td class="center">
                             <label for="hours">Warning period: (hours) </label>
 <?php  if ($CanManage) { ?>
-                            <input name="hours" type="text" style="width:30px;" value="<?=$master->options->MFDReviewHours?>" title="This is the hours given to fix the torrent when warned (has no effect on current list)" />
+                            <input id="hours" name="hours" type="text" style="width:30px;" value="<?=$master->options->MFDReviewHours?>" title="This is the hours given to fix the torrent when warned (has no effect on current list)" />
 <?php  } else { ?>
-                            <input name="hours" type="text" style="width:30px;color:black;" disabled="disabled" value="<?=$master->options->MFDReviewHours?>" title="This is the hours given to fix the torrent when warned (has no effect on current list)" />
+                            <input id="hours" name="hours" type="text" style="width:30px;color:black;" disabled="disabled" value="<?=$master->options->MFDReviewHours?>" title="This is the hours given to fix the torrent when warned (has no effect on current list)" />
 <?php  }  ?>
                         </td>
                         <td  class="center">
@@ -73,7 +75,7 @@ show_header('Manage torrents marked for deletion');
           [<a href="/tools.php?action=marked_for_deletion&amp;viewstatus=both&amp;overdue=<?=$OverdueOnly?>"> View pending and warned </a>] &nbsp;&nbsp;&nbsp;
 <?php       }
         if ($ViewStatus!='unmarked') {   ?>
-          [<a href="/tools.php?action=marked_for_deletion&amp;viewstatus=unmarked&amp;overdue=<?=$OvrdueOnly?>"> View unmarked only </a>] &nbsp;&nbsp;&nbsp;
+          [<a href="/tools.php?action=marked_for_deletion&amp;viewstatus=unmarked&amp;overdue=<?=$OverdueOnly?>"> View unmarked only </a>] &nbsp;&nbsp;&nbsp;
 <?php       }       ?>
 
 <?php       if ($NumOverdue && $ViewStatus!='unmarked') {
@@ -83,7 +85,7 @@ show_header('Manage torrents marked for deletion');
           [<a href="/tools.php?action=marked_for_deletion&amp;viewstatus=<?=$ViewStatus?>&amp;overdue=1"> View overdue only </a>] &nbsp;&nbsp;&nbsp;
 <?php           }
         }
-        if (check_perms('torrents_review_manage')){
+        if (check_perms('torrent_review_manage')) {
 ?>
           [<a href="/tools.php?action=marked_for_deletion_reasons"> Edit reasons </a>]
 <?php   } ?>
@@ -105,7 +107,7 @@ show_header('Manage torrents marked for deletion');
                 </span>
 <?php 		}
             if ($NumWarnedOverdue) {  ?>
-                <!-- anyone with torrents_review permission can delete warned and overdue torrents  -->
+                <!-- anyone with torrent_review permission can delete warned and overdue torrents  -->
                 <input type="submit" name="submitdelall" style="width:350px;margin-left:-175px;left:50%;position:relative;" title="Delete <?=$NumWarnedOverdue?> Warned and Overdue torrents (red background)" value="Delete <?=$NumWarnedOverdue?> Warned and Overdue torrents" />
 
 <?php           }   ?>
@@ -149,7 +151,7 @@ show_header('Manage torrents marked for deletion');
         $Row = 'a';
         foreach ($Torrents as $Torrent) {
             $Row = $Row=='a'?'b':'a';
-            list($TorrentID, $GroupID, $TorrentName, $Status, $ConvID, $KillTime, $Reason, $UserID, $Username) = $Torrent;
+            list($torrentID, $GroupID, $TorrentName, $Status, $ConvID, $KillTime, $Reason, $userID, $Username) = $Torrent;
 
             $IsOverdue = strtotime($KillTime)<time();
 ?>
@@ -169,7 +171,7 @@ show_header('Manage torrents marked for deletion');
         }
 ?>
                     </td>
-                    <td><?=format_username($UserID, $Username)?></td>
+                    <td><?=format_username($userID)?></td>
                 </tr>
 <?php
         }
@@ -177,7 +179,7 @@ show_header('Manage torrents marked for deletion');
 ?>
                 <input type="hidden" name="viewstatus" value="<?=$ViewStatus?>" />
                 <input type="hidden" name="overdue" value="<?=$OverdueOnly?>" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <input type="hidden" name="action" value="mfd_delete" />
             </table>
         </form>
@@ -186,29 +188,28 @@ show_header('Manage torrents marked for deletion');
         <div class="box pad">
         <table>
         <tr>
-            <td style="width: 50%;">
+            <td style="width: 50%; vertical-align: top;">
 <?php
 
-$BaseSQL = "SELECT um.ID,
-                   um.Username,
+$BaseSQL = "SELECT u.ID,
+                   u.Username,
                    COUNT(r.ID) AS Num ,
                    (SELECT Count(torrents_reviews.ID)
                                          FROM torrents_reviews
-                                         WHERE torrents_reviews.UserID=um.ID
+                                         WHERE torrents_reviews.UserID=u.ID
                                            AND torrents_reviews.Status='Okay'
-                                           AND torrents_reviews.Time > [TIMECLAUSE] ) AS NumOkay,
+                                           AND torrents_reviews.Time > [TIMECLAUSE]) AS NumOkay,
                    (SELECT Count(torrents_reviews.ID)
                                          FROM torrents_reviews
-                                         WHERE torrents_reviews.UserID=um.ID
+                                         WHERE torrents_reviews.UserID=u.ID
                                            AND torrents_reviews.Status='Warned'
-                                           AND torrents_reviews.Time > [TIMECLAUSE] ) AS NumWarned
-              FROM torrents_reviews AS r JOIN users_main AS um ON um.ID=r.UserID
+                                           AND torrents_reviews.Time > [TIMECLAUSE]) AS NumWarned
+              FROM torrents_reviews AS r JOIN users AS u ON u.ID=r.UserID
              WHERE r.Status!='Pending'  AND r.Time > [TIMECLAUSE]
           GROUP BY r.UserID
           ORDER BY Num DESC";
 
-$DB->query(str_replace('[TIMECLAUSE]', 'NOW() - INTERVAL 24 HOUR', $BaseSQL));
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(str_replace('[TIMECLAUSE]', 'NOW() - INTERVAL 24 HOUR', $BaseSQL))->fetchAll(\PDO::FETCH_NUM);
 
 ?>
             <strong>MFD actions in the last 24 hours</strong>
@@ -220,10 +221,10 @@ $Results = $DB->to_array();
                     <td>Warned</td>
                 </tr>
 <?php  foreach ($Results as $Result) {
-    list($UserID, $Username, $Num, $NumOkay, $NumWarned) = $Result;
+    list($userID, $Username, $Num, $NumOkay, $NumWarned) = $Result;
 ?>
                 <tr>
-                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$userID?>"><?=$Username?></a></td>
                     <td><?=$Num?></td>
                     <td><?=$NumOkay?></td>
                     <td><?=$NumWarned?></td>
@@ -233,8 +234,7 @@ $Results = $DB->to_array();
             <br /><br />
 <?php
 
-$DB->query(str_replace('[TIMECLAUSE]', 'NOW() - INTERVAL 1 WEEK', $BaseSQL));
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(str_replace('[TIMECLAUSE]', 'NOW() - INTERVAL 1 WEEK', $BaseSQL))->fetchAll(\PDO::FETCH_NUM);
 
 ?>
             <strong>MFD actions in the last week</strong>
@@ -246,10 +246,10 @@ $Results = $DB->to_array();
                     <td>Warned</td>
                 </tr>
 <?php  foreach ($Results as $Result) {
-    list($UserID, $Username, $Num, $NumOkay, $NumWarned) = $Result;
+    list($userID, $Username, $Num, $NumOkay, $NumWarned) = $Result;
 ?>
                 <tr>
-                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$userID?>"><?=$Username?></a></td>
                     <td><?=$Num?></td>
                     <td><?=$NumOkay?></td>
                     <td><?=$NumWarned?></td>
@@ -260,8 +260,7 @@ $Results = $DB->to_array();
         <td>
 <?php
 
-$DB->query(str_replace('[TIMECLAUSE]', 'NOW() - INTERVAL 1 MONTH', $BaseSQL));
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(str_replace('[TIMECLAUSE]', 'NOW() - INTERVAL 1 MONTH', $BaseSQL))->fetchAll(\PDO::FETCH_NUM);
 
 ?>
         <strong>MFD actions in the last month</strong>
@@ -273,10 +272,10 @@ $Results = $DB->to_array();
                 <td>Warned</td>
             </tr>
 <?php  foreach ($Results as $Result) {
-    list($UserID, $Username, $Num, $NumOkay, $NumWarned) = $Result;
+    list($userID, $Username, $Num, $NumOkay, $NumWarned) = $Result;
 ?>
             <tr>
-                <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$userID?>"><?=$Username?></a></td>
                 <td><?=$Num?></td>
                 <td><?=$NumOkay?></td>
                 <td><?=$NumWarned?></td>
@@ -286,8 +285,7 @@ $Results = $DB->to_array();
         <br /><br />
 <?php
 
-$DB->query(str_replace('[TIMECLAUSE]', "'0000-00-00 00:00:00'", $BaseSQL));
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(str_replace('[TIMECLAUSE]', "'0000-00-00 00:00:00'", $BaseSQL))->fetchAll(\PDO::FETCH_NUM);
 
 ?>
             <strong>MFD actions total</strong>
@@ -299,10 +297,10 @@ $Results = $DB->to_array();
                     <td>Warned</td>
                 </tr>
 <?php  foreach ($Results as $Result) {
-    list($UserID, $Username, $Num, $NumOkay, $NumWarned) = $Result;
+    list($userID, $Username, $Num, $NumOkay, $NumWarned) = $Result;
 ?>
                 <tr>
-                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
+                    <td><a href="/reportsv2.php?view=resolver&amp;id=<?=$userID?>"><?=$Username?></a></td>
                     <td><?=$Num?></td>
                     <td><?=$NumOkay?></td>
                     <td><?=$NumWarned?></td>

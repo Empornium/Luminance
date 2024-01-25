@@ -1,0 +1,111 @@
+{% extends "core/base.html.twig" %}
+
+{% block stylesheets %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'common/icons.css'} %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'fonts/fonts.css'} %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'styles/global.css'} %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'styles/layout.css'} %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'styles/prism.css'} %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'styles/icons.css'} %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : 'styles/torrent_grid.css'} %}
+    {% include 'snippets/link_style.html.twig' with { 'style' : "styles/#{style.Path}/style.css"} %}
+    {{ parent() }}
+{% endblock %}
+
+{% block scripts %}
+    {# Site JS Config #}
+    <script type="text/javascript">//<![CDATA[
+        var authkey = "{{ ActiveUser.legacy.AuthKey }}";
+        var userid = {{ ActiveUser.ID }};
+        var imgcheck =  {{ options.ImagesCheck }};
+        var imgcheck_max =  {{ options.MaxImagesCount }};
+    //]]></script>
+
+    {# MathJax Config #}
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            showMathMenu: false,
+            tex2jax: {inlineMath: [['[tex]','[/tex]']], displayMath: []}
+        });
+    </script>
+    {{ parent() }}
+{% endblock %}
+
+{% block content %}
+    <body id="{% block body_id %}{% if Document == 'collages' %}collage{% else %}{{ Document }}{% endif %}{% endblock %}">
+        {% if not hv.Urgent is empty and Document != 'staffpm' %}
+            <div id="forcediv">
+                <div class="urgent_container">
+                    <div class="urgent_surround">
+                        {% for warn in hv.Urgent %}
+                            <div class="urgent">{{ warn|raw }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        <div id="overDiv" style="position:absolute; visibility:hidden; z-index:1000;"></div>
+        <div id="wrapper">
+            <h1 class="hidden">{{ settings.main.site_name }}</h1>
+            <div id="header">
+                <div id="header_top">
+                    <div id="logo"><a aria-label="home page" href="/index.php"></a></div>
+                    {% include 'snippets/stats_block.html.twig' %}
+                    {% include 'snippets/site_menu.html.twig' %}
+                    {% include 'snippets/alert_bars.html.twig' %}
+                    {% include 'snippets/search_bars.html.twig' %}
+                </div>
+                {% include 'snippets/header_bottom.html.twig' %}
+            </div>
+            <div id="content">
+                {% block flashes %}
+                    {% include 'snippets/flashes.html.twig' %}
+                {% endblock %}
+                {% if wrap %}
+                    <div class="thin">
+                        <h2>{{ block('title') }}</h2>
+                        {{ block('main_content') }}
+                    </div>
+                {% else %}
+                    {{ block('main_content') }}
+                {% endif %}
+            </div>
+        </div>
+        <div id="footer">
+            {% if disclaimer %}
+                <br /><br />
+                <div id="disclaimer_container" class="thinner" style="text-align:center; margin-bottom:20px;">
+                    None of the files shown here are actually hosted on this server. The links are provided solely by this site's users. These BitTorrent files are meant for the distribution of backup files. By downloading the BitTorrent file, you are claiming that you own the original file. The administrator of this site (http{% if request.ssl %}s{% endif %}://{{ settings.main.site_url }}) holds NO RESPONSIBILITY if these files are misused in any way and cannot be held responsible for what its users post, or any other actions of it.
+                </div>
+            {% endif %}
+            <p>
+                Site and design &copy; {{ "now"|date("Y") }} {{ settings.main.site_name }}
+            </p>
+
+            {% if auth.isAllowed('users_mod') %}
+                {% set performanceInfo = render.getPerformanceInfo() %}
+                <p>
+                        <strong>Time:</strong> {{ performanceInfo.time }} ms
+                        <strong>Used:</strong> {{ performanceInfo.memory }}
+                        <strong>Load:</strong> {{ performanceInfo.load }}
+                        <strong>Date:</strong> {{ performanceInfo.date }}
+
+                </p>
+            {% endif %}
+
+            {% include "snippets/rss_links.html.twig" %}
+            <p><a href="/log.php">Site Logs</a></p>
+        </div>
+        <div id="footer_bottom">
+            {% if settings.site.debug_mode or auth.isAllowed('site_debug') %}
+                <!-- Begin Debugging -->
+                <div id="site_debug">
+                    {% include "snippets/debug.html.twig" %}
+                </div>
+                <!-- End Debugging -->
+            {% endif %}
+        </div>
+        <div id="lightbox" class="lightbox hidden"></div>
+        <div id="curtain" class="curtain hidden"></div>
+    </body>
+{% endblock %}

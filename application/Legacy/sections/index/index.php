@@ -1,5 +1,5 @@
 <?php
-if (isset($LoggedUser['ID'])) {
+if (isset($activeUser['ID'])) {
     if (!isset($_REQUEST['action'])) {
         include 'private.php';
     } else {

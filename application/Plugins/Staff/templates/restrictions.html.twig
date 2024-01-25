@@ -1,0 +1,77 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/staff/restrictions">{{ settings.main.site_name }} User Restrictions</a>
+{% endblock %}
+
+{% block main_content %}
+    {% set usernameOptions = {
+        'drawInBox' : false,
+        'colorname' : true,
+        'dropDown'  : false,
+        'useSpan'   : true,
+        'noIcons'   : true,
+        'noGroup'   : true,
+        'noClass'   : true,
+        'noTitle'   : true,
+    } %}
+    <div class="thin">
+        <div class="box pad">
+            <div class="center"><h4>Restrictions Search</h4></div><br>
+            <form action="/staff/restrictions" method="get">
+                <input type="hidden" name="search" value="1">
+                <table>
+                    <tr>
+                        <td>
+                            <select name="type">
+                                <option value="">Select Type</option>
+                                {% for decode in static('Luminance\\Entities\\Restriction', 'decode') %}
+                                    <option value="{{ decode.name }}" {{ request.getGetString('type') == decode.name ? 'selected="selected"' }}>{{ decode.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" name="userid" size="10" value="{{ request.getGetString('userid') }}" placeholder="UserID">
+                        </td>
+                        <td>
+                            <input type="text" name="authorid" size="10" value="{{ request.getGetString('authorid') }}" placeholder="StaffID">
+                        </td>
+                        {#<td><input type="datetime" name="date" value="{{ request.getGetString('date') }}" placeholder="Date YYYY-MM-DD"></td>#}
+                        {# sort by #}
+                        <td><input type="submit" value="Search" /></td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, total, pageSize, 9) }}
+    </div>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Staff</th>
+            <th>Type</th>
+            <th>Created</th>
+            <th>Expires</th>
+            <th>Comment</th>
+        </tr>
+        {% for restriction in restrictions %}
+            <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                <td>{{ restriction.ID }}</td>
+                <td>{{ render.username(restriction.UserID, usernameOptions) }}</td>
+                <td>{{ render.username(restriction.StaffID, usernameOptions) }}</td>
+                <td>{{ restriction.getRestrictions() | join(', ') }}</td>
+                <td>{{ time_diff(restriction.Created)|raw }}</td>
+                <td>{{ time_diff(restriction.Expires)|raw }}</td>
+                <td>{{ restriction.Comment }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    </div>
+{% endblock %}

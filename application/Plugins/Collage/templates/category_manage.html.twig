@@ -1,0 +1,151 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+    <script type="text/javascript">
+        //<![CDATA[
+            function change_image(display_image, cat_image){
+                jQuery(display_image).html('<img src="/static/common/collageicons/'+jQuery(cat_image).val()+'"/>');
+            }
+        //]]>
+    </script>
+{% endblock %}
+
+{% block title %}
+    <a href="/collage/category/manage">Collage Management</a>
+{% endblock %}
+
+{% block main_content %}
+    <p><strong>Observe!</strong> You must upload new images to the {{ master.publicPath }}/static/common/collageicons/ folder before you can use it here.</p><br />
+    <table width="150px">
+        <tr class="colhead">
+            <td width="20%">Image</td>
+            <td width="10%">Sort</td>
+            <td width="15%">Name</td>
+            <td width="25%">Description</td>
+            <td width="10%">Min class view</td>
+            <td width="10%">Min class create</td>
+            <td width="5%">Locked</td>
+            <td width="5%">Personal</td>
+            <td width="20%">Submit</td>
+        </tr>
+        {% for category in categories %}
+            <tr class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                <form id="form_category_{{ category.ID }}_edit" action="/collage/category/edit" method="post">
+                    <input type="hidden" name="id" value="{{ category.ID }}" />
+                    <input type="hidden" name="token" value="{{ secretary.getToken("collage.category.edit") }}" />
+                </form>
+                <form id="form_category_{{ category.ID }}_delete" action="/collage/category/delete" method="post">
+                    <input type="hidden" name="id" value="{{ category.ID }}" />
+                    <input type="hidden" name="token" value="{{ secretary.getToken("collage.category.delete") }}" />
+                </form>
+                <td>
+                    <span id="display_image{{ category.ID }}">
+                        <img src="/static/common/collageicons/{{ category.Image}}" />
+                    </span>
+                    <span style="float:right">
+                        <select id="cat_image{{ category.ID }}" name="image" onchange="change_image('#display_image{{ category.ID }}', '#cat_image{{ category.ID }}');" form="form_category_{{ category.ID }}_edit">
+                            {% for image in images %}
+                                {{ var_dump([category.Image, image]) }}
+                                <option value="{{ image }}" {{ category.Image == image ? 'selected="selected"' }}>{{ image }}</option>
+                            {% endfor %}
+                        </select>
+                    </span>
+                </td>
+                <td>
+                    <input type="text" size="3" name="sort" value="{{ category.Sort }}" form="form_category_{{ category.ID }}_edit" />
+                </td>
+                <td>
+                    <input type="text" size="10" name="name" value="{{ category.Name }}" form="form_category_{{ category.ID }}_edit" />
+                </td>
+                <td>
+                    <input type="description" size="25" name="description" value="{{ category.Description }}" form="form_category_{{ category.ID }}_edit" />
+                </td>
+                <td>
+                    <select name="minclassview" form="form_category_{{ category.ID }}_edit">
+                        {% for class in classes if class.IsUserClass == '1' %}
+                            <option value="{{ class.Level }}" {{ category.MinClassView == class.Level ? 'selected="selected"' }}>
+                                {{ class.Name|truncate(20)}}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <select name="minclasscreate" form="form_category_{{ category.ID }}_edit">
+                        {% for class in classes if class.IsUserClass == '1' %}
+                            <option value="{{ class.Level }}" {{ category.MinClassCreate == class.Level ? 'selected="selected"' }}>
+                                {{ class.Name|truncate(20)}}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <input type="checkbox" value="1"  {{ category.isLocked() == '1' ? 'checked' }} name="locked" form="form_category_{{ category.ID }}_edit" />
+                </td>
+                <td>
+                    <input type="checkbox" value="1"  {{ category.isPersonal() == '1' ? 'checked' }} name="personal" form="form_category_{{ category.ID }}_edit" />
+                </td>
+                <td>
+                    <input type="submit" name="submit" value="Edit" form="form_category_{{ category.ID }}_edit" />
+                    <input type="submit" name="submit" value="Delete" form="form_category_{{ category.ID }}_delete"/>
+                </td>
+            </tr>
+        {% endfor %}
+        <tr>
+            <td colspan="9" class="colhead">Create category</td>
+        </tr>
+        <tr class="rowa">
+            <form action="/collage/category/create" method="post">
+                <input type="hidden" name="token" value="{{ secretary.getToken("collage.category.create") }}" />
+                <td>
+                    <span id="display_image_new">
+                        <img src="/static/common/collageicons/{{ images[2] }}" />
+                    </span>
+                    <span style="float:right">
+                        <select id="cat_image_new" name="image" onchange="change_image('#display_image_new', '#cat_image_new');">
+                            {% for image in images %}
+                                <option value="{{ image }}">{{ image }}</option>
+                            {% endfor %}
+                        </select>
+                    </span>
+                </td>
+                <td>
+                    <input type="text" size="3" name="sort" value="" />
+                </td>
+                <td>
+                    <input type="text" size="10" name="name" value="" />
+                </td>
+                <td>
+                    <input type="text" size="25" name="description" value="" />
+                </td>
+                <td>
+                    <select name="minclassview">
+                        {% for class in classes if class.IsUserClass == '1' %}
+                            <option value="{{ class.Level }}">
+                                {{ class.Name|truncate(20)}}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <select name="minclasscreate">
+                        {% for class in classes if class.IsUserClass == '1' %}
+                            <option value="{{ class.Level }}">
+                                {{ class.Name|truncate(20)}}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <input type="checkbox" value="1" name="locked" />
+                </td>
+                <td>
+                    <input type="checkbox" value="1" name="personal" />
+                </td>
+                <td>
+                    <input type="submit" name="submit" value="Create" />
+                </td>
+            </form>
+        </tr>
+    </table>
+{% endblock %}

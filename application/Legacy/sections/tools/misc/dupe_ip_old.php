@@ -7,33 +7,34 @@ show_header('Dupe IPs');
 <?php
 define('USERS_PER_PAGE', 50);
 define('IP_OVERLAPS', 5);
-list($Page,$Limit) = page_limit(USERS_PER_PAGE);
+list($Page, $Limit) = page_limit(USERS_PER_PAGE);
 
-$RS = $DB->query("SELECT
-    SQL_CALC_FOUND_ROWS
-    m.ID,
-    m.IP,
-    m.Username,
-    m.PermissionID,
-    m.Enabled,
-    i.Donor,
-    i.JoinDate,
-    (SELECT COUNT(DISTINCT h.UserID) FROM users_history_ips AS h WHERE h.IP=m.IP) AS Uses
-    FROM users_main AS m
-    LEFT JOIN users_info AS i ON i.UserID=m.ID
-    WHERE (SELECT COUNT(DISTINCT h.UserID) FROM users_history_ips AS h WHERE h.IP=m.IP) >= ".IP_OVERLAPS."
-    AND m.Enabled = '1'
-    AND m.IP != '127.0.0.1'
-    ORDER BY Uses DESC LIMIT $Limit");
-$DB->query("SELECT FOUND_ROWS()");
-list($Results) = $DB->next_record();
-$DB->set_query_id($RS);
+$records = $master->db->rawQuery(
+    "SELECT SQL_CALC_FOUND_ROWS
+            um.ID,
+            INET6_NTOA(i.StartAddress),
+            u.Username,
+            um.PermissionID,
+            um.Enabled,
+            ui.Donor,
+            ui.JoinDate,
+            (SELECT COUNT(DISTINCT h.UserID) FROM users_history_ips AS h WHERE h.IPID=i.ID) AS Uses
+        FROM users AS u
+   LEFT JOIN users_main AS um ON um.ID=u.ID
+   LEFT JOIN users_info AS ui ON ui.UserID=u.ID
+   LEFT JOIN ips AS i ON i.ID=u.IPID
+       WHERE (SELECT COUNT(DISTINCT h.UserID) FROM users_history_ips AS h WHERE h.IPID=i.ID) >= ".IP_OVERLAPS."
+         AND um.Enabled = '1'
+         AND INET6_NTOA(i.StartAddress) != '127.0.0.1'
+    ORDER BY Uses DESC LIMIT {$Limit}"
+)->fetchAll(\PDO::FETCH_NUM);
+$Results = $master->db->foundRows();
 
-if ($DB->record_count()) {
+if ($Results > 0) {
 ?>
     <div class="linkbox">
 <?php
-    $Pages=get_pages($Page,$Results,USERS_PER_PAGE, 11) ;
+    $Pages = get_pages($Page, $Results, USERS_PER_PAGE, 11) ;
     echo $Pages;
 ?>
     </div>
@@ -45,12 +46,13 @@ if ($DB->record_count()) {
             <td>Registered</td>
         </tr>
 <?php
-    while (list($UserID, $IP, $Username, $PermissionID, $Enabled, $Donor, $Joined, $Uses)=$DB->next_record()) {
+    foreach ($records as $record) {
+        list($userID, $IP, $Username, $PermissionID, $enabled, $Donor, $Joined, $Uses) = $record;
     $Row = ($Row == 'b') ? 'a' : 'b';
 ?>
         <tr class="row<?=$Row?>">
-            <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?></td>
-            <td><span style="float:left;"><?=get_host($IP)." ($IP)"?></span><span style="float:right;">[<a href="/userhistory.php?action=ips&amp;userid=<?=$UserID?>" title="History">H</a>|<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="Search">S</a>]</span></td>
+            <td><?=format_username($userID, $Donor, true, $enabled, $PermissionID)?></td>
+            <td><span style="float:left;"><?=get_host($IP)." ($IP)"?></span><span style="float:right;">[<a href="/userhistory.php?action=ips&amp;userid=<?=$userID?>" title="History">H</a>|<a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($IP)?>" title="Search">S</a>]</span></td>
             <td><?=display_str($Uses)?></td>
             <td><?=time_diff($Joined)?></td>
         </tr>

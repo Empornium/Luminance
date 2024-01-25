@@ -1,0 +1,17 @@
+{% macro render(classes = '', glyphs = [], data = null) %}
+    <div class="icon_container">
+        <div class="icon_stack">
+            {% for glyph in glyphs %}
+                <i class="font_icon {{ classes }} icon_{{ glyph }}"
+                  {% for param,value in data%}
+                      {% if value is null %}
+                          {{ param }}
+                      {% else %}
+                          {{ param }}='{{ value|raw }}'
+                      {% endif %}
+                  {% endfor %}
+                ></i>
+            {% endfor %}
+        </div>
+    </div>
+{% endmacro %}

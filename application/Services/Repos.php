@@ -2,42 +2,36 @@
 namespace Luminance\Services;
 
 use Luminance\Core\Service;
-use Luminance\Errors\InternalError;
 
 class Repos extends Service {
 
-    protected $repositories = [];
-
-    protected static $repos = [
-        'clientuseragents' => 'ClientUserAgentRepository',
-        'clientaccepts'    => 'ClientAcceptRepository',
-        'clientscreens'    => 'ClientScreenRepository',
-        'ips'              => 'IPRepository',
-        'sessions'         => 'SessionRepository',
-        'stylesheets'      => 'StylesheetRepository',
-        'users'            => 'UserRepository',
-        'emails'           => 'EmailRepository',
-        'invites'          => 'InviteRepository',
-        'options'          => 'OptionRepository',
-        'permissions'      => 'PermissionRepository',
-        'floods'           => 'RequestFloodRepository',
-        'restrictions'     => 'RestrictionRepository',
-    ];
+    protected $systemRepositories = null;
 
     public function __isset($name) {
-        return array_key_exists($name, self::$repos);
+        return true;
     }
 
     public function __get($name) {
-        $repository = $this->get_repository($name);
-        return $repository;
-    }
-
-    public function get_repository($name) {
-        if ($this->__isset($name)) {
-            return $this->master->getRepository(self::$repos[$name]);
-        } else {
-            throw new InternalError("No such repository: {$name}");
+        if (is_null($this->systemRepositories) === true) {
+            # Take repo names from entities rather than directly from repos
+            # so we can support anonymous repositories
+            foreach (glob($this->master->applicationPath."/Entities/*.php") as $repo) {
+                $repo = str_replace($this->master->applicationPath.'/Entities/', '', $repo);
+                $repo = str_replace('.php', 'Repository', $repo);
+                $shortRepoName = mb_strtolower(str_replace('Repository', 's', $repo));
+                if (str_ends_with($shortRepoName, 'ys')) {
+                    # Don't do ies if there's a vowel before the y
+                    if (!in_array(substr($shortRepoName, -3, 1), ['a', 'e', 'i', 'o', 'u'])) {
+                        $shortRepoName = rtrim($shortRepoName, 'ys');
+                        $shortRepoName .= 'ies';
+                    }
+                }
+                $this->systemRepositories[$shortRepoName] = $repo;
+            }
         }
+
+        $name = mb_strtolower($name);
+
+        return $this->master->getRepository($this->systemRepositories[$name]);
     }
 }

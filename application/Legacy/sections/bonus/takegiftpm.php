@@ -1,15 +1,20 @@
 <?php
-global $DB, $Cache, $Classes;
+global $master, $classes;
 
 enforce_login();
 authorize();
-if($Classes[$LoggedUser['PermissionID']]['Level'] < LEVEL_ADMIN) {
+if ($classes[$activeUser['PermissionID']]['Level'] < LEVEL_ADMIN) {
     error(405);
 }
-$Body = db_string($_POST['body']);
+$Body = $_POST['body'];
 
-$DB->query("UPDATE systempm_templates SET Body='" . $Body . "' WHERE ID=1");
+$master->db->rawQuery(
+    "UPDATE systempm_templates
+        SET Body = ?
+      WHERE ID = 1",
+    [$Body]
+);
 
-$Cache->delete_value('systempm_template_1');
+$master->cache->deleteValue('systempm_template_1');
 
 header("Location: bonus.php?action=gift");

@@ -1,25 +1,25 @@
     <div id="stats_block">
           <table class="userinfo_stats noborder">
               <tr>
-                  <td style="text-align:right;"><a href="{{ main_uri }}/bonus.php">Credits</a>:</td>
+                  <td style="text-align:right;"><a href="/bonus.php">Credits</a>:</td>
                   <td><span id="stats_credits" class="stat">{{ UserStats.TotalCredits|number_format(0) }}</span></td>
-                  <td style="text-align:right;"><a href="{{ main_uri }}/torrents.php?type=seeding&amp;userid={{ ActiveUser.ID }}">Up</a>:</td>
-                  <td><span title="{{ UserStats.BytesUploaded }} bytes" class="stat">{{ UserStats.BytesUploaded|format_size }}</span></td>
+                  <td style="text-align:right;"><a href="/torrents.php?type=seeding&amp;userid={{ ActiveUser.ID }}">Up</a>:</td>
+                  <td><span title="{{ UserStats.BytesUploaded }} bytes" class="stat">{{ get_size(UserStats.BytesUploaded, 2) }}</span></td>
               </tr>
               <tr>
-                  <td style="text-align:right;"><a href="{{ main_uri }}/userhistory.php?action=token_history">Slots</a>:</td>
+                  <td style="text-align:right;"><a href="/userhistory.php?action=token_history">Slots</a>:</td>
                   <td><span class="stat">{{ ActiveUser.legacy.FLTokens }}</span></td>
-                  <td style="text-align:right;"><a href="{{ main_uri }}/torrents.php?type=leeching&amp;userid={{ ActiveUser.ID }}">Down</a>:</td>
-                  <td><span title="{{ UserStats.BytesDownloaded }} bytes" class="stat">{{ UserStats.BytesDownloaded|format_size }}</span></td>
+                  <td style="text-align:right;"><a href="/torrents.php?type=leeching&amp;userid={{ ActiveUser.ID }}">Down</a>:</td>
+                  <td><span title="{{ UserStats.BytesDownloaded }} bytes" class="stat">{{ get_size(UserStats.BytesDownloaded, 2) }}</span></td>
               </tr>
               <tr>
             {% if UserStats.RequiredRatio and UserStats.RequiredRatio > 0.0 %}
-                  <td style="text-align:right;"><a href="{{ main_uri }}/articles.php?topic=ratio">Required</a>:</td>
+                  <td style="text-align:right;"><a href="/articles/view/ratio">Required</a>:</td>
                   <td><span class="stat">{{ UserStats.RequiredRatio|number_format(2) }}</span></td>
             {% else %}
                   <td colspan="2"></td>
             {% endif %}
-                  <td style="text-align:right;"><a href="{{ main_uri }}/articles.php?topic=ratio">Ratio</a>:</td>
+                  <td style="text-align:right;"><a href="/articles/view/ratio">Ratio</a>:</td>
                   <td><span class="stat">{{ ratio(UserStats.BytesUploaded, UserStats.BytesDownloaded)|raw }}</span></td>
               </tr>
           </table>

@@ -1,0 +1,89 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/staff/blog">Staff Blog</a>
+{% endblock %}
+
+{% block main_content %}
+    {% set usernameOptions = {
+        'drawInBox' : false,
+        'colorname' : false,
+        'dropDown'  : false,
+        'useSpan'   : true,
+        'noIcons'   : true,
+        'noGroup'   : true,
+        'noClass'   : true,
+        'noTitle'   : true,
+    } %}
+    {% if auth.isAllowed('admin_manage_blog') %}
+        <div class="hidden" id="newblogpreview">
+            <div id="contentpreview" class="preview_content" style="text-align:left;"></div>
+        </div>
+        <div class="head">
+            {{ blogPost is null ? "Create a staff blog post" : "Edit staff blog post : #{blogPost.Title}" }}
+            <span style="float:right;">
+                <a href="#" onclick="$('#postform').toggle(); this.innerHTML=(this.innerHTML=='(Hide)'?'(Show)':'(Hide)'); return false;">{{ blogPost is null ? "(Show)" : "(Hide)" }}</a>
+            </span>
+        </div>
+        <div class="box">
+            {% if blogPost is null %}
+                <form  id="quickpostform" action="/staff/blog/new" method="post">
+                    <input type="hidden" name="token" value="{{ secretary.getToken('staff.blog.new') }}" />
+            {% else %}
+                <form  id="quickpostform" action="/staff/blog/{{ blogPost.ID}}/edit" method="post">
+                    <input type="hidden" name="token" value="{{ secretary.getToken('staff.blog.edit') }}" />
+            {% endif %}
+            <div id="postform" class="pad {{ blogPost is null ? "hidden" : "" }}">
+                <div id="quickreplytext">
+                    <h3>Title</h3>
+                        <input type="text" name="title" class="long" value="{{ blogPost.Title }}"/>
+                        <br />
+                    <h3>Body</h3>
+                        {{ bbcode.display_bbcode_assistant("textbody", get_permissions_advtags(ActiveUser.ID, ActiveUser.CustomPermissions)) }}
+                    <textarea id="textbody" name="body" class="long" rows="15">{{ blogPost.Body }}</textarea>
+                    <br/>
+                </div>
+                <br />
+                <div class="center">
+                    <input id="post_preview" type="button" value="Preview" onclick="if (this.preview) {Quick_Edit_Blog();} else {Quick_Preview_Blog();}" />
+                    <input type="submit" value="{{ blogPost is null ? "Create blog post" : "Edit blog post" }}" />
+                </div>
+            </div>
+        </form>
+    </div>
+    <br/>
+    <br/>
+    {% endif %}
+
+    {% for blogPost in blogPosts %}
+        <div class="head">
+            {{ blogPost.Title }} - {{ time_diff(blogPost.Time)|raw }} by {{ render.username(blogPost.UserID, usernameOptions) }}
+            {% if auth.isAllowed('admin_manage_blog') %}
+                - 
+                <a href="/staff/blog/{{ blogPost.ID }}/edit">
+                    {{ icon.render("forum_icon", ['forum_edit']) }}
+                </a>
+                <form style="display: inline-block;" action="/staff/blog/{{ blogPost.ID }}/delete" method="POST" onSubmit="return confirm('Are you sure you want to delete this blog post?');">
+                    <input type="hidden" name="token" value="{{ secretary.getToken('staff.blog.delete') }}" />
+                    <input type="hidden" name="id" value="{{ StaffBlogRepository.ID }}">
+                    <button style="all: unset" type="submit" value="Delete" title="Delete">
+                        {{ icon.render("forum_icon", ['misc_trash']) }}
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+        <div id="blog{{ blogPost.ID }}" class="box">
+            <div class="pad">
+                {{ bbcode.full_format(blogPost.Body, true)|raw }}
+            </div>
+        </div>
+        <br/>
+    {% endfor %}
+{% endblock %}

@@ -2,30 +2,31 @@
 /* * **********************************************************************
 
  * ********************************************************************** */
-if (!check_perms('site_view_reportsv1') && !check_perms('admin_reports') && !check_perms('site_moderate_forums') && !check_perms('site_project_team')) {
+if (!check_perms('site_view_reportsv1') && !check_perms('admin_reports') && !check_perms('forum_moderate') && !check_perms('site_project_team')) {
     error(403);
 }
 
-// Number of reports per page
-define('REPORTS_PER_PAGE', '20');
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
-list($Page, $Limit) = page_limit(REPORTS_PER_PAGE);
+list($Page, $Limit) = page_limit($master->settings->pagination->reports);
 
 include(SERVER_ROOT . '/Legacy/sections/reports/array.php');
 
 // Header
 show_header('Reports', 'bbcode,inbox,reports,jquery');
 
-if ($_GET['id'] && is_number($_GET['id'])) {
+$params = [];
+$reportID = $_GET['id'] ?? null;
+if (is_integer_string($_GET['id'] ?? '')) {
     $View = "Single report";
-    $Where = "r.ID = " . $_GET['id'];
-} elseif (empty($_GET['view'])) {
+    $Where = "r.ID = ?";
+    $params[] = $_GET['id'];
+} elseif (empty($_GET['view'] ?? '')) {
     $View = "New";
     $Where = "Status='New'";
 } else {
     $View = $_GET['view'];
-    switch ($_GET['view']) {
+    switch ($_GET['view'] ?? '') {
         case 'old' :
             $Where = "Status='Resolved'";
             break;
@@ -42,56 +43,60 @@ if (!check_perms('admin_reports')) {
     if (check_perms('site_project_team')) {
         $Where .= " AND Type = 'request_update'";
     }
-    if (check_perms('site_view_reportsv1') || check_perms('site_moderate_forums')) {
+    if (check_perms('site_view_reportsv1') || check_perms('forum_moderate')) {
         $Where .= " AND Type IN('collages_comment', 'Post', 'requests_comment', 'thread', 'torrents_comment')";
     }
 }
 
-if (isset($_GET['userid']) && is_number($_GET['userid'])) {
+if (isset($_GET['userid']) && is_integer_string($_GET['userid'])) {
     $WhereUserID = (int) $_GET['userid'];
-    $Where .= " AND r.UserID = $WhereUserID ";
+    $Where .= " AND r.UserID = ? ";
+    $params[] = $WhereUserID;
 }
 
-if (isset($_GET['type']) && array_key_exists($_GET['type'], $Types)) {
-    $Where .= " AND r.Type = '{$_GET['type']}' ";
+if (isset($_GET['type']) && array_key_exists($_GET['type'], $types)) {
+    $Where .= " AND r.Type = ? ";
+    $params[] = $_GET['type'];
 }
 
 if (isset($_GET['keyword'], $_GET['in']) && strlen($_GET['keyword']) > 0) {
     $In = $_GET['in'];
-    $Keyword = db_string($_GET['keyword'], true);
+    $Keyword = str_replace(['%', '_'], ['\%', '\_'], $Keyword);
+    $Keyword = "%{$Keyword}%";
     if ($In === 'reason') {
-        $Where .= " AND r.Reason LIKE '%{$Keyword}%' ";
-    }
-    if ($In === 'comment') {
-        $Where .= " AND r.Comment LIKE '%{$Keyword}%' ";
-    }
-    if ($In === 'both') {
-        $Where .= " AND (r.Reason LIKE '%{$Keyword}%' OR r.Comment LIKE '%{$Keyword}%') ";
+        $Where .= " AND r.Reason LIKE ? ";
+        $params[] = $Keyword;
+    } else if ($In === 'comment') {
+        $Where .= " AND r.Comment LIKE ? ";
+        $params[] = $Keyword;
+    } else if ($In === 'both') {
+        $Where .= " AND (r.Reason LIKE ? OR r.Comment LIKE ?) ";
+        $params[] = $Keyword;
+        $params[] = $Keyword;
     }
 }
 
-$Reports = $DB->query("SELECT SQL_CALC_FOUND_ROWS
-        r.ID,
-        r.UserID,
-        um.Username,
-        r.ThingID,
-        r.Type,
-        r.ReportedTime,
-        r.Reason,
-        r.Status,
+$Reports = $master->db->rawQuery(
+    "SELECT SQL_CALC_FOUND_ROWS
+            r.ID,
+            r.UserID,
+            u.Username,
+            r.ThingID,
+            r.Type,
+            r.ReportedTime,
+            r.Reason,
+            r.Status,
             r.Comment
-    FROM reports AS r
-        JOIN users_main AS um ON r.UserID=um.ID
-    WHERE " . $Where . "
-    ORDER BY ReportedTime
-    DESC LIMIT " . $Limit);
+       FROM reports AS r
+       JOIN users AS u ON r.UserID=u.ID
+      WHERE {$Where}
+   ORDER BY ReportedTime DESC
+      LIMIT {$Limit}",
+    $params
+)->fetchAll(\PDO::FETCH_NUM);
 
 // Number of results (for pagination)
-$DB->query('SELECT FOUND_ROWS()');
-list($Results) = $DB->next_record();
-
-// Done with the number of results. Move $DB back to the result set for the reports
-$DB->set_query_id($Reports);
+$Results = $master->db->foundRows();
 
 // Start printing stuff
 ?>
@@ -141,7 +146,7 @@ $DB->set_query_id($Reports);
                     <td>
                         <select name="type">
                             <option value="all" <?php selected('type', 'all') ?>>All</option>
-                            <?php foreach ($Types as $Type => $Data): ?>
+                            <?php foreach ($types as $Type => $Data): ?>
                                 <option value="<?= $Type ?>" <?php selected('type', $Type) ?>><?= $Data['title'] ?></option>
                             <?php endforeach; ?>
                         </select>
@@ -149,12 +154,12 @@ $DB->set_query_id($Reports);
                 </tr>
                 <tr>
                     <td class="label nobr">Reporter ID:</td>
-                    <td><input type="text" name="userid" placeholder="User ID" value="<?=display_str($_GET['userid'])?>"></td>
+                    <td><input type="text" name="userid" placeholder="User ID" value="<?=display_str($_GET['userid'] ?? '')?>"></td>
                 </tr>
                 <tr>
                     <td class="label nobr">Keyword:</td>
                     <td>
-                        <input type="text" name="keyword" placeholder="Text to search" value="<?=display_str($_GET['keyword'])?>">
+                        <input type="text" name="keyword" placeholder="Text to search" value="<?=display_str($_GET['keyword'] ?? '')?>">
                     </td>
                 </tr>
                 <tr>
@@ -179,167 +184,207 @@ $DB->set_query_id($Reports);
     <div class="linkbox">
         <?php
         // pagination
-        $Pages = get_pages($Page, $Results, REPORTS_PER_PAGE, 11);
+        $Pages = get_pages($Page, $Results, $master->settings->pagination->reports, 11);
         echo $Pages;
         ?>
     </div>
 
     <?php
-    while (list($ReportID, $SnitchID, $SnitchName, $ThingID, $Short, $ReportedTime, $Reason, $Status, $Comment) = $DB->next_record()) {
-        $Type = $Types[$Short];
+
+    foreach ($Reports as $Report) {
+        list($ReportID, $SnitchID, $SnitchName, $ThingID, $Short, $ReportedTime, $Reason, $Status, $Comment) = $Report;
+        $Type = $types[$Short];
         $Reference = "reports.php?id=" . $ReportID . "#report" . $ReportID;
 
         switch ($Short) {
             case "user" :
-                $DB->query("SELECT Username FROM users_main WHERE ID=" . $ThingID);
-                if ($DB->record_count() < 1) {
+                $username = $master->db->rawQuery(
+                    "SELECT Username
+                       FROM users
+                      WHERE ID = ?",
+                    [$ThingID]
+                )->fetchColumn();
+                if ($master->db->foundRows() < 1) {
                     $Link = "No user with the reported ID found";
                 } else {
-                    list($Username) = $DB->next_record();
                     $Subject = "You have been reported";
-                    $Link = "<a href='user.php?id=" . $ThingID . "'>" . display_str($Username) . "</a>";
-                    $UserID = $ThingID;
+                    $Link = "<a href='/user.php?id=" . $ThingID . "'>" . display_str($username) . "</a>";
+                    $userID = $ThingID;
                 }
                 break;
             case "request" :
             case "request_update" :
-                $DB->query("SELECT r.Title,
-                                     r.UserID,
-                                     u.Username
-                                     FROM requests AS r
-                                     LEFT JOIN users_main AS u ON u.ID = r.UserID WHERE r.ID=" . $ThingID);
-                if ($DB->record_count() < 1) {
+                $nextRecord = $master->db->rawQuery(
+                    "SELECT r.Title,
+                            r.UserID,
+                            u.Username
+                       FROM requests AS r
+                  LEFT JOIN users AS u ON u.ID = r.UserID
+                      WHERE r.ID = ?",
+                    [$ThingID]
+                )->fetch(\PDO::FETCH_NUM);
+                if ($master->db->foundRows() < 1) {
                     $Link = "No request with the reported ID found";
                 } else {
-                    list($Name, $UserID, $Username) = $DB->next_record();
+                    list($Name, $userID, $Username) = $nextRecord;
                     $Subject = "Your request " . display_str($Name) . " has been reported";
                     $Message = "Your request [url=/requests.php?action=view&amp;id=$ThingID]" . display_str($Name) . "[/url] has been reported";
-                    $Link = "<a href='requests.php?action=view&amp;id=" . $ThingID . "'>Request '" . display_str($Name) . "' by " . display_str($Username) . "</a>";
+                    $Link = "<a href='/requests.php?action=view&amp;id=" . $ThingID . "'>Request '" . display_str($Name) . "' by " . display_str($Username) . "</a>";
                 }
                 break;
             case "collage" :
-                $DB->query("SELECT c.Name,
-                                     c.UserID,
-                                     u.Username
-                                     FROM collages AS c
-                                     LEFT JOIN users_main AS u ON u.ID = c.UserID WHERE c.ID=" . $ThingID);
-                if ($DB->record_count() < 1) {
+                $nextRecord = $master->db->rawQuery(
+                    "SELECT c.Name,
+                            c.UserID,
+                            u.Username
+                       FROM collages AS c
+                  LEFT JOIN users AS u ON u.ID = c.UserID
+                      WHERE c.ID = ?",
+                    [$ThingID]
+                )->fetch(\PDO::FETCH_NUM);
+                if ($master->db->foundRows() < 1) {
                     $Link = "No collage with the reported ID found";
                 } else {
-                    list($Name, $UserID, $Username) = $DB->next_record();
+                    list($Name, $userID, $Username) = $nextRecord;
                     $Subject = "Your collage " . display_str($Name) . " has been reported";
-                    $Message = "Your collage [url=/collages.php?id=$ThingID]" . display_str($Name) . "[/url] has been reported";
-                    $Link = "<a href='collages.php?id=" . $ThingID . "'>Collage '" . display_str($Name) . "' by " . display_str($Username) . "</a>";
+                    $Message = "Your collage [url=/collage/$ThingID]" . display_str($Name) . "[/url] has been reported";
+                    $Link = "<a href='/collage/" . $ThingID . "'>Collage '" . display_str($Name) . "' by " . display_str($Username) . "</a>";
                 }
                 break;
             case "thread" :
-                $DB->query("SELECT f.Title,
-                                     f.AuthorID,
-                                     u.Username
-                                     FROM forums_topics AS f
-                                     LEFT JOIN users_main AS u ON u.ID = f.AuthorID WHERE f.ID=" . $ThingID);
-                if ($DB->record_count() < 1) {
+                $nextRecord = $master->db->rawQuery(
+                    "SELECT f.Title,
+                            f.AuthorID,
+                            u.Username
+                       FROM forums_threads AS f
+                  LEFT JOIN users AS u ON u.ID = f.AuthorID
+                      WHERE f.ID = ?",
+                    [$ThingID]
+                )->fetch(\PDO::FETCH_NUM);
+                if ($master->db->foundRows() < 1) {
                     $Link = "No thread with the reported ID found";
                 } else {
-                    list($Title, $UserID, $Username) = $DB->next_record();
+                    list($Title, $userID, $Username) = $nextRecord;
                     $Subject = "Your thread " . display_str($Title) . " has been reported";
-                    $Message = "Your thread [url=/forums.php?action=viewthread&amp;threadid=" . $ThingID . "]" . display_str($Title) . "[/url] has been reported";
-                    $Link = "<a href='forums.php?action=viewthread&amp;threadid=" . $ThingID . "'>Thread '" . display_str($Title) . "' by " . display_str($Username) . "</a>";
+                    $Message = "Your thread [url=/forum/thread/{$ThingID}]" . display_str($Title) . "[/url] has been reported";
+                    $Link = "<a href='/forum/thread/{$ThingID}'>Thread '" . display_str($Title) . "' by " . display_str($Username) . "</a>";
                 }
                 break;
             case "post" :
-                if (isset($LoggedUser['PostsPerPage'])) {
-                    $PerPage = $LoggedUser['PostsPerPage'];
+                if (isset($activeUser['PostsPerPage'])) {
+                    $PerPage = $activeUser['PostsPerPage'];
                 } else {
                     $PerPage = POSTS_PER_PAGE;
                 }
 
-                $DB->query("SELECT p.ID,
-                                     p.Body,
-                                     p.TopicID,
-                                     (SELECT COUNT(ID) FROM forums_posts
-                                                       WHERE forums_posts.TopicID = p.TopicID
-                                                       AND forums_posts.ID<=p.ID) AS PostNum,
-                                     f.Title,
-                                     p.AuthorID,
-                                     u.Username FROM forums_posts AS p
-                                                LEFT JOIN forums_topics AS f ON f.ID = p.TopicID
-                                                LEFT JOIN users_main AS u ON u.ID = p.AuthorID WHERE p.ID=" . $ThingID);
-                if ($DB->record_count() < 1) {
+                $nextRecord = $master->db->rawQuery(
+                    "SELECT p.ID,
+                            p.Body,
+                            p.ThreadID,
+                            f.Title,
+                            p.AuthorID,
+                            u.Username
+                       FROM forums_posts AS p
+                  LEFT JOIN forums_threads AS f ON f.ID = p.ThreadID
+                  LEFT JOIN users AS u ON u.ID = p.AuthorID
+                      WHERE p.ID = ?",
+                    [$ThingID]
+                )->fetch(\PDO::FETCH_NUM);
+                if ($master->db->foundRows() < 1) {
                     $Link = "No post with the reported ID found";
                 } else {
-                    list($PostID, $Body, $TopicID, $PostNum, $Title, $UserID, $Username) = $DB->next_record();
+                    list($PostID, $Body, $ThreadID, $Title, $userID, $Username) = $nextRecord;
                     $Subject = "Your post #$PostID in thread " . display_str($Title) . " has been reported";
-                    $Message = "Your post [url=/forums.php?action=viewthread&amp;threadid=" . $TopicID . "&post=" . $PostNum . "#post" . $PostID . "]#$PostID in thread '" . display_str($Title) . "'[/url] has been reported";
-                    $Link = "<a href='forums.php?action=viewthread&amp;threadid=" . $TopicID . "&post=" . $PostNum . "#post" . $PostID . "'>Post#$PostID by " . display_str($Username) . " in thread '" . display_str($Title) . "'</a>";
+                    $Message = "Your post [url=/forum/thread/{$ThreadID}?postid={$PostID}#post{$PostID}]#{$PostID} in thread '" . display_str($Title) . "'[/url] has been reported";
+                    $Link = "<a href='/forum/thread/{$ThreadID}?postid={$PostID}#post{$PostID}'>Post#{$PostID} by " . display_str($Username) . " in thread '" . display_str($Title) . "'</a>";
                 }
                 break;
             case "requests_comment" :
-                $DB->query("SELECT rc.RequestID,
-                                     rc.Body,
-                                     (SELECT COUNT(ID) FROM requests_comments
-                                                       WHERE ID <= " . $ThingID . "
-                                                       AND requests_comments.RequestID = rc.RequestID) AS CommentNum ,
-                                     r.Title,
-                                     rc.AuthorID,
-                                     u.Username
-                                     FROM requests_comments AS rc
-                                     LEFT JOIN requests AS r ON r.ID = rc.RequestID
-                                     LEFT JOIN users_main AS u ON u.ID = rc.AuthorID WHERE rc.ID=" . $ThingID);
-                if ($DB->record_count() < 1) {
+                $nextRecord = $master->db->rawQuery(
+                    "SELECT rc.RequestID,
+                            rc.Body,
+                            (
+                                SELECT COUNT(ID)
+                                  FROM requests_comments
+                                 WHERE ID <= ?
+                                   AND requests_comments.RequestID = rc.RequestID
+                            ) AS CommentNum,
+                            r.Title,
+                            rc.AuthorID,
+                            u.Username
+                       FROM requests_comments AS rc
+                  LEFT JOIN requests AS r ON r.ID = rc.RequestID
+                  LEFT JOIN users AS u ON u.ID = rc.AuthorID
+                      WHERE rc.ID = ?",
+                    [$ThingID, $ThingID]
+                )->fetch(\PDO::FETCH_NUM);
+                if ($master->db->foundRows() < 1) {
                     $Link = "No comment with the reported ID found";
                 } else {
-                    list($RequestID, $Body, $PostNum, $Title, $UserID, $Username) = $DB->next_record();
+                    list($RequestID, $Body, $PostNum, $Title, $userID, $Username) = $nextRecord;
                     $PageNum = ceil($PostNum / TORRENT_COMMENTS_PER_PAGE);
                     $Subject = "Your comment #$ThingID in request " . display_str($Title) . " has been reported";
                     $Message = "Your comment [url=/requests.php?action=view&amp;id=" . $RequestID . "&page=" . $PageNum . "#post" . $ThingID . "]#$ThingID in request " . display_str($Title) . "[/url] has been reported";
-                    $Link = "<a href='requests.php?action=view&amp;id=" . $RequestID . "&page=" . $PageNum . "#post" . $ThingID . "'>Comment#$ThingID by " . display_str($Username) . " in request '" . display_str($Title) . "'</a>";
+                    $Link = "<a href='/requests.php?action=view&amp;id=" . $RequestID . "&page=" . $PageNum . "#post" . $ThingID . "'>Comment#$ThingID by " . display_str($Username) . " in request '" . display_str($Title) . "'</a>";
                 }
                 break;
             case "torrents_comment" :
-                $DB->query("SELECT tc.GroupID,
-                                     tc.Body,
-                                     (SELECT COUNT(ID) FROM torrents_comments
-                                                       WHERE ID <= " . $ThingID . "
-                                                       AND torrents_comments.GroupID = tc.GroupID) AS CommentNum,
-                                     tg.Name,
-                                     tc.AuthorID,
-                                     u.Username
-                                     FROM torrents_comments AS tc
-                                     LEFT JOIN torrents_group AS tg ON tg.ID = tc.GroupID
-                                     LEFT JOIN users_main AS u ON u.ID = tc.AuthorID WHERE tc.ID=" . $ThingID);
-                if ($DB->record_count() < 1) {
+                $nextRecord = $master->db->rawQuery(
+                    "SELECT tc.GroupID,
+                            tc.Body,
+                            (
+                                SELECT COUNT(ID)
+                                  FROM torrents_comments
+                                 WHERE ID <= ?
+                                   AND torrents_comments.GroupID = tc.GroupID
+                            ) AS CommentNum,
+                            tg.Name,
+                            tc.AuthorID,
+                            u.Username
+                       FROM torrents_comments AS tc
+                  LEFT JOIN torrents_group AS tg ON tg.ID = tc.GroupID
+                  LEFT JOIN users AS u ON u.ID = tc.AuthorID
+                      WHERE tc.ID = ?",
+                    [$ThingID, $ThingID]
+                )->fetch(\PDO::FETCH_NUM);
+                if ($master->db->foundRows() < 1) {
                     $Link = "No comment with the reported ID found";
                 } else {
-                    list($GroupID, $Body, $PostNum, $Title, $UserID, $Username) = $DB->next_record();
+                    list($GroupID, $Body, $PostNum, $Title, $userID, $Username) = $nextRecord;
                     $PageNum = ceil($PostNum / TORRENT_COMMENTS_PER_PAGE);
                     $Subject = "Your comment #$ThingID in torrent " . display_str($Title) . " has been reported";
                     $Message = "Your comment [url=/torrents.php?id=" . $GroupID . "&page=" . $PageNum . "#post" . $ThingID . "]#$ThingID in torrent " . display_str($Title) . "[/url] has been reported";
-                    $Link = "<a href='torrents.php?id=" . $GroupID . "&page=" . $PageNum . "#post" . $ThingID . "'>Comment#$ThingID by " . display_str($Username) . " in torrent '" . display_str($Title) . "'</a>";
+                    $Link = "<a href='/torrents.php?id=" . $GroupID . "&page=" . $PageNum . "#post" . $ThingID . "'>Comment#$ThingID by " . display_str($Username) . " in torrent '" . display_str($Title) . "'</a>";
                 }
                 break;
-            case "collages_comment" :
-                $DB->query("SELECT cc.CollageID,
-                                     cc.Body,
-                                     (SELECT COUNT(ID) FROM collages_comments
-                                                       WHERE ID <= " . $ThingID . "
-                                                       AND collages_comments.CollageID = cc.CollageID) AS CommentNum,
-                                     c.Name,
-                                     cc.UserID,
-                                     u.Username
-                                     FROM collages_comments AS cc
-                                     LEFT JOIN collages AS c ON c.ID = cc.CollageID
-                                     LEFT JOIN users_main AS u ON u.ID = cc.UserID
-                                     WHERE cc.ID=" . $ThingID);
-                if ($DB->record_count() < 1) {
+            case "collages_comments" :
+                $nextRecord = $master->db->rawQuery(
+                    "SELECT cc.CollageID,
+                            cc.Body,
+                            (
+                                SELECT COUNT(ID)
+                                  FROM collages_comments
+                                 WHERE ID <= ?
+                                   AND collages_comments.CollageID = cc.CollageID
+                            ) AS CommentNum,
+                            c.Name,
+                            cc.AuthorID,
+                            u.Username
+                       FROM collages_comments AS cc
+                  LEFT JOIN collages AS c ON c.ID = cc.CollageID
+                  LEFT JOIN users AS u ON u.ID = cc.AuthorID
+                      WHERE cc.ID = ?",
+                    [$ThingID, $ThingID]
+                )->fetch(\PDO::FETCH_NUM);
+                if ($master->db->foundRows() < 1) {
                     $Link = "No comment with the reported ID found";
                 } else {
-                    list($CollageID, $Body, $PostNum, $Title, $UserID, $Username) = $DB->next_record();
+                    list($CollageID, $Body, $PostNum, $Title, $userID, $Username) = $nextRecord;
                     $PerPage = POSTS_PER_PAGE;
                     $PageNum = ceil($PostNum / $PerPage);
                     $Subject = "Your comment #$ThingID in collage " . display_str($Title) . " has been reported";
                     $Message = "Your comment [url=/collage.php?action=comments&amp;collageid=" . $CollageID . "&page=" . $PageNum . "#post" . $ThingID . "]#$ThingID in collage " . display_str($Title) . "[/url] has been reported";
-                    $Link = "<a href='collage.php?action=comments&amp;collageid=" . $CollageID . "&page=" . $PageNum . "#post" . $ThingID . "'>Comment#$ThingID by " . display_str($Username) . " in collage '" . display_str($Title) . "'</a>";
+                    $Link = "<a href='/collage.php?action=comments&amp;collageid=" . $CollageID . "&page=" . $PageNum . "#post" . $ThingID . "'>Comment#$ThingID by " . display_str($Username) . " in collage '" . display_str($Title) . "'</a>";
                 }
                 break;
         }
@@ -351,7 +396,7 @@ $DB->set_query_id($Reports);
                 <form action="reports.php" method="post">
 
                     <input type="hidden" name="reportid" value="<?= $ReportID ?>" />
-                    <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+                    <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
                     <tr class="colhead">
                         <td class="center" colspan="3">
                             <strong style="float:left;"><?= $Type['title'] ?></strong>
@@ -368,11 +413,11 @@ $DB->set_query_id($Reports);
                         </td>
                     </tr>
                     <tr class="rowa">
-                        <td colspan="3">Reason:<br/><?= $Text->full_format($Reason, get_permissions_advtags($SnitchID)) ?></td>
+                        <td colspan="3">Reason:<br/><?= $bbCode->full_format($Reason, get_permissions_advtags($SnitchID)) ?></td>
                     </tr>
                     <tr class="rowb">
                         <td colspan="<?= ($Status != 'Resolved') ? '2' : '3' ?>">
-                            <div>Staff Comment:<br/><?= $Text->full_format($Comment, true) ?></div>
+                            <div>Staff Comment:<br/><?= $bbCode->full_format($Comment, true) ?></div>
 <?php   if ($Status != "Resolved") { ?>
                                 <br/><textarea name="comment" rows="2" class="long"></textarea>
 <?php   } ?>
@@ -380,7 +425,7 @@ $DB->set_query_id($Reports);
 <?php   if ($Status != "Resolved") { ?>
                             <td width="80px" valign="bottom">
                                 <input type="submit" name="action" value="Add comment" />
-<?php       if (check_perms('admin_reports') || check_perms('site_moderate_forums')) { ?>
+<?php       if (check_perms('admin_reports') || check_perms('forum_moderate')) { ?>
                                 <input type="submit" name="action" value="Resolve" />
 <?php       } ?>
                             </td>
@@ -389,18 +434,25 @@ $DB->set_query_id($Reports);
                 </form>
                 <?php
                 // get the conversations
-                $Conversations = array();
-                $DB->query("SELECT rc.ConvID, pm.UserID, um.Username,
-                                (CASE WHEN UserID='$SnitchID' THEN 'Reporter'
-                                      WHEN UserID='$UserID' THEN 'Offender'
-                                      ELSE 'other'
-                                 END) AS ConvType, pm.Date
-                                FROM reports_conversations AS rc
-                                JOIN staff_pm_conversations AS pm ON pm.ID=rc.ConvID
-                                LEFT JOIN users_main AS um ON um.ID=pm.UserID
-                            WHERE ReportID=" . $ReportID . "
-                                ORDER BY pm.Date ASC");
-                $Conversations = $DB->to_array();
+                $Conversations = $master->db->rawQuery(
+                    "SELECT rc.ConvID,
+                            pm.UserID,
+                            u.Username,
+                            (
+                                CASE
+                                    WHEN UserID = ? THEN 'Reporter'
+                                    WHEN UserID = ? THEN 'Offender'
+                                    ELSE 'other'
+                                 END
+                            ) AS ConvType,
+                            pm.Date
+                       FROM reports_conversations AS rc
+                       JOIN staff_pm_conversations AS pm ON pm.ID=rc.ConvID
+                  LEFT JOIN users AS u ON u.ID=pm.UserID
+                      WHERE ReportID = ?
+                   ORDER BY pm.Date ASC",
+                    [$SnitchID, $userID, $ReportID]
+                )->fetchAll(\PDO::FETCH_BOTH);
 
                 if (count($Conversations)>0) {
                 ?>
@@ -421,7 +473,7 @@ $DB->set_query_id($Reports);
                     </tr>
                 <?php
                 }
-                if ($Status != "Resolved" && (check_perms('admin_reports') || check_perms('site_moderate_forums'))) { ?>
+                if ($Status != "Resolved" && (check_perms('admin_reports') || check_perms('forum_moderate'))) { ?>
                     <tr class="rowa">
                         <td colspan="3" style="border-right: none">
 
@@ -429,7 +481,7 @@ $DB->set_query_id($Reports);
                                 <span style="float:right;">
                                     Start new staff conversation with
                                     <select name="toid" id="pm_type<?=$ReportID?>" onchange="change_pmto(<?=$ReportID?>);" >
-                                        <option value="<?= $UserID ?>"><?=$Username?> (Offender)</option>
+                                        <option value="<?= $userID ?>"><?=$Username ?? ''?> (Offender)</option>
                                         <option value="<?= $SnitchID ?>"><?=$SnitchName?> (Reporter)</option>
                                     </select> about this report: &nbsp;&nbsp;&nbsp;&nbsp;
                                     <a href="#report<?= $ReportID ?>" onClick="Open_Compose_Message(<?="'$ReportID'"?>)">[Compose Message]</a>
@@ -450,31 +502,35 @@ $DB->set_query_id($Reports);
                                                 <option id="first_common_response<?= $ReportID ?>">Select a message</option>
                                                 <?php
                                                 // List common responses
-                                                $DB->query("SELECT ID, Name FROM staff_pm_responses");
-                                                while (list($ID, $Name) = $DB->next_record()) {
+                                                $staffPMs = $master->db->rawQuery(
+                                                    "SELECT ID,
+                                                            Name
+                                                       FROM staff_pm_responses"
+                                                )->fetchAll(\PDO::FETCH_OBJ);
+                                                foreach ($staffPMs as $staffPM) {
                                                     ?>
-                                                    <option value="<?= $ID ?>"><?= $Name ?></option>
+                                                    <option value="<?= $staffPM->ID ?>"><?= $staffPM->Name ?></option>
                                                 <?php  } ?>
                                             </select>
                                             <input type="button" value="Set message" onClick="Set_Message(<?=$ReportID?>);" />
-                                            <input type="button" value="Create new / Edit" onClick="location.href='staffpm.php?action=responses&convid=<?= $ConvID ?>'" />
+                                            <input type="button" value="Create new / Edit" onClick="location.href='/staffpm.php?action=responses&convid=<?= $ConvID ?? '' ?>'" />
                                         </div>
                                     </div>
 
                                         <div id="quickpost<?= $ReportID ?>">
                                             <input type="hidden" name="reportid" value="<?= $ReportID ?>" />
-                                            <input type="hidden" name="username" value="<?= $Username ?>" />
-                                            <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+                                            <input type="hidden" name="username" value="<?= $Username ?? '' ?>" />
+                                            <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
                                             <input type="hidden" name="action" value="takepost" />
                                             <input type="hidden" name="prependtitle" value="Staff PM - " />
 
-                                            <label for="subject"><h3>Subject</h3></label>
+                                            <label for="subject<?= $ReportID ?>"><h3>Subject</h3></label>
                                             <input class="long" type="text" name="subject" id="subject<?= $ReportID ?>" value="<?= display_str($Subject) ?>" />
                                             <br />
 
-                                            <label for="message"><h3>Message</h3></label>
-                                            <?php  $Text->display_bbcode_assistant("message$ReportID"); ?>
-                                            <textarea rows="6" class="long" name="message" id="message<?= $ReportID ?>"><?= display_str($Message) ?></textarea>
+                                            <label for="message<?= $ReportID ?>"><h3>Message</h3></label>
+                                            <?php  $bbCode->display_bbcode_assistant("message$ReportID"); ?>
+                                            <textarea rows="6" class="long" name="message" id="message<?= $ReportID ?>"><?= display_str($Message ?? '') ?></textarea>
                                             <br />
 
                                         </div>
@@ -494,7 +550,6 @@ $DB->set_query_id($Reports);
         </div>
         <br />
         <?php
-        $DB->set_query_id($Reports);
     }
     ?>
 </div>

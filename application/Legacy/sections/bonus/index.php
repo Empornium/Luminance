@@ -11,7 +11,7 @@ if (!isset($_REQUEST['action'])) {
         case 'ajax_slot_paytable':
             include(SERVER_ROOT.'/Legacy/sections/bonus/slot_xxx_arrays.php');
             $Bet=(int) $_REQUEST['bet'];
-            print_payout_table($Bet);
+            print_payout_table($Bet, $payout);
             break;
         case 'slot':
             include(SERVER_ROOT.'/Legacy/sections/bonus/slotmachine_xxx.php');
@@ -36,6 +36,9 @@ if (!isset($_REQUEST['action'])) {
             break;
         case 'takecredits':
             include(SERVER_ROOT.'/Legacy/sections/bonus/takecredits.php');
+            break;
+        case 'buygiftuser':
+            include(SERVER_ROOT.'/Legacy/sections/bonus/usergift_modal.php');
             break;
         default:
             include(SERVER_ROOT.'/Legacy/sections/bonus/bonus.php');

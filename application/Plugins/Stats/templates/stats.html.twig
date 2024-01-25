@@ -1,0 +1,23 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block main_content %}
+    <div class="linkbox">
+        {% if auth.isAllowed('site_stats_advanced') %}
+            <a href="/stats/users">[User graphs]</a>
+            <a href="/stats/forum">[Forum stats]</a>
+        {% endif %}
+        {% if auth.isAllowed('site_view_stats') %}
+            <a href="/stats/site">[Site stats]</a>
+        {% endif %}
+        {% if auth.isAllowed('site_stats_advanced') %}
+            <a href="/stats/torrents">[Torrent stats]</a>
+        {% endif %}
+    </div>
+    <br/>
+
+    {{ block('stats_content') }}
+{% endblock %}

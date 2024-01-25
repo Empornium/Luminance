@@ -1,0 +1,296 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : true,
+    'noGroup'   : true,
+    'noClass'   : true,
+    'noTitle'   : true,
+} %}
+{% set classOptions = {
+    'useSpan'   : true,
+} %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/collage/{{ collage.ID }}">{{ collage.Name|decode }}</a>
+{% endblock %}
+
+{% block main_content %}
+    <div class="linkbox">
+        <a href="/collage/">[List of collages]</a>
+        {% if auth.isAllowed('collage_create') %}
+            <a href="/collage/create">[New collage]</a>
+            <br/><br/>
+        {% endif %}
+        {% if auth.isAllowed('collage_subscribe') %}
+            <a href="#" onclick="CollageSubscribe({{ collage.ID }});return false;" id="subscribelink{{ collage.ID }}">
+                [{{ (collage.isSubscribed()) ? 'Unsubscribe' : 'Subscribe' }}]
+            </a>
+        {% endif %}
+        {% if collage.canEdit() or collage.canRename() %}
+            <a href="/collage/{{ collage.ID }}/edit">[Edit description]</a>
+        {% endif %}
+        {% if has_bookmarked('collage', collage.ID) %}
+            <a href="#" id="bookmarklink_collage_{{ collage.ID }}" onclick="Unbookmark('collage', {{ collage.ID }},'[Bookmark]');return false;">[Remove bookmark]</a>
+        {% else %}
+            <a href="#" id="bookmarklink_collage_{{ collage.ID }}" onclick="Bookmark('collage', {{ collage.ID }},'[Remove bookmark]');return false;">[Bookmark]</a>
+        {% endif %}
+
+        {% if collage.canManage() %}
+            <a href="/collage/{{ collage.ID }}/manage">[Manage torrents]</a>
+        {% endif %}
+
+        <a href="/reports.php?action=report&amp;type=collage&amp;id={{ collage.ID }}">[Report Collage]</a>
+        {% if auth.isAllowed('collage_trash') or (collage.UserID == ActiveUser.ID and (collage.category.isPersonal() or collage.userCount == 0 or (collage.userCount == 1 and collage.users[collage.userID] is defined ))) %}
+            <a href="/collage/{{ collage.ID }}/remove" rel="modal:open">[Trash]</a>
+        {% endif %}
+        </div>
+
+        <div class="sidebar">
+            <div class="head"><strong>Category</strong></div>
+                <div class="box pad">
+                    <table class="center">
+                        <tr>
+                            <td class="center">
+                                <h3>{{ collage.category.Name }}</h3>
+                            </td>
+                            <td class="right">
+                                <a href="/collage/?searchCategories[{{ collage.CategoryID }}]=1">
+                                    <img src="/static/common/collageicons/{{ collage.category.Image }}" alt="{{ collage.category.Name }}" title="{{ collage.category.Name }}" />
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                {% if (auth.isAllowed('site_zip_downloader') and (auth.isAllowed('torrent_download_override') or master.options.EnableDownloads)) %}
+                    <div class="head">
+                        <strong>Collector</strong>
+                    </div>
+                    <div class="box">
+                        <div class="pad">
+                            <form action="/collage/{{ collage.ID }}/download" method="post">
+                                <input type="hidden" name="token" value="{{ secretary.getToken("collage.download") }}" />
+                                <select name="preference" style="width:210px">
+                                    <option value="0">Download All</option>
+                                    <option value="1">At least 1 seeder</option>
+                                    <option value="2">5 or more seeders</option>
+                                </select>
+                                <input type="submit" style="width:210px" value="Download" />
+                            </form>
+                        </div>
+                    </div>
+              {% endif %}
+              <div class="head">
+                  <strong>Stats</strong>
+              </div>
+              <div class="box">
+                  <ul class="stats nobullet">
+                      <li>Torrents: {{ collage.count }}</li>
+                      <li>Subscribers: {{ collage.subCount }}</li>
+                      <li>Total Size: {{ get_size(collage.size) }}</li>
+                      <li>Built by {{ collage.userCount }} user{{ collage.userCount > 1 ? 's'}}</li>
+                  </ul>
+              </div>
+
+              <div class="head">
+                  <strong>Created by {{ collage.user.Username }}</strong>
+              </div>
+              <div class="box pad">
+                  {% if auth.isAllowed('collage_moderate') or collage.canEdit() %}
+                      <form action="/collage/{{ collage.ID }}/level/assign" method="post">
+                          <input type="hidden" name="token" value="{{ secretary.getToken("collage.level.assign") }}" />
+                          The collage creator can set the permission level for who can add/remove torrents<br/>
+                          <em>only the collage creator can edit the description</em><br/>
+                          <select name="permission">
+                              {% for classLevel in classLevels %}
+                                  <option value="{{ classLevel.Level }}" {{ classLevel == permission ? ' selected="selected"' }}>{{ classLevel.Name }}</option>
+                              {% endfor %}
+                              <option value="0" {{ collage.Permissions == 0 ? 'selected="selected"' }}>Only Creator</option>
+                          </select>
+                          <input type="submit" value="Change" title="Change Permissions" />
+                      </form>
+                  {% endif %}
+                  {% if auth.isAllowed('collage_assign_groups') %}
+                      <form action="/collage/{{ collage.ID }}/groups/assign" method="post">
+                          <input type="hidden" name="token" value="{{ secretary.getToken("collage.groups.assign") }}" />
+                          <br/>
+                          You can allow groups to add/remove torrents:<br/>
+                          {% for group in collage.getGroupAccess() %}
+                              <input id="group_{{ group.ID }}" name="groups[{{ group.ID }}]" type="checkbox" value="{{ group.ID }}" {{ group.Access ? ' checked="checked"' }} />
+                              <label for="group_{{ group.ID }}">{{ group.Name }}</label>
+                              <br/>
+                          {% endfor %}
+                          <input type="submit" value="Assign groups" title="Assign selected groups" />
+                      </form>
+                  {% endif %}
+
+                  <br/>
+                  torrents can be added/removed by:
+                  {% if collage.Permissions==0 %}
+                      <span style="font-weight:bold">{{ collage.user.Username }}</span>;
+                  {% else %}
+                      {{ render.userclass(classLevels[collage.Permissions].ID, classOptions)|raw }}+
+                  {% endif %}
+                  {% if collage.groupList %}
+                      and {{ collage.groupList }}
+                  {% endif %}
+                  <br/>
+                  you <span style="font-weight:bold">{{ collage.canAdd() ? 'can' : 'cannot' }}</span> add/remove torrents to this collage.
+              </div>
+              <div class="head"><strong>Top tags</strong></div>
+              <div class="box">
+                <div class="pad">
+                    <ol style="padding-left:5px;">
+                    {% for tag in collage.tags %}
+                        <li>
+                            <a href="/collage/?tags={{ tag.name }}">
+                                {{ tag.name }}
+                            </a>
+                            ({{ tag.count }})</li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+        <div class="head"><strong>Top contributors</strong></div>
+        <div class="box">
+            <div class="pad">
+                <ol style="padding-left:5px;">
+                    {% for userID, user in collage.users|slice(0, 10, true) %}
+                        <li>{{ render.username(userID, usernameOptions) }} ({{ user.count }})</li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+        {% if collage.canAdd() %}
+            <div class="head">
+                <span style="float:left">
+                    <strong>Add torrent</strong>
+                </span>
+                <span style="float: right">
+                    <a href="#" onClick="$('#addtorrent').toggle(); $('#batchadd').toggle(); this.innerHTML = (this.innerHTML == '[Batch Add]'?'[Individual Add]':'[Batch Add]'); return false;">[Batch Add]</a>
+                </span>
+            </div>
+            <div class="box">
+                <div class="pad" id="addtorrent">
+                    <form action="/collage/{{ collage.ID }}/add" method="post">
+                        <input type="hidden" name="token" value="{{ secretary.getToken("collage.add") }}" />
+                        <input type="text" size="20" name="url" />
+                        <input type="submit" value="+" />
+                        <br/>
+                        <i>Enter the URL of a torrent on the site.</i>
+                    </form>
+                </div>
+                <div class="pad hidden" id="batchadd">
+                    <form action="/collage/{{ collage.ID }}/add" method="post">
+                        <input type="hidden" name="token" value="{{ secretary.getToken("collage.add") }}" />
+                        <textarea name="urls" rows="5" cols="25" wrap="off"></textarea>
+                        <br/>
+                        <input type="submit" value="Add" />
+                        <br/>
+                        <i>Enter the URLs of torrents on the site, one to a line.</i>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="main_column">
+        {% if groups|length > 0 and ActiveUser.options('CollageCovers') is not same as(0) %}
+            <div class="head" id="coverhead">
+                <strong>Cover Art</strong>
+            </div>
+            {% include 'snippets/torrent_grid.html.twig' %}
+        {% endif %}
+        <br/>
+        <div class="head">
+            <strong>Description</strong>
+        </div>
+        <div class="box">
+            <div class="pad">{{ bbcode.full_format(collage.Description, get_permissions_advtags(collage.userID))|raw }}</div>
+        </div>
+    </div>
+    <br/>
+    <div class="clear"></div>
+    <br/>
+    <div class="linkbox pager">
+        {{ render.pagelinks(collagePage, collage.count, collagePageSize, 8, '#discog_table') }}
+    </div>
+    {% include 'snippets/torrent_table.html.twig' %}
+    <div class="linkbox pager">
+        {{ render.pagelinks(collagePage, collage.count, collagePageSize, 8, '#discog_table') }}
+    </div>
+    <br style="clear:both;" />
+    {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::COMMENT')) %}
+        <div class="linkbox pager">
+            {{ render.pagelinks(commentPage, collage.commentCount, commentPageSize, 9, '', 'commentPage') }}
+        </div>
+        {% for comment in comments %}
+            {{ render.post('collage comment', comment) }}
+        {% endfor %}
+        <div class="linkbox pager">
+            {{ render.pagelinks(commentPage, collage.commentCount, commentPageSize, 9, '', 'commentPage') }}
+        </div>
+
+        {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::POST')) %}
+            <div class="messagecontainer" id="container">
+                <div id="message" class="hidden center messagebar"></div>
+            </div>
+            <table id="quickreplypreview" class="forum_post box vertical_margin hidden {{ ActiveUser.options('DisableAvatars', 0) == 1 ? 'noavatar' }}" style="text-align:left;">
+                <tr class="smallhead">
+                    <td colspan="2">
+                        <span style="float:left;">
+                              <a href='#quickreplypreview'>#XXXXXX</a>
+                              {% set usernameOptions = {
+                                  'drawInBox' : true,
+                                  'colorname' : false,
+                                  'dropDown'  : true,
+                                  'useSpan'   : true,
+                                  'noIcons'   : false,
+                                  'noGroup'   : false,
+                                  'noClass'   : false,
+                                  'noTitle'   : false,
+                              } %}
+                              {{ render.username(ActiveUser.ID, usernameOptions) }} Just now
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    {% if ActiveUser.options('DisableAvatars', 0) == 0 %}
+                        <td class="avatar" valign="top">
+                            {% if ActiveUser.legacy.Avatar is not empty %}
+                                <img src="{{ ActiveUser.legacy.Avatar }}" class="avatar" style="{{ get_avatar_css(ActiveUser.class.MaxAvatarWidth, ActiveUser.class.MaxAvatarHeight) }}" alt="{{ ActiveUser.Username}}'s avatar" />
+                            {% else %}
+                                <img src="/static/common/avatars/default.png"  class="avatar" style="{{ get_avatar_css(100, 120) }}" alt="Default avatar" />
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                    <td class="body" valign="top">
+                        <div id="contentpreview" class="preview_content" style="text-align:left;"></div>
+                    </td>
+                </tr>
+            </table>
+            <div class="head">Post reply</div>
+            <div class="box pad shadow">
+                <form id="quickpostform" action="/collage/{{ collage.ID }}/comment" method="post" onsubmit="return Validate_Form('message','quickpost')" style="display: block; text-align: center;">
+                    <input type="hidden" name="token" value="{{ secretary.getToken("collage.comment") }}" />
+                    <div id="quickreplytext">
+                        {{ bbcode.display_bbcode_assistant("quickpost", get_permissions_advtags(ActiveUser.ID, ActiveUser.CustomPermissions)) }}
+                        <textarea id="quickpost" class="long" tabindex="1" onkeyup="resize('quickpost');" name="body" rows="8"></textarea>
+                        <br/>
+                    </div>
+                    <input id="post_preview" type="button" value="Preview" onclick="if (this.preview) {Quick_Edit();} else {Quick_Preview();}" />
+                    <input type="submit" value="Post reply" />
+                </form>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}

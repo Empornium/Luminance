@@ -29,6 +29,5 @@ $superglobals = [
     'env' => $_ENV
 ];
 
-global $master;
 $master = new \Luminance\Core\Master(__DIR__, $superglobals, $startTime);
 $master->run();

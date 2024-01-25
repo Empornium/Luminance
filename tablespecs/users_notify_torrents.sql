@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `users_notify_torrents` (
   `GroupID` int(10) NOT NULL,
   `TorrentID` int(10) NOT NULL,
   `UnRead` enum('1','0') NOT NULL DEFAULT '1',
-  PRIMARY KEY (`UserID`,`TorrentID`),
+  PRIMARY KEY (`FilterID`,`TorrentID`),
   KEY `UnRead` (`UnRead`),
   KEY `UserID` (`UserID`),
   KEY `TorrentID` (`TorrentID`)

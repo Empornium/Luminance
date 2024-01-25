@@ -2,8 +2,8 @@
 if (!check_perms('admin_manage_badges')) { error(403); }
 
 // get all images in badges directory for drop down
-$imagefiles = scandir($master->public_path.'/static/common/badges');
-$imagefiles= array_diff($imagefiles, array('.','..'));
+$imagefiles = scandir($master->publicPath.'/static/common/badges');
+$imagefiles = array_diff($imagefiles, ['.', '..']);
 
 function print_select_image($ElementID, $CurrentImage='')
 {
@@ -17,14 +17,14 @@ function print_select_image($ElementID, $CurrentImage='')
 <?php
 }
 
-show_header('Badges','badges');
+show_header('Badges', 'badges');
 
 ?>
 <div class="thin">
     <h2>Badges</h2>
     <form action="tools.php" method="post">
         <input type="hidden" name="action" value="badges_alter" />
-        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
         <table>
             <tr>
                 <td colspan="10" class="head">Add badge(s)</td>
@@ -50,7 +50,7 @@ show_header('Badges','badges');
             $numAdds = isset($_REQUEST['numadd'])?(int) $_REQUEST['numadd']:5;
             if ($numAdds<1 || $numAdds > 20) $numAdds = 1;
 
-            foreach ($BadgeTypes as $valtype) {
+            foreach ($badgeTypes as $valtype) {
                 $badge_select_html .= '<option value="'.$valtype.'">'.$valtype.'&nbsp;&nbsp;</option>';
             }
 
@@ -71,7 +71,7 @@ show_header('Badges','badges');
                         <input class="long" type="text" name="desc[<?=$ID?>]" id="desc<?=$ID?>" value="awarded for XXXXXX. This user has doneY/achievedZ" onchange="Set_Edit('<?=$ID?>')" title="Description"/>
                     </td>
                     <td rowspan="2">
-                        <a href="#" onclick="Fill_From(<?=$i?>,['badge','title','image','imagesrc','desc','type','row','rank','sort','cost'])" title="fill other add forms with this forms values">fill</a>
+                        <a href="#" onclick="Fill_From(<?=$i?>,['badge', 'title', 'image', 'imagesrc', 'desc', 'type', 'row', 'rank', 'sort', 'cost'])" title="fill other add forms with this forms values">fill</a>
                     </td>
                 </tr>
                 <tr class="rowb">
@@ -115,7 +115,7 @@ show_header('Badges','badges');
                     </td>
                     <td colspan="4" style="text-align: center;">
                         <label for="returntop">return to top</label>
-                        <input type="checkbox" name="returntop" value="1" title="If checked you will return to the top of the page after adding (otherwise you will return to where the new badges are in the list)" />
+                        <input type="checkbox" id="returntop" name="returntop" value="1" title="If checked you will return to the top of the page after adding (otherwise you will return to where the new badges are in the list)" />
                     </td>
                 </tr>
         </table>
@@ -157,7 +157,7 @@ show_header('Badges','badges');
     <div class="head">Manage Badges</div>
     <form id="editbadges" action="tools.php" method="post">
         <input type="hidden" name="action" value="badges_alter" />
-        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
         <table>
             <tr class="colhead">
                 <td width="10px" rowspan="2">ID<br/>-<br/>Edit</td>
@@ -176,10 +176,11 @@ show_header('Badges','badges');
                 <td width="12%">Cost</td>
             </tr>
 <?php
-            $DB->query("SELECT ID, Badge, Rank, Type, Display, Sort, Cost, Title, Description, Image
-                  FROM badges ORDER BY Display, Sort, Rank");
+            $records = $master->db->rawQuery("SELECT ID, Badge, Rank, Type, Display, Sort, Cost, Title, Description, Image
+                  FROM badges ORDER BY Display, Sort, Rank")->fetchAll(\PDO::FETCH_NUM);
 
-            while (list($ID, $Badge, $Rank, $Type, $Display, $Sort, $Cost, $Title, $Description, $Image) = $DB->next_record()) {
+            foreach ($records as $record) {
+            list($ID, $Badge, $Rank, $Type, $Display, $Sort, $Cost, $Title, $Description, $Image) = $record;
                 $Row = ($Row === 'a' ? 'b' : 'a');
 ?>
                 <tr class="rowb" style="border-top: 1px solid;">
@@ -219,7 +220,7 @@ show_header('Badges','badges');
                     </td>
                     <td>
                         <select name="type[<?=$ID?>]" title="Badge Type" onchange="Set_Edit(<?=$ID?>)">
-<?php                           foreach ($BadgeTypes as $valtype) {   ?>
+<?php                           foreach ($badgeTypes as $valtype) {   ?>
                                 <option value="<?=$valtype?>"<?=($valtype==$Type?' selected="selected"':'')?>><?=$valtype?>&nbsp;&nbsp;</option>
 <?php                           } ?>
                         </select>

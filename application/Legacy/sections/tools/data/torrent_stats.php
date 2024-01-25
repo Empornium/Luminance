@@ -2,24 +2,65 @@
 if (!check_perms('site_view_flow')) { error(403); }
 show_header('Torrents');
 
-if (!$TorrentStats = $Cache->get_value('new_torrent_stats')) {
-    $DB->query("SELECT COUNT(ID), SUM(Size), SUM(FileCount) FROM torrents");
-    list($TorrentCount, $TotalSize, $TotalFiles) = $DB->next_record();
-    $DB->query("SELECT COUNT(ID) FROM users_main WHERE Enabled='1'");
-    list($NumUsers) = $DB->next_record();
-    $DB->query("SELECT COUNT(ID), SUM(Size), SUM(FileCount) FROM torrents WHERE Time > SUBDATE('".sqltime()."', INTERVAL 1 DAY)");
-    list($DayNum, $DaySize, $DayFiles) = $DB->next_record();
-    $DB->query("SELECT COUNT(ID), SUM(Size), SUM(FileCount) FROM torrents WHERE Time > SUBDATE('".sqltime()."', INTERVAL 7 DAY)");
-    list($WeekNum, $WeekSize, $WeekFiles) = $DB->next_record();
-    $DB->query("SELECT COUNT(ID), SUM(Size), SUM(FileCount) FROM torrents WHERE Time > SUBDATE('".sqltime()."', INTERVAL 30 DAY)");
-    list($MonthNum, $MonthSize, $MonthFiles) = $DB->next_record();
-    $Cache->cache_value('new_torrent_stats',array($TorrentCount,$TotalSize,$TotalFiles,
-                        $NumUsers,$DayNum,$DaySize,$DayFiles,
-                        $WeekNum,$WeekSize,$WeekFiles,$MonthNum,
-                        $MonthSize,$MonthFiles),3600);
+if (!$TorrentStats = $master->cache->getValue('new_torrent_stats')) {
+    list($TorrentCount, $TotalSize, $TotalFiles) = $master->db->rawQuery(
+        "SELECT COUNT(ID),
+                SUM(Size),
+                SUM(FileCount)
+           FROM torrents"
+    )->fetch(\PDO::FETCH_NUM);
+
+    $NumUsers = $master->db->rawQuery(
+        "SELECT COUNT(ID)
+           FROM users_main
+          WHERE Enabled='1'"
+    )->fetchColumn();
+
+    list($DayNum, $DaySize, $DayFiles) = $master->db->rawQuery(
+        "SELECT COUNT(ID),
+                SUM(Size),
+                SUM(FileCount)
+           FROM torrents
+          WHERE Time > SUBDATE('".sqltime()."', INTERVAL 1 DAY)"
+    )->fetch(\PDO::FETCH_NUM);
+
+    list($WeekNum, $WeekSize, $WeekFiles) = $master->db->rawQuery(
+        "SELECT COUNT(ID),
+                SUM(Size),
+                SUM(FileCount)
+           FROM torrents
+          WHERE Time > SUBDATE('".sqltime()."', INTERVAL 7 DAY)"
+    )->fetch(\PDO::FETCH_NUM);
+
+    list($MonthNum, $MonthSize, $MonthFiles) = $master->db->rawQuery(
+        "SELECT COUNT(ID),
+                SUM(Size),
+                SUM(FileCount)
+           FROM torrents
+          WHERE Time > SUBDATE('".sqltime()."', INTERVAL 30 DAY)"
+    )->fetch(\PDO::FETCH_NUM);
+    
+    $master->cache->cacheValue(
+        'new_torrent_stats',
+        [
+            $TorrentCount,
+            $TotalSize,
+            $TotalFiles,
+            $NumUsers,
+            $DayNum,
+            $DaySize,
+            $DayFiles,
+            $WeekNum,
+            $WeekSize,
+            $WeekFiles,
+            $MonthNum,
+            $MonthSize,
+            $MonthFiles
+        ],
+        3600);
 } else {
-    list($TorrentCount,$TotalSize,$TotalFiles,$NumUsers,$DayNum,$DaySize,$DayFiles,
-        $WeekNum,$WeekSize,$WeekFiles,$MonthNum,$MonthSize,$MonthFiles) = $TorrentStats;
+    list($TorrentCount, $TotalSize, $TotalFiles, $NumUsers, $DayNum, $DaySize, $DayFiles,
+        $WeekNum, $WeekSize, $WeekFiles, $MonthNum, $MonthSize, $MonthFiles) = $TorrentStats;
 }
 
 ?>

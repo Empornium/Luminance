@@ -1,12 +1,12 @@
 function ChangeReportType() {
-	ajax.post("reportsv2.php?action=ajax_report","report_table", function (response) {
+	ajax.post("/reportsv2.php?action=ajax_report","report_table", function (response) {
 		$('#dynamic_form').raw().innerHTML = response;
 	});
 }
 
 function ChangeResolve(reportid) {
     torrentid = $('#torrentid' + reportid).raw().value;
-    ajax.get('reportsv2.php?action=ajax_change_resolve&torrentid=' + torrentid + '&id=' + reportid + '&type=' + $('#resolve_type' + reportid).raw().value, function (response) {
+    ajax.get('/reportsv2.php?action=ajax_change_resolve&torrentid=' + torrentid + '&id=' + reportid + '&type=' + $('#resolve_type' + reportid).raw().value, function (response) {
             var x = json.decode(response);
             if (!is_array(x)) {
                  alert(x);
@@ -51,7 +51,7 @@ function Load(reportid) {
 	}
     torrentid = $('#torrentid' + reportid).raw().value;
 	//Can't use ChangeResolve() because we need it to block to do the uploader==reporter part
-	ajax.get('reportsv2.php?action=ajax_change_resolve&torrentid=' + torrentid + '&id=' + reportid + '&type=' + $('#resolve_type' + reportid).raw().value , function (response) {
+	ajax.get('/reportsv2.php?action=ajax_change_resolve&torrentid=' + torrentid + '&id=' + reportid + '&type=' + $('#resolve_type' + reportid).raw().value , function (response) {
             var x = json.decode(response);
             if (!is_array(x)) {
                  alert(x);
@@ -117,7 +117,7 @@ function HideErrors() {
 
 function TakeResolve(reportid) {
 	$('#submit_' + reportid).disable();
-	ajax.post("reportsv2.php?action=takeresolve","report_form" + reportid, function (response) {
+	ajax.post("/reportsv2.php?action=takeresolve","report_form" + reportid, function (response) {
 		if(response) {
 			ErrorBox(reportid, response);
 		} else {
@@ -135,8 +135,8 @@ function TakeResolve(reportid) {
 }
 
 function NewReport(q, view, id) {
-	for(var i = 0; i < q; i++) {
-		var url = "reportsv2.php?action=ajax_new_report";
+	for (var i = 0; i < q; i++) {
+		var url = "/reportsv2.php?action=ajax_new_report";
 		if(view) {
 			url += "&view=" + view;
 		}
@@ -187,7 +187,7 @@ function AddMore(view, id) {
 }
 
 function SendPM(reportid) {
-	ajax.post("reportsv2.php?action=ajax_take_pm", "report_form" + reportid, function (response) {
+	ajax.post("/reportsv2.php?action=ajax_take_pm", "report_form" + reportid, function (response) {
 		if(response) {
 			$('#uploader_pm' + reportid).raw().value = response;
 		} else {
@@ -197,7 +197,7 @@ function SendPM(reportid) {
 }
 
 function UpdateComment(reportid) {
-	ajax.post("reportsv2.php?action=ajax_update_comment", 'report_form' + reportid, function (response) {
+	ajax.post("/reportsv2.php?action=ajax_update_comment", 'report_form' + reportid, function (response) {
 		if(response) {
 			alert(response);
 		}
@@ -208,20 +208,20 @@ function GiveBack(id) {
 	if(!id) {
 		var x = document.getElementsByName("reportid");
             var str = ''; var div = '';
-		for(i = 0; i < x.length; i++) {
+		for (i = 0; i < x.length; i++) {
                   str += div + x[i].value;
 			div=',';
 		}
             if(str != ''){
-			ajax.get("ajax.php?action=giveback_report&id=" + str, function (response) {
+			ajax.get("/ajax.php?action=giveback_report&id=" + str, function (response) {
 				//if(response) // alert(response);
-                        for(i = x.length - 1; i >= 0 ; i--) {
+                        for (i = x.length - 1; i >= 0 ; i--) {
                             $('#report' + x[i].value).remove();
                         }
 			});
             }
 	} else {
-		ajax.get("ajax.php?action=giveback_report&id=" + id, function (response) {
+		ajax.get("/ajax.php?action=giveback_report&id=" + id, function (response) {
 			//if(response) alert(response);
                   $('#report' + id).remove();
 		});
@@ -253,7 +253,7 @@ function ClearReport(reportid) {
 
 function Grab(reportid) {
 	if(reportid) {
-		ajax.get("reportsv2.php?action=ajax_grab_report&id=" + reportid, function (response) {
+		ajax.get("/reportsv2.php?action=ajax_grab_report&id=" + reportid, function (response) {
 			if(response == '1') {
 				$('#grab' + reportid).raw().disabled = true;
 			} else {
@@ -262,8 +262,8 @@ function Grab(reportid) {
 		});
 	} else {
 		var x = document.getElementsByName("reportid");
-		for(i = 0; i < x.length; i++) {
-			ajax.get("reportsv2.php?action=ajax_grab_report&id=" + x[i].value, function (response) {
+		for (i = 0; i < x.length; i++) {
+			ajax.get("/reportsv2.php?action=ajax_grab_report&id=" + x[i].value, function (response) {
 				if(response != '1') {
 					alert("One of those grabs failed, sorry I can't be more useful :P");
 				}
@@ -285,7 +285,7 @@ function MultiResolve() {
 
 function UpdateResolve(reportid) {
 	var newresolve = $('#resolve_type' + reportid).raw().options[$('#resolve_type' + reportid).raw().selectedIndex].value;
-	ajax.get("reportsv2.php?action=ajax_update_resolve&reportid=" + reportid + "&newresolve=" + newresolve, function (response) {
+	ajax.get("/reportsv2.php?action=ajax_update_resolve&reportid=" + reportid + "&newresolve=" + newresolve, function (response) {
 		//$('#update_resolve' + reportid).raw().disabled = true;
 		window.location.reload(true);
       });
@@ -305,7 +305,7 @@ function Switch(reportid, reporterid, usercomment, torrentid, otherid) {
 	report['reporterid'] = reporterid;
 	report['usercomment'] = usercomment;
 
-	ajax.post('reportsv2.php?action=ajax_create_report', report, function (response) {
+	ajax.post('/reportsv2.php?action=ajax_create_report', report, function (response) {
 			//Returns new report ID.
 			if(isNaN(response)) {
 				alert(response);

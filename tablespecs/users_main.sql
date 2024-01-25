@@ -23,8 +23,6 @@
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `users_main` (
   `ID` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `Username` varchar(30) DEFAULT NULL,
-  `PassHash` char(40) DEFAULT NULL,
   `Secret` char(32) DEFAULT NULL,
   `LastLogin` datetime DEFAULT NULL,
   `LastAccess` datetime DEFAULT NULL,
@@ -33,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `users_main` (
   `UploadedDaily` bigint(20) unsigned NOT NULL DEFAULT '0',
   `DownloadedDaily` bigint(20) unsigned NOT NULL DEFAULT '0',
   `Title` varchar(128) DEFAULT NULL,
-  `Enabled` enum('0','1','2') NOT NULL DEFAULT '0',
+  `Enabled` enum('0','1','2','3') NOT NULL DEFAULT '0',
   `Paranoia` text,
   `Visible` enum('1','0') NOT NULL DEFAULT '1',
   `Invites` int(10) unsigned NOT NULL DEFAULT '0',
@@ -50,15 +48,9 @@ CREATE TABLE IF NOT EXISTS `users_main` (
   `FLTokens` int(10) NOT NULL DEFAULT '0',
   `personal_freeleech` datetime DEFAULT NULL,
   `personal_doubleseed` datetime DEFAULT NULL,
-  `SeedHoursDaily` double(11,2) NOT NULL DEFAULT '0.00',
-  `SeedHours` double(11,2) NOT NULL DEFAULT '0.00',
-  `CreditsDaily` double(11,2) NOT NULL DEFAULT '0.00',
-  `Credits` double(11,2) NOT NULL DEFAULT '0.00',
   `Signature` text,
   `Flag` varchar(50) NOT NULL DEFAULT '',
   PRIMARY KEY (`ID`),
-  UNIQUE KEY `Username` (`Username`),
-  KEY `PassHash` (`PassHash`),
   KEY `LastAccess` (`LastAccess`),
   KEY `Uploaded` (`Uploaded`),
   KEY `Downloaded` (`Downloaded`),
@@ -66,7 +58,7 @@ CREATE TABLE IF NOT EXISTS `users_main` (
   KEY `Invites` (`Invites`),
   KEY `torrent_pass` (`torrent_pass`),
   KEY `RequiredRatio` (`RequiredRatio`),
-  KEY `SeedHoursDaily` (`SeedHoursDaily`)
+  KEY `PermissionID` (`PermissionID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

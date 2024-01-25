@@ -1,0 +1,274 @@
+{% import "macros/icon.html.twig" as icon %}
+
+<div class="middle_column">
+    <div class="head">Torrent Info</div>
+    <table class="torrent_table">
+        <tr class="colhead">
+            <td></td>
+            <td width="80%">Name</td>
+            <td>Size</td>
+
+            <td class="sign" title="Snatches" />
+                {{ icon.render("font_icon", ['torrent_snatched']) }}
+            </td>
+            <td class="sign" title="Seeders" />
+                {{ icon.render("font_icon", ['torrent_seeding']) }}
+            </td>
+            <td class="sign" title="Leechers" />
+                {{ icon.render("font_icon", ['torrent_leeching']) }}
+            </td>
+        </tr>
+        <tr class="groupid_{{ group.ID }} edition_{{ editionID }} group_torrent" style="font-weight: normal;" id="torrent{{ torrents[0].ID }}">
+            <td class="center cats_col" rowspan="2" style="border-bottom:none;border-right:none;">
+                <div title="{{ newCategories[group.NewCategoryID].tag }}" class="cats_icon">
+                    <img src="/static/common/caticons/{{ newCategories[group.NewCategoryID].image }}" />
+                </div>
+            </td>
+            <td rowspan="2" style="border-bottom:none;border-left:none;">
+                <strong>
+                    {{ group.Name }}
+
+                    {% if torrents[0].FreeTorrent == '1' %}
+                        / <strong>Freeleech!</strong>
+                    {% endif %}
+
+                    {% if torrents[0].FreeTorrent == '2' %}
+                        / <strong>Neutral Leech!</strong>
+                    {% endif %}
+
+                    {% if torrents[0].DoubleTorrent == '1' %}
+                        / <strong>Doubleseed!</strong>
+                    {% endif %}
+
+                    {{ extraInfo|raw }}
+                </strong>
+            </td>
+            <td class="nobr">
+                {{ get_size(torrents[0].Size) }}
+            </td>
+            <td class="center">
+                {{ torrents[0].Snatched|number_format() }}
+            </td>
+            <td class="center" title="Average: {{ torrents[0].AverageSeeders|number_format(1) }}">
+                {{ torrents[0].Seeders|number_format() }}
+            </td>
+            <td class="center">
+                {{ torrents[0].Leechers|number_format() }}
+            </td>
+        </tr>
+        <tr>
+            <td class="nobr filetypes" colspan="4">{{ fileTypes|raw }}</td>
+        </tr>
+        <tr>
+            <td colspan="6" class="right" style="border-top:none;border-bottom:none;border-left:none;">
+                <em>{{ seedValueText|raw }} <span title="SeedFactor {{ seedValueSeeders|number_format(1) }} * SizeFactor {{ seedValueSize|number_format(1) }} = SeedValue {{ seedValue|number_format(1) }}">{{ seedValue|number_format(1) }}</span></em>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="6" class="right" style="border-top:none;border-bottom:none;border-left:none;">
+                <em>Uploaded by {{ torrent_username(torrents[0].uploader, torrents[0].Anonymous)|raw }} {{ time_diff(torrents[0].Time)|raw }}</em>
+            </td>
+        </tr>
+        {% if filledRequests is not empty > 0 %}
+            <tr class="rowa">
+                <td colspan="6" >
+                    <em>filled request{{ filledRequests|length > 1 ? 's' }}</em>
+                </td>
+            </tr>
+            {% for request in filledRequests %}
+                <tr class="requestrows row{{ loop.index % 2 ? 'b' : 'a' }}">
+                    <td colspan="2" >
+                        <a href="/requests.php?action=view&id={{ request.ID }}">{{ request.Title|decode }}</a>
+                    </td>
+                    <td colspan="4" >
+                        <span style="float:right"><em>for {{ get_size(request.Votes.TotalBounty) }}</em></span>
+                    </td>
+                </tr>
+            {% endfor %}
+        {% endif %}
+        <tr class="groupid_{{ group.ID }} edition_{{ editionID }} torrentdetails pad" id="torrent_{{ torrents[0].ID }}">
+            <td colspan="6" style="border-top:none;">
+                {% set inactiveTime = date('now').diff(date(torrents[0].last_action)) %}
+                {% set inactiveHours = (inactiveTime.days * 24) + inactiveTime.h %}
+
+                {% set lastRequest = date('now').diff(date(torrents[0].LastReseedRequest)) %}
+                {% if torrents[0].Seeders < 5 and torrents[0].last_action != '0000-00-00 00:00:00' and torrents[0].last_action is not empty and inactiveHours > 24 %}
+                    <blockquote  style="text-align: center;">
+                        {% if torrents[0].Seeders < 3 or inactiveHours >= 24 %}
+                            <strong>Last active: {{ time_diff(torrents[0].last_action)|raw }}</strong>
+                        {% elseif inactiveHours >= 3 %}
+                            Last active: {{ time_diff(torrents[0].last_action)|raw }}
+                        {% endif %}
+                        {# NOTE: if you change this from 259200 also change the value in reseed.php! (hard coded badness... replace with siteoption soon) #}
+                        {% if lastRequest.days < 3 and torrents[0].LastReseedRequest is not empty %}
+                            <em>re-seed was requested ({{ time_diff(torrents[0].LastReseedRequest)|raw }})</em>
+                        {% elseif (torrents[0].Snatched > 2 or torrents[0].Snatched > torrents[0].Seeders) and ((torrents[0].Seeders < 3 and inactiveHours >= 3) or inactiveHours >= 24) %}
+                            <a href="/torrents.php?action=reseed&amp;torrentid={{ torrents[0].ID }}&amp;groupid={{ group.ID }}" title="request a reseed from the {{ torrents[0].Snatched }} users who have snatched this torrent"> [Request re-seed] </a>
+                        {% endif %}
+                    </blockquote>
+                {% endif %}
+
+                {% if auth.isAllowed('site_mass_pm_snatchers') %}
+                    <div class="linkbox">
+                        <a href="/torrents.php?action=masspm&amp;id={{ group.ID }}&amp;torrentid={{ torrents[0].ID }}&type=reseed">[Mass PM Snatchers]</a>
+                    </div>
+                {% endif %}
+                <div class="linkbox">
+                    {% if auth.isAllowed('site_view_torrent_peerlist') %}
+                        <a href="#" onclick="show_peers('{{ torrents[0].ID }}', 0);return false;">(View Peerlist)</a>
+                    {% endif %}
+                    {% if auth.isAllowed('site_view_torrent_snatchlist') %}
+                        <a href="#" onclick="show_downloads('{{ torrents[0].ID }}', 0);return false;">(View Downloadlist)</a>
+                        <a href="#" onclick="show_snatches('{{ torrents[0].ID }}', 0);return false;">(View Snatchlist)</a>
+                    {% endif %}
+                    <a href="#" onclick="show_files('{{ torrents[0].ID }}');return false;">(View Filelist)</a>
+                    {% if torrents[0].openReportCount > 0 %}
+                        <a href="#" onclick="show_reported('{{ torrents[0].ID }}');return false;">(View Report Info)</a>
+                    {% endif %}
+                </div>
+                <div id="peers_{{ torrents[0].ID }}" class="hidden"></div>
+                <div id="downloads_{{ torrents[0].ID }}" class="hidden"></div>
+                <div id="snatches_{{ torrents[0].ID }}" class="hidden"></div>
+                <div id="files_{{ torrents[0].ID }}" class="hidden">
+                    <table style="overflow-x:auto;">
+                        <tr class="smallhead">
+                            <td colspan="2">
+                                {% if torrents[0].FilePath is not empty %}
+                                    /{{ torrents[0].FilePath }}/
+                                {% else %}
+                                    /
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr class="rowa">
+                            <td>
+                                <strong>
+                                    <div style="float: left; display: block;">
+                                        File Name
+                                        {% if auth.isAllowed('users_mod') %}
+                                            [<a href="/torrents.php?action=regen_filelist&amp;torrentid={{ torrents[0].ID }}">Regenerate</a>]
+                                        {% endif %}
+                                    </div>
+                                </strong>
+                            </td>
+                            <td>
+                                <strong>
+                                    Size
+                                </strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{ fileList|raw }}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                {% if torrents[0].openReportCount > 0 %}
+                    <div id="reported_{{ torrents[0].ID }}">
+                        <table class="reported">
+                            <tr class="smallhead">
+                                <td>
+                                    This torrent has {{ torrents[0].openReportCount }} active report{{ torrents[0].openReportCount > 1 ? 's' }}:
+                                </td>
+                            </tr>
+                            {% for report in torrents[0].openReports %}
+                                <tr>
+                                    <td>
+                                        {% if auth.isAllowed('admin_reports') %}
+                                            <a href='/user.php?id={{ report.reporter.ID }}'>{{ render.username(report.reporter, usernameOptions) }}</a>
+                                            <a href='/reportsv2.php?view=report&amp;id={{ report.ID }}'>reported it</a>
+                                        {% else %}
+                                            Someone reported it
+                                        {% endif %}
+                                        {{ time_diff(report.ReportedTime, 2, true, true)|raw }} for the reason '{{ report.type.title }}':
+                                        <blockquote>{{ bbcode.full_format(report.UserComment)|raw }}</blockquote>
+                                    </td>
+                                  </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+    {% if requests is not empty > 0 %}
+        <div class="head">
+            <span style="font-weight: bold;">
+                Requests ({{ requests|length }})
+            </span>
+            <span style="float:right;">
+                <a href="#" onClick="$('#requests').toggle(); this.innerHTML=(this.innerHTML=='(Hide)'?'(Show)':'(Hide)'); return false;">(Show)</a>
+            </span>
+        </div>
+        <div class="box">
+            <table id="requests" class="hidden">
+                <tr class="head">
+                    <td>Request name</td>
+                    <td>Votes</td>
+                    <td>Bounty</td>
+                </tr>
+                {% for request in requests %}
+                    <tr class="requestrows row{{ loop.index % 2 ? 'b' : 'a' }}">
+                        <td><a href="/requests.php?action=view&id={{ request.ID }}">{{ request.Title|decode }}</a></td>
+                        <td>
+                            <form id="form_{{ request.ID }}">
+                                <span id="vote_count_{{ request.ID }}">{{ request.Votes|length }}</span>
+                                <input type="hidden" id="requestid_{{ request.ID }}" name="requestid" value="{{ request.ID }}" />
+                                <input type="hidden" id="auth" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                                &nbsp;&nbsp; <a href="javascript:Vote(0, {{ request.ID }})"><strong>(+)</strong></a>
+                            </form>
+                        </td>
+                        <td>
+                            {{ get_size(request.Votes.TotalBounty) }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+    {% if collages is not empty %}
+        <div class="head">Collages</div>
+        <table id="collages">
+            <tr class="colhead">
+                <td width="85%">Collage name</td>
+                <td># torrents</td>
+            </tr>
+            {% for collage in collages %}
+                <tr>
+                    <td><a href="/collage/{{ collage.ID }}">{{ collage.Name|decode }}</a></td>
+                    <td>{{ collage.count }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+    {% if personalCollages is not empty %}
+        {% if personalCollages|length > 3 %}
+            {% set seeAll %}
+                &nbsp;<a href="#" onClick="$('.personal_rows').toggle(); return false;">(See all)</a>
+            {% endset %}
+        {% else %}
+            {% set seeAll = '' %}
+        {% endif %}
+        <div class="head">Personal Collages</div>
+        <table id="personal_collages">
+            <tr class="colhead">
+                <td width="85%">This torrent is in {{ personalCollages|length }} personal collage{{ PersonalCollages|length > 1 ? 's' }}{{ seeAll|raw }}</td>
+                <td># torrents</td>
+            </tr>
+            {% for key, collage in personalCollages|shuffle|slice(0, 3) %}
+                <tr>
+                    <td><a href="/collage/{{ collage.ID }}">{{ collage.Name|decode }}</a></td>
+                    <td>{{ collage.count }}</td>
+                </tr>
+            {% endfor %}
+            {% for collage in personalCollages %}
+                <tr class="personal_rows hidden">
+                    <td><a href="/collage/{{ collage.ID }}">{{ collage.Name|decode }}</a></td>
+                    <td>{{ collage.count }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+</div>
+<div style="clear:both"></div>

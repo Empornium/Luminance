@@ -2,31 +2,45 @@
 // perform the back end of subscribing to collages
 authorize();
 
-if (!is_number($_GET['collageid'])) {
+if (!is_integer_string($_GET['collageid'])) {
     error(0);
 }
 
 $CollageID = (int) $_GET['collageid'];
-$Collage = getCollage($CollageID);
+$collage = $master->repos->collages->load($CollageID);
 
-if (!$Collage) {
+if (!($collage instanceof \Luminance\Entities\Collage)) {
     error(404);
 }
 
-if (!$UserSubscriptions = $Cache->get_value('collage_subs_user_'.$LoggedUser['ID'])) {
-    $DB->query('SELECT CollageID FROM users_collage_subs WHERE UserID = '.db_string($LoggedUser['ID']));
-    $UserSubscriptions = $DB->collect(0);
-    $Cache->cache_value('collage_subs_user_'.$LoggedUser['ID'],$UserSubscriptions,0);
+if (!$UserSubscriptions = $master->cache->getValue('collage_subs_user_'.$activeUser['ID'])) {
+    $UserSubscriptions = $master->db->rawQuery(
+        'SELECT CollageID
+           FROM collages_subscriptions
+          WHERE UserID = ?',
+        [$activeUser['ID']]
+    )->fetchAll(\PDO::FETCH_COLUMN);
+    $master->cache->cacheValue('collage_subs_user_'.$activeUser['ID'], $UserSubscriptions,0);
 }
 
-if (($Key = array_search($_GET['collageid'],$UserSubscriptions)) !== FALSE) {
-    $DB->query('DELETE FROM users_collage_subs WHERE UserID = '.db_string($LoggedUser['ID']).' AND CollageID = '.db_string($_GET['collageid']));
+if (($Key = array_search($_GET['collageid'], $UserSubscriptions)) !== FALSE) {
+    $master->db->rawQuery(
+        'DELETE
+           FROM collages_subscriptions
+          WHERE UserID = ?
+            AND CollageID = ?',
+        [$activeUser['ID'], $_GET['collageid']]
+    );
     unset($UserSubscriptions[$Key]);
-    $Cache->decrement('collage_'.$CollageID.'_subscribers');
+    $master->cache->decrementValue('collage_'.$CollageID.'_subscribers');
 } else {
-    $DB->query("INSERT IGNORE INTO users_collage_subs (UserID, CollageID, LastVisit) VALUES ($LoggedUser[ID], ".db_string($_GET['collageid']).", NOW())");
+    $master->db->rawQuery(
+        "INSERT IGNORE INTO collages_subscriptions (UserID, CollageID, LastVisit)
+                     VALUES (?, ?, NOW())",
+        [$activeUser['ID'], $_GET['collageid']]
+    );
     array_push($UserSubscriptions, $_GET['collageid']);
-    $Cache->increment('collage_'.$CollageID.'_subscribers');
+    $master->cache->incrementValue('collage_'.$CollageID.'_subscribers');
 }
-$Cache->replace_value('collage_subs_user_'.$LoggedUser['ID'], $UserSubscriptions, 0);
-$Cache->delete_value('collage_subs_user_new_'.$LoggedUser['ID']);
+$master->cache->replaceValue('collage_subs_user_'.$activeUser['ID'], $UserSubscriptions, 0);
+$master->cache->deleteValue('collage_subs_user_new_'.$activeUser['ID']);

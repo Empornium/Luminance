@@ -6,11 +6,12 @@ include(SERVER_ROOT . '/Legacy/sections/donate/functions.php');
 
 // split on whitespace and commas and nl
 $input_addresses = trim($_REQUEST['input_addresses']);
-$input_addresses = str_replace(array("\n", "  ", " ", ","), "|", $input_addresses);
+$input_addresses = str_replace(["\n", "  ", " ", ","], "|", $input_addresses);
 $input_addresses = explode("|", $input_addresses);
-$sql_addresses = array();
-$sql_values = array();
-$invalid_addresses = array();
+$sql_addresses = [];
+$sql_values = [];
+$params = [];
+$invalid_addresses = [];
 
 foreach ($input_addresses as $Key => &$address) {
     // just do a cursory check on format
@@ -19,20 +20,30 @@ foreach ($input_addresses as $Key => &$address) {
     if (!$address) {
         unset($input_addresses[$Key]);
     } elseif (validate_btc_address($address)) {
-        $sql_addresses[] = db_string($address);
-        $sql_values[] = "('". db_string($address)."','$LoggedUser[ID]')";
+        $sql_addresses[] = $address;
+        $sql_values[] = "(?, ?)";
+        $params = array_merge($params, [$address, $activeUser['ID']]);
     } else {  // not in a valid format
         $invalid_addresses[] = $address;
     }
 }
 
-if (count($invalid_addresses)==0) {
+if (count($invalid_addresses) == 0) {
+    $inQuery = implode(', ', array_fill(0, count($sql_addresses), '?'));
+    $master->db->rawQuery(
+        "SELECT ID
+           FROM bitcoin_addresses
+          WHERE public IN ({$inQuery})",
+        $sql_addresses
+    );
+    $dupes = $master->db->foundRows();
+    if ($dupes > 0) error("There are {$dupes} address collisions! Addresses must be unique!");
 
-    $DB->query("SELECT ID FROM bitcoin_addresses WHERE public IN ('"  . implode("','", $sql_addresses)."')");
-    $dupes=$DB->record_count();
-    if($dupes>0) error("There are $dupes address collisions! Addresses must be unique!");
-
-    $DB->query("INSERT INTO bitcoin_addresses (public, userID) VALUES " . implode(',', $sql_values));
+    $master->db->rawQuery(
+        "INSERT INTO bitcoin_addresses (public, userID)
+              VALUES " . implode(', ', $sql_values),
+        $params
+    );
 
     header("Location: tools.php?action=btc_address_input");
 } else {

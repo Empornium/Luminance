@@ -27,7 +27,7 @@ show_header('Bitcoin addresses');
         <span style="color: red; font-weight:bold;">note: ONLY enter the public address. Keep the private key secret - you will need it to gain access to the donated BTC once users have transferred funds to these addresses.</span><br/><br/>
         <form action="tools.php" method="post">
             <input type="hidden" name="action" value="enter_addresses" />
-            <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey'];?>" />
+            <input type="hidden" name="auth" value="<?=$activeUser['AuthKey'];?>" />
             <textarea id="input_addresses" name="input_addresses" class="medium" rows="15"></textarea>
             <br/>
             <input type="submit" value="Enter new addresses" />
@@ -35,30 +35,31 @@ show_header('Bitcoin addresses');
     </div>
 <?php
 
-    list($Page,$Limit) = page_limit(DONATIONS_PER_PAGE);
+    list($Page, $Limit) = page_limit(DONATIONS_PER_PAGE);
 
-    $DB->query("SELECT SQL_CALC_FOUND_ROWS
-                       ba.ID,
-                       ba.public ,
-                       ba.userID,
-                       m.Username,
-                       m.PermissionID,
-                       m.Enabled,
-                       i.Donor
-                  FROM bitcoin_addresses  AS ba
-             LEFT JOIN users_main AS m ON m.ID=ba.UserID
-             LEFT JOIN users_info AS i ON i.UserID=ba.UserID
-              ORDER BY ba.ID
-             ASC LIMIT $Limit ");
+    $Addresses = $master->db->rawQuery(
+        "SELECT SQL_CALC_FOUND_ROWS
+                ba.ID,
+                ba.public,
+                ba.userID,
+                u.Username,
+                um.PermissionID,
+                um.Enabled,
+                ui.Donor
+           FROM bitcoin_addresses  AS ba
+      LEFT JOIN users AS u ON u.ID=ba.UserID
+      LEFT JOIN users_main AS um ON um.ID=ba.UserID
+      LEFT JOIN users_info AS ui ON ui.UserID=ba.UserID
+       ORDER BY ba.ID
+      ASC LIMIT {$Limit}"
+    )->fetchAll(\PDO::FETCH_NUM);
 
-    $Addresses = $DB->to_array(false, MYSQLI_NUM);
-    $DB->query("SELECT FOUND_ROWS()");
-    list($Results) = $DB->next_record();
+    $Results = $master->db->foundRows();
 
 ?>
     <div class="linkbox">
     <?php
-        $Pages=get_pages($Page,$Results,DONATIONS_PER_PAGE,11) ;
+        $Pages = get_pages($Page, $Results, DONATIONS_PER_PAGE, 11);
         echo $Pages;
     ?>
     </div>
@@ -69,7 +70,7 @@ show_header('Bitcoin addresses');
         <form id="addressform" action="tools.php" method="post" onsubmit="return anyChecks('addressform')">
             <div class="donate_details">
                 <input type="hidden" name="action" value="delete_addresses" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <table class="noborder">
                     <tr class="colhead">
                         <td><input type="checkbox" onclick="toggleChecks('addressform',this)" /></td>
@@ -80,9 +81,8 @@ show_header('Bitcoin addresses');
                     </tr>
     <?php
         foreach ($Addresses as $Address) {
-            list($ID, $public, $UserID, $Username, $PermissionID, $Enabled, $Donor) = $Address;
-
-                $row = $row=='b'?'a':'b';
+            list($ID, $public, $userID, $Username, $PermissionID, $enabled, $Donor) = $Address;
+                $row = ($row ?? 'a') == 'a' ? 'b' : 'a';
     ?>
                     <tr class="row<?=$row?>">
                         <td>
@@ -90,7 +90,7 @@ show_header('Bitcoin addresses');
                         </td>
                         <td><?=$ID?></td>
                         <td class="address"><?=$public?></td>
-                        <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?></td>
+                        <td><?=format_username($userID, $Donor, true, $enabled, $PermissionID)?></td>
                         <td><?=( validate_btc_address($public)?'':'<span class="red">invalid format!</span>');?> </td>
                     </tr>
 

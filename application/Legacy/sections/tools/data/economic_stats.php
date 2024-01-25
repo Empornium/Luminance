@@ -29,40 +29,94 @@ Tools necessary for economic management
 if (!check_perms('site_view_flow')) { error(403); }
 show_header('Economy');
 
-if (!$EconomicStats = $Cache->get_value('new_economic_stats')) {
-    $DB->query("SELECT SUM(Uploaded), SUM(Downloaded), COUNT(ID) FROM users_main WHERE Enabled='1'");
-    list($TotalUpload, $TotalDownload, $NumUsers) = $DB->next_record();
-    $DB->query("SELECT SUM(Bounty) FROM requests_votes");
-    list($TotalBounty) = $DB->next_record();
-    $DB->query("SELECT SUM(rv.Bounty) FROM requests_votes AS rv JOIN requests AS r ON r.ID=rv.RequestID WHERE TorrentID>0");
-    list($AvailableBounty) = $DB->next_record();
-    $DB->query("SELECT SUM(Snatched), COUNT(ID) FROM torrents");
-    list($TotalSnatches, $TotalTorrents) = $DB->next_record(); // This is the total number of snatches for torrents that still exist
+if (!$EconomicStats = $master->cache->getValue('new_economic_stats')) {
+    list($TotalUpload, $TotalDownload, $NumUsers) = $master->db->rawQuery(
+        "SELECT SUM(Uploaded),
+                SUM(Downloaded),
+                COUNT(ID)
+           FROM users_main
+          WHERE Enabled='1'"
+    )->fetch(\PDO::FETCH_NUM);
 
+    $TotalBounty = $master->db->rawQuery(
+        "SELECT SUM(Bounty)
+           FROM requests_votes"
+    )->fetchColumn();
 
-    $DB->query("SELECT COUNT(uid) FROM xbt_snatched");
-    list($TotalOverallSnatches) = $DB->next_record();
+    $AvailableBounty = $master->db->rawQuery(
+        "SELECT SUM(rv.Bounty)
+           FROM requests_votes AS rv
+           JOIN requests AS r ON r.ID = rv.RequestID
+          WHERE TorrentID > 0"
+    )->fetchColumn();
 
-    if (($PeerStats = $Cache->get_value('stats_peers')) === false) {
-        $DB->query("SELECT COUNT(fid) FROM xbt_files_users WHERE remaining=0");
-        list($TotalSeeders) = $DB->next_record();
-        $DB->query("SELECT COUNT(fid) FROM xbt_files_users WHERE remaining>0");
-        list($TotalLeechers) = $DB->next_record();
+    list($TotalSnatches, $TotalTorrents) = $master->db->rawQuery(
+        "SELECT SUM(Snatched),
+                COUNT(ID)
+           FROM torrents"
+    )->fetch(\PDO::FETCH_NUM); // This is the total number of snatches for torrents that still exist
+
+    $TotalOverallSnatches = $master->db->rawQuery(
+        "SELECT COUNT(uid)
+           FROM xbt_snatched"
+    )->fetchColumn();
+
+    if (($PeerStats = $master->cache->getValue('stats_peers')) === false) {
+        $TotalSeeders = $master->db->rawQuery(
+            "SELECT COUNT(fid)
+               FROM xbt_files_users
+              WHERE remaining = 0"
+        )->fetchColumn();
+
+        $TotalLeechers = $master->db->rawQuery(
+            "SELECT COUNT(fid)
+               FROM xbt_files_users
+              WHERE remaining > 0"
+        )->fetchColumn();
     } else {
-        list($TotalLeechers,$TotalSeeders) = $PeerStats;
+        list($TotalLeechers, $TotalSeeders) = $PeerStats;
     }
     $TotalPeers = $TotalLeechers + $TotalSeeders;
-    $DB->query("SELECT COUNT(ID) FROM users_main WHERE(SELECT COUNT(uid) FROM xbt_files_users WHERE uid=users_main.ID)>0");
-    list($TotalPeerUsers) = $DB->next_record();
-    $Cache->cache_value('new_economic_stats',
-                array($TotalUpload,$TotalDownload,$NumUsers,$TotalBounty,
-                    $AvailableBounty,$TotalSnatches,$TotalTorrents,
-                    $TotalOverallSnatches,$TotalSeeders,$TotalPeers,
-                    $TotalPeerUsers), 3600);
+    $TotalPeerUsers = $master->db->rawQuery(
+        "SELECT COUNT(ID)
+           FROM users_main
+          WHERE (
+              SELECT COUNT(uid)
+                FROM xbt_files_users
+               WHERE uid = users_main.ID
+          ) > 0"
+    )->fetchColumn();
+    $master->cache->cacheValue(
+        'new_economic_stats',
+        [
+            $TotalUpload,
+            $TotalDownload,
+            $NumUsers,
+            $TotalBounty,
+            $AvailableBounty,
+            $TotalSnatches,
+            $TotalTorrents,
+            $TotalOverallSnatches,
+            $TotalSeeders,
+            $TotalPeers,
+            $TotalPeerUsers,
+        ],
+        3600
+    );
 } else {
-    list($TotalUpload,$TotalDownload,$NumUsers,$TotalBounty,$AvailableBounty,
-        $TotalSnatches,$TotalTorrents,$TotalOverallSnatches,$TotalSeeders,
-        $TotalPeers,$TotalPeerUsers) = $EconomicStats;
+    list(
+        $TotalUpload,
+        $TotalDownload,
+        $NumUsers,
+        $TotalBounty,
+        $AvailableBounty,
+        $TotalSnatches,
+        $TotalTorrents,
+        $TotalOverallSnatches,
+        $TotalSeeders,
+        $TotalPeers,
+        $TotalPeerUsers
+    ) = $EconomicStats;
 }
 
 $TotalLeechers = $TotalPeers - $TotalSeeders;
@@ -77,7 +131,7 @@ $TotalLeechers = $TotalPeers - $TotalSeeders;
                 <li><strong>Total download: </strong><?=get_size($TotalDownload)?></li>
                 <li><strong>Total buffer: </strong><?=get_size($TotalUpload-$TotalDownload)?></li>
                 <br />
-                <li><strong>Mean ratio: </strong><?=ratio($TotalUpload,$TotalDownload)?></li>
+                <li><strong>Mean ratio: </strong><?=ratio($TotalUpload, $TotalDownload)?></li>
                 <li><strong>Mean upload: </strong><?=get_size($TotalUpload/$NumUsers)?></li>
                 <li><strong>Mean download: </strong><?=get_size($TotalDownload/$NumUsers)?></li>
                 <li><strong>Mean buffer: </strong><?=get_size(($TotalUpload-$TotalDownload)/$NumUsers)?></li>
@@ -96,8 +150,8 @@ $TotalLeechers = $TotalPeers - $TotalSeeders;
                 <li><strong>Total leechers: </strong><?=number_format($TotalLeechers)?></li>
                 <li><strong>Total peers: </strong><?=number_format($TotalSeeders+$TotalLeechers)?></li>
                 <li><strong>Total snatches: </strong><?=number_format($TotalOverallSnatches)?></li>
-                <li><strong>Seeder/leecher ratio: </strong><?=ratio($TotalSeeders,$TotalLeechers)?></li>
-                <li><strong>Seeder/snatch ratio: </strong><?=ratio($TotalSeeders,$TotalOverallSnatches)?></li>
+                <li><strong>Seeder/leecher ratio: </strong><?=ratio($TotalSeeders, $TotalLeechers)?></li>
+                <li><strong>Seeder/snatch ratio: </strong><?=ratio($TotalSeeders, $TotalOverallSnatches)?></li>
                 <br />
                 <li><strong>Mean seeders per torrent: </strong><?=number_format($TotalSeeders/$TotalTorrents, 2)?></li>
                 <li><strong>Mean leechers per torrent: </strong><?=number_format($TotalLeechers/$TotalTorrents, 2)?></li>

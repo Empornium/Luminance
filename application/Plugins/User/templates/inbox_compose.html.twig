@@ -1,0 +1,91 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : false,
+    'noIcons'   : true,
+    'noGroup'   : true,
+    'noClass'   : true,
+    'noTitle'   : true,
+} %}
+
+{% block title %}{{ (forward is not empty) ? 'Forward' : 'Send'}} a {{ messageType }} to {{ render.username(recipient, usernameOptions) }}{% endblock %}
+{% block main_content %}
+    {% if recipient.class.DisplayStaff %}
+        <div class="box pad shadow">
+            You are sending a PM to a member of staff. IF this is regarding a staffing issue
+            <strong class="important_text">please use the <a href="/staff?show=1&amp;assign=mod">staff message form</a> instead.</strong> (You can specify if you want it to only be seen by front line support (FLS) moderators or senior staff if you need to)
+            <br />This way it can be dealt with appropriately and quickly. Please note - PM's sent to staff that are about staffing or moderation issues may be responded to as a new staff message by any appropriate staff member.
+        </div>
+    {% endif %}
+    {% if forward is not empty %}
+        <div class="head">
+            {{ messageType }} to be forwarded:
+        </div>
+        <div class="box vertical_space">
+            <div class="body" >
+                {{ bbcode.full_format(forward, true)|raw }}
+            </div>
+        </div>
+    {% endif %}
+    <form id="quickpostform" action="/user/{{ recipient.ID }}/inbox/send" method="post" onsubmit="return Validate_Form('message','quickpost')" style="display: block;">
+        <input type="hidden" name="token" value="{{ secretary.getToken('user.inbox.send') }}" />
+        <div class="head">{{ (forward is not empty) ? 'Add' : 'Compose'}} message</div>
+        <div class="box pad">
+            <input type="hidden" name="forwardbody" value="{{ forward }}" />
+            <h3>Subject</h3>
+            <input type="text" name="subject" class="long" value="{{ subject }}" required />
+            <br />
+            <h3>Body</h3>
+            <div id="quickreplytext">
+                {{ bbcode.display_bbcode_assistant("quickpost", get_permissions_advtags(ActiveUser.ID, ActiveUser.CustomPermissions)) }}
+                <textarea id="quickpost" class="long" tabindex="1" onkeyup="resize('quickpost');" name="body" rows="8"></textarea> <br />
+            </div>
+        </div>
+        <div class="messagecontainer" id="container">
+            <div id="message" class="hidden center messagebar"></div>
+        </div>
+        <table id="quickreplypreview" class="forum_post box vertical_margin hidden {{ ActiveUser.options('DisableAvatars', 0) == 1 ? 'noavatar' }}" style="text-align:left;">
+            <tr class="smallhead">
+                <td colspan="2">
+                    <span style="float:left;">
+                          <a href='#quickreplypreview'>#XXXXXX</a>
+                          {% set usernameOptions = {
+                              'drawInBox' : true,
+                              'colorname' : false,
+                              'dropDown'  : true,
+                              'useSpan'   : true,
+                              'noIcons'   : false,
+                              'noGroup'   : false,
+                              'noClass'   : false,
+                              'noTitle'   : false,
+                          } %}
+                          {{ render.username(ActiveUser.ID, usernameOptions) }} Just now
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                {% if ActiveUser.options('DisableAvatars', 0) == 0 %}
+                    <td class="avatar" valign="top">
+                        {% if ActiveUser.legacy.Avatar is not empty %}
+                            <img src="{{ ActiveUser.legacy.Avatar }}" class="avatar" style="{{ get_avatar_css(ActiveUser.class.MaxAvatarWidth, ActiveUser.class.MaxAvatarHeight) }}" alt="{{ ActiveUser.Username}}'s avatar" />
+                        {% else %}
+                            <img src="/static/common/avatars/default.png"  class="avatar" style="{{ get_avatar_css(100, 120) }}" alt="Default avatar" />
+                        {% endif %}
+                    </td>
+                {% endif %}
+                <td class="body" valign="top">
+                    <div id="contentpreview" class="preview_content" style="text-align:left;"></div>
+                </td>
+            </tr>
+        </table>
+        <div class="center">
+            <input id="post_preview" type="button" tabindex="1" value="Preview"  onclick="if (this.preview) {Quick_Edit();} else {Quick_Preview();}" />
+            <input type="submit" tabindex="1" value="Send {{ (forward is not empty) ? 'forwarded ' : '' }}message" />
+        </div>
+    </form>
+{% endblock %}

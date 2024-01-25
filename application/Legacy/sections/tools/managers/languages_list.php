@@ -5,8 +5,8 @@ if (!check_perms('admin_manage_languages')) {
 
 show_header('Site Languages', 'jquery');
 
-$images = scandir($master->public_path . '/static/common/flags/iso16', 0);
-$images = array_diff($images, array('.', '..'));
+$images = scandir($master->publicPath . '/static/common/flags/iso16', 0);
+$images = array_diff($images, ['.', '..']);
 ?>
 
 <script type="text/javascript">//<![CDATA[
@@ -36,15 +36,16 @@ $images = array_diff($images, array('.', '..'));
         </tr>
 
 <?php
-        $DB->query("SELECT  ID, language, code, flag_cc, active FROM languages ORDER BY active DESC, language");
+        $records = $master->db->rawQuery("SELECT ID, language, code, flag_cc, active FROM languages ORDER BY active DESC, language")->fetchAll(\PDO::FETCH_NUM);
 
-        while (list($id, $language, $code, $flag_cc, $active) = $DB->next_record()) {
+        foreach ($records as $record) {
+        list($id, $language, $code, $flag_cc, $active) = $record;
             ?>
             <tr>
             <form action="tools.php" method="post">
                 <td>
                     <input type="hidden" name="action" value="languages_alter" />
-                    <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+                    <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
                     <input type="hidden" name="id" value="<?= $id ?>" />
                     <input class="medium" type="text" name="language" value="<?=$language?>" />
                 </td>
@@ -61,9 +62,9 @@ $images = array_diff($images, array('.', '..'));
                         <select id="flag_image<?=$id?>" name="flag" onchange="change_image('#lang_image<?=$id?>', '#flag_image<?=$id?>');">
                                     <option value="">none</option>
                             <?php  foreach ($images as $key => $value) {
-                                    if (strlen($value)==6) {
-                                        $value = substr($value, 0, strlen($value)-4  ); // remove .png extension  ?>
-                                        <option value="<?= display_str($value) ?>" <?php  if($flag_cc==$value) echo 'selected="selected"';?>><?= $value ?></option>
+                                    if (strlen($value) == 6) {
+                                        $value = substr($value, 0, strlen($value) - 4); // remove .png extension  ?>
+                                        <option value="<?= display_str($value) ?>" <?php  if ($flag_cc==$value) echo 'selected="selected"';?>><?= $value ?></option>
                             <?php       }
                                }
                             ?>
@@ -71,11 +72,11 @@ $images = array_diff($images, array('.', '..'));
                     </span>
                 </td>
                 <td>
-                    <input type="checkbox" name="active" value="1" <?php  if($active) echo 'checked="checked"';?> />
+                    <input type="checkbox" name="active" value="1" <?php  if ($active) echo 'checked="checked"';?> />
                 </td>
                 <td>
                     <input type="submit" name="submit" value="Edit" />
-                    <input type="submit" name="submit" <?php  if(!isset($_GET['del'])) echo 'disabled="disabled"';?> value="Delete" title="To enable the delete button use the &del=1 parameter in the url, but normally you should just deactivate a language option" />
+                    <input type="submit" name="submit" <?php  if (!isset($_GET['del'])) echo 'disabled="disabled"';?> value="Delete" title="To enable the delete button use the &del=1 parameter in the url, but normally you should just deactivate a language option" />
                 </td>
             </form>
             </tr>
@@ -97,7 +98,7 @@ $images = array_diff($images, array('.', '..'));
         <form action="tools.php" method="post">
             <td>
                 <input type="hidden" name="action" value="languages_alter" />
-                <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+                <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
                 <input class="medium" type="text" name="language" />
             </td>
             <td>
@@ -113,8 +114,8 @@ $images = array_diff($images, array('.', '..'));
                     <select id="flag_image0" name="flag" onchange="change_image('#lang_image0', '#flag_image0');">
                                     <option value="">none</option>
                         <?php  foreach ($images as $key => $value) {
-                                if (strlen($value)==6) {
-                                    $value = substr($value, 0, strlen($value)-4  ); // remove .png extension  ?>
+                                if (strlen($value) == 6) {
+                                    $value = substr($value, 0, strlen($value) - 4); // remove .png extension  ?>
                                     <option value="<?= display_str($value) ?>"><?= $value ?></option>
                         <?php       }
                            }

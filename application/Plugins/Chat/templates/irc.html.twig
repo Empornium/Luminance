@@ -1,0 +1,16 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/chat">Chat</a>
+{% endblock %}
+
+{% block main_content %}
+    <div class="head">Chat</div>
+    <div class="box pad center">
+        <iframe src="{{web_irc}}" width="98%" height="600"></iframe>
+    </div>
+{% endblock %}

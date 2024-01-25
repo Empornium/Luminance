@@ -45,7 +45,7 @@ metainfo file structure here: http://wiki.theory.org/BitTorrentSpecification
 Lists and dictionaries are stored as objects. They each have the following
 functions:
 
-* decode(Type, $Key)
+* decode(Type, $key)
     - Decodes ANY bencoded element, given the type and the key
     - Gets the position and string from $this
 
@@ -65,27 +65,24 @@ the BENCODE_DICT class.
 
 
 *******************************************************************************/
-class BencodeDict extends Bencode
-{
-    public function enc()
-    {
-        $Str = 'd';
+class BencodeDict extends Bencode {
+    public function enc() {
+        $str = 'd';
         reset($this->Val);
         // Sort by key to respect spec
         ksort($this->Val);
 
-        foreach ($this->Val as $Key => $Value) {
-            $Str.=strlen($Key).':'.$Key.$this->encode($Value);
+        foreach ($this->Val as $key => $value) {
+            $str.=strlen($key).':'.$key.$this->encode($value);
         }
 
-        return $Str.'e';
+        return $str.'e';
     }
 
     // Decode a dictionary
-    public function dec()
-    {
-        $Length = strlen($this->Str);
-        while ($this->Pos<$Length) {
+    public function dec() {
+        $length = strlen($this->Str);
+        while ($this->Pos<$length) {
 
             if ($this->Str[$this->Pos] == 'e') { // End of dictionary
                 $this->Pos += 1;
@@ -96,30 +93,29 @@ class BencodeDict extends Bencode
 
             // Get the dictionary key
             // Length of the key, in bytes
-            $KeyLen = $this->Str[$this->Pos];
+            $keyLength = $this->Str[$this->Pos];
 
             // Allow for multi-digit lengths
-            while ($this->Str[$this->Pos+1]!=':' && $this->Pos+1<$Length) {
+            while ($this->Str[$this->Pos+1]!=':' && $this->Pos+1<$length) {
                 $this->Pos++;
-                $KeyLen.=$this->Str[$this->Pos];
+                $keyLength.=$this->Str[$this->Pos];
             }
             // $this->Pos is now on the last letter of the key length
             // Adding 2 brings it past that character and the ':' to the beginning of the string
             $this->Pos+=2;
 
             // Get the name of the key
-            $Key = substr($this->Str, $this->Pos, $KeyLen);
+            $key = substr($this->Str, $this->Pos, $keyLength);
 
             // Move the position past the key to the beginning of the element
-            $this->Pos+=$KeyLen;
-            $Type = $this->Str[$this->Pos];
-            // $Type now indicates what type of element we're dealing with
+            $this->Pos+=$keyLength;
+            $type = $this->Str[$this->Pos];
+            // $type now indicates what type of element we're dealing with
             // It's either an integer (string) , 'i' (an integer), 'l' (a list), 'd' (a dictionary), or 'e' (end of dictionary/list)
 
             // Decode the bencoded element.
             // This function changes $this->Pos and $this->Val, so you don't have to.
-            $this->decode($Type, $Key);
-
+            $this->decode($type, $key);
         }
 
         return true;

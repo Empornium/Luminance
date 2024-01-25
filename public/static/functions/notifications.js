@@ -1,5 +1,5 @@
 function Clear(torrentid) {
-	ajax.get("?action=notify_clearitem&torrentid=" + torrentid + "&auth=" + authkey, function() {
+	ajax.get("/torrents.php?action=notify_clearitem&torrentid=" + torrentid + "&auth=" + authkey, function() {
 		$("#torrent" + torrentid).remove();
 	});
 }

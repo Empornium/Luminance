@@ -1,21 +1,23 @@
 <?php
+use Luminance\Entities\TorrentComment;
+use Luminance\Entities\TorrentGroup;
 
-define('TORRENT_EDIT_TIME', 3600 * 24 * 14  );
+use Luminance\Errors\NotFoundError;
 
-//Function used for pagination of peer/snatch/download lists on details.php
-function js_pages($Action, $TorrentID, $NumResults, $CurrentPage)
+# Function used for pagination of peer/snatch/download lists on torrents.php
+function js_pages($Action, $torrentID, $NumResults, $CurrentPage)
 {
     $NumPages = ceil($NumResults/100);
-    $PageLinks = array();
+    $PageLinks = [];
     for ($i = 1; $i<=$NumPages; $i++) {
         if ($i == $CurrentPage) {
             $PageLinks[]=$i;
         } else {
-            $PageLinks[]='<a href="#" onclick="'.$Action.'('.$TorrentID.', '.$i.')">'.$i.'</a>';
+            $PageLinks[]='<a href="#" onclick="'.$Action.'('.$torrentID.', '.$i.')">'.$i.'</a>';
         }
     }
 
-    return implode(' | ',$PageLinks);
+    return implode(' | ', $PageLinks);
 }
 
 if (!empty($_REQUEST['action'])) {
@@ -26,13 +28,14 @@ if (!empty($_REQUEST['action'])) {
             break;
 
         case 'get_tags':
+            enforce_login();
             authorize();
 
             header('Content-Type: application/json; charset=utf-8');
             include(SERVER_ROOT . '/Legacy/sections/torrents/functions.php');
 
             $GroupID = $_REQUEST['groupid'];
-            if (!is_number($GroupID) || !$GroupID) error(0, true);
+            if (!is_integer_string($GroupID) || !$GroupID) error(0, true);
 
             echo get_taglist_json($GroupID);
 
@@ -42,27 +45,30 @@ if (!empty($_REQUEST['action'])) {
             enforce_login();
             //authorize();
 
-            if(!isset($_GET['id']) || !is_number($_GET['id'])) error(0);
+            if (!isset($_GET['id']) || !is_integer_string($_GET['id'])) error(0);
             $GroupID = (int) $_GET['id'];
 
-            include(SERVER_ROOT . '/Legacy/sections/upload/functions.php');
+            include(SERVER_ROOT.'/Legacy/sections/upload/functions.php');
 
-            $DB->query("SELECT tg.Name, tf.File, tg.TagList
-                          FROM torrents AS t
-                          JOIN torrents_group AS tg ON tg.ID=t.GroupID
-                          JOIN torrents_files AS tf ON t.ID=tf.TorrentID
-                         WHERE tg.ID='$GroupID'");
-
-            list($DupeTitle, $Contents, $SearchTags) = $DB->next_record(MYSQLI_NUM, array(1));
+            list($DupeTitle, $Contents, $SearchTags) = $master->db->rawQuery(
+                "SELECT tg.Name,
+                        tf.File,
+                        tg.TagList
+                   FROM torrents AS t
+                   JOIN torrents_group AS tg ON tg.ID = t.GroupID
+                   JOIN torrents_files AS tf ON t.ID = tf.TorrentID
+                  WHERE tg.ID = ?",
+                [$GroupID]
+            )->fetch(\PDO::FETCH_NUM);
             $Contents = unserialize(base64_decode($Contents));
             $Tor = new Luminance\Legacy\Torrent($Contents, true); // new Torrent object
 
             list($TotalSize, $FileList) = $Tor->file_list();
 
-            $DupeResults  = check_size_dupes($FileList, $GroupID);
-            $DupeResults['SearchTags'] = $SearchTags;
-            $DupeResults['Title'] = $DupeTitle;
-            $DupeResults['TotalSize'] = $TotalSize;
+            $dupeResults  = check_size_dupes($FileList, $GroupID);
+            $dupeResults['SearchTags'] = $SearchTags;
+            $dupeResults['Title'] = $DupeTitle;
+            $dupeResults['TotalSize'] = $TotalSize;
 
             include(SERVER_ROOT . '/Legacy/sections/upload/display_dupes.php');
 
@@ -71,48 +77,71 @@ if (!empty($_REQUEST['action'])) {
         case 'next':
             enforce_login();
 
-            if(empty($_GET['id']) || !is_number($_GET['id'])) error(0);
+            if (empty($_GET['id']) || !is_integer_string($_GET['id'])) error(0);
 
-            $DB->query("SELECT ID FROM torrents WHERE ID>'".$_GET['id']."' ORDER BY ID ASC LIMIT 1" );
-            list($GroupID) = $DB->next_record();
-            if(!$GroupID) error('Cannot find a next record after <a href="/torrents.php?id='.$_GET['id'].'">the torrent you came from</a>');
+            $groupID = $master->db->rawQuery(
+                "SELECT ID
+                   FROM torrents_group
+                  WHERE ID > ?
+               ORDER BY ID ASC
+                  LIMIT 1",
+                [$_GET['id']]
+            )->fetchColumn();
+            if (!$groupID) error('Cannot find a next record after <a href="/torrents.php?id='.$_GET['id'].'">the torrent you came from</a>');
 
-            header("Location: torrents.php?id=".$GroupID );
+            header("Location: torrents.php?id={$groupID}");
             break;
 
         case 'prev':
             enforce_login();
 
-            if(empty($_GET['id']) || !is_number($_GET['id'])) error(0);
+            if (empty($_GET['id']) || !is_integer_string($_GET['id'])) error(0);
 
-            $DB->query("SELECT ID FROM torrents WHERE ID<'".$_GET['id']."' ORDER BY ID DESC LIMIT 1" );
-            list($GroupID) = $DB->next_record();
-            if(!$GroupID) error('Cannot find a previous record to <a href="/torrents.php?id='.$_GET['id'].'">the torrent you came from</a>');
+            $groupID = $master->db->rawQuery(
+                "SELECT ID
+                   FROM torrents_group
+                  WHERE ID < ?
+               ORDER BY ID DESC
+                  LIMIT 1",
+                [$_GET['id']]
+            )->fetchColumn();
+            if (!$groupID) error('Cannot find a previous record to <a href="/torrents.php?id='.$_GET['id'].'">the torrent you came from</a>');
 
-            header("Location: torrents.php?id=".$GroupID );
+            header("Location: torrents.php?id={$groupID}");
             break;
 
         case 'thank': // ajax
             enforce_login();
             authorize();
-                  $GroupID = (int) $_POST['groupid'];
+                  $groupID = (int) $_POST['groupid'];
 
-                  if ($GroupID) {
-                      $Thanks = $Cache->get_value('torrent_thanks_'.$GroupID);
-                      if ($Thanks === false) {
-                          $Thanks = [];
-                          $DB->query("SELECT Thanks FROM torrents WHERE GroupID = '$GroupID'");
-                          list($Thanks['names']) = $DB->next_record();
-                          $Thanks['count'] = count(explode(', ', $Thanks['names']));
-                          $Cache->cache_value('torrent_thanks_'.$GroupID, $Thanks);
+                  if ($groupID) {
+                      $group = $master->repos->torrentgroups->load($groupID);
+                      if (!($group instanceof TorrentGroup)) {
+                          error(404);
                       }
-                      if (!$IsUploader && (!$Thanks || strpos($Thanks['names'], $LoggedUser['Username'])===false )) {
-                          $DB->query("UPDATE torrents SET  Thanks=(IF(Thanks='','$LoggedUser[Username]',CONCAT_WS(', ',Thanks,'$LoggedUser[Username]'))) WHERE GroupID='$GroupID'");
-
-                          $Cache->delete_value('torrent_thanks_'.$GroupID);
-                          echo $LoggedUser[Username];
-                      } else echo 'err_user';
-                  } else echo 'err_group';
+                      $thanks = $master->cache->getValue('torrent_thanks_'.$groupID);
+                      if ($thanks === false) {
+                          $thanks = [];
+                          $thanks['names'] = $group->Thanks;
+                          $thanks['count'] = count(explode(',', $thanks['names']));
+                          $master->cache->cacheValue("torrent_thanks_{$groupID}", $thanks);
+                      }
+                      $IsUploader = $group->UserID == $activeUser['ID'];
+                      if (!$IsUploader && (!$thanks || strpos($thanks['names'], $activeUser['Username']) === false)) {
+                          $thanks = explode(',', $thanks['names']);
+                          $thanks[] = $activeUser['Username'];
+                          $thanks = implode(', ', array_filter($thanks));
+                          $group->Thanks = $thanks;
+                          $master->repos->torrentgroups->save($group);
+                          $master->cache->deleteValue('torrent_thanks_'.$groupID);
+                          echo $activeUser['Username'];
+                      } else {
+                          echo 'err_user';
+                      }
+                  } else {
+                      echo 'err_group';
+                  }
             break;
 
         case 'ajax_get_edit':
@@ -176,6 +205,11 @@ if (!empty($_REQUEST['action'])) {
             include(SERVER_ROOT.'/Legacy/sections/torrents/takegroupedit.php');
             break;
 
+        case 'revertedit':
+            enforce_login();
+            include(SERVER_ROOT.'/Legacy/sections/torrents/revert_edit.php');
+            break;
+
         case 'nonwikiedit':
             enforce_login();
             include(SERVER_ROOT.'/Legacy/sections/torrents/nonwikiedit.php');
@@ -217,6 +251,24 @@ if (!empty($_REQUEST['action'])) {
             include(SERVER_ROOT.'/Legacy/sections/torrents/vote_tag.php');
             break;
 
+        case 'quick_notify_tag':
+            // Ability to quickly add tag from a torrent page tag section
+            enforce_login();
+            authorize();
+            $GroupID = (int) $_POST['groupid'];
+            $TagName = $_POST['tagname'];
+            $Label = ('Quick added via torrents: ' . $TagName);
+            $TagName = (string) '|'.$TagName.'|';
+            $TagList = '';
+            $NotTagList = '';
+            $CategoryList = '';
+            $master->db->rawQuery(
+                "INSERT INTO users_notify_filters (UserID, Label, Tags, NotTags, Categories)
+                      VALUES (?, ?, ?, '$NotTagList', '$CategoryList')",
+                [$activeUser['ID'], $Label, $TagName]
+            );
+            break;
+
         case 'add_tag':
             enforce_login();
             include(SERVER_ROOT.'/Legacy/sections/torrents/add_tag.php');
@@ -228,9 +280,9 @@ if (!empty($_REQUEST['action'])) {
             include(SERVER_ROOT.'/Legacy/sections/torrents/delete_tag.php');
             break;
 
-        case 'tag_synonyms':
+        case 'tags_synonyms':
             //enforce_login();
-            //include(SERVER_ROOT.'/Legacy/sections/torrents/tag_synomyns.php');
+            //include(SERVER_ROOT.'/Legacy/sections/torrents/tags_synonyms.php');
             header('Location: tags.php');
             break;
 
@@ -243,38 +295,72 @@ if (!empty($_REQUEST['action'])) {
             enforce_login();
             authorize();
             if (!check_perms('site_torrents_notify')) {
-                $DB->query("DELETE FROM users_notify_filters WHERE UserID='$LoggedUser[ID]'");
+                $master->db->rawQuery(
+                    "DELETE
+                       FROM users_notify_filters
+                      WHERE UserID = ?",
+                    [$activeUser['ID']]
+                );
             }
-            $DB->query("DELETE FROM users_notify_torrents WHERE UserID='$LoggedUser[ID]' AND UnRead='0'");
-            $Cache->delete_value('notifications_new_'.$LoggedUser['ID']);
+            $master->db->rawQuery(
+                "DELETE
+                   FROM users_notify_torrents
+                  WHERE UserID = ?
+                    AND UnRead = '0'",
+                [$activeUser['ID']]
+            );
+            $master->cache->deleteValue('notifications_new_'.$activeUser['ID']);
             header('Location: torrents.php?action=notify');
             break;
 
         case 'notify_cleargroup':
             enforce_login();
             authorize();
-            if (!isset($_GET['filterid']) || !is_number($_GET['filterid'])) {
+            if (!isset($_GET['filterid']) || !is_integer_string($_GET['filterid'])) {
                 error(0);
             }
             if (!check_perms('site_torrents_notify')) {
-                $DB->query("DELETE FROM users_notify_filters WHERE UserID='$LoggedUser[ID]'");
+                $master->db->rawQuery(
+                    "DELETE
+                       FROM users_notify_filters
+                      WHERE UserID = ?",
+                    [$activeUser['ID']]
+                );
             }
-            $DB->query("DELETE FROM users_notify_torrents WHERE UserID='$LoggedUser[ID]' AND FilterID='$_GET[filterid]' AND UnRead='0'");
-            $Cache->delete_value('notifications_new_'.$LoggedUser['ID']);
+            $master->db->rawQuery(
+                "DELETE
+                   FROM users_notify_torrents
+                  WHERE UserID = ?
+                    AND FilterID = ?
+                    AND UnRead = '0'",
+                [$activeUser['ID'], $_GET['filterid']]
+            );
+            $master->cache->deleteValue('notifications_new_'.$activeUser['ID']);
             header('Location: torrents.php?action=notify');
             break;
 
         case 'notify_clearitem':
             enforce_login();
             authorize();
-            if (!isset($_GET['torrentid']) || !is_number($_GET['torrentid'])) {
+            if (!isset($_GET['torrentid']) || !is_integer_string($_GET['torrentid'])) {
                 error(0);
             }
             if (!check_perms('site_torrents_notify')) {
-                $DB->query("DELETE FROM users_notify_filters WHERE UserID='$LoggedUser[ID]'");
+                $master->db->rawQuery(
+                    "DELETE
+                       FROM users_notify_filters
+                      WHERE UserID = ?",
+                    [$activeUser['ID']]
+                );
             }
-            $DB->query("DELETE FROM users_notify_torrents WHERE UserID='$LoggedUser[ID]' AND TorrentID='$_GET[torrentid]'");
-            $Cache->delete_value('notifications_new_'.$LoggedUser['ID']);
+            $master->db->rawQuery(
+                "DELETE
+                   FROM users_notify_torrents
+                  WHERE UserID = ?
+                    AND TorrentID = ?",
+                [$activeUser['ID'], $_GET['torrentid']]
+            );
+            $master->cache->deleteValue('notifications_new_'.$activeUser['ID']);
             break;
 
         case 'download':
@@ -282,126 +368,125 @@ if (!empty($_REQUEST['action'])) {
             break;
 
         case 'allcomments':
-
+            enforce_login();
             require(SERVER_ROOT.'/Legacy/sections/torrents/all_comments.php');
             break;
 
         case 'viewbbcode':
+            enforce_login();
             require(SERVER_ROOT.'/Legacy/sections/torrents/viewbbcode.php');
             break;
 
-        case 'reply':
+        case 'add_comment':
             enforce_login();
-            authorize();
-
-            if (!isset($_POST['groupid']) || !is_number($_POST['groupid'])) { // || empty($_POST['body'])
-                error(0);
-            }
-            if (empty($_POST['body'])) {
-                error('You cannot post a reply with no content.');
-            }
-
-            $master->repos->restrictions->check_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::POST);
-
-           $Text = new Luminance\Legacy\Text;
-           $Text->validate_bbcode($_POST['body'],  get_permissions_advtags($LoggedUser['ID']));
-
-           flood_check('torrents_comments');
-
-           $GroupID = (int) $_POST['groupid'];
-           if (!$GroupID) { error(404); }
-
-           $DB->query("SELECT CEIL((SELECT COUNT(ID)+1 FROM torrents_comments AS tc WHERE tc.GroupID='".db_string($GroupID)."')/".TORRENT_COMMENTS_PER_PAGE.") AS Pages");
-           list($Pages) = $DB->next_record();
-
-           $DB->query("INSERT INTO torrents_comments (GroupID,AuthorID,AddedTime,Body) VALUES (
-               '".db_string($GroupID)."', '".db_string($LoggedUser['ID'])."','".sqltime()."','".db_string($_POST['body'])."')");
-           $PostID=$DB->inserted_id();
-
-           $CatalogueID = floor((TORRENT_COMMENTS_PER_PAGE*$Pages-TORRENT_COMMENTS_PER_PAGE)/THREAD_CATALOGUE);
-           $Cache->begin_transaction('torrent_comments_'.$GroupID.'_catalogue_'.$CatalogueID);
-           $Post = array(
-                'ID'=>$PostID,
-                'AuthorID'=>$LoggedUser['ID'],
-                'AddedTime'=>sqltime(),
-                'Body'=>$_POST['body'],
-                'EditedUserID'=>0,
-                'EditedTime'=>'0000-00-00 00:00:00',
-                'Username'=>''
-           );
-           $Cache->insert('', $Post);
-           $Cache->commit_transaction(0);
-           $Cache->increment('torrent_comments_'.$GroupID);
-
-           $DB->query("SELECT tg.Name, t.UserID, CommentsNotify
-                         FROM users_info AS u
-                    LEFT JOIN torrents AS t ON t.UserID=u.UserID
-                    LEFT JOIN torrents_group AS tg ON tg.ID=t.GroupID
-                        WHERE t.GroupID='$GroupID'");
-           list($TName, $UploaderID, $Notify)=$DB->next_record();
-           // check whether system should pm uploader there is a new comment
-           if( $Notify == 1 && $UploaderID!=$LoggedUser['ID'] )
-           send_pm($UploaderID, 0, db_string("Comment received on your upload by {$LoggedUser['Username']}"),
-           db_string("[br]You have received a comment from [url=/user.php?id={$LoggedUser['ID']}]{$LoggedUser['Username']}[/url] on your upload [url=/torrents.php?id=$GroupID&page=$Pages#post$PostID]{$TName}[/url][br][br][quote={$LoggedUser['Username']},t{$GroupID},{$PostID}]{$_POST['body']}[/quote]"));
-
-            header('Location: torrents.php?id='.$GroupID.'&page='.$Pages."#post$PostID");
+            require(SERVER_ROOT.'/Legacy/sections/torrents/add_comment.php');
             break;
 
         case 'get_post':
+            enforce_login();
             require(SERVER_ROOT.'/common/get_post.php');
             break;
 
-        case 'takeedit_post':
-            include(SERVER_ROOT.'/Legacy/sections/torrents/takeedit_post.php');
+        case 'trash_post':
+            enforce_login();
+            authorize();
+            $groupID = $this->request->getInt('id');
+            $postID = $this->request->getInt('postid');
+
+            if (!$_GET['postid'] || !is_integer_string($_GET['postid'])) { error(0); }
+            //$master->flasher->notice("This was a successful test. PostID: " . $postID);
+            $post = $this->master->repos->torrentcomments->load($postID);
+            if ($this->auth->isAllowed('torrent_post_trash')) {
+                $post->setFlags(TorrentComment::TRASHED);
+                $this->master->repos->torrentcomments->save($post);
+                $master->irker->announcelab('Comment '.$postID.' has been trashed in torrent group '.$groupID);
+                $master->flasher->success("Post ".$postID." has been successfully trashed");
+            }
+            elseif (!($this->auth->isAllowed('torrent_post_trash'))) {
+                $master->flasher->warning("You do not have this permission.");
+            }
+            header("Location: torrents.php?id=".$groupID);
+            break;
+
+        case 'restore_post':
+            enforce_login();
+            authorize();
+            $groupID = $this->request->getInt('id');
+            $postID = $this->request->getInt('postid');
+            if (!$_GET['postid'] || !is_integer_string($_GET['postid'])) { error(0); }
+            if ($this->auth->isAllowed('torrent_post_trash')) {
+                $post = $this->master->repos->torrentcomments->load($postID);
+                $post->unsetFlags(TorrentComment::TRASHED);
+                $this->master->repos->torrentcomments->save($post);
+                $master->irker->announcelab('Comment '.$postID.' has been restored in torrent group '.$groupID);
+                $master->flasher->success("Post ".$postID." has been successfully restored");
+            }
+            elseif (!($this->auth->isAllowed('torrent_post_trash'))) {
+                $master->flasher->warning("You do not have this permission.");
+            }
+            header("Location: torrents.php?id=".$groupID);
+            break;
+
+        case 'unset_pin':
+            enforce_login();
+            authorize();
+            $groupID = $this->request->getInt('id');
+            $postID = $this->request->getInt('postid');
+
+            if (!is_integer_string($postID)) {
+                throw new NotFoundError('', 'This post does not exist');
+            }
+
+            $this->auth->checkAllowed('torrent_comments_pin');
+
+            if (!$_GET['postid'] || !is_integer_string($_GET['postid'])) { error(0); }
+            $post = $this->master->repos->torrentcomments->load($postID);
+            $post->unsetFlags(TorrentComment::PINNED);
+            $this->master->repos->torrentcomments->save($post);
+
+            header("Location: torrents.php?id=".$groupID."&postid=".$postID."#post".$postID);
+            break;
+
+        case 'set_pin':
+            enforce_login();
+            authorize();
+            $groupID = $this->request->getInt('id');
+            $postID = $this->request->getInt('postid');
+
+            if (!is_integer_string($postID)) {
+                throw new NotFoundError('', 'This post does not exist');
+            }
+
+            $this->auth->checkAllowed('torrent_comments_pin');
+
+            if (!$_GET['postid'] || !is_integer_string($_GET['postid'])) { error(0); }
+            $post = $this->master->repos->torrentcomments->load($postID);
+            $post->setFlags(TorrentComment::PINNED);
+            $this->master->repos->torrentcomments->save($post);
+
+            header("Location: torrents.php?id=".$groupID."&postid=".$postID."#post".$postID);
             break;
 
         case 'delete_post':
             enforce_login();
-            authorize();
-
-            // Quick SQL injection check
-            if (!$_GET['postid'] || !is_number($_GET['postid'])) { error(0); }
-
-            // Make sure they are moderators
-            if (!check_perms('site_moderate_forums')) { error(403); }
-
-            // Get topicid, forumid, number of pages
-            $DB->query("SELECT DISTINCT
-                GroupID,
-                CEIL((SELECT COUNT(tc1.ID) FROM torrents_comments AS tc1 WHERE tc1.GroupID=tc.GroupID)/".TORRENT_COMMENTS_PER_PAGE.") AS Pages,
-                CEIL((SELECT COUNT(tc2.ID) FROM torrents_comments AS tc2 WHERE tc2.ID<'".db_string($_GET['postid'])."')/".TORRENT_COMMENTS_PER_PAGE.") AS Page
-                FROM torrents_comments AS tc
-                WHERE tc.GroupID=(SELECT GroupID FROM torrents_comments WHERE ID='".db_string($_GET['postid'])."')");
-            list($GroupID,$Pages,$Page)=$DB->next_record();
-
-            // $Pages = number of pages in the thread
-            // $Page = which page the post is on
-            // These are set for cache clearing.
-
-            $DB->query("DELETE FROM torrents_comments WHERE ID='".db_string($_GET['postid'])."'");
-
-            //We need to clear all subsequential catalogues as they've all been bumped with the absence of this post
-            //$ThisCatalogue = floor((TORRENT_COMMENTS_PER_PAGE*$Page-TORRENT_COMMENTS_PER_PAGE)/THREAD_CATALOGUE);
-            $LastCatalogue = floor((TORRENT_COMMENTS_PER_PAGE*$Pages-TORRENT_COMMENTS_PER_PAGE)/THREAD_CATALOGUE);
-            for ($i=0;$i<=$LastCatalogue;$i++) {
-                $Cache->delete('torrent_comments_'.$GroupID.'_catalogue_'.$i);
-            }
-
-            // Delete thread info cache (eg. number of pages)
-            $Cache->delete('torrent_comments_'.$GroupID);
-
+            include(SERVER_ROOT.'/Legacy/sections/torrents/delete_comment.php');
             break;
+
         case 'regen_filelist' :
-            if (check_perms('users_mod') && !empty($_GET['torrentid']) && is_number($_GET['torrentid'])) {
-                $TorrentID = $_GET['torrentid'];
-                $DB->query("SELECT tg.ID,
-                        tf.File
-                    FROM torrents_files AS tf
-                        JOIN torrents AS t ON t.ID=tf.TorrentID
-                        JOIN torrents_group AS tg ON tg.ID=t.GroupID
-                        WHERE tf.TorrentID = ".$TorrentID);
-                if ($DB->record_count() > 0) {
-                    list($GroupID, $Contents) = $DB->next_record(MYSQLI_NUM, false);
+            enforce_login();
+
+            if (check_perms('users_mod') && !empty($_GET['torrentid']) && is_integer_string($_GET['torrentid'])) {
+                $torrentID = $_GET['torrentid'];
+                list($GroupID, $Contents) = $master->db->rawQuery(
+                    "SELECT tg.ID,
+                            tf.File
+                       FROM torrents_files AS tf
+                       JOIN torrents AS t ON t.ID = tf.TorrentID
+                       JOIN torrents_group AS tg ON tg.ID = t.GroupID
+                      WHERE tf.TorrentID = ?",
+                    [$torrentID]
+                )->fetch(\PDO::FETCH_NUM);
+                if ($master->db->foundRows() > 0) {
                     $Contents = unserialize(base64_decode($Contents));
                     $Tor = new Luminance\Legacy\Torrent($Contents, true);
                     list($TotalSize, $FileList) = $Tor->file_list();
@@ -409,26 +494,40 @@ if (!empty($_REQUEST['action'])) {
                         list($Size, $Name) = $File;
                         $TmpFileList []= $Name .'{{{'.$Size.'}}}'; // Name {{{Size}}}
                     }
-                    $FilePath = $Tor->Val['info']->Val['files'] ? db_string($Tor->Val['info']->Val['name']) : "";
-                    $FileString = db_string(implode('|||', $TmpFileList));
-                    $DB->query("UPDATE torrents SET Size = ".$TotalSize.", FilePath = '".db_string($FilePath)."', FileList = '".db_string($FileString)."' WHERE ID = ".$TorrentID);
-                    $Cache->delete_value('torrents_details_'.$GroupID);
+                    $FilePath = $Tor->Val['info']->Val['files'] ? $Tor->Val['info']->Val['name'] : "";
+                    $FileString = implode('|||', $TmpFileList);
+                    $master->db->rawQuery(
+                        "UPDATE torrents
+                            SET Size = ?,
+                                FilePath = ?,
+                                FileList = ?
+                          WHERE ID = ?",
+                        [$TotalSize, $FilePath, $FileString, $torrentID]
+                    );
+                    $master->cache->deleteValue('torrents_details_'.$GroupID);
                 }
-                header('Location: details.php?id='.$TorrentID);
+                header('Location: torrents.php?id='.$torrentID);
                 die();
             } else {
                 error(403);
             }
             break;
         case 'fix_group' :
-            if (check_perms('users_mod') && authorize() && !empty($_GET['groupid']) && is_number($_GET['groupid'])) {
-                $DB->query("SELECT COUNT(ID) FROM torrents WHERE GroupID = ".$_GET['groupid']);
-                list($Count) = $DB->next_record();
-                if ($Count == 0) {
+            enforce_login();
+            authorize();
+
+            if (check_perms('users_mod') && authorize() && !empty($_GET['groupid']) && is_integer_string($_GET['groupid'])) {
+                $count = $master->db->rawQuery(
+                    "SELECT COUNT(ID)
+                       FROM torrents
+                      WHERE GroupID = ?",
+                    [$_GET['groupid']]
+                )->fetchColumn();
+                if ($count == 0) {
                     delete_group($_GET['groupid']);
-                } else {
                 }
-                                header('Location: torrents.php?id='.$_GET['groupid']);
+
+                header('Location: torrents.php?id='.$_GET['groupid']);
             } else {
                 error(403);
             }
@@ -442,23 +541,31 @@ if (!empty($_REQUEST['action'])) {
             //authorize(); // who cares if somone fakes this
 
             include(SERVER_ROOT.'/Legacy/sections/tools/managers/mfd_functions.php');
-            $Text = new Luminance\Legacy\Text;
+            $bbCode = new \Luminance\Legacy\Text;
 
             $GroupID = (int) $_REQUEST['groupid'];
             $ReasonID = (int) $_REQUEST['reasonid'];
 
-            if (is_number($GroupID) && is_number($ReasonID)) {
+            if (is_integer_string($GroupID) && is_integer_string($ReasonID)) {
 
-                $DB->query("SELECT Name FROM torrents_group WHERE ID=$GroupID");
-                list($Name) = $DB->next_record();
+                $Name = $master->db->rawQuery(
+                    "SELECT Name
+                       FROM torrents_group
+                      WHERE ID=?",
+                    [$GroupID]
+                )->fetchColumn();
 
                 if ($ReasonID > 0) { // if using a standard reason get standard message
-                    $DB->query("SELECT Description FROM review_reasons WHERE ID = $ReasonID");
-                    list($Description) = $DB->next_record();
+                    $Description = $master->db->rawQuery(
+                        "SELECT Description
+                           FROM review_reasons
+                          WHERE ID = ?",
+                        [$ReasonID]
+                    )->fetchColumn();
                 }
                 $KillTime = get_warning_time();
                 // return a preview of the warning message (the first part anyway, the last static part we can add in the page after the textarea used for other reason)
-                echo $Text->full_format(get_warning_message(true, false, $GroupID, $Name, $Description, $KillTime), true);
+                echo $bbCode->full_format(get_warning_message(true, false, $GroupID, $Name, ($Description ?? ''), $KillTime), true);
             }
             break;
 
@@ -468,24 +575,25 @@ if (!empty($_REQUEST['action'])) {
 
             include(SERVER_ROOT.'/Legacy/sections/tools/managers/mfd_functions.php');
 
-            if (!empty($_POST['groupid']) && is_number($_POST['groupid'])) {
+            if (!empty($_POST['groupid']) && is_integer_string($_POST['groupid'])) {
 
-                $GroupID = (int) $_POST['groupid'];
-                $DB->query("SELECT tg.Name,
-                                        tr.Status,
-                                        tr.KillTime,
-                                        tr.ReasonID,
-                                        tr.Reason,
-                                        tr.ConvID,
-                                        rr.Description
-                                        FROM torrents_group AS tg
-                                        LEFT JOIN torrents_reviews AS tr ON tr.GroupID = tg.ID
-                                        LEFT JOIN review_reasons AS rr ON rr.ID = tr.ReasonID
-                                        WHERE tg.ID=$GroupID
-                                        ORDER BY tr.Time DESC
-                                        LIMIT 1");
-
-                list($Name, $Status, $KillTime, $ReasonID, $Reason, $ConvID, $Description) = $DB->next_record();
+                $groupID = (int) $_POST['groupid'];
+                list($Name, $Status, $KillTime, $ReasonID, $Reason, $ConvID, $Description) = $master->db->rawQuery(
+                    "SELECT tg.Name,
+                            tr.Status,
+                            tr.KillTime,
+                            tr.ReasonID,
+                            tr.Reason,
+                            tr.ConvID,
+                            rr.Description
+                       FROM torrents_group AS tg
+                  LEFT JOIN torrents_reviews AS tr ON tr.GroupID = tg.ID
+                  LEFT JOIN review_reasons AS rr ON rr.ID = tr.ReasonID
+                      WHERE tg.ID = ?
+                   ORDER BY tr.Time DESC
+                      LIMIT 1",
+                    [$groupID]
+                )->fetch(\PDO::FETCH_NUM);
 
                 if ($Status == 'Warned') { // if status != Warned then something fishy is going on (or its bugged)
                             // staff are going to see quite a few of these...
@@ -497,25 +605,30 @@ if (!empty($_REQUEST['action'])) {
                     } else {
                                 // New conversation (does not compute!)
                                 $Subject = "I have fixed my upload '$Name'";
-                                $DB->query("INSERT INTO staff_pm_conversations
-                                                 (Subject, Status, Level, UserID, Unread, Date)
-                                          VALUES ('".db_string($Subject)."', 'Unanswered', 500, ".$LoggedUser['ID'].", 'false', '".sqltime()."')");
+                                $master->db->rawQuery(
+                                    "INSERT INTO staff_pm_conversations (Subject, Status, Level, UserID, Unread, Date)
+                                          VALUES (?, 'Unanswered', ?, ?, false, ?)",
+                                    [$Subject, 500, $activeUser['ID'], sqltime()]
+                                );
                                 $NewSubject = null;
                                 $PMSetStatus = false;
-                                $ConvID = $DB->inserted_id();
+                                $ConvID = $master->db->lastInsertID();
                     }
                     if ($ConvID>0) { // send message to staff
-                                $Message = get_user_okay_message($GroupID, $Name, $KillTime, $Description?$Description:$Reason);
-                                send_message_reply($ConvID, 0, $LoggedUser['ID'], $Message, $PMSetStatus, false, $NewSubject, "false");
+                        $Message = get_user_okay_message($groupID, $KillTime, $Description?$Description:$Reason);
+                        send_message_reply($ConvID, 0, $activeUser['ID'], $Message, $PMSetStatus, false, $NewSubject, "false");
 
-                                // create new review record
-                                $DB->query("INSERT INTO torrents_reviews (GroupID, ReasonID, UserID, Time, ConvID, Status, Reason, KillTime)
-                                         VALUES ($GroupID, $ReasonID, ".db_string($LoggedUser['ID']).", '".sqltime()."', '$ConvID', 'Pending', '".db_string($Reason)."', '".$KillTime."')");
+                        // create new review record
+                        $master->db->rawQuery(
+                            "INSERT INTO torrents_reviews (GroupID, ReasonID, UserID, Time, ConvID, Status, Reason, KillTime)
+                                  VALUES (?, ?, ?, ?, ?, 'Pending', ?, ?)",
+                            [$groupID, $ReasonID, $activeUser['ID'], sqltime(), $ConvID, $Reason, $KillTime]
+                        );
 
-                                echo $ConvID;
+                        echo $ConvID;
                     }
                 }
-                $Cache->delete_value('torrent_review_' . $GroupID);
+                $master->cache->deleteValue('torrent_review_' . $groupID);
             }
 
             break;
@@ -524,156 +637,181 @@ if (!empty($_REQUEST['action'])) {
             enforce_login();
             authorize();
 
-                  include(SERVER_ROOT.'/Legacy/sections/tools/managers/mfd_functions.php');
-                  include(SERVER_ROOT . '/Legacy/sections/torrents/functions.php');
+            include(SERVER_ROOT.'/Legacy/sections/tools/managers/mfd_functions.php');
+            include(SERVER_ROOT.'/Legacy/sections/torrents/functions.php');
 
-                  if (check_perms('torrents_review') && !empty($_POST['groupid']) && is_number($_POST['groupid'])) {
+            if (check_perms('torrent_review') && !empty($_POST['groupid']) && is_integer_string($_POST['groupid'])) {
 
-                        $GroupID = (int) $_POST['groupid'];
-                        $Review = get_last_review($GroupID);
-                        if ($Review['ID'] != $_POST['ninja']) {
-                            error("You've been ninja'd");
-                            die();
-                        }
-                        $ReasonID = (int) $_POST['reasonid'];
-                        $Time = sqltime();
+                  $GroupID = (int) $_POST['groupid'];
+                  $Review = get_last_review($GroupID);
+                  if ($Review['ID'] != $_POST['ninja']) {
+                      error("You've been ninja'd");
+                      die();
+                  }
+                  $ReasonID = (int) $_POST['reasonid'];
+                  $time = sqltime();
 
-                        // get the status we are setting this to
-                        if ($_POST['submit'] == "Mark for Deletion") $Status = 'Warned';
-                        elseif ($_POST['submit'] == "Reject Fix") $Status = 'Rejected';
-                        elseif ($_POST['submit'] == "Accept Fix") $Status = 'Fixed';
-                        else $Status = 'Okay';
+                  // get the status we are setting this to
+                  if ($_POST['submit'] == "Mark for Deletion") $Status = 'Warned';
+                  elseif ($_POST['submit'] == "Reject Fix") $Status = 'Rejected';
+                  elseif ($_POST['submit'] == "Accept Fix") $Status = 'Fixed';
+                  else $Status = 'Okay';
 
+                  $nextRecord = $master->db->rawQuery(
+                      "SELECT tg.Name,
+                              t.UserID,
+                              t.ID,
+                              tr.Status,
+                              tr.ConvID,
+                              tr.KillTime
+                         FROM torrents_group AS tg
+                         JOIN torrents AS t ON t.GroupID = tg.ID
+                    LEFT JOIN (
+                              SELECT GroupID,
+                                     Max(Time) as LastTime
+                                FROM torrents_reviews
+                            GROUP BY GroupID
+                              ) AS x ON tg.ID = x.GroupID
+                    LEFT JOIN torrents_reviews AS tr
+                           ON tr.GroupID = x.GroupID
+                          AND tr.Time = x.LastTime
+                        WHERE tg.ID = ?",
+                        [$GroupID]
+                  )->fetch(\PDO::FETCH_NUM);
 
-                        $DB->query("SELECT Name, t.UserID, t.ID , tr.Status, tr.ConvID , tr.KillTime
-                                    FROM torrents_group AS tg
-                                    JOIN torrents AS t ON t.GroupID=tg.ID
-                                    LEFT JOIN (
-                                        SELECT GroupID, Max(Time) as LastTime
-                                        FROM torrents_reviews
-                                        GROUP BY GroupID
-                                    ) AS x ON tg.ID= x.GroupID
-                                    LEFT JOIN torrents_reviews AS tr ON tr.GroupID=x.GroupID AND tr.Time=x.LastTime
-                                    WHERE tg.ID=$GroupID");
+                  list($Name, $userID, $torrentID, $PreStatus, $ConvID, $PreKillTime) = $nextRecord;
 
-                        list($Name, $UserID, $TorrentID, $PreStatus, $ConvID, $PreKillTime) = $DB->next_record();
+                  if (($PreStatus == 'Warned' && !check_perms('torrent_review_override')) ||
+                      ($PreStatus == 'Pending' && ($Status == 'Okay' || $Status == 'Warned') && !check_perms('torrent_review_override'))) {
+                      error(403);
+                  }
 
-                        if (($PreStatus == 'Warned' && !check_perms('torrents_review_override')) ||
-                            ($PreStatus == 'Pending' && ($Status == 'Okay' || $Status == 'Warned' ) && !check_perms('torrents_review_override'))) {
-                            error(403);
-                        }
+                  $Reason = null;
+                  switch ($Status) {
+                      case 'Warned':
+                          $Reason = '';
+                          if ($ReasonID == 0) {
+                              $Reason = $_POST['reason'] ?? '';
+                          } else {
+                              $Reason = $master->db->rawQuery(
+                                  "SELECT Description
+                                     FROM review_reasons
+                                    WHERE ID = ?",
+                                  [$ReasonID]
+                              )->fetchColumn();
+                          }
+                          $LogDetails = "Reason: {$Reason}";
+                          if (!$PreKillTime || $PreStatus == 'Okay') {
+                              $KillTime = get_warning_time(); // 12 hours...  ?
+                          } else {
+                              $KillTime = strtotime($PreKillTime);
+                          }
 
-                        $Reason = null;
-                        switch ($Status) {
-                            case 'Warned':
-                                if ($ReasonID == 0) {
-                                    $Reason = display_str($_POST['reason']);
-                                    $LogDetails = "Reason: $Reason";
-                                } else {
-                                    $DB->query("SELECT Description FROM review_reasons WHERE ID = $ReasonID");
-                                    list($Description) = $DB->next_record();
-                                    $LogDetails = "Reason: $Description";
-                                }
-                                if (!$PreKillTime || $PreStatus == 'Okay')
-                                    $KillTime = get_warning_time(); // 12 hours...  ?
-                                else
-                                    $KillTime = strtotime($PreKillTime);
+                          $LogDetails .= ", Delete at: ".  date('M d Y, H:i', $KillTime);
 
-                                $LogDetails .= ", Delete at: ".  date('M d Y, H:i', $KillTime);
+                          $Message = get_warning_message(true, true, $GroupID, $Name, $Reason, $KillTime, false, display_str($_POST['msg_extra'] ?? ''));
 
-                                $Message = get_warning_message(true, true, $GroupID, $Name, $Description?$Description:$Reason, $KillTime, false, display_str($_POST['msg_extra']) );
+                          if (!$ConvID) {
 
-                                if (!$ConvID) {
+                              $master->db->rawQuery(
+                                  "INSERT INTO staff_pm_conversations (Subject, Status, Level, UserID, Date, Unread)
+                                        VALUES ('Important: Your upload has been marked for deletion!', 'Resolved', ?, ?, ?, true)",
+                                  [500, $userID, $time]
+                              );
 
-                                    $DB->query("INSERT INTO staff_pm_conversations
-                                             (Subject, Status, Level, UserID, Date, Unread)
-                                        VALUES ('".db_string("Important: Your upload has been marked for deletion!")."', 'Resolved', '500', '$UserID', '$Time', true)");
+                              // New message
+                              $ConvID = $master->db->lastInsertID();
 
-                                    // New message
-                                    $ConvID = $DB->inserted_id();
+                              $master->db->rawQuery(
+                                  "INSERT INTO staff_pm_messages (UserID, SentDate, Message, ConvID)
+                                        VALUES (?, ?, ?, ?)",
+                                  [$activeUser['ID'], $time, $Message, $ConvID]
+                              );
 
-                                    $DB->query("INSERT INTO staff_pm_messages
-                                             (UserID, SentDate, Message, ConvID)
-                                        VALUES ('{$LoggedUser['ID']}', '$Time', '$Message', $ConvID)");
+                          } else {
+                                       // send message
+                              send_message_reply($ConvID, $userID, $activeUser['ID'], $Message, 'Open');
+                          }
 
-                                } else {
-                                             // send message
-                                    send_message_reply($ConvID, $UserID, $LoggedUser['ID'], $Message, 'Open');
-                                }
+                          break;
+                      case 'Rejected':
+                          // get the review status from the record before the current (pending) one
+                          list($Status, $KillTime, $ReasonID, $Reason, $Description) = $master->db->rawQuery(
+                              "SELECT tr.Status,
+                                      tr.KillTime,
+                                      tr.ReasonID,
+                                      tr.Reason,
+                                      rr.Description
+                                 FROM torrents_reviews AS tr
+                            LEFT JOIN review_reasons AS rr ON rr.ID = tr.ReasonID
+                                WHERE tr.GroupID = ?
+                                  AND tr.Status != 'Pending'
+                             ORDER BY tr.Time DESC
+                                LIMIT 1",
+                              [$GroupID]
+                          )->fetch(\PDO::FETCH_NUM);
+                          // overwrite these to be passed through to new record
+                          $KillTime = strtotime($KillTime);
+                          $LogDetails = "Rejected Fix: ".$Description?$Description:$Reason;
+                          $LogDetails .= " Delete at: ".  date('M d Y, H:i', $KillTime);
 
-                                break;
-                            case 'Rejected':
-                                // get the review status from the record before the current (pending) one
-                                $DB->query("SELECT
-                                                tr.Status,
-                                                tr.KillTime,
-                                                tr.ReasonID,
-                                                tr.Reason,
-                                                rr.Description
-                                           FROM torrents_reviews AS tr
-                                      LEFT JOIN review_reasons AS rr ON rr.ID = tr.ReasonID
-                                          WHERE tr.GroupID=$GroupID
-                                            AND tr.Status != 'Pending'
-                                       ORDER BY tr.Time DESC
-                                          LIMIT 1");
-                                // overwrite these to be passed through to new record
-                                list($Status, $KillTime, $ReasonID, $Reason, $Description) = $DB->next_record();
-                                $KillTime = strtotime($KillTime);
-                                $LogDetails = "Rejected Fix: ".$Description?$Description:$Reason;
-                                $LogDetails .= " Delete at: ".  date('M d Y, H:i', $KillTime);
+                          if ($ConvID) {
+                              send_message_reply($ConvID, $userID, $activeUser['ID'],
+                                  get_warning_message(true, true, $GroupID, $Name, $Description?$Description:$Reason, $KillTime, true), 'Open');
+                          } else { // if no conv id then this has been rejected without the user sending a msg to staff
+                              send_pm($userID, 0, "Important: Your fix has been rejected!",
+                                  get_warning_message(true, true, $GroupID, $Name, $Description?$Description:$Reason, $KillTime, true));
+                          }
+                          break;
+                      case 'Fixed':
+                          if ($ConvID) {
+                              // send message & resolve
+                              send_message_reply($ConvID, $userID, $activeUser['ID'], get_fixed_message($GroupID), 'Resolved');
+                          } else { // if no conv id then this has been fixed without the user sending a msg to staff
+                              send_pm($userID, 0, "Thank you for fixing your upload",
+                                              get_fixed_message($GroupID));
+                          }
+                          $Status="Okay";
+                          $ReasonID = -1;
+                          $KillTime ='0000-00-00 00:00:00';
+                          $LogDetails = "Upload Fixed";
+                          break;
+                      default: // 'Okay'
+                          if ($ConvID) {  // shouldnt normally be here but its not an impossible state... close the conversation
+                              // send message & resolve
+                              send_message_reply($ConvID, $userID, $activeUser['ID'], get_fixed_message($GroupID), 'Resolved');
+                          }  // if no convid then this has just been checked for the first time, no msg needed
+                          $Status="Okay";
+                          $ReasonID = -1;
+                          $KillTime ='0000-00-00 00:00:00';
+                          $LogDetails = "Marked as Okay";
+                          break;
+                  }
 
-                                if ($ConvID) {
-                                    send_message_reply($ConvID, $UserID, $LoggedUser['ID'],
-                                        get_warning_message(true, true, $GroupID, $Name, $Description?$Description:$Reason, $KillTime, true), 'Open');
-                                } else { // if no conv id then this has been rejected without the user sending a msg to staff
-                                    send_pm($UserID, 0, db_string("Important: Your fix has been rejected!"),
-                                                    get_warning_message(true, true, $GroupID, $Name, $Description?$Description:$Reason, $KillTime, true));
-                                }
-                                break;
-                            case 'Fixed':
-                                if ($ConvID) {
-                                    // send message & resolve
-                                    send_message_reply($ConvID, $UserID, $LoggedUser['ID'], get_fixed_message($GroupID, $Name), 'Resolved');
-                                } else { // if no conv id then this has been fixed without the user sending a msg to staff
-                                    send_pm($UserID, 0, db_string("Thank-you for fixing your upload"),
-                                                    get_fixed_message($GroupID, $Name));
-                                }
-                                $Status="Okay";
-                                $ReasonID = -1;
-                                $KillTime ='0000-00-00 00:00:00';
-                                $LogDetails = "Upload Fixed";
-                                break;
-                            default: // 'Okay'
-                                if ($ConvID) {  // shouldnt normally be here but its not an impossible state... close the conversation
-                                    // send message & resolve
-                                    send_message_reply($ConvID, $UserID, $LoggedUser['ID'], get_fixed_message($GroupID, $Name), 'Resolved');
-                                }  // if no convid then this has just been checked for the first time, no msg needed
-                                $Status="Okay";
-                                $ReasonID = -1;
-                                $KillTime ='0000-00-00 00:00:00';
-                                $LogDetails = "Marked as Okay";
-                                break;
-                        }
+                  // Ensure $KillTime is formatted for SQL
+                  $KillTime = sqltime($KillTime);
+                  $master->db->rawQuery(
+                      "INSERT INTO torrents_reviews (GroupID, ReasonID, UserID, ConvID, Time, Status, Reason, KillTime)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                      [$GroupID, $ReasonID, $activeUser['ID'], $ConvID ? $ConvID : 'null', $time, $Status, $Reason, $KillTime]
+                  );
 
-                        $DB->query("INSERT INTO torrents_reviews (GroupID, ReasonID, UserID, ConvID, Time, Status, Reason, KillTime)
-                         VALUES ($GroupID, $ReasonID, ".db_string($LoggedUser['ID']).", ".($ConvID?$ConvID:"null").", '$Time', '$Status', '".db_string($Reason)."', '".sqltime($KillTime)."')");
+                  // if okayed check if this torrent gets the ducky award
+                  if ($Status=="Okay") award_ducky_check($userID, $torrentID);
 
-                        // if okayed check if this torrent gets the ducky award
-                        if ($Status=="Okay") award_ducky_check($UserID, $TorrentID);
+                  $master->cache->deleteValue('torrent_review_' . $GroupID);
+                  $master->cache->deleteValue('staff_pm_new_' . $userID);
 
-                        $Cache->delete_value('torrent_review_' . $GroupID);
-                        $Cache->delete_value('staff_pm_new_' . $UserID);
+                  // logging -
+                  write_log("Torrent $torrentID ($Name) status set to $Status by ".$activeUser['Username']." ($LogDetails)"); // TODO: this is probably broken
+                  write_group_log($GroupID, $torrentID, $activeUser['ID'], "[b]Status:[/b] $Status $LogDetails", 0);
 
-                        // logging -
-                        write_log("Torrent $TorrentID ($Name) status set to $Status by ".$LoggedUser['Username']." ($LogDetails)"); // TODO: this is probably broken
-                        write_group_log($GroupID, $TorrentID, $LoggedUser['ID'], "[b]Status:[/b] $Status $LogDetails", 0);
+                  update_staff_checking("checked #$GroupID \"".cut_string($Name, 32).'"');
 
-                        update_staff_checking("checked #$GroupID \"".cut_string($Name, 32).'"');
+                  header('Location: torrents.php?id='.$GroupID."&checked=1");
 
-                        header('Location: torrents.php?id='.$GroupID."&checked=1");
-
-                  } else {
-                        error(403);
+            } else {
+                  error(403);
             }
             break;
 
@@ -681,13 +819,18 @@ if (!empty($_REQUEST['action'])) {
             enforce_login();
             authorize();
 
-            if (!check_perms('torrents_review')) error(403);
+            if (!check_perms('torrent_review')) error(403);
 
             include(SERVER_ROOT . '/Legacy/sections/torrents/functions.php');
-            if ($_POST['remove']=='1') {
-                $DB->query("UPDATE staff_checking SET IsChecking='0' WHERE UserID='$LoggedUser[ID]'");
-                $Cache->delete_value('staff_checking');
-                $Cache->delete_value('staff_lastchecked');
+            if (($_POST['remove'] ?? null) == '1') {
+                $master->db->rawQuery(
+                    "UPDATE staff_checking
+                        SET IsChecking = '0'
+                      WHERE UserID = ?",
+                    [$activeUser['ID']]
+                );
+                $master->cache->deleteValue('staff_checking');
+                $master->cache->deleteValue('staff_lastchecked');
             } else {
                 update_staff_checking('browsing torrents');
             }
@@ -700,7 +843,7 @@ if (!empty($_REQUEST['action'])) {
             enforce_login();
             authorize();
 
-            if (!check_perms('torrents_review')) error(403);
+            if (!check_perms('torrent_review')) error(403);
             include(SERVER_ROOT . '/Legacy/sections/torrents/functions.php');
 
             echo print_staff_status();
@@ -713,22 +856,24 @@ if (!empty($_REQUEST['action'])) {
             //authorize();
 
             if (!check_perms('site_debug')) error(403);
-            if(!isset($_GET['torrentid']) || !is_number($_GET['torrentid'])) error(0);
-            $TorrentID = (int) $_GET['torrentid'];
+            if (!isset($_GET['torrentid']) || !is_integer_string($_GET['torrentid'])) error(0);
+            $torrentID = (int) $_GET['torrentid'];
 
-            $Tor = getTorrentFile($GroupID, $TorrentID, 'uSeRsToRrEntPaSs');
+            $Tor = getTorrentFile($torrentID, 'uSeRsToRrEntPaSs');
 
+            $params = [];
             if ($_GET['action']=='output') {
                 ksort($Tor->Val);
-                error("<pre>".display_str(print_r($Tor->Val,true))."</pre>");
-            } else
-                error("<pre>".display_str(print_r($Tor->enc(),true))."</pre>");
-
+                $params['data'] = print_r($Tor->Val, true);
+            } else {
+                $params['data'] = print_r($Tor->enc(), true);
+            }
+            echo $master->render->template('@Legacy/torrents/data.html.twig', $params);
             break;
 
         case 'clear_browse':
             enforce_login();
-            update_last_browse($LoggedUser['ID'], sqltime());
+            update_last_browse($activeUser['ID'], sqltime());
             header('Location: torrents.php');
             break;
 
@@ -737,11 +882,15 @@ if (!empty($_REQUEST['action'])) {
 
             if (!empty($_GET['id'])) {
                 include(SERVER_ROOT.'/Legacy/sections/torrents/details.php');
-            } elseif (isset($_GET['torrentid']) && is_number($_GET['torrentid'])) {
-                $DB->query("SELECT GroupID FROM torrents WHERE ID=".$_GET['torrentid']);
-                list($GroupID) = $DB->next_record();
-                if ($GroupID) {
-                    header("Location: torrents.php?id=".$GroupID."&torrentid=".$_GET['torrentid']);
+            } elseif (isset($_GET['torrentid']) && is_integer_string($_GET['torrentid'])) {
+                $groupID = $master->db->rawQuery(
+                    "SELECT GroupID
+                       FROM torrents
+                      WHERE ID = ?",
+                    [$_GET['torrentid']]
+                )->fetchColumn();
+                if ($groupID) {
+                    header("Location: torrents.php?id={$groupID}&torrentid={$_GET['torrentid']}");
                 }
             } else {
                 include(SERVER_ROOT.'/Legacy/sections/torrents/browse.php');
@@ -753,26 +902,33 @@ if (!empty($_REQUEST['action'])) {
 
     if (!empty($_GET['id'])) {
         include(SERVER_ROOT.'/Legacy/sections/torrents/details.php');
-    } elseif (isset($_GET['torrentid']) && is_number($_GET['torrentid'])) {
-        $DB->query("SELECT GroupID FROM torrents WHERE ID=".$_GET['torrentid']);
-        list($GroupID) = $DB->next_record();
-        if ($GroupID) {
-            header("Location: torrents.php?id=".$GroupID."&torrentid=".$_GET['torrentid']."#torrent".$_GET['torrentid']);
+    } elseif (isset($_GET['torrentid']) && is_integer_string($_GET['torrentid'])) {
+        $groupID = $master->db->rawQuery(
+            "SELECT GroupID
+               FROM torrents
+              WHERE ID = ?",
+            [$_GET['torrentid']]
+        )->fetchColumn();
+        if ($groupID) {
+            header("Location: torrents.php?id={$groupID}&torrentid={$_GET['torrentid']}#torrent{$_GET['torrentid']}");
         } else {
-            header("Location: log.php?search=Torrent+".$_GET['torrentid']);
+            header("Location: log.php?search=Torrent+{$_GET['torrentid']}");
         }
     } elseif (!empty($_GET['type'])) {
         include(SERVER_ROOT.'/Legacy/sections/torrents/user.php');
     } elseif (!empty($_GET['groupname']) && !empty($_GET['forward'])) {
-        $DB->query("SELECT ID FROM torrents_group WHERE Name LIKE '".db_string($_GET['groupname'])."'");
-        list($GroupID) = $DB->next_record();
-        if ($GroupID) {
-            header("Location: torrents.php?id=".$GroupID);
+        $groupID = $master->db->rawQuery(
+            "SELECT ID
+               FROM torrents_group
+              WHERE Name LIKE ?",
+            [$_GET['groupname']]
+        )->fetchColumn();
+        if ($groupID) {
+            header("Location: torrents.php?id={$groupID}");
         } else {
             include(SERVER_ROOT.'/Legacy/sections/torrents/browse.php');
         }
     } else {
         include(SERVER_ROOT.'/Legacy/sections/torrents/browse.php');
     }
-
 }

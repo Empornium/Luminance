@@ -1,0 +1,9 @@
+<div class="post_content">{{ preview|raw }}</div>
+{% if result == 'saved' %}
+    <div class="post_footer">
+        {% if auth.isAllowed('forum_moderate') %}
+            <a href="#content{{ postID }}" onclick="LoadEdit({{ postID }}, 1); return false;">&laquo;</a>
+        {% endif %}
+        <span class="editedby">Last edited by <a href="/user.php?id={{ ActiveUser.ID }}">{{ ActiveUser.Username }}</a> just now</span>
+    </div>
+{% endif %}

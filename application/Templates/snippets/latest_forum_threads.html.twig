@@ -1,0 +1,33 @@
+{% import "macros/icon.html.twig" as icon %}
+
+{% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::FORUM')) %}
+<div class="head latest_threads">Latest forum threads</div>
+<div class="box pad latest_threads">
+{% if latestThreads is empty %}
+    <span>No threads to display</span>
+{% endif %}
+{% for thread in latestThreads %}
+    <span>
+        <span>
+              {{ icon.render("forum_icons forum_hint_unread", ['forum_read']) }}
+        </span>
+        <a href="/forum/thread/{{ thread.ID }}?postid={{ thread.lastPost.ID }}#post{{ thread.lastPost.ID }}">
+            <strong>{{ thread.Title|striptags|raw }}</strong>
+        </a>
+
+        {% set usernameOptions = {
+            'drawInBox' : false,
+            'colorname' : false,
+            'dropDown'  : false,
+            'useSpan'   : true,
+            'noIcons'   : true,
+            'noGroup'   : true,
+            'noClass'   : true,
+            'noTitle'   : true,
+        } %}
+
+        by {{ render.username(thread.lastPost.AuthorID, usernameOptions)|raw }} ({{ time_diff(thread.lastPost.AddedTime, 1,true,false,0)|raw }})&nbsp;&nbsp;
+    </span>
+{% endfor %}
+</div>
+{% endif %}

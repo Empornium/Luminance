@@ -1,0 +1,79 @@
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : false,
+    'noGroup'   : true,
+    'noClass'   : false,
+    'noTitle'   : true,
+} %}
+{% set classOptions = {
+    'useSpan'   : true,
+} %}
+
+<div class="linkbox pager">
+    {{ render.pagelinks(page, tree.Count, 100, 9) }}
+</div>
+
+<div class="box pad">
+    <div class="invitetree pad">
+        <p style="font-weight: bold;">
+            This tree has {{ tree.Count }} entries, {{ tree.Branches }} branches, and a depth of {{ tree.MaxTreeLevel - tree.OriginalTreeLevel }}.
+            It has
+            {% for classID, count in classSummary if count > 0 %}
+                {{ count }} {{ render.userclass(classID, classOptions) }} ({{ (count/tree.Count)*100|number_format(2) }}%)
+            {% endfor %}
+        </p>
+
+        <p style="font-weight: bold;">
+            The total amount uploaded by the entire tree was {{ get_size(tree.TotalUpload) }},
+            the total amount downloaded was {{ get_size(tree.TotalDownload) }},
+            and the total ratio is {{ ratio(tree.TotalUpload, tree.TotalDownload)|raw }}.
+        </p>
+
+        <p style="font-weight: bold;">
+            The total amount uploaded by direct invitees (the top level) was {{ get_size(tree.TopLevelUpload) }},
+            the total amount downloaded was {{ get_size(tree.TopLevelDownload) }},
+            and the total ratio is {{ ratio(tree.TopLevelUpload, tree.TopLevelDownload)|raw }}.
+            <br />
+            These numbers include the stats of paranoid users, and will be factored in to the invitation giving script.
+        </p>
+
+        {% if tree.ParanoidCount > 0 %}
+            <p style="font-weight: bold;">
+                {{ tree.ParanoidCount }} user{{ tree.ParanoidCount == 1 ? '' : 's' }}({{ (tree.ParanoidCount/tree.Count)*100|number_format }}%)
+                {{ tree.ParanoidCount == 1 ? 'is' : 'are' }}
+                too paranoid to have their stats shown here, and
+                {{ tree.ParanoidCount == 1 ? 'was' : 'were' }}
+                not factored into the stats for the total tree.
+            </p>
+        {% endif %}
+        <br />
+        {% set previousTreeLevel = treeLevel %}
+        {% for invitee in invitees %}
+            {% if invitee.TreeLevel > previousTreeLevel %}
+                {% for i in range(1, (invitee.TreeLevel - previousTreeLevel)) %}
+                    <ul class="invitetree">
+                {% endfor %}
+            {% elseif invitee.TreeLevel < previousTreeLevel %}
+                {% for i in range(1, (previousTreeLevel - invitee.TreeLevel)) %}
+                    </ul>
+                {% endfor %}
+            {% endif %}
+            <li>
+                <strong>
+                    {{ render.username(invitee.user.ID, usernameOptions) }}
+                </strong>
+                {% if check_paranoia(['uploaded', 'downloaded'], invitee.user.legacy.Paranoia, invitee.user.class.Level) %}
+                    &nbsp;Uploaded: <strong>{{ get_size(invitee.user.legacy.Uploaded) }}</strong>
+                    &nbsp;Downloaded: <strong>{{ get_size(invitee.user.legacy.Downloaded) }}</strong>
+                    &nbsp;Ratio: <strong>{{ ratio(invitee.user.legacy.Uploaded, invitee.user.legacy.Downloaded)|raw }}</strong>
+                {% else %}
+                    &nbsp;Paranoia: <strong>{{ invitee.user.legacy.Paranoia|number_format }}</strong>
+                {% endif %}
+            </li>
+            {% set previousTreeLevel = invitee.TreeLevel %}
+        {% endfor %}
+    </div>
+</div>

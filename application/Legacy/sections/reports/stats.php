@@ -11,8 +11,16 @@ show_header('Other reports stats');
 <br />
 <div class="box pad thin" style="padding: 0px 0px 0px 20px; margin-left: auto; margin-right: auto">
 <?php
-$DB->query("SELECT um.Username, COUNT(r.ID) AS Reports FROM reports AS r JOIN users_main AS um ON um.ID=r.ResolverID WHERE r.ReportedTime > '2009-08-21 22:39:41' AND r.ReportedTime > NOW() - INTERVAL 24 HOUR GROUP BY r.ResolverID ORDER BY Reports DESC");
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(
+    "SELECT u.Username,
+            COUNT(r.ID) AS Reports
+       FROM reports AS r
+       JOIN users AS u ON u.ID=r.ResolverID
+      WHERE r.ReportedTime > '2009-08-21 22:39:41'
+        AND r.ReportedTime > NOW() - INTERVAL 24 HOUR
+   GROUP BY r.ResolverID
+   ORDER BY Reports DESC"
+)->fetchAll(\PDO::FETCH_NUM);
 ?>
         <table>
         <tr>
@@ -36,8 +44,16 @@ $Results = $DB->to_array();
         </tr>
         <tr>
 <?php
-$DB->query("SELECT um.Username, COUNT(r.ID) AS Reports FROM reports AS r JOIN users_main AS um ON um.ID=r.ResolverID WHERE r.ReportedTime > '2009-08-21 22:39:41' AND r.ReportedTime > NOW() - INTERVAL 1 WEEK GROUP BY r.ResolverID ORDER BY Reports DESC");
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(
+    "SELECT u.Username,
+            COUNT(r.ID) AS Reports
+       FROM reports AS r
+       JOIN users AS u ON u.ID=r.ResolverID
+      WHERE r.ReportedTime > '2009-08-21 22:39:41'
+        AND r.ReportedTime > NOW() - INTERVAL 1 WEEK
+   GROUP BY r.ResolverID
+   ORDER BY Reports DESC"
+)->fetchAll(\PDO::FETCH_NUM);
 ?>
         <td class="label"><strong>Reports resolved in the last week</strong></td>
         <td>
@@ -58,8 +74,16 @@ $Results = $DB->to_array();
         </td>
         <tr>
 <?php
-$DB->query("SELECT um.Username, COUNT(r.ID) AS Reports FROM reports AS r JOIN users_main AS um ON um.ID=r.ResolverID WHERE r.ReportedTime > '2009-08-21 22:39:41' AND r.ReportedTime > NOW() - INTERVAL 1 MONTH GROUP BY r.ResolverID ORDER BY Reports DESC");
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(
+    "SELECT u.Username,
+            COUNT(r.ID) AS Reports
+       FROM reports AS r
+       JOIN users AS u ON u.ID=r.ResolverID
+      WHERE r.ReportedTime > '2009-08-21 22:39:41'
+        AND r.ReportedTime > NOW() - INTERVAL 1 MONTH
+   GROUP BY r.ResolverID
+   ORDER BY Reports DESC"
+)->fetchAll(\PDO::FETCH_NUM);
 ?>
         <td class="label"><strong>Reports resolved in the last month</strong></td>
         <td>
@@ -81,8 +105,14 @@ $Results = $DB->to_array();
         </tr>
         <tr>
 <?php
-$DB->query("SELECT um.Username, COUNT(r.ID) AS Reports FROM reports AS r JOIN users_main AS um ON um.ID=r.ResolverID GROUP BY r.ResolverID ORDER BY Reports DESC");
-$Results = $DB->to_array();
+$Results = $master->db->rawQuery(
+    "SELECT u.Username,
+            COUNT(r.ID) AS Reports
+       FROM reports AS r
+       JOIN users AS u ON u.ID=r.ResolverID
+   GROUP BY r.ResolverID
+   ORDER BY Reports DESC"
+)->fetchAll(\PDO::FETCH_NUM);
 ?>
         <td class="label"><strong>Reports resolved since 'other' reports (2009-08-21)</strong></td>
         <td>

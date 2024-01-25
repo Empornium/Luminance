@@ -1,6 +1,6 @@
 <?php
 
-global $master, $LoggedUser;
+global $master, $activeUser;
 
 // TODO: find a better permission?
 if (!check_perms('admin_login_watch')) {
@@ -11,20 +11,20 @@ if (!check_perms('admin_login_watch')) {
 if (isset($_POST['submit']) && $_POST['submit'] === 'Delete') {
     authorize();
     $logid = (int) $_POST['logid'];
-    $master->db->raw_query("DELETE FROM disabled_hits WHERE ID = {$logid}")->fetchAll(\PDO::FETCH_ASSOC);
+    $master->db->rawQuery("DELETE FROM disabled_hits WHERE ID = {$logid}")->fetchAll(\PDO::FETCH_ASSOC);
 }
 
 // Remove all entries for users that are no longer disabled
 if (isset($_POST['submit']) && $_POST['submit'] === 'Cleanup') {
     authorize();
-    $master->db->raw_query('DELETE d FROM disabled_hits AS d LEFT JOIN users_main AS u ON u.ID = d.UserID WHERE Enabled = "1"')->fetchAll(\PDO::FETCH_ASSOC);
+    $master->db->rawQuery('DELETE d FROM disabled_hits AS d LEFT JOIN users_main AS u ON u.ID = d.UserID WHERE Enabled = "1"')->fetchAll(\PDO::FETCH_ASSOC);
 }
 
 $LogsPerPage = 25;
 $SqlConditions = [];
 
 if (isset($_REQUEST['username']) && strlen($_REQUEST['username'])) {
-    $User = $master->repos->users->get_by_username($_REQUEST['username']);
+    $User = $master->repos->users->getByUsername($_REQUEST['username']);
 
     if (!$User) {
         error('No user found with that username.');
@@ -34,11 +34,11 @@ if (isset($_REQUEST['username']) && strlen($_REQUEST['username'])) {
 }
 
 if (isset($_REQUEST['ip']) && strlen($_REQUEST['ip'])) {
-    if (!filter_var($_REQUEST['ip'], FILTER_VALIDATE_IP)) {
+    if (!validate_ip($_REQUEST['ip'])) {
         error('The provided IP doesn\'t seem to be a valid IPv4 or IPv6 address.');
     }
 
-    $IP = $master->repos->ips->get_or_new($_REQUEST['ip']);
+    $IP = $master->repos->ips->getOrNew($_REQUEST['ip']);
 
     if (!$IP instanceof \Luminance\Entities\IP) {
         error('Something went wrong with the provided IP.');
@@ -55,9 +55,9 @@ if (!empty($SqlConditions)) {
 
 list($Page, $Limit) = page_limit($LogsPerPage);
 
-$Logs = $master->db->raw_query("SELECT SQL_CALC_FOUND_ROWS * FROM disabled_hits {$Where} ORDER BY Time DESC LIMIT {$Limit}")->fetchAll(\PDO::FETCH_ASSOC);
+$Logs = $master->db->rawQuery("SELECT SQL_CALC_FOUND_ROWS * FROM disabled_hits {$Where} ORDER BY Time DESC LIMIT {$Limit}")->fetchAll(\PDO::FETCH_ASSOC);
 
-$NumResults = $master->db->raw_query("SELECT FOUND_ROWS()")->fetchColumn();
+$NumResults = $master->db->rawQuery("SELECT FOUND_ROWS()")->fetchColumn();
 $Pages      = get_pages($Page, $NumResults, $LogsPerPage);
 
 $options = [
@@ -96,14 +96,14 @@ show_header('Disabled logs');
             </form>
             <div class="center">
                 <form action="/tools.php?action=disabled_hits" method="post" style="display:inline-block">
-                    <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+                    <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
                     <input type="hidden" name="action" value="disabled_hits" />
                     <input type="submit" name="submit" title="Remove users that are no longer disabled" value="Cleanup" />
                 </form>
             </div>
         </div>
 
-        <div class="linkbox"><?= $Pages ?></div>
+        <div class="linkbox pager"><?= $Pages ?></div>
         <div class="head">Disabled hits (<?= $NumResults ?>)</div>
         <div class="box">
             <table cellpadding="6" cellspacing="1" border="0" width="100%" class="border">
@@ -121,7 +121,7 @@ show_header('Disabled logs');
                         <td><?php echo time_diff($Log['Time']) ?></td>
                         <td>
                             <form action="/tools.php?action=disabled_hits" method="post" style="display:inline-block">
-                                <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+                                <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
                                 <input type="hidden" name="logid" value="<?= $Log['ID'] ?>" />
                                 <input type="hidden" name="action" value="disabled_hits" />
                                 <input type="submit" name="submit" title="Remove this log" value="Delete" />
@@ -132,7 +132,7 @@ show_header('Disabled logs');
                 </tbody>
             </table>
         </div>
-        <div class="linkbox"><?= $Pages ?></div>
+        <div class="linkbox pager"><?= $Pages ?></div>
     </div>
 <?php
 show_footer();

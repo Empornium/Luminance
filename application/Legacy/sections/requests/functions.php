@@ -1,33 +1,33 @@
 <?php
 
-function get_votes_array($RequestID)
-{
+function get_votes_array($RequestID) {
     global $master;
 
-    $RequestVotes = $master->cache->get_value('request_votes_'.$RequestID);
+    $RequestVotes = $master->cache->getValue('request_votes_'.$RequestID);
     if (!is_array($RequestVotes)) {
-
-        $votes = $master->db->raw_query("SELECT rv.UserID,
-                                                u.Username,
-                                                rv.Bounty
-                                           FROM requests_votes as rv
-                                      LEFT JOIN users_main AS u ON u.ID=rv.UserID
-                                          WHERE rv.RequestID = :requestid
-                                       ORDER BY rv.Bounty DESC",
-                                               [':requestid' => $RequestID])->fetchAll(\PDO::FETCH_ASSOC);
-        $RequestVotes = array();
+        $votes = $master->db->rawQuery(
+            "SELECT rv.UserID,
+                    u.Username,
+                    rv.Bounty
+               FROM requests_votes as rv
+          LEFT JOIN users AS u ON u.ID=rv.UserID
+              WHERE rv.RequestID = :requestid
+           ORDER BY rv.Bounty DESC",
+        [':requestid' => $RequestID])->fetchAll(\PDO::FETCH_ASSOC);
+        $RequestVotes = [
+            'Voters' => $votes,
+        ];
+        $RequestVotes['TotalBounty'] = 0;
         if (count($votes)>0) {
             $RequestVotes['TotalBounty'] = array_sum(array_column($votes, 'Bounty'));
-            $RequestVotes['Voters'] = $votes;
-            $master->cache->cache_value('request_votes_'.$RequestID, $RequestVotes);
         }
+        $master->cache->cacheValue('request_votes_'.$RequestID, $RequestVotes);
     }
     return $RequestVotes;
 }
 
-function get_votes_html($RequestVotes, $RequestID)
-{
-    global $LoggedUser;
+function get_votes_html($RequestVotes, $RequestID) {
+    global $activeUser;
 
     ob_start();
 ?>
@@ -40,7 +40,7 @@ function get_votes_html($RequestVotes, $RequestID)
     for ($i = 0; $i < $VoteMax; $i++) {
         $User = array_shift($RequestVotes['Voters']);
         $Boldify = false;
-        if ($User['UserID'] == $LoggedUser['ID']) {
+        if ($User['UserID'] == $activeUser['ID']) {
             $ViewerVote = true;
             $Boldify = true;
         }
@@ -52,9 +52,9 @@ function get_votes_html($RequestVotes, $RequestID)
                     <td>
                         <?=$Boldify?'<strong>':''?><?=get_size($User['Bounty'])?><?=$Boldify?'</strong>':''?>
                     </td>
-<?php       if (check_perms("site_moderate_requests")) { ?>
+<?php       if (check_perms('site_moderate_requests')) { ?>
                     <td>
-                        <a href="/requests.php?action=delete_vote&amp;id=<?=$RequestID?>&amp;auth=<?=$LoggedUser['AuthKey']?>&amp;voterid=<?=$User['UserID']?>">[-]</a>
+                        <a href="/requests.php?action=delete_vote&amp;id=<?=$RequestID?>&amp;auth=<?=$activeUser['AuthKey']?>&amp;voterid=<?=$User['UserID']?>">[-]</a>
                     </td>
                 </tr>
 <?php 	    }
@@ -62,7 +62,7 @@ function get_votes_html($RequestVotes, $RequestID)
     if (!$ViewerVote && !empty($RequestVotes['Voters'])) {
         reset($RequestVotes['Voters']);
         foreach ($RequestVotes['Voters'] as $User) {
-            if ($User['UserID'] == $LoggedUser['ID']) { ?>
+            if ($User['UserID'] == $activeUser['ID']) { ?>
                 <tr>
                     <td>
                         <a href="/user.php?id=<?=$User['UserID']?>"><strong><?=display_str($User['Username'])?></strong></a>
@@ -84,15 +84,18 @@ function get_votes_html($RequestVotes, $RequestID)
     return $html;
 }
 
-function expired_pm($BountyInfo, $debug = false)
-{
+function expired_pm($BountyInfo, $debug = false) {
     global $master;
 
-    list($RequestID, $Title, $UserID, $Bounty, $OwnerID, $Description, $CategoryID, $Image) = $BountyInfo;
+    list($RequestID, $Title, $userID, $Bounty, $OwnerID, $Description, $CategoryID, $Image) = $BountyInfo;
 
-    $Tags = $master->db->raw_query(
-            "SELECT DISTINCT t.Name FROM tags AS t LEFT JOIN requests_tags AS rt ON t.ID = rt.TagID WHERE rt.RequestID = ?",
-            [$RequestID])->fetchAll(\PDO::FETCH_COLUMN);
+    $Tags = $master->db->rawQuery(
+        "SELECT DISTINCT t.Name
+           FROM tags AS t
+      LEFT JOIN requests_tags AS rt ON t.ID = rt.TagID
+          WHERE rt.RequestID = ?",
+        [$RequestID]
+    )->fetchAll(\PDO::FETCH_COLUMN);
 
     if (!empty($Tags)) {
         $Tags = implode(" ", $Tags);
@@ -108,7 +111,7 @@ function expired_pm($BountyInfo, $debug = false)
 
     // If user is the owner of the request,
     // we create a special body for them
-    if ((int) $UserID === (int) $OwnerID) {
+    if ((int) $userID === (int) $OwnerID) {
         $QueryData = [
             'action' => 'new',
             'title'  => $Title,
@@ -150,5 +153,5 @@ function expired_pm($BountyInfo, $debug = false)
         return compact('Subject', 'Body');
     }
 
-    return send_pm($UserID, 0, db_string($Subject), db_string($Body));
+    return send_pm($userID, 0, $Subject, $Body);
 }

@@ -12,24 +12,24 @@ if (isset($_POST['delselected'])) {
         if (!is_array($BadgeIDs)) error("Nothing selected to delete");
 
         foreach ($BadgeIDs as $bID) {
-            if (!is_number($bID))  error(0);
+            if (!is_integer_string($bID))  error(0);
         }
-        $BadgeIDs = implode(',', $BadgeIDs);
-
-        $DB->query("SELECT DISTINCT UserID FROM users_badges WHERE BadgeID IN ($BadgeIDs)");
-        if ($DB->record_count()>0) {
-            $Users = $DB->to_array();
-
-            foreach ($Users as $UserID) {
-                  $Cache->delete_value('user_badges_ids_'.$UserID[0]);
-                  $Cache->delete_value('user_badges_'.$UserID[0]);
-                  $Cache->delete_value('user_badges_'.$UserID[0].'_limit');
+        $inQuery = implode(', ', array_fill(0, count($BadgeIDs), '?'));
+        $users = $master->db->rawQuery(
+            "SELECT SQL_CALC_FOUND_ROWS DISTINCT UserID FROM users_badges WHERE BadgeID IN ({$inQuery})",
+            $BadgeIDs
+        )->fetchAll(\PDO::FETCH_BOTH);
+        if ($master->db->foundRows() > 0) {
+            foreach ($users as $userID) {
+                  $master->cache->deleteValue('user_badges_ids_'.$userID[0]);
+                  $master->cache->deleteValue('user_badges_'.$userID[0]);
+                  $master->cache->deleteValue('user_badges_'.$userID[0].'_limit');
             }
 
-            $DB->query("DELETE FROM users_badges WHERE BadgeID IN ($BadgeIDs)");
+            $master->db->rawQuery("DELETE FROM users_badges WHERE BadgeID IN ({$inQuery})", $BadgeIDs);
         }
 
-        $DB->query("DELETE FROM badges WHERE ID IN ($BadgeIDs)");
+        $master->db->rawQuery("DELETE FROM badges WHERE ID IN ({$inQuery})", $BadgeIDs);
         $ReturnID = 'editbadges'; // return user to edit items on return
     }
 } else {
@@ -37,87 +37,90 @@ if (isset($_POST['delselected'])) {
 
     $Val->OnlyValidateKeys = $_POST['id'];
 
-    $Val->SetFields('badge', '1','regex','The badge field must be set and has a min length of 2 and a max length of 12 characters. Valid chars are A-Z,a-z,0-9 only. Awards with the same badge field are part of a set and must have different ranks', array('regex'=>'/^[A-Za-z0-9]{2,12}$/'));
-
-    $Val->SetFields('title', '1','string','The name must be set, and has a max length of 64 characters', array('maxlength'=>64, 'minlength'=>1));
-    $Val->SetFields('desc', '1','string','The description must be set, and has a max length of 255 characters', array('maxlength'=>255, 'minlength'=>1));
-    $Val->SetFields('image', '1','string','The image must be set.', array('minlength'=>1));
-    $Val->SetFields('type', '1','inarray','Invalid badge type was set.',array('inarray'=>$BadgeTypes));
+    $Val->SetFields('badge', '1', 'regex', 'The badge field must be set and has a min length of 2 and a max length of 12 characters. Valid chars are A-Z,a-z,0-9 only. Awards with the same badge field are part of a set and must have different ranks', ['regex'=>'/^[A-Za-z0-9]{2,12}$/']);
+    $Val->SetFields('title', '1', 'string', 'The name must be set, and has a max length of 64 characters', ['maxlength'=>64, 'minlength'=>1]);
+    $Val->SetFields('desc', '1', 'string', 'The description must be set, and has a max length of 255 characters', ['maxlength'=>255, 'minlength'=>1]);
+    $Val->SetFields('image', '1', 'string', 'The image must be set.', ['minlength'=>1]);
+    $Val->SetFields('type', '1', 'inarray', 'Invalid badge type was set.', ['inarray'=>$badgeTypes]);
 
     $Err=$Val->ValidateForm($_POST); // Validate the form
     if ($Err) { error($Err); }
 
     $BadgeIDs = $_POST['id'];
-    $NewRanks = array();
-    $NewSorts = array();
-    $SQL_values = array();
+    $NewRanks = [];
+    $NewSorts = [];
+    $SQL_values = [];
+    $params = [];
 
     foreach ($BadgeIDs as $BadgeID) {
         if (isset($_POST['saveall'])) {
-            if(!is_number($BadgeID))  error(0);
-            if(!$ReturnID) $ReturnID = $BadgeID; // return user to first edited badge on return
+            if (!is_integer_string($BadgeID))  error(0);
+            if (!$ReturnID) $ReturnID = $BadgeID; // return user to first edited badge on return
         }
-        $Badge=db_string($_POST['badge'][$BadgeID]);
-        $Title=db_string($_POST['title'][$BadgeID]);
-        $Desc=db_string($_POST['desc'][$BadgeID]);
-        $Image=db_string($_POST['image'][$BadgeID]);
-        $Type=db_string($_POST['type'][$BadgeID]);
-        $DisplayRow=(int) $_POST['row'][$BadgeID];
-        $Rank=(int) $_POST['rank'][$BadgeID];
-        if ($Rank<1) $Rank=1;
-        $Sort=(int) $_POST['sort'][$BadgeID];
-        $Cost=(int) $_POST['cost'][$BadgeID];
+        $Badge = $_POST['badge'][$BadgeID];
+        $Title = $_POST['title'][$BadgeID];
+        $Desc = $_POST['desc'][$BadgeID];
+        $Image = $_POST['image'][$BadgeID];
+        $Type = $_POST['type'][$BadgeID];
+        $DisplayRow = (int) $_POST['row'][$BadgeID];
+        $Rank = (int) $_POST['rank'][$BadgeID];
+        if ($Rank < 1) $Rank = 1;
+        $Sort = (int) $_POST['sort'][$BadgeID];
+        $Cost = (int) $_POST['cost'][$BadgeID];
 
         // automagically constrain badge/rank
-        if (isset($_POST['saveall'])) $DB->query("SELECT Rank FROM badges WHERE Badge='$Badge' AND ID !='$BadgeID'");
-        else $DB->query("SELECT Rank FROM badges WHERE Badge='$Badge'");
+        if (isset($_POST['saveall'])) $Ranks = $master->db->rawQuery("SELECT Rank FROM badges WHERE Badge = ? AND ID != ?", [$Badge, $BadgeID])->fetchAll(\PDO::FETCH_COLUMN);
+        else $Ranks = $master->db->rawQuery("SELECT Rank FROM badges WHERE Badge = ?", [$Badge])->fetchAll(\PDO::FETCH_COLUMN);
 
-        $Ranks = $DB->collect('Rank');
-        while ( in_array($Rank, $Ranks ) || (isset($NewRanks[$Badge]) && $NewRanks[$Badge] >= $Rank ) ) {
+        while (in_array($Rank, $Ranks) || (isset($NewRanks[$Badge]) && $NewRanks[$Badge] >= $Rank)) {
             $Rank++;
         }
         $NewRanks[$Badge]=$Rank;
 
         // automagically constrain sort
-        if (isset($_POST['saveall'])) $DB->query("SELECT Sort FROM badges WHERE ID !='$BadgeID'");
-        else $DB->query("SELECT Sort FROM badges");
+        if (isset($_POST['saveall'])) $Sorts = $master->db->rawQuery("SELECT Sort FROM badges WHERE ID != ?", [$BadgeID])->fetchAll(\PDO::FETCH_COLUMN);
+        else $Sorts = $master->db->rawQuery("SELECT Sort FROM badges")->fetchAll(\PDO::FETCH_COLUMN);
 
-        $Sorts = $DB->collect('Sort');
-        while ( in_array($Sort, $Sorts ) || in_array($Sort, $NewSorts )) {
+        while (in_array($Sort, $Sorts) || in_array($Sort, $NewSorts)) {
             $Sort++;
         }
         $NewSorts[] = $Sort;
 
-        if ( isset($_POST['create']) ) {    // create
+        if (isset($_POST['create'])) {    // create
 
-        $SQL_values[] = "('$Badge','$Rank','$Type','$DisplayRow','$Sort','$Cost','$Title','$Desc','$Image')" ;
+        $SQL_values[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $params = array_merge($params, [$Badge, $Rank, $Type, $DisplayRow, $Sort, $Cost, $Title, $Desc, $Image]);
 
-        } elseif ( isset($_POST['saveall']) ) { //Edit
+        } elseif (isset($_POST['saveall'])) { //Edit
 
-            $DB->query("UPDATE badges SET
-                              Badge='$Badge',
-                              Rank='$Rank',
-                              Type='$Type',
-                              Display='$DisplayRow',
-                              Sort='$Sort',
-                              Cost='$Cost',
-                              Title='$Title',
-                              Description='$Desc',
-                              Image='$Image'
-                              WHERE ID='$BadgeID'");
+            $master->db->rawQuery("UPDATE badges SET
+                              Badge = ?,
+                              Rank = ?,
+                              Type = ?,
+                              Display = ?,
+                              Sort = ?,
+                              Cost = ?,
+                              Title = ?,
+                              Description = ?,
+                              Image = ?
+                              WHERE ID = ?",
+                [$Badge, $Rank, $Type, $DisplayRow, $Sort, $Cost, $Title, $Desc, $Image, $BadgeID]
+            );
         }
     }
 
-    if ( isset($_POST['create']) && count($SQL_values)>0 ) {   //Create
-            $SQL_values = implode(',', $SQL_values);
-        $DB->query("INSERT IGNORE INTO badges
+    if (isset($_POST['create']) && count($SQL_values) > 0) {   //Create
+            $SQL_values = implode(', ', $SQL_values);
+        $master->db->rawQuery("INSERT IGNORE INTO badges
             (Badge, Rank, Type, Display, Sort, Cost, Title, Description, Image)
-            VALUES $SQL_values");
-            $ReturnID = $DB->inserted_id(); // return user to first saved badge on return
+            VALUES {$SQL_values}",
+            $params
+        );
+            $ReturnID = $master->db->lastInsertID(); // return user to first saved badge on return
     }
 }
 
-$Cache->delete_value('available_badges');
+$master->cache->deleteValue('available_badges');
 
 if (isset($_REQUEST['numadd'])) { // set num add forms to be same as current
     $numAdds = (int) $_REQUEST['numadd'];

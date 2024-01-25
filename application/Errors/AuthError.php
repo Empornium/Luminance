@@ -1,19 +1,28 @@
 <?php
 namespace Luminance\Errors;
 
+/**
+ * AuthError Error which is thrown during unsucessful authentication events.
+ */
 class AuthError extends UnauthorizedError {
 
-    public $http_status = 401;
-    public $public_message = "Unauthorized";
-    public $public_description = "Authorization error.";
+    public $httpStatus = 401;
+    public $publicMessage = "Unauthorized";
+    public $publicDescription = "Authorization error.";
     public $redirect = null;
 
-    public function __construct($message = null, $public_description = null, $redirect = null) {
+    /**
+     * __construct object
+     * @param string|null $message     Message for error logs.
+     * @param string|null $description Message for user.
+     * @param string|null $redirect    URL to redirect user to.
+     */
+    public function __construct($message = null, $description = null, $redirect = null) {
         parent::__construct($message);
-        if ($public_description) {
-            $this->public_description = $public_description;
+        if (is_string($description) === true) {
+            $this->publicDescription = $description;
         }
-        if ($redirect) {
+        if (is_string($redirect) === true) {
             $this->redirect = $redirect;
         }
     }

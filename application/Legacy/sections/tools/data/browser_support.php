@@ -1,6 +1,8 @@
 <?php
 $Campaign = 'forumaudio';
-if (!$Votes = $Cache->get_value('support_'.$Campaign)) { $Votes = array(0,0); }
+if (!$Votes = $master->cache->getValue('support_'.$Campaign)) {
+    $Votes = [0, 0];
+}
 if (!isset($_GET['support'])) {
 ?>
 <h1>Browser Support Campaign: <?=$Campaign?></h1>
@@ -15,4 +17,4 @@ if (!isset($_GET['support'])) {
 } elseif ($_GET['support'] === 'false') {
     $Votes[1]++;
 }
-$Cache->cache_value('support_'.$Campaign,$Votes,0);
+$master->cache->cacheValue('support_'.$Campaign, $Votes, 0);

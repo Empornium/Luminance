@@ -21,9 +21,9 @@
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `sm_results` (
   `UserID` int(11) NOT NULL,
-  `Spins` int(11) NOT NULL,
-  `Won` int(11) NOT NULL,
-  `Bet` int(11) NOT NULL,
+  `Spins` bigint(11) NOT NULL,
+  `Won` bigint(11) NOT NULL,
+  `Bet` bigint(11) NOT NULL,
   `Time` datetime NOT NULL,
   PRIMARY KEY (`UserID`),
   KEY `Won` (`Won`)

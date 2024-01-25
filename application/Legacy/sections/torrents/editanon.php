@@ -4,38 +4,41 @@
 ************************************************************************/
 
 $GroupID = $_GET['groupid'];
-if (!is_number($GroupID) || !$GroupID) { error(0); }
+if (!is_integer_string($GroupID) || !$GroupID) { error(0); }
 
 // Quick SQL injection check
-if (!$_REQUEST['groupid'] || !is_number($_REQUEST['groupid'])) {
+if (!$_REQUEST['groupid'] || !is_integer_string($_REQUEST['groupid'])) {
     error(404);
 }
 // End injection check
 $GroupID = (int) $_REQUEST['groupid'];
 
-$DB->query("SELECT t.UserID, tg.Name, t.Anonymous
-                FROM torrents_group AS tg
-                JOIN torrents AS t ON t.GroupID = tg.ID
-                WHERE t.GroupID='$GroupID'");
-
-list($AuthorID, $Name, $IsAnon) = $DB->next_record();
+list($AuthorID, $Name, $IsAnon) = $master->db->rawQuery(
+    "SELECT t.UserID,
+            tg.Name,
+            t.Anonymous
+       FROM torrents_group AS tg
+       JOIN torrents AS t ON t.GroupID = tg.ID
+      WHERE t.GroupID = ?",
+      [$GroupID]
+)->fetch();
 
 //check user has permission to edit
-$CanEdit = check_perms('torrents_edit');
+$CanEdit = check_perms('torrent_edit');
 
 if (!$CanEdit) {
-    $CanEdit = check_perms('site_upload_anon') && $AuthorID == $LoggedUser['ID'];
+    $CanEdit = check_perms('site_upload_anon') && $AuthorID == $activeUser['ID'];
 }
 
 if (!$CanEdit) { error(403); }
 
-show_header('Edit Anonymous status' );
+show_header('Edit Anonymous status');
 
 // Start printing form
 ?>
 <div class="thin">
 <?php
-    if ($Err) { ?>
+    if (($Err ?? false)) { ?>
             <div id="messagebar" class="messagebar alert"><?=$Err?></div>
 <?php 	}
 // =====================================================
@@ -47,15 +50,15 @@ show_header('Edit Anonymous status' );
         <form action="torrents.php" method="post">
             <div>
                 <input type="hidden" name="action" value="takeeditanon" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <input type="hidden" name="groupid" value="<?=$GroupID?>" />
                 <table cellpadding="3" cellspacing="1" border="0" class="border" width="100%">
                     <tr>
                         <td class="label">Show/Hide Uploader name</td>
                         <td>
 
-                            <input name="anonymous" value="0" type="radio"<?php  if($IsAnon!=1) echo ' checked="checked"';?>/> Show uploader name&nbsp;&nbsp;
-                            <input name="anonymous" value="1" type="radio"<?php  if($IsAnon==1) echo ' checked="checked"';?>/> Hide uploader name (Anonymous)&nbsp;&nbsp;
+                            <input name="anonymous" value="0" type="radio"<?php  if ($IsAnon!=1) echo ' checked="checked"';?>/> Show uploader name&nbsp;&nbsp;
+                            <input name="anonymous" value="1" type="radio"<?php  if ($IsAnon==1) echo ' checked="checked"';?>/> Hide uploader name (Anonymous)&nbsp;&nbsp;
 
                         </td>
                     </tr>

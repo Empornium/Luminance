@@ -1,0 +1,26 @@
+Instructions
+=========
+
+Dependencies
+------------
+ - npm
+ - fontforge
+
+Prepare your development environment:
+------------
+```
+$ cd application/resources/icons
+$ npm install
+```
+
+Generate aggregate icon font:
+------------
+```
+$ cd application/resources/icons
+$ grunt
+```
+
+=========
+Refrences
+=========
+https://www.npmjs.com/package/grunt-webfont

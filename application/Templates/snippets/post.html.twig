@@ -1,0 +1,325 @@
+{% import "macros/icon.html.twig" as icon %}
+
+{% set id='post' ~  post.ID %}
+{% if post.isTrashed() == true and auth.isAllowed('forum_moderate') %}
+    <div id="{{ id }}" class="box pad trashed">
+        <span style="float:left;">This post has been trashed{{ icon.render('', ['misc_trash']) }}</span>
+    {% set id="" %}
+{% endif %}
+
+{% if section == 'forum' %}
+    {% if post.unread(ActiveUser) %}
+        {% set forum_unread = 'forum_unread' %}
+    {% else %}
+        {% set forum_unread = '' %}
+    {% endif %}
+{% endif %}
+
+<table id="{{ id }}" class="forum_post box vertical_margin {{ ActiveUser.options('DisableAvatars', 0) == 1 ? 'noavatar' }} {{ forum_unread }}">
+    <tr class="smallhead">
+        <td colspan="2">
+            <span style="float:left;">
+                {% if section == 'forum' %}
+                    <a class="post_id" href='/forum/thread/{{ post.thread.ID }}?postid={{ post.ID }}#post{{ post.ID }}'>#{{ post.ID }}</a>
+                {% elseif section == 'torrent comment' %}
+                    <a class="post_id" href='/torrents.php?id={{ post.GroupID }}&postid={{ post.ID }}#post{{ post.ID }}'>#{{ post.ID }}</a>
+                {% elseif section == 'collage comment' %}
+                    <a class="post_id" href='/collage/{{ post.CollageID }}?postid={{ post.ID }}#post{{ post.ID }}'>#{{ post.ID }}</a>
+                {% else %}
+                    <a class="post_id" href='#post{{ post.ID }}'>#{{ post.ID }}</a>
+                {% endif %}
+                {% set usernameOptions = {
+                    'drawInBox' : true,
+                    'colorname' : false,
+                    'dropDown'  : true,
+                    'useSpan'   : true,
+                    'noIcons'   : false,
+                    'noGroup'   : false,
+                    'noClass'   : false,
+                    'noTitle'   : false,
+                } %}
+                {{ render.username(post.author.ID, usernameOptions) }} {{ time_diff(post.AddedTime,2)|raw }}
+                {% if section == 'forum' %}
+                    {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::POST')) %}
+                        {% if not thread.IsLocked or auth.isAllowed('forum_moderate') %}
+                            - <button id="quote{{ post.ID }}" type="button" onclick="Quote('{{ post.ID }}','f{{ post.ThreadID }}','{{ post.author.Username }}');" title="quote this post">
+                                {{ icon.render("forum_icon", ['forum_quote']) }}
+                            </button>
+                        {% endif %}
+                        {% if not thread.IsLocked and forum.canWrite(ActiveUser) and post.canEdit(ActiveUser) or auth.isAllowed('forum_post_edit') %}
+                            <button id="edit{{ post.ID }}" type="button" onclick="Edit_Form('{{ post.ID }}');" title="edit this post">
+                                {{ icon.render("forum_icon", ['forum_edit']) }}
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                    {% if auth.isAllowed('forum_post_trash') and thread.numPosts > 1 %}
+                        <a href="/forum/post/{{ post.ID }}/remove" rel="modal:open">
+                            <button id="remove{{ post.ID }}" type="button" title="remove this post">
+                                {{ icon.render('forum_icon', ['misc_trash']) }}
+                            </button>
+                        </a>
+                    {% endif %}
+                    {% if auth.isAllowed('forum_post_trash') %}
+                        -
+                        {% if post.getFlag(constant('Luminance\\Entities\\ForumPost::EDITLOCKED')) %}
+                            {% set icon_classes = 'forum_icon active' %}
+                            {% set editlockText = "disable edit lock for this post" %}
+                            {% set status = 0 %}
+                        {% else %}
+                            {% set icon_classes = 'forum_icon' %}
+                            {% set editlockText = "enable edit lock for this post" %}
+                            {% set status = 1 %}
+                        {% endif %}
+                        <button id="editunlock{{ post.ID }}" type="button" onclick="EditLock('{{ post.ID }}', {{ status }}, '{{ secretary.getToken('post.editlock') }}');" title="{{ editlockText }}">
+                            {{ icon.render(icon_classes, ['forum_locked']) }}
+                        </button>
+                        {% if post.getFlag(constant('Luminance\\Entities\\ForumPost::TIMELOCKED')) %}
+                            {% set icon_classes = 'forum_icon' %}
+                            {% set timelockText = "disable timelock for this post" %}
+                            {% set status = 0 %}
+                        {% else %}
+                            {% set icon_classes = 'forum_icon active' %}
+                            {% set timelockText = "enable timelock for this post" %}
+                            {% set status = 1 %}
+                        {% endif %}
+                        <button id="timeunlock{{ post.ID }}" type="button" onclick="TimeLock('{{ post.ID }}', {{ status }}, '{{ secretary.getToken('post.timelock') }}');" title="{{ timelockText }}">
+                            {{ icon.render(icon_classes, ['forum_timelock']) }}
+                        </button>
+                        {% if post.getFlag(constant('Luminance\\Entities\\ForumPost::PINNED')) %}
+                            {% set icon_classes = 'forum_icon active' %}
+                            {% set timelockText = "unpin this post" %}
+                            {% set status = 0 %}
+                        {% else %}
+                            {% set icon_classes = 'forum_icon' %}
+                            {% set timelockText = "pin this post" %}
+                            {% set status = 1 %}
+                        {% endif %}
+                        <button id="pin{{ post.ID }}" type="button" onclick="PinPost('{{ post.ID }}', {{ status }}, '{{ secretary.getToken('post.pin') }}');" title="{{ timelockText }}">
+                            {{ icon.render(icon_classes, ['forum_pinned']) }}
+                        </button>
+                    {% else %}
+                        {% if post.getFlag(constant('Luminance\\Entities\\ForumPost::PINNED')) %}
+                            <strong><span class="sticky_post">[Pinned]</span></strong>
+                        {% endif %}
+                    {% endif %}
+                {% elseif section == 'torrent comment' or section == 'collage comment' %}
+                    {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::COMMENT')) %}
+                          {% if section == 'torrent comment' %}
+                              - <button href="#quickpost" type="button" onclick="Quote('{{ post.ID }}','t{{ post.GroupID }}','{{ post.author.Username }}');" title="quote this post">
+                                  {{ icon.render("forum_icon", ['forum_quote']) }}
+                              </button>
+                          {% elseif section == 'collage comment' %}
+                              - <button href="#quickpost" type="button" onclick="Quote('{{ post.ID }}','c{{ post.CollageID }}','{{ post.author.Username }}');" title="quote this post">
+                                  {{ icon.render("forum_icon", ['forum_quote']) }}
+                              </button>
+                          {% endif %}
+                    {% endif %}
+                    {% if section == 'torrent comment' %}
+                        {% if post.canEdit(ActiveUser) or auth.isAllowed('forum_post_edit') %}
+                            <button href="#post{{ post.ID }}" type="button" onclick="Edit_Form('{{ post.ID }}');" title="edit this post">
+                                {{ icon.render("forum_icon", ['forum_edit']) }}
+                            </button>
+                        {% endif %}
+                        {% if post.isTrashed() == false and auth.isAllowed('torrent_post_trash') %}
+                            <span>
+                                <a href="/torrents.php?id={{ post.GroupID }}&action=trash_post&auth={{ ActiveUser.legacy.AuthKey }}&amp;postid={{ post.ID }}" title="trash this post">
+                                {{ icon.render("forum_icon", ['misc_trash']) }}
+                                </a>
+                             </span>
+                        {% endif %}
+
+                        {% if post.isTrashed() == true and auth.isAllowed('torrent_post_trash') %}
+                            <span>
+                                <a href="/torrents.php?id={{ post.GroupID }}&action=restore_post&auth={{ ActiveUser.legacy.AuthKey }}&amp;postid={{ post.ID }}" title="restore this post">
+                                    {{ icon.render("forum_icon", ['misc_restore']) }}
+                                </a>
+                            </span>
+                        {% endif %}
+                        {% if auth.isAllowed('torrent_post_delete') %}
+                            <button href="#post{{ post.ID }}" type="button" onclick="DeletePost('{{ post.ID }}');" title="permenantly delete this post">
+                                {{ icon.render("forum_icon", ['misc_cancel']) }}
+                            </button>
+                        {% endif %}
+                        {% if auth.isAllowed('torrent_comments_pin') %}
+                            {% if post.getFlag(constant('Luminance\\Entities\\TorrentComment::PINNED')) %}
+                                <span id="bar{{ post.ID }}" style="float:right;"><strong>[Pinned]</strong></span>
+                                {% set icon_classes = 'forum_icon active' %}
+                                {% set timelockText = "unpin this post" %}
+                                {% set status = 0 %}
+                            {% else %}
+                                {% set icon_classes = 'forum_icon' %}
+                                {% set timelockText = "pin this post" %}
+                                {% set status = 1 %}
+                            {% endif %}
+                            {% if post.isPinned == false %}
+                                <span>
+                                    <a href="/torrents.php?id={{ post.GroupID }}&action=set_pin&auth={{ ActiveUser.legacy.AuthKey }}&amp;postid={{ post.ID }}" title="pin this post">
+                                        {{ icon.render(icon_classes, ['forum_pinned']) }}
+                                    </a>
+                                </span>
+                            {% endif %}
+                                {% if post.isPinned == true %}
+                                    <span>
+                                    <a href="/torrents.php?id={{ post.GroupID }}&action=unset_pin&auth={{ ActiveUser.legacy.AuthKey }}&amp;postid={{ post.ID }}" title="pin this post">
+                                        {{ icon.render(icon_classes, ['forum_pinned']) }}
+                                    </a>
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            {% if post.getFlag(constant('Luminance\\Entities\\TorrentComment::PINNED')) %}
+                                <strong><span class="sticky_post">[Pinned]</span></strong>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                    {% if section == 'collage comment' %}
+
+                        {% if post.canEdit(ActiveUser) or auth.isAllowed('forum_post_edit') %}
+                            <button href="#post{{ post.ID }}" type="button" onclick="Edit_Form('{{ post.ID }}');" title="edit this post">
+                                {{ icon.render("forum_icon", ['forum_edit']) }}
+                            </button>
+                        {% endif %}
+                        {% if auth.isAllowed('collage_post_trash') or auth.isAllowed('collage_post_delete') %}
+                            <a href="/collage/post/{{ post.ID }}/remove" rel="modal:open">
+                                <button id="remove{{ post.ID }}" type="button" title="remove this post">
+                                    {{ icon.render(icon_classes, ['misc_trash']) }}
+                                </button>
+                            </a>
+                        {% endif %}
+                        {% if auth.isAllowed('collage_post_pin') %}
+                            {% if post.getFlag(constant('Luminance\\Entities\\CollageComment::PINNED')) %}
+                                {% set icon_classes = 'forum_icon active' %}
+                                {% set timelockText = "unpin this post" %}
+                                {% set status = 0 %}
+                            {% else %}
+                                {% set icon_classes = 'forum_icon' %}
+                                {% set timelockText = "pin this post" %}
+                                {% set status = 1 %}
+                            {% endif %}
+                            <button id="pin{{ post.ID }}" type="button" onclick="PinPost('{{ post.ID }}', {{ status }}, '{{ secretary.getToken('post.pin') }}');" title="{{ timelockText }}">
+                                {{ icon.render(icon_classes, ['forum_pinned']) }}
+                            </button>
+                        {% else %}
+                            {% if post.getFlag(constant('Luminance\\Entities\\CollageComment::PINNED')) %}
+                                <strong><span class="sticky_post">[Pinned]</span></strong>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                {% elseif section == 'user inbox' %}
+                    {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::PM')) %}
+                        -
+                        {% if post.conversation.canReply() %}
+                            <button id="quote{{ post.ID }}" type="button" onclick="Quote('{{ post.ID }}','','{{ post.author.Username }}');" title="quote this message">
+                                {{ icon.render("forum_icon", ['forum_quote']) }}
+                            </button>
+                        {% endif %}
+                        <button id="forward{{ post.ID }}" type="submit" form="forwardform" formaction="/user/inbox/message/{{ post.ID }}/forward" title="forward this message">
+                            {{ icon.render(icon_classes, ['forum_latest']) }}
+                        </button>
+                    {% endif %}
+                {% endif %}
+
+            </span>
+            <span id="bar{{ post.ID }}" style="float:right;">
+                <input id="edit_preview_{{ post.ID }}" type="button" class="hidden" value="Preview" onclick="PreviewEdit('{{ post.ID }}');" />
+                <input id="edit_preview_cancel_{{ post.ID }}" type="button" class="hidden" value="Editor"  onclick="CancelPreview('{{ post.ID }}');" />
+                {% if section in ['forum', 'collage comment'] %}
+                    <input id="edit_save_{{ post.ID }}" type="button" class="hidden" value="Post" onclick="SaveEdit('{{ post.ID }}', '{{ secretary.getToken('post.edit') }}');" />
+                {% else %}
+                    <input id="edit_save_{{ post.ID }}" type="button" class="hidden" value="Post" onclick="SaveEdit('{{ post.ID }}');" />
+                {% endif %}
+                <input id="edit_cancel_{{ post.ID }}" type="button" class="hidden" value="Cancel"  onclick="CancelEdit('{{ post.ID }}');" />
+                {% if auth.isAllowed('forum_thread_split') and thread.numPosts > 1 %}
+                    <label class="split hidden">split</label>
+                    <input class="split hidden" type="checkbox" id="split_{{ post.ID }}" name="splitids[]" value="{{ post.ID }}" />
+                    &nbsp;&nbsp;
+                {% endif %}
+                {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::REPORT')) %}
+                    {% if section == 'forum' %}
+                        <a href="/reports.php?action=report&amp;type=post&amp;id={{ post.ID }}" title="report this post to staff">
+                            {{ icon.render("forum_icon", ['forum_report']) }}
+                        </a>
+                    {% elseif section == 'torrent comment' %}
+                        <a href="/reports.php?action=report&amp;type=torrents_comment&amp;id={{ post.ID }}" title="report this post to staff">
+                            {{ icon.render("forum_icon", ['forum_report']) }}
+                        </a>
+                    {% elseif section == 'collage comment' %}
+                        <a href="/reports.php?action=report&amp;type=collages_comment&amp;id={{ post.ID }}" title="report this post to staff">
+                            {{ icon.render("forum_icon", ['forum_report']) }}
+                        </a>
+                    {% endif %}
+                {% endif %}
+                &nbsp;
+                <a href="#">&uarr;</a>
+            </span>
+        </td>
+    </tr>
+    <tr>
+    {% if ActiveUser.options('DisableAvatars', 0) == 0 %}
+        {% if ActiveUser.options('DisableSignatures', 0) == 0 and post.author.class.MaxSigLength > 0 and post.author.legacy.Signature is not empty %}
+            {% set rowspan %}
+                rowspan="2"
+            {% endset %}
+        {% else %}
+            {% set rowspan='' %}
+        {% endif %}
+        <td class="avatar" valign="top" {{ rowspan }}>
+            {% if post.author.legacy.Avatar is not empty %}
+                <img src="{{ post.author.legacy.Avatar }}" class="avatar" style="{{ get_avatar_css(post.author.class.MaxAvatarWidth, post.author.class.MaxAvatarHeight) }}" alt="{{ post.author.Username}}'s avatar" />
+            {% else %}
+                <img src="/static/common/avatars/default.png"  class="avatar" style="{{ get_avatar_css(100, 120) }}" alt="Default avatar" />
+            {% endif %}
+            <div class="badges">
+                  {{ render.badges(post.author.ID) }}
+            </div>
+        </td>
+        <td class="postbody" valign="top">
+    {% else %}
+        <td class="postbody" valign="top" colspan="2">
+    {% endif %}
+            <div id="content{{ post.ID}}" class="post_container">
+                <div class="post_content">
+                    {{ bbcode.full_format(post.Body, auth.isAllowed('site_advanced_tags', post.editor))|raw }}
+                </div>
+
+                {% if post.EditedUserID is defined %}
+                    <div class="post_footer">
+                        {% if auth.isAllowed('forum_moderate') %}
+                            <a href="#content{{ post.ID }}" onclick="LoadEdit({{ post.ID }}, 1); return false;">&laquo;</a>
+
+                        {% endif %}
+                        <span class="editedby">Last edited by
+                            {% set editedUsernameOptions = {
+                                'drawInBox' : false,
+                                'colorname' : false,
+                                'dropDown'  : false,
+                                'useSpan'   : true,
+                                'noIcons'   : true,
+                                'noGroup'   : true,
+                                'noClass'   : true,
+                                'noTitle'   : true,
+                            } %}
+                            {{ render.username(post.EditedUserID, editedUsernameOptions) }} {{ time_diff(post.EditedTime,2,true,true)|raw }}
+                        </span>
+                        {% if (section == 'forum'           and auth.isAllowed('forum_post_restore'))
+                           or (section == 'collage comment' and auth.isAllowed('collage_post_restore')) %}
+                            &nbsp;&nbsp;<a href="#content{{ post.ID }}" onclick="RevertEdit('{{ post.ID }}', '{{ secretary.getToken('post.revert') }}'); return false;" title="remove last edit">&reg;</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </td>
+    </tr>
+    {% if ActiveUser.options('DisableSignatures', 0) == 0 and post.author.class.MaxSigLength > 0 and post.author.legacy.Signature is not empty %}
+        <tr>
+            <td class="sig">
+                <div id="sig" style="max-height: {{ settings.forums.sig_max_height }}px;">
+                    <div>{{ bbcode.full_format(post.author.legacy.Signature, auth.isAllowed('site_advanced_tags', post.author), false, 'sig_' ~ post.author.ID)|raw }}</div>
+                </div>
+            </td>
+        </tr>
+    {% endif %}
+</table>
+
+{% if post.isTrashed() == true and auth.isAllowed('forum_moderate') %}
+    </div>
+{% endif %}

@@ -1,0 +1,27 @@
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : true,
+    'noGroup'   : true,
+    'noClass'   : true,
+    'noTitle'   : true,
+} %}
+
+{# if user didn't load then return the standard System user text #}
+{% if user is not instanceof('Luminance\\Entities\\User') %}
+    {{ render.username(0) }}
+
+{# if not anon then just return username #}
+{% elseif not isAnon and auth.isAllowed('site_view_uploaders') %}
+    {{ render.username(user.ID, usernameOptions) }}
+
+{# if anon ... #}
+{% elseif auth.isAllowed('users_view_anon_uploaders') %}
+    <span class='anon_name'><a href='/user.php?id={{ user.ID }}' title='{{ user.Username }}'>anon</a></span>
+{% elseif not isAnon %}
+    <span class="anon_name" title="anonymous upload: your userclass is too low to see uploader info">anon</span>
+{% else %}
+    <span class="anon_name" title="anonymous upload: this uploader has chosen to hide their username">anon</span>
+{% endif %}

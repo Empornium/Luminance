@@ -1,0 +1,80 @@
+<div class="sidebar" style="float: right;">
+    {% if group.Image is not empty %}
+        <div class="head">
+            <span style="float:left;"><strong>Cover</strong></span>
+            <span style="float:right;"><a href="#" id="covertoggle" onclick="Cover_Toggle(); return false;">(Hide)</a></span>
+        </div>
+        <div id="coverimage" class="box box_albumart">
+            <img style="max-width: 100%;" src="{{ fapping_preview(group.Image, 250) }}" alt="{{ group.Name }}" onclick="lightbox.init(this, 220, '{{ group.Image }}');" />
+        </div>
+        <br/>
+    {% endif %}
+
+    <a id="tags"></a>
+    <div class="head">
+        <span style="float:left;"><strong>Tags</strong></span>
+        <span style="float:right;margin-left:5px;"><a href="#" id="tagtoggle" onclick="TagBox_Toggle(); return false;">(Hide)</a></span>
+        <span style="float:right;font-size:0.8em;">
+            <a href="/tags.php" target="_blank">tags</a> | <a href="/articles/view/tag" target="_blank">rules</a>
+        </span>
+    </div>
+    <div id="tag_container" class="box box_tags">
+        <div class="tag_header">
+            <div>
+                <input type="hidden" id="sort_groupid" value="{{ group.ID }}" />
+                <a onclick="Resort_Tags({{ group.ID }}, 'uses');" title="change sort order of tags to total uses"><span id="sort_uses" class="button_sort sort_select">uses</span></a>
+                <a onclick="Resort_Tags({{ group.ID }}, 'score');" title="change sort order of tags to total score"><span id="sort_score" class="button_sort">score</span></a>
+                <a onclick="Resort_Tags({{ group.ID }}, 'az');" title="change sort order of tags to total az"><span id="sort_az" class="button_sort">az</span></a>
+            </div>
+            Please vote for tags based <a href="/articles/view/tag" target="_blank"><strong class="important_text">only</strong></a> on their appropriateness for this upload.
+        </div>
+        <div id="tag_template" class="hidden">
+            <li id="tlist__ID__">
+                <a href="/torrents.php?taglist=__NAME__" style="float:left; display:block;" title="__VOTES__">__NAME__</a>
+                <div style="float:right; display:block; letter-spacing: -1px;">
+                    {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::TAGGING')) and (auth.isAllowed('site_vote_tag') or (torrents[0].uploader.ID == ActiveUser.ID)) %}
+                        <a title="Vote down tag '__NAME__'" href="#tags" onclick="return Vote_Tag('__NAME__',__ID__,__GROUP_ID__,'down')" style="font-family: monospace;" >[-]</a>
+                        <span id="tagscore__ID__" style="width:10px;text-align:center;display:inline-block;">__SCORE__</span>
+                        <a title="Vote up tag '__NAME__'" href="#tags" onclick="return Vote_Tag('__NAME__',__ID__,__GROUP_ID__,'up')" style="font-family: monospace;">[+]</a>
+                    {% else %}
+                        <span style="width:10px;text-align:center;display:inline-block;" title="You do not have permission to vote on tags">__SCORE__</span>
+                        <span style="font-family: monospace;" >&nbsp;&nbsp;&nbsp;</span>
+                    {% endif %}
+                    {% if auth.isAllowed('site_torrents_notify') %}
+                        <a title="Add tag to notifications '__NAME__'" href="#tags" onclick="return Quick_Notify_Tag('__NAME__','__ID__')" style="font-family: monospace;" >[N]</a>
+                    {% endif %}
+
+                    {% if auth.isAllowed('users_view_anon_uploaders') %}
+                        <a title="Tag '__NAME__' added by __USERNAME__" href="/user.php?id=__USER_ID__" >[U]</a>
+                    {% endif %}
+                    {% if auth.isAllowed('site_delete_tag') %}
+                        <a title="Delete tag '__NAME__'" href="#tags" onclick="return Del_Tag(__ID__,__GROUP_ID__,'tagsort')"   style="font-family: monospace;">[X]</a>
+                    {% else %}
+                        <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;</span>
+                    {% endif %}
+                </div>
+                <br style="clear:both" />
+            </li>
+        </div>
+        <div id="torrent_tags" class="tag_inner">
+            {% if torrentTags is empty %}
+                Please add a tag for this torrent!
+            {% else %}
+                <ul id="torrent_tags_list" class="stats nobullet"></ul>
+            {% endif %}
+        </div>
+        {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::TAGGING')) and (auth.isAllowed('site_vote_tag') or (torrents[0].uploader.ID == ActiveUser.ID)) %}
+            <div class="tag_add">
+                <div id="messagebar" class="messagebar hidden"></div>
+                <input type="hidden" name="action" value="add_tag" />
+                <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                <input type="hidden" id="groupid" name="groupid" value="{{ group.ID }}" />
+                <input type="hidden" name="tagsort" value="{{ tagSort }}" />
+                <form onsubmit="addTag(); return false;">
+                    <input accesskey="a" type="text" id="taginput" size="25" title="Enter text to search for tags, click (or enter) to select a tag from the drop-down." />
+                    <input type="button" value="+" onclick="addTag(); return false;" />
+                </form>
+            </div>
+        {% endif %}
+    </div>
+</div>

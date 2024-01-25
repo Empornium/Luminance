@@ -1,82 +1,61 @@
 <?php
 namespace Luminance\Legacy;
 
-class Text
-{
-    // tag=>max number of attributes 'link'=>1,
-    private $ValidTags = [
-        'ratiolist'  => 0,
-        'code'       => 1,
-        'codeblock'  => 1,
-        'you'        => 0,
-        'h5v'        => 1,
-        'yt'         => 1,
-        'vimeo'      => 1,
-        'video'      => 1,
-        'flash'      => 1,
-        'banner'     => 0,
-        'thumb'      => 0,
-        '#'          => 1,
-        'anchor'     => 1,
-        'mcom'       => 0,
-        'table'      => 1,
-        'th'         => 1,
-        'tr'         => 1,
-        'td'         => 1,
-        'bg'         => 1,
-        'cast'       => 0,
-        'details'    => 0,
-        'info'       => 0,
-        'plot'       => 0,
-        'screens'    => 0,
-        'br'         => 0,
-        'hr'         => 0,
-        'font'       => 1,
-        'center'     => 0,
-        'spoiler'    => 1,
-        'b'          => 0,
-        'u'          => 0,
-        'i'          => 0,
-        's'          => 0,
-        'sup'        => 0,
-        'sub'        => 0,
-        '*'          => 0,
-        'user'       => 0,
-        'n'          => 0,
-        'inlineurl'  => 0,
-        'inlinesize' => 1,
-        'align'      => 1,
-        'color'      => 1,
-        'colour'     => 1,
-        'size'       => 1,
-        'url'        => 1,
-        'img'        => 1,
-        'quote'      => 1,
-        'pre'        => 1,
-        'tex'        => 0,
-        'hide'       => 1,
-        'plain'      => 0,
-        'important'  => 0,
-        'torrent'    => 0,
-        'request'    => 0,
-        'collage'    => 0,
-        'thread'     => 0,
-        'forum'      => 0,
-        'rank'       => 1,
-        'tip'        => 1,
-        'imgnm'      => 1,
-        'imgalt'     => 1,
-        'article'    => 1,
-        'id'         => 1,
-        'mediainfo'  => 0,
+use Luminance\Core\Entity;
+
+use Luminance\Errors\BBCodeError;
+
+use Luminance\Entities\Torrent;
+
+use Luminance\Services\Debug;
+
+class Text {
+
+    // import smileys from their trait
+    use TextSmileys;
+
+    // tag=>max number of attributes
+    static private $ValidTags = [
+        'ratiolist'    => 0,        'code'         => 1,        'codeblock'    => 1,
+        'you'          => 0,        'h5v'          => 1,        'yt'           => 1,
+        'vimeo'        => 1,        'video'        => 1,        'flash'        => 1,
+        'banner'       => 0,        'thumb'        => 0,        '#'            => 1,
+        'anchor'       => 1,        'mcom'         => 0,        'table'        => 1,
+        'th'           => 1,        'tr'           => 1,        'td'           => 1,
+        'bg'           => 1,        'cast'         => 0,        'details'      => 0,
+        'info'         => 0,        'plot'         => 0,        'screens'      => 0,
+        'br'           => 0,        'hr'           => 0,        'font'         => 1,
+        'center'       => 0,        'spoiler'      => 1,        'b'            => 0,
+        'u'            => 0,        'i'            => 0,        's'            => 0,
+        'sup'          => 0,        'sub'          => 0,        '*'            => 0,
+        'user'         => 0,        'n'            => 0,        'inlineurl'    => 0,
+        'align'        => 1,        'color'        => 1,        'colour'       => 1,
+        'size'         => 1,        'url'          => 1,        'img'          => 1,
+        'quote'        => 1,        'pre'          => 1,        'tex'          => 0,
+        'hide'         => 1,        'plain'        => 0,        'important'    => 0,
+        'torrent'      => 0,        'request'      => 0,        'collage'      => 0,
+        'thread'       => 0,        'forum'        => 0,        'rank'         => 1,
+        'tip'          => 1,        'imgnm'        => 1,        'imgalt'       => 1,
+        'article'      => 1,        'id'           => 1,        'mediainfo'    => 0,
+        'uploader'     => 1,        'staffpm'      => 0,        'geoip'        => 0,
+        '```'          => 1,
     ];
+
+    private $AdvancedTagOnly = [
+        'mcom',
+        'hide',
+    ];
+
 
     //  font name (display) => fallback fonts (css)
     private $Fonts = [
+        'Aleo'                   => "Aleo, sans-serif;",
         'Arial'                  => "Arial, 'Helvetica Neue', Helvetica, sans-serif;",
         'Arial Black'            => "'Arial Black', 'Arial Bold', Gadget, sans-serif;",
+        'Caviar Dreams'          => "'Caviar Dreams', sans-serif;",
         'Comic Sans MS'          => "'Comic Sans MS', cursive, sans-serif;",
         'Courier New'            => "'Courier New', Courier, 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace;",
+        'fapping'                => "Fapping, serif;",
         'Franklin Gothic Medium' => "'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', Arial, sans-serif;",
         'Georgia'                => "Georgia, Times, 'Times New Roman', serif;",
         'Helvetica'              => "'Helvetica Neue', Helvetica, Arial, sans-serif;",
@@ -85,12 +64,13 @@ class Text
         'Lucida Sans Unicode'    => "'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Geneva, Verdana, sans-serif;",
         'Microsoft Sans Serif'   => "'Microsoft Sans Serif', Helvetica, sans-serif;",
         'Palatino Linotype'      => "Palatino, 'Palatino Linotype', 'Palatino LT STD', 'Book Antiqua', Georgia, serif;",
+        'Quantico'               => "Quantico, sans-serif;",
         'Tahoma'                 => "Tahoma, Verdana, Segoe, sans-serif;",
         'Times New Roman'        => "TimesNewRoman, 'Times New Roman', Times, Baskerville, Georgia, serif;",
         'Trebuchet MS'           => "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif;",
         'Verdana'                => "Verdana, Geneva, sans-serif;",
     ];
-    //  icon tag => img  //[cast][details][info][plot][screens]
+
     private $Icons = [
         'cast'    => "cast11.png",
         'details' => "details11.png",
@@ -98,6 +78,7 @@ class Text
         'plot'    => "plot11.png",
         'screens' => "screens11.png",
     ];
+
     private $NoMedia = 0; // If media elements should be turned into URLs
     private $Levels = 0; // nesting level
     private $Advanced = false; // allow advanced tags to be printed
@@ -106,132 +87,187 @@ class Text
 
     private $displayed_images = [];
 
-    //public $Smilies = array(); // for testing only
-    public function __construct()
-    {
-        include(SERVER_ROOT.'/Legacy/classes/Smileys.php');
-        $this->Smileys = $Smileys;
-        foreach ($this->Smileys as $Key => $Val) {
-            $this->Smileys[$Key] = '<img src="/static/common/smileys/' . $Val . '" alt="' . $Key . '" />';
-            //$this->Smilies[] = $Val;
+    public $cachedBBCode = [];
+
+    public static $bbcode = [];
+    public static $time = 0.0;
+
+    private $attributeRegex = '';
+    private $markdownRegex  = '';
+    private $openTagRegex   = '';
+    private $wikiTagRegex   = '';
+    private $tagParserRegex = '';
+
+    public function __construct() {
+        global $master;
+
+        $this->attributeRegex = "(?:[^\n'\"\[\]]|\[\d*\])+";
+        $this->markdownRegex  = "(?:^|\n)(```)({$this->attributeRegex})?";
+        $this->openTagRegex   = "((\[[a-zA-Z*#5]+)(={$this->attributeRegex})?\])";
+        $this->wikiTagRegex   = "(\[\[[^\n\"'\[\]]+\]\])";
+        $this->tagParserRegex = "/{$this->markdownRegex}|{$this->openTagRegex}|{$this->wikiTagRegex}/";
+
+        // Automatic love :)
+        if (!empty($master->settings->main->site_short_name)) {
+            $love = ''.strtolower($master->settings->main->site_short_name).'love';
+            if (file_exists($master->publicPath.'/static/common/smileys/'.$love.'.gif')) {
+                if (array_key_exists(':'.$love.':', $this->Smileys) === false) {
+                    $this->Smileys[':'.$love.':'] = $love.'.gif';
+                }
+            }
         }
-        reset($this->Smileys);
+
+        foreach ($this->Smileys as $Key => $Val) {
+            $this->Smileys[$Key] = '<img class="bbcode smiley" src="/static/common/smileys/' . $Val . '" alt="' . $Key . '" />';
+        }
 
         foreach ($this->Icons as $Key => $Val) {
-            $this->Icons[$Key] = '<img src="/static/common/icons/' . $Val . '" alt="' . $Key . '" />';
+            $this->Icons[$Key] = '<img class="bbcode icon" src="/static/common/icons/' . $Val . '" alt="' . $Key . '" />';
         }
-        reset($this->Icons);
     }
 
-    public function has_errors()
-    {
+    public function has_errors() {
         return count($this->Errors) > 0;
     }
 
-    public function get_errors()
-    {
+    public function get_errors() {
         return $this->Errors;
     }
 
-    public function full_format($Str, $AdvancedTags = false, $ShowErrors = false)
-    {
+    public function full_format($BBCode, $AdvancedTags = false, $ShowErrors = false, $CacheKey = null) {
+        $formatStartTime=microtime(true);
+        if (!empty($CacheKey)) {
+            if (array_key_exists($CacheKey, $this->cachedBBCode)) {
+                return $this->cachedBBCode[$CacheKey];
+            }
+        }
+
+        if (empty($BBCode)) {
+            return '';
+        }
+
         $this->Advanced = $AdvancedTags;
         $this->ShowErrors = $ShowErrors;
-        $this->Errors = array();
+        $this->Errors = [];
 
-        $Str = display_str($Str);
-
-        //Inline links
-        $Str = preg_replace('/\[bg\=/i', '[bgg=', $Str);
-        $Str = preg_replace('/\[td\=/i', '[tdd=', $Str);
-        $Str = preg_replace('/\[tr\=/i', '[trr=', $Str);
-        $Str = preg_replace('/\[th\=/i', '[thh=', $Str);
-
-        // URL Prefix Exceptions
-        $URLPrefix = implode('|', [
-            '\[url\]|\[url\=',               // Links
-            '\[vide|\[vime',                 // Videos
-            '\[img\=|\[img\]|\[thum|\[bann', // Images
-            '\[h5v\]|\[h5v\=',               // HTML5
-            '\[bgg\=',                       // Background
-            '\[tdd\=|\[trr\=|\[tabl',        // Tables
-            '\[imgn|\[imga',                 // More Images
-        ]);
-
-        $Str = preg_replace('/(' . $URLPrefix . ')\s+/i', '$1', $Str);
-        $Str = preg_replace('/(?<!' . $URLPrefix . ')http(s)?:\/\//i', '[inlineurl]http$1://', $Str);
-
-        // For anonym.to and archive.org links, remove any [inlineurl] in the middle of the link
-        $callback = create_function('$matches', 'return str_replace("[inlineurl]","",$matches[0]);');
-        $Str = preg_replace_callback('/(?<=\[inlineurl\]|' . $URLPrefix . ')(\S*\[inlineurl\]\S*)/m', $callback, $Str);
-
-        $Str = preg_replace('/\=\=\=\=([^=]+?)\=\=\=\=/i', '[inlinesize=3]$1[/inlinesize]', $Str);
-        $Str = preg_replace('/\=\=\=([^=]+?)\=\=\=/i', '[inlinesize=5]$1[/inlinesize]', $Str);
-        $Str = preg_replace('/\=\=([^=]+?)\=\=/i', '[inlinesize=7]$1[/inlinesize]', $Str);
-
-        $Str = preg_replace('/\[bgg\=/i', '[bg=', $Str);
-        $Str = preg_replace('/\[tdd\=/i', '[td=', $Str);
-        $Str = preg_replace('/\[trr\=/i', '[tr=', $Str);
-        $Str = preg_replace('/\[thh\=/i', '[th=', $Str);
-
-        $Str = $this->parse($Str);
-        $Str = $this->validate_stack($Str);
-        $HTML = $this->to_html($Str);
+        # Normalize endofline characters to Unix
+        $str = str_replace(["\r\n", "\r", "\n"], "\n", $BBCode);
+        $str = display_str($str);
+        $Tree = $this->parse($str);
+        $Tree = $this->mutateTree($Tree);
+        $Tree = $this->validateTree($Tree);
+        $HTML  = $this->to_html($Tree);
 
         // Formatting cleanup
-        $HTML = str_replace('  ', '&nbsp;&nbsp;', $HTML);
+        $HTML = preg_replace('/\h*(\v)/', '$1', $HTML);
+        $HTML = preg_replace('/(?<=[ ])[ ]/', '&nbsp;', $HTML);
         $HTML = nl2br($HTML);
 
+        if (!empty($CacheKey)) {
+            $this->cachedBBCode[$CacheKey] = $HTML;
+        }
+
+        $formatEndTime=microtime(true);
+        if (Debug::getEnabled()) {
+            self::$bbcode[] = [
+                'bbcode'     => $BBCode,
+                'microtime' => ($formatEndTime-$formatStartTime)*1000,
+            ];
+            self::$time+=($formatEndTime-$formatStartTime)*1000;
+        }
         return $HTML;
     }
 
-    private $CheckTags = [
-      'tr' => ['table'],
-      'th' => ['tr'],
-      'td' => ['tr'],
+
+    static private $MutateTags = [
+        'spoiler' => [
+            'img'    => 'spimg',
+            'imgnm'  => 'spimgnm',
+            'imgalt' => 'spimgalt',
+            'banner' => 'spbanner',
+        ],
     ];
 
-    protected function validate_stack($Stack, $Parent=null) {
-        $ordered_tags = array_keys($this->CheckTags);
-        foreach ($Stack as $Index => $Block) {
-            if (!isset($Block['Type'], $Block['Val']))
+    protected function mutateTree($Tree, $Mutation = []) {
+        // Check the tree first
+        if (!is_array($Tree)) {
+            return;
+
+        }
+        // Recurse the tree looking for mutations
+        foreach ($Tree as &$block) {
+            if (!isset($block['Type'], $block['Val'])) {
                 continue;
-            if (in_array($Block['Type'], $ordered_tags)) {
-                if (!in_array($Parent, $this->CheckTags[$Block['Type']])) {
+            }
+            // Check if any mutations should be applied
+            if (!empty($Mutation)) {
+                if (in_array($block['Type'], array_keys($Mutation))) {
+                    $block['Type'] = $Mutation[$block['Type']];
+                }
+            }
+            if (in_array($block['Type'], array_keys(self::$MutateTags))) {
+                // Decend into the tree with a new mutation
+                $newMutation = array_merge($Mutation, self::$MutateTags[$block['Type']]);
+                $block['Val'] = $this->mutateTree($block['Val'], $newMutation);
+            }
+            if (is_array($block['Val'])) {
+                // Decend into the tree with the current mutation
+                $block['Val'] = $this->mutateTree($block['Val'], $Mutation);
+            }
+        }
+        return $Tree;
+    }
+
+    static private $CheckTags = [
+        'tr' => ['table'],
+        'th' => ['tr'],
+        'td' => ['tr'],
+    ];
+
+    protected function validateTree($Tree, $Parent=null) {
+        // Check the tree first
+        if (!is_array($Tree)) {
+            return;
+        }
+        // Recurse the tree looking for mismatched tags
+        foreach ($Tree as $Index => $block) {
+            if (!isset($block['Type'], $block['Val']))
+                continue;
+            if (in_array($block['Type'], array_keys(self::$CheckTags))) {
+                if (!in_array($Parent, self::$CheckTags[$block['Type']])) {
                     // log an error (when submitting)
-                    $this->Errors[] = "<span class=\"error_label\">illegal placement of [{$Block[Type]}] tag</span>";
+                    $this->Errors[] = "<span class=\"error_label\">illegal placement of [{$block['Type']}] tag</span>";
                     // Delete orphaned tag (when viewing)
-                    unset($Stack[$Index]);
+                    unset($Tree[$Index]);
                     continue;
                 }
             }
-            if (is_array($Block['Val'])) {
-                // Recurse the stack
-                $Stack[$Index]['Val'] = $this->validate_stack($Block['Val'], $Block['Type']);
+            if (is_array($block['Val'])) {
+                // Recurse the tree
+                $Tree[$Index]['Val'] = $this->validateTree($block['Val'], $block['Type']);
             }
         }
-        return $Stack;
+        return $Tree;
     }
 
     /**
      * Validates the bbcode for bad tags (unclosed/mixed tags)
      *
-     * @param  string  $Str          The text to be validated
+     * @param  string  $str          The text to be validated
      * @param  boolean $AdvancedTags Whether AdvancedTags are allowed (this is only for the preview if errorout=true)
      * @param  boolean $ErrorOut     If $ErrorOut=true then on errors the error page will be displayed with a preview of the errors (If false the function just returns the validate result)
      * @return boolean True if there are no bad tags and false otherwise
      */
-    public function validate_bbcode($Str, $AdvancedTags = false, $ErrorOut = true, $FurtherCheck = true)
-    {
-        global $master, $LoggedUser;
-        $preview = $this->full_format($Str, $AdvancedTags, true, true);
+    public function validate_bbcode($str, $AdvancedTags = false, $ErrorOut = true, $FurtherCheck = true) {
+        global $master;
+        $preview = $this->full_format($str, $AdvancedTags, true);
         if ($this->has_errors()) {
             if ($ErrorOut) {
                 $bbErrors = implode('<br/>', $this->get_errors());
-                error("There are errors in your bbcode <br/><br/>$bbErrors<br/>If the tag(s) highlighted do actually have a closing tag then you probably have overlapping tags
+                throw new BBCodeError("There are errors in your bbcode", "There are errors in your bbcode <br/><br/>{$bbErrors}<br/>If the tag(s) highlighted do actually have a closing tag then you probably have overlapping tags
                         <br/>ie.<br/><span style=\"font-weight:bold\">[b]</span> [i] your text <span style=\"font-weight:bold\">[/b] </span>[/i] <span style=\"color:red\">(wrong)</span> - <em>tags must be nested, when they overlap like this it throws an error</em>
                         <br/><span style=\"font-weight:bold\">[b]</span> [i] your text [/i] <span style=\"font-weight:bold\">[/b]</span> <span style=\"color:green\">(correct)</span> - <em>properly nested tags</em></div><br/><div class=\"head\">Your post</div><div class=\"box pad\">
-                        <div class=\"box\"><div class=\"post_content\">$preview</div></div><br/>
+                        <div class=\"box\"><div class=\"post_content\">{$preview}</div></div><br/>
                         <div style=\"font-style:italic;text-align:center;cursor:pointer;\"><a onclick=\"window.history.go(-1);\">click here or use the back button in your browser to return to your message</a></div>");
             }
 
@@ -242,7 +278,7 @@ class Text
 
             // As of right now, we only check images,
             // we can skip everything, if it's disabled
-            if (!$master->options->ImagesCheck || $LoggedUser['Class'] >= $master->options->ImagesCheckMinClass) {
+            if (!$master->options->ImagesCheck || $master->request->user->class->Level >= $master->options->ImagesCheckMinClass) {
                 return true;
             }
 
@@ -253,21 +289,21 @@ class Text
             if (count($this->displayed_images) > $MaxImages) {
                 $Error  = "Your post contains too many images. (Max: $MaxImages)<br>";
                 $Error .= "Try posting the direct links instead.";
-                error($Error);
+                throw new BBCodeError($Error);
             }
 
             // Max. size for images in posts (MB)
             $MaxWeight = (int) $master->options->MaxImagesWeight;
             $MaxWeight = $MaxWeight * 1024 * 1024;
 
-            $Validate = new Validate();
+            $Validate = new \Luminance\Legacy\Validate();
             $post_size = $Validate->get_presentation_size(array_keys($this->displayed_images));
             if($post_size > $MaxWeight) {
                 $post_size = round($post_size / 1024 / 1024, 2);
                 $MaxWeight = round($MaxWeight / 1024 / 1024, 2);
                 $Error  = "Your post contains too many images. (Weight: $post_size MB - Max: $MaxWeight MB)<br>";
                 $Error .= "Try posting thumbnails instead or simply post the direct links.";
-                error($Error);
+                throw new BBCodeError($Error);
             }
         }
 
@@ -280,13 +316,10 @@ class Text
      * @param  string  $imageurl          The text to be validated
      * @return boolean True if there are no bad tags and false otherwise
      */
-    public function validate_imageurl($imageurl)
-    {
+    public function validate_imageurl($imageurl) {
         if (check_perms('site_skip_imgwhite')) return true;
         $whitelist_regex = get_whitelist_regex();
-        $result = validate_imageurl($imageurl, 10, 255, $whitelist_regex, '');
-        if ($result !== TRUE) $result=FALSE;
-        return $result;
+        return validate_imageurl($imageurl, 10, 511, $whitelist_regex, '');
     }
 
     public function proxify_url($url) {
@@ -313,218 +346,147 @@ class Text
     public function local_url($url, $always_full = false) {
         global $master;
 
-        $regex = $master->settings->main->internal_urls_regex;
-        if (preg_match($regex, $url)) {
-            $prepared_url = '';
-            if ($always_full) {
-                $prepared_url .= ($master->request->ssl) ? 'https://' : 'http://';
-                $prepared_url .= $master->server['HTTP_HOST'];
+        $regexes[] = $master->settings->main->internal_urls_regex;
+        $regexes[] = $master->getRouteRegex();
+        foreach ($regexes as $regex) {
+            if (preg_match($regex, $url)) {
+                $prepared_url = '';
+                if ($always_full) {
+                    $prepared_url .= ($master->request->ssl) ? 'https://' : 'http://';
+                    $prepared_url .= $master->server['HTTP_HOST'];
+                }
+                $prepared_url .= preg_replace('#^(://|[^/])+#', '', $url);
+                if (!strlen($prepared_url)) {
+                    $prepared_url = '/';
+                }
+                return $prepared_url;
             }
-            $prepared_url .= preg_replace('#^(://|[^/])+#', '', $url);
-            if (!strlen($prepared_url)) {
-                $prepared_url = '/';
-            }
-            return $prepared_url;
         }
         return false;
     }
 
 
-    public function strip_bbcode($Str)
-    {
-        $Str = display_str($Str);
-
-        //Inline links
-        $Str = preg_replace('/(?<!(\[url\]|\[url\=|\[img\=|\[img\]))http(s)?:\/\//i', '$1[inlineurl]http$2://', $Str);
-        $Str = $this->parse($Str);
-        $Str = $this->raw_text($Str);
-
-        $Str = nl2br($Str);
-
-        return $Str;
+    public function strip_bbcode($str) {
+        $str = display_str($str);
+        $str = $this->parse($str);
+        $str = $this->raw_text($str);
+        $str = nl2br($str);
+        return $str;
     }
 
     // how much readable text is in string
-    public function text_count($Str)
-    {
+    public function text_count($str) {
         //remove tags
-        $Str = $this->db_clean_search($Str);
+        $str = $this->db_clean_search($str);
         //remove endofline
-        $Str = str_replace(array("\r\n", "\n", "\r"), '', $Str);
-        $Str = trim($Str);
+        $str = str_replace(["\r\n", "\n", "\r"], '', $str);
+        $str = trim($str);
 
-        return mb_strlen($Str);
+        return mb_strlen($str);
     }
 
-    // I took a shortcut here and made this function instead of using strip_bbcode since it's purpose is a bit
-    // different.
-    public function db_clean_search($Str)
-    {
-        foreach ($this->Smileys as $key => $value) {
-            $remove[] = "/$key/i";
+    // I took a shortcut here and made this function instead of using strip_bbcode
+    // since it's purpose is a bit different.
+    public function db_clean_search($str) {
+        # Auto-populate smileys
+        foreach (array_keys($this->Smileys) as $smiley) {
+            # Just in case anyone includes a custom smiley that has regex characters in it
+            $smiley = preg_quote($smiley);
+            $remove[] = "/{$smiley}/i";
         }
 
-        // anchors
-        $remove[] = '/\[\#.*?\]/i';
-        $remove[] = '/\[\/\#\]/i';
-        $remove[] = '/\[anchor.*?\]/i';
-        $remove[] = '/\[\/anchor\]/i';
+        # Auto-populate Icons
+        foreach (array_keys($this->Icons) as $icon) {
+            # Just in case anyone includes a custom smiley that has regex characters in it
+            $icon = preg_quote($icon);
+            $remove[] = "/\[{$icon}\]/i";
+        }
 
-        $remove[] = '/\[align.*?\]/i';
-        $remove[] = '/\[\/align\]/i';
+        $complexTags = [
+            'flash',      'img',          'imgalt',
+            'imgnm',      'banner',       'thumb',
+            'h5v',        'audio',        'tex',
+            'torrent',    'request',      'collage',
+            'thread',     'forum',        'user',
+            'staffpm',    'uploader',     'media',
+            'url',        'video',
+        ];
 
-        $remove[] = '/\[article.*?\]/i';
-        $remove[] = '/\[\/article\]/i';
+        # Auto-populate tags
+        foreach ($complexTags as $tag) {
+            $tag = preg_quote($tag);
+            $remove[] = "/\[{$tag}=.*?\].?\[\/{$tag}.*?\]/i";
+        }
 
-        $remove[] = '/\[mediainfo\]/i';
-        $remove[] = '/\[\/mediainfo\]/i';
+        # Auto-populate tags
+        foreach (self::$ValidTags as $tag => $attributes) {
+            # Skip complex tags, they're already covered
+            if (array_key_exists($tag, $complexTags)) {
+                continue;
+            }
 
-        $remove[] = '/\[audio\].*?\[\/audio\]/i';
+            # Handle normal tags, with or without attributes
+            $tag = preg_quote($tag);
+            if ($attributes > 0) {
+                $remove[] = "/\[(\/)?{$tag}\]/i";
+            } else {
+                $remove[] = "/\[(\/)?{$tag}=.*?\]/i";
+            }
+        }
 
-        $remove[] = '/\[b\]/i';
-        $remove[] = '/\[\/b\]/i';
+        $str = preg_replace($remove, '', $str);
+        $str = preg_replace('/[\r\n]+/', ' ', $str);
 
-        $remove[] = '/\[banner\].*?\[\/banner\]/i';
-
-        $remove[] = '/\[bg.*?\]/i';
-        $remove[] = '/\[\/bg\]/i';
-
-        $remove[] = '/\[br\]/i';
-
-        $remove[] = '/\[cast\]/i';
-
-        $remove[] = '/\[center.*?\]/i';
-        $remove[] = '/\[\/center\]/i';
-
-        $remove[] = '/\[codeblock.*?\]/i';
-        $remove[] = '/\[\/codeblock\]/i';
-
-        $remove[] = '/\[code.*?\]/i';
-        $remove[] = '/\[\/code\]/i';
-
-        $remove[] = '/\[color.*?\]/i';
-        $remove[] = '/\[\/color\]/i';
-
-        $remove[] = '/\[colour.*?\]/i';
-        $remove[] = '/\[\/colour\]/i';
-
-        $remove[] = '/\[details\]/i';
-
-        $remove[] = '/\[flash.*?\].*?\[\/flash\]/i';
-
-        $remove[] = '/\[font.*?\]/i';
-        $remove[] = '/\[\/font\]/i';
-
-        $remove[] = '/\[link.*?\]/i';
-        $remove[] = '/\[\/link\]/i';
-
-        $remove[] = '/\[h5v.*?\].*?\[\/h5v\]/i';
-
-        $remove[] = '/\[hide\]/i';
-        $remove[] = '/\[\/hide\]/i';
-
-        $remove[] = '/\[hr\]/i';
-
-        $remove[] = '/\[i\]/i';
-        $remove[] = '/\[\/i\]/i';
-
-        $remove[] = '/\[id.*?\]/i';
-        $remove[] = '/\[\/id\]/i';
-
-        $remove[] = '/\[img.*?\].*?\[\/img\]/i';
-        $remove[] = '/\[imgalt.*?\].*?\[\/imgalt\]/i';
-        $remove[] = '/\[imgnm.*?\].*?\[\/imgnm\]/i';
-
-        $remove[] = '/\[important\]/i';
-        $remove[] = '/\[\/important\]/i';
-
-        $remove[] = '/\[info\]/i';
-
-        $remove[] = '/\[list\]/i';
-        $remove[] = '/\[\/list\]/i';
-
-        $remove[] = '/\[mcom\]/i';
-        $remove[] = '/\[\/mcom\]/i';
-
-        $remove[] = '/\[media.*?\].*?\[\/media\]/i';
-
-        $remove[] = '/\[plain\]/i';
-        $remove[] = '/\[\/plain\]/i';
-
-        $remove[] = '/\[plot\]/i';
-
-        $remove[] = '/\[pre\]/i';
-        $remove[] = '/\[\/pre\]/i';
-
-        $remove[] = '/\[quote\]/i';
-        $remove[] = '/\[\/quote\]/i';
-
-        $remove[] = '/\[rank.*?\]/i';
-        $remove[] = '/\[\/rank\]/i';
-
-        $remove[] = '/\[s\]/i';
-        $remove[] = '/\[\/s\]/i';
-
-        $remove[] = '/\[size.*?\]/i';
-        $remove[] = '/\[\/size\]/i';
-
-        $remove[] = '/\[spoiler\]/i';
-        $remove[] = '/\[\/spoiler\]/i';
-
-        // Table elements
-        $remove[] = '/\[table.*?\]/i';
-        $remove[] = '/\[\/table\]/i';
-        $remove[] = '/\[tr.*?\]/i';
-        $remove[] = '/\[\/tr\]/i';
-        $remove[] = '/\[th.*?\]/i';
-        $remove[] = '/\[\/th\]/i';
-        $remove[] = '/\[td.*?\]/i';
-        $remove[] = '/\[\/td\]/i';
-
-        $remove[] = '/\[tex\].*?\[\/tex\]/i';
-
-        $remove[] = '/\[tip.*?\]/i';
-        $remove[] = '/\[\/tip\]/i';
-
-        $remove[] = '/\[thumb\].*?\[\/thumb\]/i';
-
-        $remove[] = '/\[torrent\].*?\[\/torrent\]/i';
-        $remove[] = '/\[request\].*?\[\/request\]/i';
-        $remove[] = '/\[collage\].*?\[\/collage\]/i';
-        $remove[] = '/\[thread\].*?\[\/thread\]/i';
-        $remove[] = '/\[forum\].*?\[\/forum\]/i';
-
-        $remove[] = '/\[u\]/i';
-        $remove[] = '/\[\/u\]/i';
-
-        $remove[] = '/\[url.*?\].*?\[\/url\]/i';
-
-        $remove[] = '/\[user\]/i';
-        $remove[] = '/\[\/user\]/i';
-
-        $remove[] = '/\[video.*?\].*?\[\/video.*?\]/i';
-
-        $remove[] = '/\[you\]/i';
-
-        $remove[] = '/\[yt.*?\]/i';
-        $remove[] = '/\[vimeo.*?\]/i';
-
-        $Str = preg_replace($remove, '', $Str);
-        $Str = preg_replace('/[\r\n]+/', ' ', $Str);
-
-        return $Str;
+        return $str;
     }
 
-    public function valid_url($Str, $Extension = '', $Inline = false)
-    {
-        return preg_match(getValidUrlRegex($Extension, $Inline), $Str);
+    public function valid_url($str, $Extension = '', $Inline = false) {
+        global $master;
+        $valid_external = preg_match(getValidUrlRegex($Extension, $Inline), $str);
+        $valid_route = preg_match($master->getRouteRegex(), $str);
+        return $valid_external || $valid_route;
     }
 
+    public function inlineTransform($str = '') {
+        global $master;
+
+        # Support markdown via regex replacements for BBCode tags
+        $str = preg_replace('/(?<=^|\s)\=\=\=\=([^=\n]+?)\=\=\=\=(?=$|\s)/i', '[size=3]$1[/size]', $str);
+        $str = preg_replace('/(?<=^|\s)\=\=\=([^=\n]+?)\=\=\=(?=$|\s)/i',     '[size=5]$1[/size]', $str);
+        $str = preg_replace('/(?<=^|\s)\=\=([^=\n]+?)\=\=(?=$|\s)/i',         '[size=7]$1[/size]', $str);
+        $str = preg_replace('/(?<=^|\s)\[([^\[\]]+)]\(([^()]+)\)(?=$|\s)/i',  '[url=$2]$1[/url]',  $str);
+        $str = preg_replace('/(?<=^|\s)\*\*\*([^*\n]+?)\*\*\*(?=$|\s)/i',     '[b][i]$1[/i][/b]',  $str);
+        $str = preg_replace('/(?<=^|\s)___([^*\n]+?)___(?=$|\s)/i',           '[b][i]$1[/i][/b]',  $str);
+        $str = preg_replace('/(?<=^|\s)\*\*([^*\n]+?)\*\*(?=$|\s)/i',         '[b]$1[/b]',         $str);
+        $str = preg_replace('/(?<=^|\s)__([^*\n]+?)__(?=$|\s)/i',             '[b]$1[/b]',         $str);
+        $str = preg_replace('/(?<=^|\s)\*([^_\n]+?)\*(?=$|\s)/i',             '[i]$1[/i]',         $str);
+        $str = preg_replace('/(?<=^|\s)_([^_\n]+?)_(?=$|\s)/i',               '[i]$1[/i]',         $str);
+        $str = preg_replace('/(?<=^|\s)~~([^~\n]+?)~~(?=$|\s)/i',             '[s]$1[/s]',         $str);
+        $str = preg_replace('/^-\s?([^-\n].*?)$/m',                           '[*]$1',             $str);
+        $str = preg_replace('/^-{3,}$/m',                                     '[hr]',              $str);
+
+        # Put [inlineurl] at the start of each URL
+        $str = preg_replace('|http(s)?://|i', '[inlineurl]http$1://', $str);
+
+        $callback = function($matches) {
+            return str_replace("[inlineurl]","",$matches[0]);
+        };
+        # For markdown links, remove any [inlineurl] in the url tag
+        $str = preg_replace_callback('/(?<=\[url=)(\[inlineurl\])/m', $callback, $str);
+
+        # For anonymized links, remove any [inlineurl] in the middle of the link
+        $str = preg_replace_callback('/(?<=\[inlineurl\])(\S*\[inlineurl\]\S*)/m', $callback, $str);
+
+        # Static relative routes after anonymizer
+        $str = preg_replace($master->getRouteRegex(), '[inlineurl]$1', $str);
+
+        return $str;
+    }
 
     /* How parsing works
 
-      Parsing takes $Str, breaks it into blocks, and builds it into $Array.
-      Blocks start at the beginning of $Str, when the parser encounters a [, and after a tag has been closed.
+      Parsing takes $str, breaks it into blocks, and builds it into $blocks.
+      Blocks start at the beginning of $str, when the parser encounters a [, and after a tag has been closed.
       This is all done in a loop.
 
       EXPLANATION OF PARSER LOGIC
@@ -534,7 +496,7 @@ class Text
       1b) If the next tag isn't where the pointer is, write everything up to there to a text block.
       2) See if it's a [[wiki-link]] or an ordinary tag, and get the tag name
       3) If it's not a wiki link:
-      3a) check it against the $this->ValidTags array to see if it's actually a tag and not [bullshit]
+      3a) check it against the self::$ValidTags array to see if it's actually a tag and not [bullshit]
       If it's [not a tag], just leave it as plaintext and move on
       3b) Get the attribute, if it exists [name=attribute]
       4) Move the pointer past the end of the tag
@@ -559,71 +521,92 @@ class Text
 
      */
 
-    public function parse($Str)
-    {
-        $i = 0; // Pointer to keep track of where we are in $Str
-        $Len = strlen($Str);
-        $Array = array();
-        $ArrayPos = 0;
+    public function parse($str) {
+        $position = 0; // Pointer to keep track of where we are in $str
+        $blockLength = strlen($str);
+        $blocks = []; // Blocks on this level of the parse tree
 
-        while ($i < $Len) {
-            $Block = '';
+        while ($position < $blockLength) {
+            $block = '';
 
             // 1) Find the next tag (regex)
             // [name(=attribute)?]|[[wiki-link]]
-            $IsTag = preg_match("/((\[[a-zA-Z*#5]+)(=(?:[^\n'\"\[\]]|\[\d*\])+)?\])|(\[\[[^\n\"'\[\]]+\]\])/", $Str, $Tag, PREG_OFFSET_CAPTURE, $i);
+            $isTag = preg_match($this->tagParserRegex, $str, $Tag, PREG_OFFSET_CAPTURE, $position);
 
             // 1a) If there aren't any tags left, write everything remaining to a block
-            if (!$IsTag) {
-                // No more tags
-                $Array[$ArrayPos] = substr($Str, $i);
-                break;
+            if (!$isTag) {
+                # Perform the inline BBCode transformations, reset the position and then loop back round if any transformations occurred
+                $str = $this->inlineTransform(substr($str, $position));
+                $blockLength = strlen($str);
+                $position = 0;
+
+                # Check if we injected a new tag
+                $isInlineTag = preg_match($this->tagParserRegex, $str, $Tag, PREG_OFFSET_CAPTURE, $position);
+
+                if ($isInlineTag) {
+                    # And now we need to re-parse this block
+                    continue;
+                } else {
+                    # If there aren't any tags left, write everything remaining to a block
+                    $blocks[] = $str;
+                    break;
+                }
             }
 
             // 1b) If the next tag isn't where the pointer is, write everything up to there to a text block.
             $TagPos = $Tag[0][1];
-            if ($TagPos > $i) {
-                $Array[$ArrayPos] = substr($Str, $i, $TagPos - $i);
-                ++$ArrayPos;
-                $i = $TagPos;
+            if ($TagPos > $position) {
+                $blocks = array_merge($blocks, $this->parse(substr($str, $position, $TagPos - $position)));
+                $position = $TagPos;
             }
 
             // 2) See if it's a [[wiki-link]] or an ordinary tag, and get the tag name
-            if (!empty($Tag[4][0])) { // Wiki-link
+            if (!empty($Tag[6][0])) { // Wiki-link
                 $WikiLink = true;
-                $TagName = substr($Tag[4][0], 2, -2);
+                $TagName = substr($Tag[6][0], 2, -2);
                 $Attrib = '';
             } else { // 3) If it's not a wiki link:
                 $WikiLink = false;
-                $TagName = strtolower(substr($Tag[2][0], 1));
+                $attrOffset = 0;
+                $attrIndex = 0;
+                $TagName = '';
 
-                //3a) check it against the $this->ValidTags array to see if it's actually a tag and not [bullshit]
-                if (!isset($this->ValidTags[$TagName])) {
-                    $Array[$ArrayPos] = substr($Str, $i, ($TagPos - $i) + strlen($Tag[0][0]));
-                    $i = $TagPos + strlen($Tag[0][0]);
-                    ++$ArrayPos;
+                if ($Tag[1][0] === '```') {
+                    $TagName = $Tag[1][0];
+                    $attrOffset = 0;
+                    $attrIndex = 2;
+                } else {
+                    $TagName = strtolower(substr($Tag[4][0], 1));
+                    $attrOffset = 1;
+                    $attrIndex = 5;
+                }
+
+                //3a) check it against the self::$ValidTags array to see if it's actually a tag and not [bullshit]
+                if (!isset(self::$ValidTags[$TagName])) {
+                    $blocks[] = substr($str, $position, ($TagPos - $position) + strlen($Tag[0][0]));
+                    $position = $TagPos + strlen($Tag[0][0]);
                     continue;
                 }
 
                 // Check if user is allowed to use moderator tags (different from Advanced, which is determined
                 // by the original post author).
                 // We're using ShowErrors as a proxy for figuring out if we're editing or just viewing
-                if ($this->ShowErrors && $this->AdvancedTagOnly[$TagName] && !check_perms('site_moderate_forums')) {
+                if ($this->ShowErrors && in_array($TagName, $this->AdvancedTagOnly) && !check_perms('forum_moderate')) {
                     $this->Errors[] = "<span class=\"error_label\">illegal tag [$TagName]</span>";
                 }
 
-                $MaxAttribs = $this->ValidTags[$TagName];
+                $MaxAttribs = self::$ValidTags[$TagName];
 
                 // 3b) Get the attribute, if it exists [name=attribute]
-                if (!empty($Tag[3][0])) {
-                    $Attrib = substr($Tag[3][0], 1);
+                if (!empty($Tag[$attrIndex][0])) {
+                    $Attrib = substr($Tag[$attrIndex][0], $attrOffset);
                 } else {
                     $Attrib = '';
                 }
             }
 
             // 4) Move the pointer past the end of the tag
-            $i = $TagPos + strlen($Tag[0][0]);
+            $position = $TagPos + strlen($Tag[0][0]);
 
             // 5) Find out where the tag closes (beginning of [/tag])
             // Unfortunately, BBCode doesn't have nice standards like xhtml
@@ -631,49 +614,92 @@ class Text
             // Thus, we have to handle these before we handle the majority of tags
             //5a) Different for different types of tag. Some tags don't close, others are weird like [*]
             if ($TagName == 'video' || $TagName == 'yt' || $TagName == 'vimeo') {
-                $Block = '';
+                $block = '';
+
             } elseif ($TagName == 'inlineurl') { // We did a big replace early on to turn http:// into [inlineurl]http://
-                // Let's say the block can stop at a newline or a space
-                $CloseTag = strcspn($Str, " \n\r", $i);
-                if ($CloseTag === false) { // block finishes with URL
-                    $CloseTag = $Len;
+                // Let's say the block can stop at a newline, a space or another BBCode tag
+                $closeTag = strcspn($str, " \r\n[", $position);
+                if ($closeTag === false) { // block finishes with URL
+                    $closeTag = $blockLength;
                 }
-                if (preg_match('/[!;,.?:]+$/', substr($Str, $i, $CloseTag), $Match)) {
-                    $CloseTag -= strlen($Match[0]);
+                # uwotm8?
+                if (preg_match('/[!;,.?:]+$/', substr($str, $position, $closeTag), $match)) {
+                    $closeTag -= strlen($match[0]);
                 }
-                $URL = substr($Str, $i, $CloseTag);
+                $URL = substr($str, $position, $closeTag);
                 if (substr($URL, -1) == ')' && substr_count($URL, '(') < substr_count($URL, ')')) {
-                    $CloseTag--;
+                    $closeTag--;
                     $URL = substr($URL, 0, -1);
                 }
-                $Block = $URL; // Get the URL
-                // strcspn returns the number of characters after the offset $i, not after the beginning of the string
+                $block = $URL; // Get the URL
+                // strcspn returns the number of characters after the offset $position, not after the beginning of the string
                 // Therefore, we use += instead of the = everywhere else
-                $i += $CloseTag; // 5d) Move the pointer past the end of the [/close] tag.
-            } elseif ($WikiLink == true || $TagName == 'ratiolist' || $TagName == 'n' || $TagName == 'br' || $TagName == 'hr' || $TagName == 'cast' || $TagName == 'details' || $TagName == 'info' || $TagName == 'plot' || $TagName == 'screens' || $TagName == 'you') {
+                $position += $closeTag; // 5d) Move the pointer past the end of the [/close] tag.
+
+            } elseif ($WikiLink == true || in_array($TagName, ['ratiolist', 'n', 'br', 'hr', 'cast', 'details', 'info', 'plot', 'screens', 'you'])) {
                 // Don't need to do anything - empty tag with no closing
-            } elseif ($TagName === '*') {   //  || $TagName === '#' - no longer list tag
+
+            } elseif ($TagName === '*') {
                 // We're in a list. Find where it ends
-                $NewLine = $i;
+                $NewLine = $position;
                 do {
                     // Don't overrun
-                    if ($NewLine == $Len) {
+                    if ($NewLine == $blockLength) {
                         break;
                     }
                     // Look for \n[*]
-                    $NewLine = strpos($Str, "\n", $NewLine + 1);
-                } while ($NewLine !== false && substr($Str, $NewLine + 1, 3) == '[' . $TagName . ']');
+                    $NewLine = strpos($str, "\n", $NewLine + 1);
+                } while ($NewLine !== false && substr($str, $NewLine + 1, 3) == '[' . $TagName . ']');
 
-                $CloseTag = $NewLine;
-                if ($CloseTag === false) { // block finishes with list
-                    $CloseTag = $Len;
+                $closeTag = $NewLine;
+                if ($closeTag === false) { // block finishes with list
+                    $closeTag = $blockLength;
                 }
-                $Block = substr($Str, $i, $CloseTag - $i); // Get the list
-                $i = $CloseTag; // 5d) Move the pointer past the end of the [/close] tag.
+                $block = substr($str, $position, $closeTag - $position); // Get the list
+                $position = $closeTag; // 5d) Move the pointer past the end of the [/close] tag.
+
+            } elseif ($TagName === '```') {
+                $position++; // skip past newline
+                $closeTag = null;
+                // preg_match instead of stripos as markdown requires that code tag end at the start of a line
+                $foundCloseTag = preg_match('/(?:^|\n)(```)/', $str, $closeTag, PREG_OFFSET_CAPTURE, $position);
+
+                if ($foundCloseTag === 0) {                            // lets try and deal with badly formed bbcode in a better way
+                    $positionstart = max($TagPos - 20, 0);
+                    $positionend   = min($position + 20, $blockLength );
+                    $errnum        = count($this->Errors);
+
+                    $postlink = '<a class="postlink error" href="#err'.$errnum.'" title="scroll to error"><span class="postlink"></span></a>';
+
+                    $this->Errors[] = "<span class=\"error_label\">unclosed $TagName markdown: $postlink</span><blockquote class=\"bbcode error\">..." . substr($str, $positionstart, $TagPos - $positionstart)
+                            .'<code class="error">'.$Tag[0][0].'</code>'. substr($str, $position, $positionend - $position) .'... </blockquote>';
+
+                    if ($this->ShowErrors) {
+                        $block = $TagName;
+                        $TagName = 'error';
+                        $Attrib = $errnum;
+                    } else {
+                        $TagName = 'ignore'; // tells the parser to skip this empty tag
+                    }
+                    $closeTag = $position;
+                    break;
+                }
+                $closetaglength = 0;
+
+                # TODO this is occasionally producing warnings on array access, need to debug
+                $closeTag = $closeTag[1][1] - 1;
+
+                // 5c) Get the contents between [open] and [/close] and call it the block.
+                $block = substr($str, $position, $closeTag - $position);
+
+                // 5d) Move the pointer past the end of the [/close] tag.
+                $closetaglength = strlen($TagName) + 1;
+                $position = $closeTag + $closetaglength;
+
             } else {
                 //5b) If it's a normal tag, it may have versions of itself nested inside
-                $CloseTag = $i - 1;
-                $InTagPos = $i - 1;
+                $closeTag = $position - 1;
+                $inTagPos = $position - 1;
                 $NumInOpens = 0;
                 $NumInCloses = -1;
 
@@ -688,81 +714,89 @@ class Text
                 // Every time we find an internal open tag of the same type, search for the next close tag
                 // (as the first close tag won't do - it's been opened again)
                 do {
-                    $CloseTag = stripos($Str, '[/' . $TagName . ']', $CloseTag + 1);
-                    if ($CloseTag === false) {
+                    $closeTag = stripos($str, '[/' . $TagName . ']', $closeTag + 1);
+                    if ($closeTag === false) {
                         if ($TagName == '#' || $TagName == 'anchor') {
                             // automatically close open anchor tags (otherwise it wraps the entire text
                             // in an <a> tag which then get stripped from the end as they are way out of place and you have
                             // open <a> tags in the code - but links without any href so its a subtle break
-                            $CloseTag = $i;
+                            $closeTag = $position;
                             $closetaglength = 0;
                         } elseif ($TagName == 'img') { // This handles the single [img=] tags
-                            $Block = true; // Bypass check below
-                            $CloseTag = $i;
+                            $block = true; // Bypass check below
+                            $closeTag = $position;
                             $closetaglength = 0;
                         } else {
                             // lets try and deal with badly formed bbcode in a better way
-                            $istart = max(  $TagPos- 20, 0 );
-                            $iend = min( $i + 20, $Len );
-                            $errnum = count($this->Errors); // &nbsp; <a class="error" href="#err'.$errnum.'">goto error</a>
+                            $positionstart = max($TagPos- 20, 0);
+                            $positionend   = min($position + 20, $blockLength);
+                            $errnum        = count($this->Errors);
 
                             $postlink = '<a class="postlink error" href="#err'.$errnum.'" title="scroll to error"><span class="postlink"></span></a>';
 
-                            $this->Errors[] = "<span class=\"error_label\">unclosed [$TagName] tag: $postlink</span><blockquote class=\"bbcode error\">..." . substr($Str, $istart, $TagPos - $istart)
-                                    .'<code class="error">'.$Tag[0][0].'</code>'. substr($Str, $i, $iend - $i) .'... </blockquote>';
+                            $this->Errors[] = "<span class=\"error_label\">unclosed [$TagName] tag: $postlink</span><blockquote class=\"bbcode error\">..." . substr($str, $positionstart, $TagPos - $positionstart)
+                                    .'<code class="error">'.$Tag[0][0].'</code>'. substr($str, $position, $positionend - $position) .'... </blockquote>';
 
                             if ($this->ShowErrors) {
-                                $Block = "[$TagName]";
+                                $block = "[$TagName]";
                                 $TagName = 'error';
                                 $Attrib = $errnum;
                             } else {
                                 $TagName = 'ignore'; // tells the parser to skip this empty tag
                             }
-                            $CloseTag = $i;
+                            $closeTag = $position;
                             $closetaglength = 0;
 
                         }
                         break;
                     } else {
+                        // Skip inner tag check for tags that don't process bbcode
+                        if (in_array($TagName, ['code', 'codeblock', 'pre', 'plain'])) {
+                            break;
+                        }
+
                         $NumInCloses++; // Majority of cases
                     }
 
                     // Is there another open tag inside this one?
-                    $OpenTag = preg_match($InOpenRegex, $Str, $InTag, PREG_OFFSET_CAPTURE, $InTagPos + 1);
-                    if (!$OpenTag || $InTag[0][1] > $CloseTag) {
+                    $openTag = preg_match($InOpenRegex, $str, $inTag, PREG_OFFSET_CAPTURE, $inTagPos + 1);
+                    if (!$openTag || $inTag[0][1] > $closeTag) {
                         break;
                     } else {
-                        $InTagPos = $InTag[0][1];
+                        $inTagPos = $inTag[0][1];
                         $NumInOpens++;
                     }
                 } while ($NumInOpens > $NumInCloses);
 
                 // Find the internal block inside the tag
-                if (!$Block)
-                    $Block = substr($Str, $i, $CloseTag - $i); // 5c) Get the contents between [open] and [/close] and call it the block.
+                if (!$block) {
+                    // 5c) Get the contents between [open] and [/close] and call it the block.
+                    $block = substr($str, $position, $closeTag - $position);
+                }
 
-                $i = $CloseTag + $closetaglength; // 5d) Move the pointer past the end of the [/close] tag.
+                // 5d) Move the pointer past the end of the [/close] tag.
+                $position = $closeTag + $closetaglength;
             }
 
             // 6) Depending on what type of tag we're dealing with, create an array with the attribute and block.
             switch ($TagName) {
                 case 'h5v': // html5 video tag
-                    $Array[$ArrayPos] = array('Type' => 'h5v', 'Attr' => $Attrib, 'Val' => $Block);
+                    $blocks[] = ['Type' => 'h5v', 'Attr' => $Attrib, 'Val' => $block];
                     break;
                 case 'video': // youtube, streamable and vimeo only
                 case 'yt':
                 case 'vimeo':
-                    $Array[$ArrayPos] = array('Type' => 'video', 'Attr' => $Attrib, 'Val' => '');
+                    $blocks[] = ['Type' => 'video', 'Attr' => $Attrib, 'Val' => ''];
                     break;
                 case 'flash':
-                    $Array[$ArrayPos] = array('Type' => 'flash', 'Attr' => $Attrib, 'Val' => $Block);
+                    $blocks[] = ['Type' => 'flash', 'Attr' => $Attrib, 'Val' => $block];
                     break;
                 /* case 'link':
-                  $Array[$ArrayPos] = array('Type'=>'link', 'Attr'=>$Attrib, 'Val'=>$this->parse($Block));
+                  $blocks[] = ['Type'=>'link', 'Attr'=>$Attrib, 'Val'=>$this->parse($block)];
                   break; */
                 case 'anchor':
                 case '#':
-                    $Array[$ArrayPos] = array('Type' => $TagName, 'Attr' => $Attrib, 'Val' => $this->parse($Block));
+                    $blocks[] = ['Type' => $TagName, 'Attr' => $Attrib, 'Val' => $this->parse($block)];
                     break;
                 case 'br':
                 case 'hr':
@@ -773,151 +807,143 @@ class Text
                 case 'screens':
                 case 'you':
                 case 'ratiolist':
-                    $Array[$ArrayPos] = array('Type' => $TagName, 'Val' => '');
+                    $blocks[] = ['Type' => $TagName, 'Val' => ''];
                     break;
                 case 'font':
-                    $Array[$ArrayPos] = array('Type' => 'font', 'Attr' => $Attrib, 'Val' => $this->parse($Block));
+                    $blocks[] = ['Type' => 'font', 'Attr' => $Attrib, 'Val' => $this->parse($block)];
                     break;
                 case 'center': // lets just swap a center tag for an [align=center] tag
-                    $Array[$ArrayPos] = array('Type' => 'align', 'Attr' => 'center', 'Val' => $this->parse($Block));
+                    $blocks[] = ['Type' => 'align', 'Attr' => 'center', 'Val' => $this->parse($block)];
                     break;
                 case 'inlineurl':
-                    $Array[$ArrayPos] = array('Type' => 'inlineurl', 'Attr' => $Block, 'Val' => '');
+                    $blocks[] = ['Type' => 'inlineurl', 'Attr' => $block, 'Val' => ''];
                     break;
                 case 'url':
                     if (empty($Attrib)) { // [url]http://...[/url] - always set URL to attribute
-                        $Array[$ArrayPos] = array('Type' => 'url', 'Attr' => $Block, 'Val' => '');
+                        $blocks[] = ['Type' => 'url', 'Attr' => $block, 'Val' => ''];
                     } else {
-                        $Array[$ArrayPos] = array('Type' => 'url', 'Attr' => $Attrib, 'Val' => $this->parse($Block));
+                        $blocks[] = ['Type' => 'url', 'Attr' => $Attrib, 'Val' => $this->parse($block)];
                     }
                     break;
                 case 'quote':
-                    $Array[$ArrayPos] = array('Type' => 'quote', 'Attr' => $Attrib, 'Val' => $this->parse($Block));
+                    $blocks[] = ['Type' => 'quote', 'Attr' => $Attrib, 'Val' => $this->parse($block)];
                     break;
 
                 case 'imgnm':
-                    $Array[$ArrayPos] = array('Type' => 'imgnm',  'Attr' => $Attrib, 'Val' => $Block);
+                    $blocks[] = ['Type' => 'imgnm',  'Attr' => $Attrib, 'Val' => $block];
                     break;
                 case 'imgalt':
-                    $Array[$ArrayPos] = array('Type' => 'imgalt', 'Attr' => $Attrib, 'Val' => $Block);
+                    $blocks[] = ['Type' => 'imgalt', 'Attr' => $Attrib, 'Val' => $block];
                     break;
 
                 case 'img':
                 case 'image':
-                    if (is_bool($Block)) $Block = '';
-                    if (empty($Block)) {
+                    if (is_bool($block)) $block = '';
+                    if (empty($block)) {
                         $Elements = explode(',', $Attrib);
-                        $Block = end($Elements);
-                        $Attrib = preg_replace('/,?'.preg_quote($Block, '/').'/i', '', $Attrib);
+                        $block = end($Elements);
+                        $Attrib = preg_replace('/,?'.preg_quote($block, '/').'/i', '', $Attrib);
                     }
-                    $Array[$ArrayPos] = array('Type' => 'img', 'Attr' => $Attrib, 'Val' => $Block);
+                    $blocks[] = ['Type' => 'img', 'Attr' => $Attrib, 'Val' => $block];
                     break;
                 case 'banner':
                 case 'thumb':
-                    if (empty($Block)) {
-                        $Block = $Attrib;
+                    if (empty($block)) {
+                        $block = $Attrib;
                     }
-                    $Array[$ArrayPos] = array('Type' => $TagName, 'Val' => $Block);
+                    $blocks[] = ['Type' => $TagName, 'Val' => $block];
                     break;
                 case 'aud':
                 case 'mp3':
                 case 'audio':
-                    if (empty($Block)) {
-                        $Block = $Attrib;
+                    if (empty($block)) {
+                        $block = $Attrib;
                     }
-                    $Array[$ArrayPos] = array('Type' => 'aud', 'Val' => $Block);
-                    break;
-                case 'user':
-                    $Array[$ArrayPos] = array('Type' => 'user', 'Val' => $Block);
+                    $blocks[] = ['Type' => 'aud', 'Val' => $block];
                     break;
 
+                case 'user':
                 case 'torrent':
                 case 'request':
                 case 'collage':
                 case 'thread':
                 case 'forum':
-                    $Array[$ArrayPos] = array('Type' => $TagName, 'Val' => $Block);
+                    $blocks[] = ['Type' => $TagName, 'Val' => $block];
                     break;
 
                 case 'tex':
-                    $Array[$ArrayPos] = array('Type' => 'tex', 'Val' => $Block);
+                    $blocks[] = ['Type' => 'tex', 'Val' => $block];
                     break;
                 case 'pre':
                 case 'plain':
-                    $Block = strtr($Block, array('[inlineurl]' => ''));
-                    $Block = preg_replace('/\[inlinesize\=3\](.*?)\[\/inlinesize\]/i', '====$1====', $Block);
-                    $Block = preg_replace('/\[inlinesize\=5\](.*?)\[\/inlinesize\]/i', '===$1===', $Block);
-                    $Block = preg_replace('/\[inlinesize\=7\](.*?)\[\/inlinesize\]/i', '==$1==', $Block);
-
-                    $Array[$ArrayPos] = array('Type' => $TagName, 'Val' => $Block);
+                    $blocks[] = ['Type' => $TagName, 'Val' => $block];
                     break;
 
+                case '```':
                 case 'code':
                 case 'codeblock':
-                    $Block = strtr($Block, array('[inlineurl]' => ''));
-                    $Block = preg_replace('/\[inlinesize\=3\](.*?)\[\/inlinesize\]/i', '====$1====', $Block);
-                    $Block = preg_replace('/\[inlinesize\=5\](.*?)\[\/inlinesize\]/i', '===$1===', $Block);
-                    $Block = preg_replace('/\[inlinesize\=7\](.*?)\[\/inlinesize\]/i', '==$1==', $Block);
-
-                    $Array[$ArrayPos] = array('Type' => $TagName, 'Attr' => $Attrib, 'Val' => $Block);
+                    $blocks[] = ['Type' => $TagName, 'Attr' => $Attrib, 'Val' => $block];
                 break;
 
                 case 'mediainfo':
-                    $Array[$ArrayPos] = array('Type' => $TagName, 'Val' => $Block);
+                    $blocks[] = ['Type' => $TagName, 'Val' => $block];
                     break;
+
                 case 'hide':
-                    $ArrayPos--;
                     break; // not seen
+
                 case 'spoiler':
-                    $Array[$ArrayPos] = array('Type' => $TagName, 'Attr' => $Attrib, 'Val' => $this->parse($Block));
+                    $blocks[] = ['Type' => $TagName, 'Attr' => $Attrib, 'Val' => $this->parse($block)];
                     break;
+
                 //case '#': using this for anchor short tag... not used on old emp so figure should be okay
                 case '*':
-                    $Array[$ArrayPos] = array('Type' => 'list');
-                    $Array[$ArrayPos]['Val'] = explode('[' . $TagName . ']', $Block);
-                    $Array[$ArrayPos]['ListType'] = $TagName === '*' ? 'ul' : 'ol';
-                    $Array[$ArrayPos]['Tag'] = $TagName;
-                    foreach ($Array[$ArrayPos]['Val'] as $Key => $Val) {
-                        $Array[$ArrayPos]['Val'][$Key] = $this->parse(trim($Val));
+                    $newBlock = [
+                        'Type'      => 'list',
+                        'Val'       => explode('[' . $TagName . ']', $block),
+                        'ListType'  => $TagName === '*' ? 'ul' : 'ol',
+                        'Tag'       => $TagName,
+                    ];
+                    foreach ($newBlock['Val'] as $Key => $Val) {
+                        $newBlock['Val'][$Key] = $this->parse(trim($Val));
                     }
+                    $blocks[] = $newBlock;
                     break;
                 case 'n':
                 case 'ignore': // not a tag but can be used internally
-                    $ArrayPos--;
                     break; // n serves only to disrupt bbcode (backwards compatibility - use [pre])
+
                 case 'error':  // not a tag but can be used internally
-                    $Array[$ArrayPos] = array('Type' => 'error', 'Attr' => $Attrib, 'Val' => $Block);
+                    $blocks[] = ['Type' => 'error', 'Attr' => $Attrib, 'Val' => $block];
                     break;
+
+                case 'geoip':
+                    $blocks[] = ['Type' => $TagName, 'Val' => $block];
+                    break;
+
                 default:
                     if ($WikiLink == true) {
-                        $Array[$ArrayPos] = array('Type' => 'wiki', 'Val' => $TagName);
+                        $blocks[] = ['Type' => 'wiki', 'Val' => $TagName];
                     } else {
 
                         // Basic tags, like [b] or [size=5]
-
-                        $Array[$ArrayPos] = array('Type' => $TagName, 'Val' => $this->parse($Block));
                         if (isset($Attrib) && $MaxAttribs > 0) {
-                            // $Array[$ArrayPos]['Attr'] = strtolower($Attrib);
-                            $Array[$ArrayPos]['Attr'] = $Attrib;
+                            $blocks[] = ['Type' => $TagName, 'Attr' => $Attrib, 'Val' => $this->parse($block)];
+                        } else {
+                            $blocks[] = ['Type' => $TagName, 'Val' => $this->parse($block)];
                         }
                     }
             }
-
-            $ArrayPos++; // 7) Increment array pointer, start again (past the end of the [/close] tag)
         }
-//echo "<pre>";
-//var_dump($Array);die();
-//echo "</pre>";
 
-        return $Array;
+        return $blocks;
     }
 
-    public function get_allowed_colors()
-    {
+    public function get_allowed_colors() {
         static $ColorAttribs;
         if (!$ColorAttribs) { // only define it once per page
             // now with more colors!
-            $ColorAttribs = array( 'aliceblue', 'antiquewhite', 'aqua', 'aquamarine', 'azure', 'beige', 'bisque', 'black', 'blanchedalmond', 'blue', 'blueviolet',
+            $ColorAttribs = ['aliceblue', 'antiquewhite', 'aqua', 'aquamarine', 'azure', 'beige', 'bisque', 'black', 'blanchedalmond', 'blue', 'blueviolet',
                 'brown','burlywood','cadetblue','chartreuse','chocolate','coral','cornflowerblue','cornsilk','crimson','cyan','darkblue','darkcyan','darkgoldenrod',
                 'darkgray','darkgreen','darkgrey','darkkhaki','darkmagenta','darkolivegreen','darkorange','darkorchid','darkred','darksalmon','darkseagreen','darkslateblue',
                 'darkslategray','darkslategrey','darkturquoise','darkviolet','deeppink','deepskyblue','dimgray','dimgrey','dodgerblue','firebrick','floralwhite','forestgreen',
@@ -928,21 +954,21 @@ class Text
                 'midnightblue','mintcream','mistyrose','moccasin','navajowhite','navy','oldlace','olive','olivedrab','orange','orangered','orchid','palegoldenrod','palegreen',
                 'paleturquoise','palevioletred','papayawhip','peachpuff','peru','pink','plum','powderblue','purple','red','rosybrown','royalblue','saddlebrown','salmon',
                 'sandybrown','seagreen','seashell','sienna','silver','skyblue','slateblue','slategray','slategrey','snow','springgreen','steelblue','tan','teal','thistle',
-                'tomato','turquoise','violet','wheat','white','whitesmoke','yellow','yellowgreen' );
+                'tomato','turquoise','violet','wheat','white','whitesmoke','yellow','yellowgreen'];
         }
 
         return $ColorAttribs;
     }
 
-    public function is_color_attrib(&$Attrib)
-    {
-        global $ClassNames;
+    public function is_color_attrib(&$Attrib) {
+        global $master;
 
         $Att = strtolower($Attrib);
+        $ShortClasses = $master->repos->permissions->getShortNames();
 
         // convert class names to class colors
-        if (isset($ClassNames[$Att]['Color'])) {
-            $Attrib = '#' . $ClassNames[$Att]['Color'];
+        if (array_key_exists($Att, $ShortClasses)) {
+            $Attrib = '#' . $ShortClasses[$Att]['Color'];
             $Att = strtolower($Attrib);
         }
         // if in format #rgb hex then return as is
@@ -951,9 +977,9 @@ class Text
         // check and capture #rgba format
         if (preg_match('/^#(?|([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})|([0-9a-f]{1})([0-9a-f]{1})([0-9a-f]{1})([0-9a-f]{1}))$/', $Att, $matches) ) {
             // capture #rgba hex and convert into rgba(r,g,b,a) format (from base 16 to base 10 0->255)
-            for ($i=1;$i<4;$i++) {
-                if (strlen($matches[$i])==1) $matches[$i] = "$matches[$i]$matches[$i]";
-                $matches[$i] = base_convert($matches[$i], 16, 10);
+            for ($position=1;$position<4;$position++) {
+                if (strlen($matches[$position])==1) $matches[$position] = "$matches[$position]$matches[$position]";
+                $matches[$position] = base_convert($matches[$position], 16, 10);
             }
             if (strlen($matches[4])==1) $matches[4] = "$matches[4]$matches[4]";
             // alpha channel is in 0->1.0 range not 0->255 (!)
@@ -968,9 +994,8 @@ class Text
         return in_array($Att, $this->get_allowed_colors());
     }
 
-    public function extract_attributes($Attrib, $MaxNumber=-1)
-    {
-        $Elements=array();
+    public function extract_attributes($Attrib, $MaxNumber=-1) {
+        $Elements = [];
         if (isset($Attrib) && $Attrib) {
             $attributes = explode(",", $Attrib);
             if ($attributes) {
@@ -987,15 +1012,13 @@ class Text
                         $Elements['url'][] = $att;
                     }
                 }
-                $InlineStyle .= '"';
             }
         }
 
         return $Elements;
     }
 
-    public function get_css_attributes($Attrib, $AllowMargin=true, $AllowColor=true, $AllowWidth=true, $AllowNoBorder=true, $AllowImage=true)
-    {
+    public function get_css_attributes($Attrib, $AllowMargin=true, $AllowColor=true, $AllowWidth=true, $AllowNoBorder=true, $AllowImage=true) {
         $InlineStyle = '';
         if (isset($Attrib) && $Attrib) {
             $attributes = explode(",", $Attrib);
@@ -1005,7 +1028,7 @@ class Text
                     if ($AllowColor && substr($att, 0, 9) == 'gradient:') {
                         $InlineStyle .= 'background: linear-gradient(';
                         $LinearArr = explode(';', substr($att, 9));
-                        $LinearAttr = array();
+                        $LinearAttr = [];
                         // Check integrity
                         if (sizeof($LinearArr) < 2) return '';
                         foreach ($LinearArr as $arr) {
@@ -1044,18 +1067,19 @@ class Text
                     } elseif ($AllowColor && $this->is_color_attrib($att)) {
                         $InlineStyle .= 'background-color:' . $att . ';';
                     } elseif ($AllowImage && $this->valid_url($att) ) {
-                        if($this->ShowErrors && !$this->validate_imageurl($att)) {
-                            $this->Errors[] = "<span class=\"error_label\">Not an approved Imagehost:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$att.'</code></blockquote>';
+                        $validURL = $this->validate_imageurl($att);
+                        if($this->ShowErrors && $validURL !== true) {
+                            $this->Errors[] = "<span class=\"error_label\">{$validURL}:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$att.'</code></blockquote>';
                             break;
                         }
                         $this->displayed_images[$att] = true;
-                        $escapees = array( "'",   '"',  "(",  ")",  " ");
-                        $escaped  = array("\'", '\"', "\(", "\)", "\ ");
+                        $escapees = ["'",   '"',  "(",  ")",  " "];
+                        $escaped  = ["\'", '\"', "\(", "\)", "\ "];
                         $sanitisedurl = str_replace($escapees, $escaped, $att);
                         $InlineStyle .= "background-image: url(".$sanitisedurl.");";
                         //$InlineStyle .= "background: url('$att') no-repeat center center;";
 
-                    } elseif ($AllowWidth && preg_match('/^([0-9]{1,3})px$/', $att, $matches)) {
+                    } elseif ($AllowWidth && preg_match('/^([0-9]+?)px$/', $att, $matches)) {
                         if ((int) $matches[1] > 920) $matches[1] = '920';
                         $InlineStyle .= 'width:' . $matches[1] . 'px;';
 
@@ -1063,7 +1087,7 @@ class Text
                         if ((int) $matches[1] > 100) $matches[1] = '100';
                         $InlineStyle .= 'width:' . $matches[1] . '%;';
 
-                    } elseif ($AllowMargin && in_array($att, array('left', 'center', 'right'))) {
+                    } elseif ($AllowMargin && in_array($att, ['left', 'center', 'right'])) {
                         switch ($att) {
                             case 'left':
                                 $InlineStyle .= 'margin: 0px auto 0px 0px;';
@@ -1076,9 +1100,9 @@ class Text
                                 $InlineStyle .= 'margin: 0px auto;';
                                 break;
                         }
-                    } elseif ($AllowNoBorder && in_array($att, array('nball', 'nb', 'noborder'))) { //  'nball',
+                    } elseif ($AllowNoBorder && in_array($att, ['nball', 'nb', 'noborder'])) {
                         $InlineStyle .= 'border:none;';
-                    } elseif ($AllowMargin && in_array($att, array('nopad'))) {
+                    } elseif ($AllowMargin && in_array($att, ['nopad'])) {
                         $InlineStyle .= 'padding:0px;';
                     }
                 }
@@ -1089,11 +1113,10 @@ class Text
         return $InlineStyle;
     }
 
-    public function get_css_classes($Attrib, $MatchClasses)
-    {
+    public function get_css_classes($Attrib, $matchClasses) {
         if ($Attrib == '') return '';
         $classes='';
-        foreach ($MatchClasses as $class) {
+        foreach ($matchClasses as $class) {
             if ( is_array($class)) {
                 $class_match = $class[0];
                 $class_replace = $class[1];
@@ -1107,22 +1130,19 @@ class Text
         return $classes;
     }
 
-    public function remove_text_between_tags($Array, $MatchTagRegex = false)
-    {
-        $count = count($Array);
-        for ($i = 0; $i <= $count; $i++) {
-            if (is_string($Array[$i])) {
-                $Array[$i] = '';
-            } elseif ($MatchTagRegex !== false && !preg_match($MatchTagRegex, $Array[$i]['Type'])) {
-                $Array[$i] = '';
+    public function remove_text_between_tags($array, $matchTagRegex = false) {
+        foreach ($array as $position => $value) {
+            if (is_string($array[$position])) {
+                $array[$position] = '';
+            } elseif ($matchTagRegex !== false && !preg_match($matchTagRegex, $array[$position]['Type'])) {
+                $array[$position] = '';
             }
         }
 
-        return $Array;
+        return $array;
     }
 
-    public function get_size_attributes($Attrib)
-    {
+    public function get_size_attributes($Attrib) {
         if ($Attrib == '') {
             return '';
         }
@@ -1138,148 +1158,172 @@ class Text
         return '';
     }
 
-    public function remove_anon($url)
-    {
-        $anonurl = (defined('ANONYMIZER_URL') ? ANONYMIZER_URL : 'http://anonym.to/?');
+    public function remove_anon($url) {
+        $anonurl = (defined('ANONYMIZER_URL') ? ANONYMIZER_URL : 'http://anonym.es/?');
         return str_replace($anonurl, '', $url);
     }
 
-    public function anon_url($url)
-    {
+    public function anon_url($url) {
         global $master;
         if (preg_match($master->settings->main->non_anon_urls_regex, $url)) {
             return $url;
         }
-        return (defined('ANONYMIZER_URL') ? ANONYMIZER_URL : 'http://anonym.to/?').$url;
+        return (defined('ANONYMIZER_URL') ? ANONYMIZER_URL : 'http://anonym.es/?').$url;
     }
 
-    public function to_html($Array)
-    {
-        global $LoggedUser;
+    public function to_html($Array) {
+        global $master;
         $this->Levels++;
         # Hax prevention: execution limit
         if ($this->Levels > 20) return;
-        $Str = '';
+        $str = '';
 
-        foreach ((array)$Array as $Block) {
-            if (is_string($Block)) {
-                $Str.=$this->smileys($Block);
+        foreach ((array)$Array as $block) {
+            if (is_string($block)) {
+                $str.=$this->smileys($block);
                 continue;
             }
-            switch ($Block['Type']) {
+            if (is_array($block) && !array_key_exists('Type', $block) && count($block) == 1) {
+                # frustrating, but this happens because of reparsing for regex transformations
+                $str .= $this->to_html($block);
+            }
+            switch ($block['Type']) {
                 case 'article': // link to article
-                    $LocalURL = $this->local_url($Block['Attr']);
+                    $LocalURL = $this->local_url($block['Attr']);
                     if ($LocalURL && preg_match('#^/articles\.php.*[\?&]topic=(.*)#i', $LocalURL)) {
-                        $Str .= $this->articleTag($Block['Attr']);
-                    } else if (!empty($Block['Attr']) && preg_match('/^[a-z0-9\-\_.()\@&]+$/', strtolower($Block['Attr'])))
-                        $Str.='<a class="bbcode article" href="articles.php?topic=' .strtolower($Block['Attr']). '">' . $this->to_html($Block['Val']) . '</a>';
+                        $str .= $this->articleTag($block['Attr']);
+                    } else if (!empty($block['Attr']) && preg_match('/^[a-z0-9\-\_.()\@&]+$/', strtolower($block['Attr'])))
+                        $str.='<a class="bbcode article" href="/articles/view/' .strtolower($block['Attr']). '">' . $this->to_html($block['Val']) . '</a>';
                     else
-                        $Str.='[article='. $Block['Attr'] . ']' . $this->to_html($Block['Val']) . '[/article]';
+                        $str.='[article='. $block['Attr'] . ']' . $this->to_html($block['Val']) . '[/article]';
                     break;
                 case 'mediainfo': // mediainfo block
                     $MediaInfo = new MediaInfo;
                     // HTML cleanup for MediaInfo
-                    $NFO = html_entity_decode($Block['Val']);
+                    $NFO = html_entity_decode($block['Val']);
                     $NFO = str_replace("\xc2\xa0",' ', $NFO);
                     $MediaInfo->parse($NFO);
-                    $Str.=$MediaInfo->output;
+                    $str.=$MediaInfo->output;
                     break;
                 case 'tip': // a tooltip
-                    if (!empty($Block['Attr']))
-                        $Str.='<span class="bbcode tooltip" title="' .display_str($Block['Attr']) . '">' . $this->to_html($Block['Val']) . '</span>';
+                    if (!empty($block['Attr']))
+                        $str.='<span class="bbcode tooltip" title="' .display_str($block['Attr']) . '">' . $this->to_html($block['Val']) . '</span>';
                     else
-                        $Str.='[tip='. $Block['Attr'] . ']' . $this->to_html($Block['Val']) . '[/tip]';
+                        $str.='[tip='. $block['Attr'] . ']' . $this->to_html($block['Val']) . '[/tip]';
                     break;
                 case 'quote':
                     $this->NoMedia++; // No media elements inside quote tags
-                    if (!empty($Block['Attr'])) {
+                    if (!empty($block['Attr'])) {
                         // [quote=name,[F|T|R|C]number1,number2]
-                        list($qname, $qID1, $qID2) = explode(",", $Block['Attr']);
+                        $quoteAttrs = explode(",", $block['Attr']);
+                        if (count($quoteAttrs) >= 3) {
+                            list($qname, $qID1, $qID2) = $quoteAttrs;
+                        } else {
+                            $qname = $block['Attr'];
+                            $qID1 = null;
+                            $qID2 = null;
+                        }
+                        $postlink = '';
                         if ($qID1) {  // if we have numbers
                             $qType = substr($qID1, 0, 1); /// F or T or C or R (forums/torrents/collags/requests)
                             $qID1 = substr($qID1, 1);
-                            if (in_array($qType, array('f', 't', 'c', 'r')) && is_number($qID1) && is_number($qID2)) {
+                            if (in_array($qType, ['f', 't', 'c', 'r']) && is_integer_string($qID1) && is_integer_string($qID2)) {
                                 switch ($qType) {
                                     case 'f':
-                                        $postlink = '<a class="postlink" href="forums.php?action=viewthread&threadid=' . $qID1 . '&postid=' . $qID2 . '#post' . $qID2 . '"><span class="postlink"></span></a>';
+                                        $postlink = '<a class="postlink" href="/forum/thread/' . $qID1 . '?postid=' . $qID2 . '#post' . $qID2 . '"><span class="postlink"></span></a>';
                                         break;
                                     case 't':
-                                        $postlink = '<a class="postlink" href="torrents.php?id=' . $qID1 . '&postid=' . $qID2 . '#post' . $qID2 . '"><span class="postlink"></span></a>';
+                                        $postlink = '<a class="postlink" href="/torrents.php?id=' . $qID1 . '&postid=' . $qID2 . '#post' . $qID2 . '"><span class="postlink"></span></a>';
                                         break;
                                     case 'c':
-                                        $postlink = '<a class="postlink" href="collages.php?action=comments&collageid=' . $qID1 . '#post' . $qID2 . '"><span class="postlink"></span></a>';
+                                        $postlink = '<a class="postlink" href="/collage/' . $qID1 . '?postid=' . $qID2 . '#post' . $qID2 . '"><span class="postlink"></span></a>';
                                         break;
                                     case 'r':
-                                        $postlink = '<a class="postlink" href="requests.php?action=view&id=' . $qID1 . '#post' . $qID2 . '"><span class="postlink"></span></a>';
+                                        $postlink = '<a class="postlink" href="/requests.php?action=view&id=' . $qID1 . '#post' . $qID2 . '"><span class="postlink"></span></a>';
                                         break;
                                 }
                             }
                         }
-                        $Str.= '<span class="quote_label"><strong>' . display_str($qname) . '</strong>: ' . $postlink . '</span>';
+                        $str.= '<span class="quote_label"><strong>' . display_str($qname) . '</strong>: ' . $postlink . '</span>';
                     }
-                    $Str.='<blockquote class="bbcode">' . $this->to_html($Block['Val']) . '</blockquote>';
+                    $str.='<blockquote class="bbcode">' . $this->to_html($block['Val']) . '</blockquote>';
                     $this->NoMedia--;
                     break;
                 case 'error': // used internally to display bbcode errors in preview
                     // haha, a legitimate use of the blink tag (!)
-                    $Str.="<a id=\"err$Block[Attr]\"></a><blink><code class=\"error\" title=\"You have an unclosed $Block[Val] tag in your bbCode!\">$Block[Val]</code></blink>";
+                    $str.="<a id=\"err{$block['Attr']}\"></a><blink><code class=\"error\" title=\"You have an unclosed {$block['Val']} tag in your bbCode!\">{$block['Val']}</code></blink>";
+                    break;
+                case 'geoip':
+                    if ($this->Advanced) {
+                        $str .= $master->render->geoip($block['Val']);
+                    } else {
+                        $str .= "[geoip]{$block['Val']}[/geoip]";
+                    }
                     break;
                 case 'you':
-                    if ($this->Advanced)
-                        $Str.='<a href="user.php?id=' . $LoggedUser['ID'] . '">' . $LoggedUser['Username'] . '</a>';
-                    else
-                        $Str.='[you]';
+                    if ($this->Advanced) {
+                        $str.='<a href="/user.php?id=' . $master->request->user->ID . '">' . $master->request->user->Username . '</a>';
+                    } else {
+                        $str.='[you]';
+                    }
                     break;
                 case 'video':
                     // Supports youtube, vimeo and streamable for now.
-                    if($this->ShowErrors && !$this->validate_imageurl($Block['Attr'])) {
-                        $this->Errors[] = "<span class=\"error_label\">Not an approved Imagehost:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$Block['Attr'].'</code></blockquote>';
+                    $validURL = $this->validate_imageurl($block['Attr']);
+                    if($this->ShowErrors && $validURL !== true) {
+                        $this->Errors[] = "<span class=\"error_label\">{$validURL}:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$block['Attr'].'</code></blockquote>';
                         break;
                     }
 
-                    $videoUrl = '';
-                    if (preg_match('%(?:youtube(?:-nocookie)?\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?)/|.*[?&]v=)|youtu\.be/)([^"&?/ ]{11})%i', $Block['Attr'], $matches))
-                        //$videoUrl = 'https://www.youtube-nocookie.com/embed/'.$matches[1];
+                    $videoUrl = null;
+                    $YoutubeID = null;
+
+                    if (preg_match('%(?:youtube(?:-nocookie)?\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?)/|.*[?&]v=)|youtu\.be/)([^"&?/ ]{11})%i', $block['Attr'], $matches))
                         $YoutubeID = $matches[1];
-                    elseif (preg_match('/^https?:\/\/vimeo.com\/([0-9]+)$/i', $Block['Attr'], $matches))
+                    elseif (preg_match('/^https?:\/\/vimeo.com\/([0-9]+)$/i', $block['Attr'], $matches))
                         $videoUrl = 'https://player.vimeo.com/video/'.$matches[1];
-                    elseif(preg_match('/^https?:\/\/streamable.com\/([0-9a-zA-Z]+)$/i', $Block['Attr'], $matches))
-                      $videoUrl = 'https://streamable.com/s/'.$matches[1];
+                    elseif(preg_match('/^https?:\/\/streamable.com\/([0-9a-zA-Z]+)$/i', $block['Attr'], $matches))
+                        $videoUrl = 'https://streamable.com/s/'.$matches[1];
 
                     if ($this->NoMedia > 0) {
-                        $Str .= '<a rel="noreferrer" target="_blank" href="' . $videoUrl . '">' . $videoUrl . '</a> (video)';
+                        $str .= '<a rel="noreferrer" target="_blank" href="' . $videoUrl . '">' . $videoUrl . '</a> (video)';
                         break;
                     }
                     else {
-                        if ($videoUrl != '')
-                            $Str.='<iframe class="bb_video" src="'.$videoUrl.'" allowfullscreen></iframe>';
-                        elseif ($YoutubeID != '')
-                            $Str.='<div class="youtube" data-embed="'.$YoutubeID.'"><div class="play-button"></div></div>';
+                        if (!empty($videoUrl))
+                            $str.='<iframe class="bb_video" src="'.$videoUrl.'" allowfullscreen></iframe>';
+                        elseif (!empty($YoutubeID))
+                            $str.='<div class="youtube" data-embed="'.$YoutubeID.'"><div class="play-button"></div></div>';
                         else
-                            $Str.='[video=' . $Block['Attr'] . ']';
+                            $str.='[video=' . $block['Attr'] . ']';
                     }
                     break;
                 case 'h5v':
                     // html5 video tag
-                    $Attributes= $this->extract_attributes($Block['Attr'], 920);
-                    if($this->ShowErrors && !$this->validate_imageurl($Block['Val'])) {
-                        $this->Errors[] = "<span class=\"error_label\">Not an approved Imagehost:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$Block['Val'].'</code></blockquote>';
-                        break;
+                    $Attributes= $this->extract_attributes($block['Attr'], 920);
+                    if (!empty($block['Val'])) {
+                        $validURL = $this->validate_imageurl($block['Val']);
+                        if($this->ShowErrors && $validURL !== true) {
+                            $this->Errors[] = "<span class=\"error_label\">{$validURL}:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$block['Val'].'</code></blockquote>';
+                            break;
+                        }
                     }
-                    if($this->ShowErrors && !$this->validate_imageurl($Block['Attr'])) {
-                        $this->Errors[] = "<span class=\"error_label\">Not an approved Imagehost:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$Block['Attr'].'</code></blockquote>';
-                        break;
+                    if (!empty($block['Attr'])) {
+                        $validURL = $this->validate_imageurl($block['Attr']);
+                        if($this->ShowErrors && $validURL !== true) {
+                            $this->Errors[] = "<span class=\"error_label\">{$validURL}:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$block['Attr'].'</code></blockquote>';
+                            break;
+                        }
                     }
-
-                    if ( ($Block['Attr'] != '' && count($Attributes)==0) || $Block['Val'] == '' ) {
-                        $Str.='[h5v' . ($Block['Attr'] != ''?'='. $Block['Attr']:'')  . ']' . $this->to_html($Block['Val']) . '[/h5v]';
+                    if ( ($block['Attr'] != '' && count($Attributes)==0) || $block['Val'] == '' ) {
+                        $str.='[h5v' . ($block['Attr'] != ''?'='. $block['Attr']:'')  . ']' . $this->to_html($block['Val']) . '[/h5v]';
                     } else {
-                        $Sources = explode(',', $Block['Val']);
+                        $Sources = explode(',', $block['Val']);
 
                         if ($this->NoMedia > 0) {
                             foreach ($Sources as $Source) {
                                 $videoUrl = str_replace('[inlineurl]', '', $Source);
-                                $Str .= '<a rel="noreferrer" target="_blank" href="' . $videoUrl . '">' . $videoUrl . '</a> (video)';
+                                $str .= '<a rel="noreferrer" target="_blank" href="' . $videoUrl . '">' . $videoUrl . '</a> (video)';
                             }
                             break;
                         }
@@ -1292,131 +1336,139 @@ class Text
                                 $parameters .= ' poster="'.$Attributes['url'][0].'" ';
                             }
 
-                            $Str .= '<video '.$parameters.' controls>';
+                            if (empty($parameters)) {
+                                $str .= '<video controls>';
+                            } else {
+                                $str .= '<video '.$parameters.' controls>';
+                            }
                             foreach ($Sources as $Source) {
                                 $lastdot = strripos($Source, '.');
                                 $mime = substr($Source, $lastdot+1);
                                 if($mime=='ogv')$mime='ogg'; // all others are same as ext (webm=webm, mp4=mp4, ogg=ogg)
-                                $Str .= '<source src="'. str_replace('[inlineurl]', '', $Source).'" type="video/'.$mime.'">';
+                                $str .= '<source src="'. str_replace('[inlineurl]', '', $Source).'" type="video/'.$mime.'">';
                             }
-                            $Str .= 'Your browser does not support the html5 video tag. Please upgrade your browser.</video>';
+                            $str .= 'Your browser does not support the html5 video tag. Please upgrade your browser.</video>';
                         }
                     }
                     break;
                 case 'flash':
-                    if($this->ShowErrors && !$this->validate_imageurl($Block['Attr'])) {
-                        $this->Errors[] = "<span class=\"error_label\">Not an approved Imagehost:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$Block['Attr'].'</code></blockquote>';
+                    $validURL = $this->validate_imageurl($block['Attr']);
+                    if($this->ShowErrors && $validURL !== true) {
+                        $this->Errors[] = "<span class=\"error_label\">{$validURL}:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$block['Attr'].'</code></blockquote>';
                         break;
                     }
                     // note: as a non attribute the link has been auto-formatted as [inlinelink]link.url
-                    if (($Block['Attr'] != '' && !preg_match('/^([0-9]{2,4})\,([0-9]{2,4})$/', $Block['Attr'], $matches))
-                            || strpos($Block['Val'], '[inlineurl]') === FALSE) {
-                        $Str.='[flash=' . ($Block['Attr'] != ''?'='. $Block['Attr']:'') . ']' . $this->to_html($Block['Val']) . '[/flash]';
+                    if (($block['Attr'] != '' && !preg_match('/^([0-9]{2,4})\,([0-9]{2,4})$/', $block['Attr'], $matches))
+                            || strpos($block['Val'], '[inlineurl]') === FALSE) {
+                        $str.='[flash=' . ($block['Attr'] != ''?'='. $block['Attr']:'') . ']' . $this->to_html($block['Val']) . '[/flash]';
                     } else {
-                        if ($Block['Attr'] == '' || count($matches) < 3) {
+                        if ($block['Attr'] == '' || count($matches) < 3) {
                             if (!$matches[1])
                                 $matches[1] = 500;
                             if (!$matches[2])
                                 $matches[2] = $matches[1];
                         }
-                        $Block['Val'] = str_replace('[inlineurl]', '', $Block['Val']);
+                        $block['Val'] = str_replace('[inlineurl]', '', $block['Val']);
 
                         if ($this->NoMedia > 0)
-                            $Str .= '<a rel="noreferrer" target="_blank" href="' . $Block['Val'] . '">' . $Block['Val'] . '</a> (flash)';
+                            $str .= '<a rel="noreferrer" target="_blank" href="' . $block['Val'] . '">' . $block['Val'] . '</a> (flash)';
                         else
-                            $Str .= '<object classid="clsid:D27CDB6E-AE6D-11CF-96B8-444553540000" codebase="http://active.macromedia.com/flash2/cabs/swflash.cab#version=5,0,0,0" height="' . $matches[2] . '" width="' . $matches[1] . '"><param name="movie" value="' . $Block['Val'] . '"><param name="play" value="false"><param name="loop" value="false"><param name="quality" value="high"><param name="allowScriptAccess" value="never"><param name="allowNetworking" value="internal"><embed  type="application/x-shockwave-flash" pluginspage="http://www.macromedia.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash" play="false" loop="false" quality="high" allowscriptaccess="never" allownetworking="internal"  src="' . $Block['Val'] . '" height="' . $matches[2] . '" width="' . $matches[1] . '"><param name="wmode" value="transparent"></object>';
+                            $str .= '<object classid="clsid:D27CDB6E-AE6D-11CF-96B8-444553540000" codebase="http://active.macromedia.com/flash2/cabs/swflash.cab#version=5,0,0,0" height="' . $matches[2] . '" width="' . $matches[1] . '"><param name="movie" value="' . $block['Val'] . '"><param name="play" value="false"><param name="loop" value="false"><param name="quality" value="high"><param name="allowScriptAccess" value="never"><param name="allowNetworking" value="internal"><embed  type="application/x-shockwave-flash" pluginspage="http://www.macromedia.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash" play="false" loop="false" quality="high" allowscriptaccess="never" allownetworking="internal"  src="' . $block['Val'] . '" height="' . $matches[2] . '" width="' . $matches[1] . '"><param name="wmode" value="transparent"></object>';
                     }
                     break;
 
                 case 'url':
                     // Make sure the URL has a label
-                    if (empty($Block['Val'])) {
-                        $Block['Val'] = $Block['Attr'];
+                    if (empty($block['Val'])) {
+                        $block['Val'] = $block['Attr'];
                         $NoName = true; // If there isn't a Val for this
                     } else {
-                        $Block['Val'] = $this->to_html($Block['Val']);
+                        $block['Val'] = $this->to_html($block['Val']);
                         $NoName = false;
                     }
-                    //remove the local host/anonym.to from address if present
-                    $Block['Attr'] = $this->remove_anon($Block['Attr']);
+                    //remove the local host/anonym.es from address if present
+                    $block['Attr'] = $this->remove_anon($block['Attr']);
                     // first test if is in format /local.php or #anchorname
-                    if (preg_match('/^#[a-zA-Z0-9\-\_.,%\@~&=:;()+*\^$!#|]+$|^\/[a-zA-Z0-9\-\_.,%\@~&=:;()+*\^$!#|]+\.php[a-zA-Z0-9\?\-\_.,%\@~&=:;()+*\^$!#|]*$/', $Block['Attr'])) {
+                    if (preg_match('/^#[a-zA-Z0-9\-\_.,%\@~&=:;()+*\^$!#|]+$|^\/[a-zA-Z0-9\-\_.,%\@~&=:;()+*\^$!#|]+\.php[a-zA-Z0-9\?\-\_.,%\@~&=:;()+*\^$!#|]*$/', $block['Attr'])) {
                         // a local link or anchor link
-                        $Str.='<a class="link" href="' . $Block['Attr'] . '">' . $Block['Val'] . '</a>';
-                    } elseif (!$this->valid_url($Block['Attr'])) {
+                        $str.='<a class="link" href="' . $block['Attr'] . '">' . $block['Val'] . '</a>';
+                    } elseif (!$this->valid_url($block['Attr'])) {
                         // not a valid tag
-                        $Str.='[url=' . $Block['Attr'] . ']' . $Block['Val'] . '[/url]';
+                        $str.='[url=' . $block['Attr'] . ']' . $block['Val'] . '[/url]';
                     } else {
-                        $LocalURL = $this->local_url($Block['Attr']);
+                        $LocalURL = $this->local_url($block['Attr']);
                         if ($LocalURL) {
                             if ($NoName) {
-                                $Block['Val'] = substr($LocalURL, 1);
+                                $block['Val'] = substr($LocalURL, 1);
                             }
-                            $Str.='<a href="' . $LocalURL . '">' . $Block['Val'] . '</a>';
+                            $str.='<a href="' . $LocalURL . '">' . $block['Val'] . '</a>';
                         } else {
-                            if (!$LoggedUser['NotForceLinks']) $target = 'target="_blank" ';
-                            $Str.='<a rel="noreferrer" ' . $target . 'href="' . $this->anon_url($Block['Attr']) . '">' . $Block['Val'] . '</a>';
+                            $target = '';
+                            if (!$master->request->user->options('NotForceLinks')) {
+                                $target = 'target="_blank" ';
+                            }
+                            $str.='<a rel="noreferrer" ' . $target . 'href="' . $this->anon_url($block['Attr']) . '">' . $block['Val'] . '</a>';
                         }
                     }
                     break;
 
                 case 'anchor':
                 case '#':
-                    if (!preg_match('/^[a-zA-Z0-9\-\_]+$/', $Block['Attr'])) {
-                        $Str.='[' . $Block['Type'] . '=' . $Block['Attr'] . ']' . $this->to_html($Block['Val']) . '[/' . $Block['Type'] . ']';
+                    if (!preg_match('/^[a-zA-Z0-9\-\_]+$/', $block['Attr'])) {
+                        $str.='[' . $block['Type'] . '=' . $block['Attr'] . ']' . $this->to_html($block['Val']) . '[/' . $block['Type'] . ']';
                     } else {
-                        $Str.='<a class="anchor" id="' . $Block['Attr'] . '">' . $this->to_html($Block['Val']) . '</a>';
+                        $str.='<a class="anchor" id="' . $block['Attr'] . '">' . $this->to_html($block['Val']) . '</a>';
                     }
                     break;
 
 
                 case 'mcom':
-                    $innerhtml = $this->to_html($Block['Val']);
-                    while (ends_with($innerhtml, "\n")) {
-                        $innerhtml = substr($innerhtml, 0, -strlen("\n"));
+                    $positionnnerhtml = $this->to_html($block['Val']);
+                    while (ends_with($positionnnerhtml, "\n")) {
+                        $positionnnerhtml = substr($positionnnerhtml, 0, -strlen("\n"));
                     }
-                    $Str.='<div class="modcomment">' . $innerhtml . '<div class="after">[ <a href="articles.php?topic=tutorials">Help</a> | <a href="articles.php?topic=rules">Rules</a> ]</div><div class="clear"></div></div>';
+                    $str.='<div class="modcomment">' . $positionnnerhtml . '<div class="after">[ <a href="/articles/view/tutorials">Help</a> | <a href="/articles/view/rules">Rules</a> ]</div><div class="clear"></div></div>';
                     break;
 
                 case 'table':
-                    $InlineStyle = $this->get_css_attributes($Block['Attr']);
+                    $InlineStyle = $this->get_css_attributes($block['Attr']);
                     if ($InlineStyle === FALSE) {
-                        $Str.='[' . $Block['Type'] . '=' . $Block['Attr'] . ']' . $this->to_html($Block['Val']) . '[/' . $Block['Type'] . ']';
+                        $str.='[' . $block['Type'] . '=' . $block['Attr'] . ']' . $this->to_html($block['Val']) . '[/' . $block['Type'] . ']';
                     } else {
-                        $Block['Val'] = $this->remove_text_between_tags($Block['Val'], "/^tr$/");
-                        $tableclass = $this->get_css_classes($Block['Attr'], array(array('nball','noborder'),'nopad','vat','vam','vab'));
-                        $Str.='<table class="bbcode' . $tableclass . '"' . $InlineStyle . '><tbody>' . $this->to_html($Block['Val']) . '</tbody></table>';
+                        $block['Val'] = $this->remove_text_between_tags($block['Val'], "/^tr$/");
+                        $tableclass = $this->get_css_classes($block['Attr'], [['nball','noborder'],'nopad','vat','vam','vab']);
+                        $str.='<table class="bbcode' . $tableclass . '"' . $InlineStyle . '><tbody>' . $this->to_html($block['Val']) . '</tbody></table>';
                     }
                     break;
                 case 'tr':
-                    $InlineStyle = $this->get_css_attributes($Block['Attr'], false, true, false, true);
+                    $InlineStyle = $this->get_css_attributes($block['Attr'], false, true, false, true);
 
                     if ($InlineStyle === FALSE) {
-                        $Str.='[' . $Block['Type'] . '=' . $Block['Attr'] . ']' . $this->to_html($Block['Val']) . '[/' . $Block['Type'] . ']';
+                        $str.='[' . $block['Type'] . '=' . $block['Attr'] . ']' . $this->to_html($block['Val']) . '[/' . $block['Type'] . ']';
                     } else {
-                        $Block['Val'] = $this->remove_text_between_tags($Block['Val'], "/^th$|^td$/");
-                        $tableclass = $this->get_css_classes($Block['Attr'], array( 'nopad'));
-                        $Str.='<' . $Block['Type'] . ' class="bbcode'.$tableclass.'"' . $InlineStyle . '>' . $this->to_html($Block['Val']) . '</' . $Block['Type'] . '>';
+                        $block['Val'] = $this->remove_text_between_tags($block['Val'], "/^th$|^td$/");
+                        $tableclass = $this->get_css_classes($block['Attr'], ['nopad']);
+                        $str.='<' . $block['Type'] . ' class="bbcode'.$tableclass.'"' . $InlineStyle . '>' . $this->to_html($block['Val']) . '</' . $block['Type'] . '>';
                     }
                     break;
                 case 'th':
                 case 'td':
-                    $InlineStyle = $this->get_css_attributes($Block['Attr'], false);
+                    $InlineStyle = $this->get_css_attributes($block['Attr'], false);
                     if ($InlineStyle === FALSE) {
-                        $Str.='[' . $Block['Type'] . '=' . $Block['Attr'] . ']' . $this->to_html($Block['Val']) . '[/' . $Block['Type'] . ']';
+                        $str.='[' . $block['Type'] . '=' . $block['Attr'] . ']' . $this->to_html($block['Val']) . '[/' . $block['Type'] . ']';
                     } else {
-                        $tableclass = $this->get_css_classes($Block['Attr'], array( 'nopad','vat','vam','vab'));
-                        $Str.='<'. $Block['Type'] .' class="bbcode'.$tableclass.'"' . $InlineStyle . '>' . $this->to_html($Block['Val']) . '</' . $Block['Type'] . '>';
+                        $tableclass = $this->get_css_classes($block['Attr'], ['nopad','vat','vam','vab']);
+                        $str.='<'. $block['Type'] .' class="bbcode'.$tableclass.'"' . $InlineStyle . '>' . $this->to_html($block['Val']) . '</' . $block['Type'] . '>';
                     }
                     break;
 
                 case 'bg':
-                    $InlineStyle = $this->get_css_attributes($Block['Attr'], true, true, true, false);
+                    $InlineStyle = $this->get_css_attributes($block['Attr'], true, true, true, false);
                     if (!$InlineStyle || $InlineStyle == '') {
-                        $Str.='[bg=' . $Block['Attr'] . ']' . $this->to_html($Block['Val']) . '[/bg]';
+                        $str.='[bg=' . $block['Attr'] . ']' . $this->to_html($block['Val']) . '[/bg]';
                     } else {
-                        $tableclass = $this->get_css_classes($Block['Attr'], array( 'nopad'));
-                        $Str.='<div class="bbcode'.$tableclass.'"' . $InlineStyle . '>' . $this->to_html($Block['Val']) . '</div>';
+                        $tableclass = $this->get_css_classes($block['Attr'], ['nopad']);
+                        $str.='<div class="bbcode'.$tableclass.'"' . $InlineStyle . '>' . $this->to_html($block['Val']) . '</div>';
                     }
                     break;
 
@@ -1425,149 +1477,170 @@ class Text
                 case 'info':
                 case 'plot':
                 case 'screens': // [cast] [details] [info] [plot] [screens]
-                    if (!isset($this->Icons[$Block['Type']])) {
-                        $Str.='[' . $Block['Type'] . ']';
+                    if (!isset($this->Icons[$block['Type']])) {
+                        $str.='[' . $block['Type'] . ']';
                     } else {
-                        $Str.= $this->Icons[$Block['Type']];
+                        $str.= $this->Icons[$block['Type']];
                     }
                     break;
                 case 'br':
-                    $Str.='<br />';
+                    $str.='<br />';
                     break;
                 case 'hr':
-                    $Str.='<hr />';
+                    $str.='<hr />';
                     break;
                 case 'font':
-                    if (!isset($this->Fonts[$Block['Attr']])) {
-                        $Str.='[font=' . $Block['Attr'] . ']' . $this->to_html($Block['Val']) . '[/font]';
+                    if (!isset($this->Fonts[$block['Attr']])) {
+                        $str.='[font=' . $block['Attr'] . ']' . $this->to_html($block['Val']) . '[/font]';
                     } else {
-                        $Str.='<span style="font-family: ' . $this->Fonts[$Block['Attr']] . '">' . $this->to_html($Block['Val']) . '</span>';
+                        $str.='<span style="font-family: ' . $this->Fonts[$block['Attr']] . '">' . $this->to_html($block['Val']) . '</span>';
                     }
                     break;
                 case 'b':
-                    $Str.='<strong>' . $this->to_html($Block['Val']) . '</strong>';
+                    $str.='<strong>' . $this->to_html($block['Val']) . '</strong>';
                     break;
                 case 'u':
-                    $Str.='<span style="text-decoration: underline;">' . $this->to_html($Block['Val']) . '</span>';
+                    $str.='<span style="text-decoration: underline;">' . $this->to_html($block['Val']) . '</span>';
                     break;
                 case 'i':
-                    $Str.='<em>' . $this->to_html($Block['Val']) . "</em>";
+                    $str.='<em>' . $this->to_html($block['Val']) . "</em>";
                     break;
                 case 's':
-                    $Str.='<span style="text-decoration: line-through">' . $this->to_html($Block['Val']) . '</span>';
+                    $str.='<span style="text-decoration: line-through">' . $this->to_html($block['Val']) . '</span>';
                     break;
                 case 'sup':
-                    $Str.='<sup>' . $this->to_html($Block['Val']) . '</sup>';
+                    $str.='<sup>' . $this->to_html($block['Val']) . '</sup>';
                     break;
                 case 'sub':
-                    $Str.='<sub>' . $this->to_html($Block['Val']) . '</sub>';
+                    $str.='<sub>' . $this->to_html($block['Val']) . '</sub>';
                     break;
                 case 'important':
-                    $Str.='<strong class="important_text">' . $this->to_html($Block['Val']) . '</strong>';
+                    $str.='<strong class="important_text">' . $this->to_html($block['Val']) . '</strong>';
+                    break;
+                case 'uploader':
+                    $str .= $this->uploaderTag($block['Val'], $block['Attr']);
                     break;
                 case 'user':
-                    $Str .= $this->userTag($Block['Val']);
+                    $str .= $this->userTag($block['Val']);
                     break;
-
-
                 case 'torrent':
-                    $Str .= $this->torrentTag($Block['Val']);
+                    $str .= $this->torrentTag($block['Val']);
                     break;
                 case 'request':
-                    $Str .= $this->requestTag($Block['Val']);
+                    $str .= $this->requestTag($block['Val']);
                     break;
                 case 'collage':
-                    $Str .= $this->collageTag($Block['Val']);
+                    $str .= $this->collageTag($block['Val']);
                     break;
                 case 'thread':
-                    $Str .= $this->threadTag($Block['Val']);
+                    $str .= $this->threadTag($block['Val']);
                     break;
                 case 'forum':
-                    $Str .= $this->forumTag($Block['Val']);
+                    $str .= $this->forumTag($block['Val']);
                     break;
-
+                case 'staffpm':
+                    $str .= $this->staffPMTag($block['Val']);
+                    break;
                 case 'tex':
-                    $Str.='[tex]'.$Block['Val'].'[/tex]';
+                    $str.='[tex]'.$block['Val'].'[/tex]';
                     break;
                 case 'plain':
-                    $Str.=$Block['Val'];
+                    $str.=$block['Val'];
                     break;
                 case 'pre':
-                    $Str.='<pre>' . $Block['Val'] . '</pre>';
+                    $str.='<pre>' . $block['Val'] . '</pre>';
                     break;
+                case '```':
                 case 'code':
                     $CSS = 'bbcode';
-                    $Lang = $this->prism_supported($Block['Attr']);
-                    if(!empty($Lang)) $CSS .= ' '.$Lang;
-                    $Str.='<code class="'.$CSS.'">' . $Block['Val'] . '</code>';
+                    $Lang = $this->prism_supported($block['Attr']);
+                    if (!empty($Lang)) $CSS .= ' '.$Lang;
+                    if (strpos($block['Val'], "\n") === false) {
+                        $str.='<code class="'.$CSS.'">' . $block['Val'] . '</code>';
+                    } else {
+                        $str.='<pre class="bbcodeblock"><code class="'.$CSS.'">' . $block['Val'] . '</code></pre>';
+                    }
                     break;
                 case 'codeblock':
                     $CSS = 'bbcodeblock';
-                    $Lang = $this->prism_supported($Block['Attr']);
+                    $Lang = $this->prism_supported($block['Attr']);
                     if(!empty($Lang)) $CSS .= ' '.$Lang;
-                    $Str.='<preclass="bbcodeblock"><code class="'.$CSS.'">' . $Block['Val'] . '</code></pre>';
+                    $str.='<pre class="bbcodeblock"><code class="'.$CSS.'">' . $block['Val'] . '</code></pre>';
                     break;
                 case 'list':
-                    $Str .= '<' . $Block['ListType'] . '>';
-                    foreach ($Block['Val'] as $Line) {
+                    $str .= '<' . $block['ListType'] . '>';
+                    foreach ($block['Val'] as $Line) {
 
-                        $Str.='<li>' . $this->to_html($Line) . '</li>';
+                        $str.='<li>' . $this->to_html($Line) . '</li>';
                     }
-                    $Str.='</' . $Block['ListType'] . '>';
+                    $str.='</' . $block['ListType'] . '>';
                     break;
                 case 'align':
-                    $ValidAttribs = array('left', 'center', 'justify', 'right');
-                    if (!in_array($Block['Attr'], $ValidAttribs)) {
-                        $Str.='[align=' . $Block['Attr'] . ']' . $this->to_html($Block['Val']) . '[/align]';
+                    $ValidAttribs = ['left', 'center', 'justify', 'right'];
+                    if (!in_array($block['Attr'], $ValidAttribs)) {
+                        $str.='[align=' . $block['Attr'] . ']' . $this->to_html($block['Val']) . '[/align]';
                     } else {
-                        $Str.='<div style="text-align:' . $Block['Attr'] . '">' . $this->to_html($Block['Val']) . '</div>';
+                        $extraCSS = '';
+                        if ($block['Attr'] == 'left') {
+                                              $extraCSS = 'margin-right: auto;';
+                        } elseif ($block['Attr'] == 'center') {
+                                              $extraCSS = 'margin-right: auto; margin-left: auto;';
+                        } elseif ($block['Attr'] == 'justify') {
+                                              $extraCSS = 'margin-right: auto; margin-left: auto;';
+                        } elseif ($block['Attr'] == 'right') {
+                            $extraCSS = 'margin-left: auto;';
+                        }
+                        $str.='<div style="text-align:' . $block['Attr'] . ';' . $extraCSS . '">' . $this->to_html($block['Val']) . '</div>';
                     }
                     break;
                 case 'color':
                 case 'colour':
-                    if (!$this->is_color_attrib($Block['Attr'])) {
-                        $Str.='[color=' . $Block['Attr'] . ']' . $this->to_html($Block['Val']) . '[/color]';
+                    if (!$this->is_color_attrib($block['Attr'])) {
+                        $str.='[color=' . $block['Attr'] . ']' . $this->to_html($block['Val']) . '[/color]';
                     } else {
-                        $Str.='<span style="color:' . $Block['Attr'] . '">' . $this->to_html($Block['Val']) . '</span>';
+                        $str.='<span style="color:' . $block['Attr'] . '">' . $this->to_html($block['Val']) . '</span>';
                     }
                     break;
                 case 'rank':
-                    if (!$this->is_color_attrib($Block['Attr'])) {
-                        $Str.='[rank=' . $Block['Attr'] . ']' . $this->to_html($Block['Val']) . '[/rank]';
+                    if (!$this->is_color_attrib($block['Attr'])) {
+                        $str.='[rank=' . $block['Attr'] . ']' . $this->to_html($block['Val']) . '[/rank]';
                     } else {
-                        $Str.='<span style="font-weight:bold;color:' . $Block['Attr'] . ';">' . $this->to_html($Block['Val']) . '</span>';
+                        $str.='<span style="font-weight:bold;color:' . $block['Attr'] . ';">' . $this->to_html($block['Val']) . '</span>';
                     }
                     break;
-                case 'inlinesize':
                 case 'size':
-                    $ValidAttribs = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10');
-                    if (!in_array($Block['Attr'], $ValidAttribs)) {
-                        $Str.='[size=' . $Block['Attr'] . ']' . $this->to_html($Block['Val']) . '[/size]';
+                    $ValidAttribs = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+                    if (!in_array($block['Attr'], $ValidAttribs)) {
+                        $str.='[size=' . $block['Attr'] . ']' . $this->to_html($block['Val']) . '[/size]';
                     } else {
-                        $Str.='<span class="size' . $Block['Attr'] . '">' . $this->to_html($Block['Val']) . '</span>';
+                        $str.='<span class="size' . $block['Attr'] . '">' . $this->to_html($block['Val']) . '</span>';
                     }
                     break;
                 case 'hide':
-                    $Str.='<strong>' . (($Block['Attr']) ? $Block['Attr'] : 'Hidden text') . '</strong>: <a href="javascript:void(0);" onclick="BBCode.spoiler(this);">Show</a>';
-                    $Str.='<blockquote class="hidden spoiler">' . $this->to_html($Block['Val']) . '</blockquote>';
+                    $str.='<strong>' . (($block['Attr']) ? $block['Attr'] : 'Hidden text') . '</strong>: <a href="javascript:void(0);" onclick="BBCode.spoiler(this);">Show</a>';
+                    $str.='<blockquote class="hidden spoiler">' . $this->to_html($block['Val']) . '</blockquote>';
                     break;
                 case 'spoiler':
-                    $Str.='<strong>' . (($Block['Attr']) ? $Block['Attr'] : 'Hidden text') . '</strong>: <a href="javascript:void(0);" onclick="BBCode.spoiler(this);">Show</a>';
-                    $Str.='<blockquote class="hidden spoiler">' . $this->to_html($Block['Val']) . '</blockquote>';
+                    $str.='<strong>' . (($block['Attr']) ? $block['Attr'] : 'Hidden text') . '</strong>: <a href="javascript:void(0);" onclick="BBCode.spoiler(this);">Show</a>';
+                    $str.='<blockquote class="hidden spoiler">' . $this->to_html($block['Val']) . '</blockquote>';
                     break;
 
                 case 'img':
                 case 'imgnm':
                 case 'imgalt':
                 case 'banner':
+                case 'spimg':
+                case 'spimgnm':
+                case 'spimgalt':
+                case 'spbanner':
 
-                    $Block['Val'] = str_replace('[inlineurl]', '', $Block['Val']);
+                    $block['Val'] = str_replace('[inlineurl]', '', $block['Val']);
                     $cssclass = "";
 
                     // Images with resize attributes
                     $resize = '';
-                    if ($Block['Type'] == 'img' && !empty($Block['Attr'])) {
-                        $Elements = explode(',', $Block['Attr']);
+                    if (($block['Type'] == 'img' || $block['Type'] == 'spimg') && !empty($block['Attr'])) {
+                        $Elements = explode(',', $block['Attr']);
                         // Width
                         if (!empty($Elements[0]))
                             $resize .= 'width="'.intval($Elements[0]).'" ';
@@ -1576,104 +1649,121 @@ class Text
                             $resize .= 'height="'.intval($Elements[1]).'" ';
                     }
 
-                    if ($Block['Type'] == 'imgnm' ) $cssclass .= ' nopad';
-                    if ($Block['Attr'] != '' && ($Block['Type'] == 'imgnm' || $Block['Type'] == 'imgalt') ) $alttext = $Block['Attr'];
-                    else $alttext = $Block['Val'];
+                    if ($block['Type'] == 'imgnm' || $block['Type'] == 'spimgnm') $cssclass .= ' nopad';
+                    if (!empty($block['Attr']) && in_array($block['Type'], ['imgnm', 'imgalt', 'spimgnm', 'spimgalt']) ) $alttext = $block['Attr'];
+                    else $alttext = $block['Val'];
 
-                    if (preg_match('/^(\/[a-zA-Z0-9\-\_.,%\@~&=:;()+*\^$!#|]+)+[a-zA-Z0-9\?\-\_.,%\@~&=:;()+*\^$!#|]*$/', $Block['Val'])) {
+                    if (preg_match('/^(\/[a-zA-Z0-9\-\_.,%\@~&=:;()+*\^$!#|]+)+[a-zA-Z0-9\?\-\_.,%\@~&=:;()+*\^$!#|]*$/', $block['Val'])) {
                         // a local link or anchor link
-                        $Str.='<img class="scale_image'.$cssclass.'" onclick="lightbox.init(this,500);" alt="'.$alttext.'" src="'.$Block['Val'].'" />';
+                        $str.='<img class="bbcode scale_image'.$cssclass.'" onclick="lightbox.init(this,500);" alt="'.$alttext.'" src="'.$block['Val'].'" />';
                         break;
 
-                    } elseif (!$this->valid_url($Block['Val'])) {
-                        $Str.="[$Block[Type]". ( $Block['Attr'] ? '='.$Block['Attr'] : '' ). "]$Block[Val][/$Block[Type]]";
+                    } elseif (!$this->valid_url($block['Val'])) {
+                        # Invalid URL, just reconstruct the tag and display it as text
+                        if (array_key_exists('Attr', $block)) {
+                            $str.="[{$block['Type']}={$block['Attr']}]{$block['Val']}[/{$block['Type']}]";
+                        } else {
+                            $str.="[{$block['Type']}]{$block['Val']}[/{$block['Type']}]";
+                        }
                         break;
                     }
-                    $LocalURL = $this->local_url($Block['Val']);
-                    if($this->ShowErrors && !$this->validate_imageurl($Block['Val'])) {
-                        $this->Errors[] = "<span class=\"error_label\">Not an approved Imagehost:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$Block['Val'].'</code></blockquote>';
+                    $LocalURL = $this->local_url($block['Val']);
+                    $validURL = $this->validate_imageurl($block['Val']);
+                    if($this->ShowErrors && $validURL !== true) {
+                        $this->Errors[] = "<span class=\"error_label\">{$validURL}:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$block['Val'].'</code></blockquote>';
                         break;
                     }
-                    $this->displayed_images[$Block['Val']] = true;
+                    $this->displayed_images[$block['Val']] = true;
 
                     if (!$LocalURL && $this->NoMedia > 0) {
-                        $Str.='<a rel="noreferrer" target="_blank" href="' . $Block['Val'] . '">' . $Block['Val'] . '</a> (image)';
+                        $str.='<a rel="noreferrer" target="_blank" href="' . $block['Val'] . '">' . $block['Val'] . '</a> (image)';
                         break;
                     }
-                    $Block['Val'] = $this->proxify_url($Block['Val']);
-                    $Str.='<img class="scale_image'.$cssclass.'" onclick="lightbox.init(this,500);" alt="'.$alttext.'" src="'.$Block['Val'].'" '.$resize.'/>';
+                    $block['Val'] = $this->proxify_url($block['Val']);
+                    // If the img is inside of a spoiler tag (spimg) load the src into the data-src instead
+                    $str.='<img class="bbcode scale_image'.$cssclass.'" onclick="lightbox.init(this,500);" alt="'.$alttext.'" '.(in_array($block['Type'], ['spimg', 'spimgnm', 'spimgalt', 'spbanner']) ? 'data-' : '').'src="'.$block['Val'].'" '.$resize.'/>';
                     break;
 
                 case 'thumb':
-                    if ($this->NoMedia > 0 && $this->valid_url($Block['Val'])) {
-                        $Str.='<a rel="noreferrer" target="_blank" href="' . $Block['Val'] . '">' . $Block['Val'] . '</a> (image)';
+                    if ($this->NoMedia > 0 && $this->valid_url($block['Val'])) {
+                        $str.='<a rel="noreferrer" target="_blank" href="' . $block['Val'] . '">' . $block['Val'] . '</a> (image)';
                         break;
                     }
-                    if($this->ShowErrors && !$this->validate_imageurl($Block['Val'])) {
-                        $this->Errors[] = "<span class=\"error_label\">Not an approved Imagehost:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$Block['Val'].'</code></blockquote>';
+                    $validURL = $this->validate_imageurl($block['Val']);
+                    if($this->ShowErrors && $validURL !== true) {
+                        $this->Errors[] = "<span class=\"error_label\">{$validURL}:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$block['Val'].'</code></blockquote>';
                         break;
                     }
-                    if (!$this->valid_url($Block['Val'])) {
-                        $Str.='[thumb]' . $Block['Val'] . '[/thumb]';
+                    if (!$this->valid_url($block['Val'])) {
+                        $str.='[thumb]' . $block['Val'] . '[/thumb]';
                     } else {
-                        $Str.='<img class="thumb_image" onclick="lightbox.init(this,300);" alt="' . $Block['Val'] . '" src="' . $Block['Val'] . '" />';
+                        $str.='<img class="bbcode thumb_image" onclick="lightbox.init(this,300);" alt="' . $block['Val'] . '" src="' . $block['Val'] . '" />';
                     }
-                    $this->displayed_images[$Block['Val']] = true;
+                    $this->displayed_images[$block['Val']] = true;
                     break;
 
                 case 'audio':
-                    if ($this->NoMedia > 0 && $this->valid_url($Block['Val'])) {
-                        $Str.='<a rel="noreferrer" target="_blank" href="' . $Block['Val'] . '">' . $Block['Val'] . '</a> (audio)';
+                    if ($this->NoMedia > 0 && $this->valid_url($block['Val'])) {
+                        $str.='<a rel="noreferrer" target="_blank" href="' . $block['Val'] . '">' . $block['Val'] . '</a> (audio)';
                         break;
                     }
-                    if($this->ShowErrors && !$this->validate_imageurl($Block['Val'])) {
-                        $this->Errors[] = "<span class=\"error_label\">Not an approved Imagehost:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$Block['Val'].'</code></blockquote>';
+                    $validURL = $this->validate_imageurl($block['Val']);
+                    if($this->ShowErrors && $validURL !== true) {
+                        $this->Errors[] = "<span class=\"error_label\">{$validURL}:</span><blockquote class=\"bbcode error\">".'<code class="error">'.$block['Val'].'</code></blockquote>';
                         break;
                     }
-                    if (!$this->valid_url($Block['Val'], '\.(mp3|ogg|wav)')) {
-                        $Str.='[aud]' . $Block['Val'] . '[/aud]';
+                    if (!$this->valid_url($block['Val'], '\.(mp3|ogg|wav)')) {
+                        $str.='[aud]' . $block['Val'] . '[/aud]';
                     } else {
                         //TODO: Proxy this for staff?
-                        $Str.='<audio controls="controls" src="' . $Block['Val'] . '"><a rel="noreferrer" target="_blank" href="' . $Block['Val'] . '">' . $Block['Val'] . '</a></audio>';
+                        $str.='<audio controls="controls" src="' . $block['Val'] . '"><a rel="noreferrer" target="_blank" href="' . $block['Val'] . '">' . $block['Val'] . '</a></audio>';
                     }
                     break;
 
                 case 'inlineurl':
-                    $Block['Attr'] = $this->remove_anon($Block['Attr']);
-                    if (!$this->valid_url($Block['Attr'], '', true)) {
-                        $Array = $this->parse($Block['Attr']);
-                        $Block['Attr'] = $Array;
-                        $Str.=$this->to_html($Block['Attr']);
+                    $block['Attr'] = $this->remove_anon($block['Attr']);
+                    if (!$this->valid_url($block['Attr'], '', true)) {
+                        $Array = $this->parse($block['Attr']);
+                        $block['Attr'] = $Array;
+                        $str.=$this->to_html($block['Attr']);
                     } else {
-                        $LocalURL = $this->local_url($Block['Attr']);
+                        $LocalURL = $this->local_url($block['Attr']);
                         if ($LocalURL) {
-                            if (preg_match('#^/articles\.php.*[\?&]topic=(.*)#i', $LocalURL)) {
-                                $Str .= $this->articleTag($LocalURL);
+                            if (preg_match('#^/articles/view/(.*)#i', $LocalURL)) {
+                                $str .= $this->articleTag($LocalURL);
                             } else if (preg_match('#^/torrents\.php(?!.*type=|.*action=).*[\?&](?:id|torrentid)=(\d+)#i', $LocalURL)) {
-                                $Str .= $this->torrentTag($LocalURL);
+                                $str .= $this->torrentTag($LocalURL);
+                            } else if (preg_match('#^/details\.php(?!.*type=|.*action=).*[\?&](?:id|torrentid)=(\d+)#i', $LocalURL)) {
+                                $str .= $this->torrentTag($LocalURL);
                             } else if (preg_match('#^/requests\.php\?.*view.*id=(\d+)#i', $LocalURL)) {
-                                $Str .= $this->requestTag($LocalURL);
-                            } else if (preg_match('#^/collages\.php.*[\?&](.*)id=(\d+)#i', $LocalURL)) {
-                                $Str .= $this->collageTag($LocalURL);
-                            } else if (preg_match('#^/forums\.php.*[\?&](.*)threadid=(\d+)#i', $LocalURL)) {
-                                $Str .= $this->threadTag($LocalURL);
-                            } else if (preg_match('#^/forums\.php.*[\?&](.*)forumid=(\d+)#i', $LocalURL)) {
-                                $Str .= $this->forumTag($LocalURL);
+                                $str .= $this->requestTag($LocalURL);
+                            } else if (preg_match('#^/collage/(\d+)#i', $LocalURL)) {
+                                $str .= $this->collageTag($LocalURL);
+                            } else if (preg_match('#^/forum/thread/(\d+)#i', $LocalURL)) {
+                                $str .= $this->threadTag($LocalURL);
+                            } else if (preg_match('#^/forum/(\d+)#i', $LocalURL)) {
+                                $str .= $this->forumTag($LocalURL);
                             } else if (preg_match('#^/user\.php.*[\?&](.*)id=(\d+)#i', $LocalURL)) {
-                                $Str .= $this->userTag($LocalURL);
+                                $str .= $this->userTag($LocalURL);
+                            } else if (preg_match('#^/staffpm\.php.*[\?&](.*)id=(\d+)#i', $LocalURL)) {
+                                $str .= $this->staffPMTag($LocalURL);
                             } else {
-                                $Str.='<a href="' . $LocalURL . '">' . substr($LocalURL, 1) . '</a>';
+                                $str.='<a href="' . $LocalURL . '">' . substr($LocalURL, 1) . '</a>';
                             }
                         } else {
-                            if (!$LoggedUser['NotForceLinks']) $target = 'target="_blank" ';
-                            $Str.='<a rel="noreferrer" ' . $target .'href="' . $this->anon_url($Block['Attr']) . '">' . $Block['Attr'] . '</a>';
+                            if (!$master->request->user->options('NotForceLinks')) {
+                                $target = 'target="_blank" ';
+                            } else {
+                                $target = '';
+                            }
+                            $str.='<a rel="noreferrer" ' . $target .'href="' . $this->anon_url($block['Attr']) . '">' . $block['Attr'] . '</a>';
                         }
                     }
                     break;
 
                 case 'ratiolist':
                     if (!$this->Advanced)
-                        $Str.= '[ratiolist]';
+                        $str.= '[ratiolist]';
                     else {
 
                     $table = '<table>
@@ -1682,205 +1772,113 @@ class Text
                             <td>Required ratio (0% seeded)</td>
                             <td>Required ratio (100% seeded)</td>
                       </tr>
-                      <tr class="row'.($LoggedUser['BytesDownloaded'] < 5*1024*1024*1024?'a':'b').'">
+                      <tr class="row'.($master->request->user->Downloaded < 5*1024*1024*1024?'a':'b').'">
                             <td>0-5GB</td>
                             <td>0.00</td>
                             <td>0.00</td>
                       </tr>
-                      <tr class="row'.($LoggedUser['BytesDownloaded'] >= 5*1024*1024*1024 && $LoggedUser['BytesDownloaded'] < 10*1024*1024*1024?'a':'b').'">
+                      <tr class="row'.($master->request->user->Downloaded >= 5*1024*1024*1024 && $master->request->user->Downloaded < 10*1024*1024*1024?'a':'b').'">
                             <td>5-10GB</td>
                             <td>0.10</td>
                             <td>0.00</td>
                       </tr>
-                      <tr class="row'.($LoggedUser['BytesDownloaded'] >= 10*1024*1024*1024 && $LoggedUser['BytesDownloaded'] < 20*1024*1024*1024?'a':'b').'">
+                      <tr class="row'.($master->request->user->Downloaded >= 10*1024*1024*1024 && $master->request->user->Downloaded < 20*1024*1024*1024?'a':'b').'">
                             <td>10-20GB</td>
                             <td>0.15</td>
                             <td>0.00</td>
                       </tr>
-                      <tr class="row'.($LoggedUser['BytesDownloaded'] >= 20*1024*1024*1024 && $LoggedUser['BytesDownloaded'] < 30*1024*1024*1024?'a':'b').'">
+                      <tr class="row'.($master->request->user->Downloaded >= 20*1024*1024*1024 && $master->request->user->Downloaded < 30*1024*1024*1024?'a':'b').'">
                             <td>20-30GB</td>
                             <td>0.20</td>
                             <td>0.00</td>
                       </tr>
-                      <tr class="row'.($LoggedUser['BytesDownloaded'] >= 30*1024*1024*1024 && $LoggedUser['BytesDownloaded'] < 40*1024*1024*1024?'a':'b').'">
+                      <tr class="row'.($master->request->user->Downloaded >= 30*1024*1024*1024 && $master->request->user->Downloaded < 40*1024*1024*1024?'a':'b').'">
                             <td>30-40GB</td>
                             <td>0.30</td>
                             <td>0.05</td>
                       </tr>
-                      <tr class="row'.($LoggedUser['BytesDownloaded'] >= 40*1024*1024*1024 && $LoggedUser['BytesDownloaded'] < 50*1024*1024*1024?'a':'b').'">
+                      <tr class="row'.($master->request->user->Downloaded >= 40*1024*1024*1024 && $master->request->user->Downloaded < 50*1024*1024*1024?'a':'b').'">
                             <td>40-50GB</td>
                             <td>0.40</td>
                             <td>0.10</td>
                       </tr>
-                      <tr class="row'.($LoggedUser['BytesDownloaded'] >= 50*1024*1024*1024 && $LoggedUser['BytesDownloaded'] < 60*1024*1024*1024?'a':'b').'">
+                      <tr class="row'.($master->request->user->Downloaded >= 50*1024*1024*1024 && $master->request->user->Downloaded < 60*1024*1024*1024?'a':'b').'">
                             <td>50-60GB</td>
                             <td>0.50</td>
                             <td>0.20</td>
                       </tr>
-                      <tr class="row'.($LoggedUser['BytesDownloaded'] >= 60*1024*1024*1024 && $LoggedUser['BytesDownloaded'] < 80*1024*1024*1024?'a':'b').'">
+                      <tr class="row'.($master->request->user->Downloaded >= 60*1024*1024*1024 && $master->request->user->Downloaded < 80*1024*1024*1024?'a':'b').'">
                             <td>60-80GB</td>
                             <td>0.50</td>
                             <td>0.30</td>
                       </tr>
-                      <tr class="row'.($LoggedUser['BytesDownloaded'] >= 80*1024*1024*1024 && $LoggedUser['BytesDownloaded'] < 100*1024*1024*1024?'a':'b').'">
+                      <tr class="row'.($master->request->user->Downloaded >= 80*1024*1024*1024 && $master->request->user->Downloaded < 100*1024*1024*1024?'a':'b').'">
                             <td>80-100GB</td>
                             <td>0.50</td>
                             <td>0.40</td>
                       </tr>
-                      <tr class="row'.($LoggedUser['BytesDownloaded'] >= 100*1024*1024*1024?'a':'b').'">
+                      <tr class="row'.($master->request->user->Downloaded >= 100*1024*1024*1024?'a':'b').'">
                             <td>100+GB</td>
                             <td>0.50</td>
                             <td>0.50</td>
                       </tr>
                 </table>';
                         $table = str_replace("\n", '', $table);
-                        $Str .= $table;
+                        $str .= $table;
                     }
                     break;
 
                 case 'id':
                     if ($this->Advanced) {
-                        $Str.='<span id="'. $Block['Attr'] .'">' . $this->to_html($Block['Val']) . '</span>';
+                        $str.='<span id="'. $block['Attr'] .'">' . $this->to_html($block['Val']) . '</span>';
                     } else {
-                        $Str .= $this->to_html($Block['Val']);
+                        $str .= $this->to_html($block['Val']);
                     }
                     break;
             }
         }
         $this->Levels--;
 
-        return $Str;
+        return $str;
     }
 
-    function prism_supported($Lang) {
-        if (!empty($Lang)) {
-            $Lang = strtolower($Lang);
-            $Supported = [
-                'abap',
-                'actionscript',
-                'ada',
-                'apacheconf',
-                'apl',
-                'applescript',
-                'asciidoc',
-                'aspnet',
-                'autohotkey',
-                'autoit',
-                'bash',
-                'basic',
-                'batch',
-                'bison',
-                'brainfuck',
-                'bro',
-                'c',
-                'clike',
-                'coffeescript',
-                'cpp',
-                'crystal',
-                'csharp',
-                'css',
-                'css-extras',
-                'd',
-                'dart',
-                'diff',
-                'django',
-                'docker',
-                'eiffel',
-                'elixir',
-                'erlang',
-                'fortran',
-                'fsharp',
-                'gherkin',
-                'git',
-                'glsl',
-                'go',
-                'graphql',
-                'groovy',
-                'haml',
-                'handlebars',
-                'haskell',
-                'haxe',
-                'http',
-                'icon',
-                'inform7',
-                'ini',
-                'j',
-                'jade',
-                'java',
-                'javascript',
-                'jolie',
-                'json',
-                'jsx',
-                'julia',
-                'keyman',
-                'kotlin',
-                'latex',
-                'less',
-                'livescript',
-                'lolcode',
-                'lua',
-                'makefile',
-                'markdown',
-                'markup',
-                'matlab',
-                'mel',
-                'mizar',
-                'monkey',
-                'nasm',
-                'nginx',
-                'nim',
-                'nix',
-                'nsis',
-                'objectivec',
-                'ocaml',
-                'oz',
-                'parigp',
-                'parser',
-                'pascal',
-                'perl',
-                'php',
-                'php-extras',
-                'powershell',
-                'processing',
-                'prolog',
-                'properties',
-                'protobuf',
-                'puppet',
-                'pure',
-                'python',
-                'q',
-                'qore',
-                'r',
-                'reason',
-                'rest',
-                'rip',
-                'roboconf',
-                'ruby',
-                'rust',
-                'sas',
-                'sass',
-                'scala',
-                'scheme',
-                'scss',
-                'smalltalk',
-                'smarty',
-                'sql',
-                'stylus',
-                'swift',
-                'tcl',
-                'textile',
-                'twig',
-                'typescript',
-                'vbnet',
-                'verilog',
-                'vhdl',
-                'vim',
-                'wiki',
-                'xojo',
-                'yaml',
-            ];
-            if (in_array($Lang, $Supported)) {
-                return 'language-'.$Lang;
+    public function prism_supported($lang) {
+        if (!empty($lang)) {
+            $lang = strtolower($lang);
+            $supported = [
+                'markup', 'css', 'clike', 'javascript', 'abap', 'abnf', 'actionscript',
+                'ada', 'al', 'antlr4', 'apacheconf', 'apl', 'applescript', 'aql',
+                'arduino', 'arff', 'asciidoc', 'asm6502', 'aspnet', 'autohotkey',
+                'autoit', 'bash', 'basic', 'batch', 'bbcode', 'bison', 'bnf', 'brainfuck',
+                'brightscript', 'bro', 'c', 'concurnas', 'csharp', 'cpp', 'cil',
+                'coffeescript', 'cmake', 'clojure', 'crystal', 'csp', 'css-extras',
+                'd', 'dart', 'dax', 'diff', 'django', 'dns-zone-file', 'docker',
+                'ebnf', 'eiffel', 'ejs', 'elixir', 'elm', 'etlua', 'erb', 'erlang',
+                'excel-formula', 'fsharp', 'factor', 'firestore-security-rules',
+                'flow', 'fortran', 'ftl', 'gcode', 'gdscript', 'gedcom', 'gherkin',
+                'git', 'glsl', 'gml', 'go', 'graphql', 'groovy', 'haml', 'handlebars',
+                'haskell', 'haxe', 'hcl', 'http', 'hpkp', 'hsts', 'ichigojam', 'icon',
+                'iecst', 'inform7', 'ini', 'io', 'j', 'java', 'javadoc', 'javadoclike',
+                'javastacktrace', 'jolie', 'jq', 'jsdoc', 'js-extras', 'js-templates',
+                'json', 'jsonp', 'json5', 'julia', 'keyman', 'kotlin', 'latex', 'latte',
+                'less', 'lilypond', 'liquid', 'lisp', 'livescript', 'llvm', 'lolcode',
+                'lua', 'makefile', 'markdown', 'markup-templating', 'matlab', 'mel',
+                'mizar', 'monkey', 'moonscript', 'n1ql', 'n4js', 'nand2tetris-hdl',
+                'nasm', 'neon', 'nginx', 'nim', 'nix', 'nsis', 'objectivec', 'ocaml',
+                'opencl', 'oz', 'parigp', 'parser', 'pascal', 'pascaligo', 'pcaxis',
+                'peoplecode', 'perl', 'php', 'phpdoc', 'php-extras', 'plsql', 'powerquery',
+                'powershell', 'processing', 'prolog', 'properties', 'protobuf', 'pug',
+                'puppet', 'pure', 'python', 'q', 'qml', 'qore', 'r', 'racket', 'jsx',
+                'tsx', 'renpy', 'reason', 'regex', 'rest', 'rip', 'roboconf', 'robotframework',
+                'ruby', 'rust', 'sas', 'sass', 'scss', 'scala', 'scheme', 'shell-session',
+                'smalltalk', 'smarty', 'solidity', 'solution-file', 'soy', 'sparql',
+                'splunk-spl', 'sqf', 'sql', 'stylus', 'swift', 'tap', 'tcl', 'textile',
+                'toml', 'tt2', 'turtle', 'twig', 'typescript', 't4-cs', 't4-vb', 't4-templating',
+                'unrealscript', 'vala', 'vbnet', 'velocity', 'verilog', 'vhdl', 'vim',
+                'visual-basic', 'warpscript', 'wasm', 'wiki', 'xeora', 'xojo', 'xquery',
+                'yaml', 'zig'];
+            if (in_array($lang, $supported)) {
+                return 'language-'.$lang;
             } else {
                 return null;
             }
@@ -1892,181 +1890,229 @@ class Text
      * @param string $value The given input
      * @param string $section Website section
      * @param array $customRegex Custom rules for some parameters
-     * @return array $Matches
+     * @return array $matches
      */
-    function getQueryParameters($value, $section, $customRegex = [])
-    {
+    private function getQueryParameters($value, $section, $customRegex = []) {
+        global $master;
+
+        // Escape slashes
+        $section = str_replace('\/', '/', $section);
+        $section = str_replace('/', '\/', $section);
+
         // The rule for ID always defaults to \d+ unless overridden
         // If $customRegex['id'] is not set, we create it
-        $idRegex = isset($customRegex['id']) ? $customRegex['id'] : ($customRegex['id'] = '\d+');
-        $Pattern = '/^(?<id>'.$idRegex.')$|^(' . SITELINK_REGEX . ')?\/'.$section.'\.php\?(?<queryString>.*)/i';
-        $Matches = array();
-        $success = preg_match($Pattern, $value, $Matches);
+        $positiondRegex = isset($customRegex['id']) ? $customRegex['id'] : ($customRegex['id'] = '\d+');
+        // Match tag contents like [torrent]1234[/torrent]
+        $pattern = '/^(?<id>'.$positiondRegex.')$';
+        // Match legacy URLs like /forums.php?action=viewthread&threadid=1234
+        $pattern .= '|^(' . $master->settings->main->internal_urls_regex . ')?\/'.$section.'(\.php)?\??(?<queryString>.*)/i';
+        $pathMatches = [];
+        $queryMatches = [];
+        $success = preg_match($pattern, $value, $pathMatches);
 
         // Parse catched URL parameters
-        if ($success && !empty($Matches['queryString']))
-            parse_str(html_entity_decode(parse_url($value, PHP_URL_QUERY)), $Matches);
+        if ($success && !empty($pathMatches['queryString']))
+            parse_str(html_entity_decode(parse_url($value, PHP_URL_QUERY)), $queryMatches);
 
+        $matches = array_merge($pathMatches, $queryMatches);
         // Further validation
-        foreach ($Matches as $Key => &$Val) {
+        foreach ($matches as $key => &$val) {
+            // Check keys
+            if (!array_key_exists($key, $customRegex)){
+                unset($matches[$key]);
+                continue;
+            }
+
             // Re-escape input
-            $Val = display_str($Val);
+            $val = display_str($val);
+
             // Custom RegEx rule
-            if (isset($customRegex[$Key]) && !preg_match('/^'.$customRegex[$Key].'$/', $Val)) {
-                unset($Matches[$Key]);
+            if (isset($customRegex[$key]) && !preg_match('/^'.$customRegex[$key].'$/', $val)) {
+                unset($matches[$key]);
             }
         }
 
-        return $Matches;
+        return $matches;
     }
 
-    function articleTag($value)
-    {
-        $Matches = $this->getQueryParameters($value, 'articles', ['id' => '[a-z0-9\-\_.()\@&]+', 'topic' => '[a-z0-9\-\_.()\@&]+']);
-        if (!empty($Matches['topic'])) {
-            $Title = getArticleTitle($Matches['topic']);
+    private function articleTag($value) {
+        $matches = $this->getQueryParameters($value, 'articles/view/(?<topic>[a-z0-9\-\_.()\@&]+)', ['topic' => '[a-z0-9\-\_.()\@&]+']);
+        if (!empty($matches['topic'])) {
+            $Title = getArticleTitle($matches['topic']);
             if ($Title) {
-                $Str = '<a href="articles.php?topic='.$Matches['topic'].'"><span class="taglabel">Article: </span>'.display_str($Title).'</a>';
+                $str = '<a href="/articles/view/'.$matches['topic'].'"><span class="taglabel">Article: </span>'.display_str($Title).'</a>';
             } else {
-                $Str = '<a title="Article not found, maybe deleted, or never existed" href="torrents.php?id='.$Matches['topic'].'"><span class="taglabel">Article: </span> #'.$Matches['id'].'</a>';
+                $str = '<a title="Article not found, maybe deleted, or never existed" href="/articles/view/'.$matches['topic'].'"><span class="taglabel">Article: </span> #'.$matches['topic'].'</a>';
             }
         } else {
-            $Str = '[article]' . str_replace('[inlineurl]', '', $value) . '[/article]';
+            $str = '[article]' . str_replace('[inlineurl]', '', $value) . '[/article]';
         }
-        return $Str;
+        return $str;
     }
 
-    function torrentTag($value)
-    {
-        $Matches = $this->getQueryParameters($value, 'torrents', ['torrentid' => '\d+', 'postid' => '\d+']);
-        if (empty($Matches['id']) && !empty($Matches['torrentid'])) $Matches['id'] = $Matches['torrentid'];
-        if (!empty($Matches['id'])) {
-            $Groups = get_groups(array($Matches['id']), true, true, true);//var_dump($Groups);exit;
-            if (!empty($Groups['matches'][$Matches['id']])) {
-                $Group = $Groups['matches'][$Matches['id']];
-                $Torrent = $Group['Torrents'][$Matches['id']];
-                $Username = anon_username($Torrent['Username'], $Torrent['Anonymous']);
-                $Overlay = get_overlay_html($Group['Name'], $Username, $Group['Image'], $Torrent['Seeders'], $Torrent['Leechers'], $Torrent['Size'], $Torrent['Snatched']);
-                $Str  = '<script>var overlay'.$Group['ID'].' = '.json_encode($Overlay).'</script>';
-                $Str .= '<a onmouseover="return overlib(overlay'.$Group['ID'].', FULLHTML);" onmouseout="return nd();" href="torrents.php?id='.$Matches['id'].'"><span class="taglabel">Torrent: </span>'.display_str($Group['Name']).'</a>';
-                if (!empty($Matches['postid'])) {
-                    $Str .= '&nbsp;&nbsp;<a onmouseover="return overlib(overlay'.$Group['ID'].', FULLHTML);" onmouseout="return nd();" href="torrents.php?id='.$Matches['id'].'&postid='.$Matches['postid'].'#post'.$Matches['postid'].'"><span class="taglabel">comment: </span>'.$Matches['postid'].'</a>';
+   private function torrentTag($value) {
+        $matches = $this->getQueryParameters($value, '(torrents|details)', ['torrentid' => '\d+', 'postid' => '\d+']);
+        foreach (['torrentid', 'id'] as $key) {
+            if ((array_key_exists($key, $matches)) && (!empty($matches[$key]))) {
+                $torrentID = $matches[$key];
+                break;
+            }
+        }
+        if (!empty($torrentID)) {
+            global $master;
+            $torrent = $master->repos->torrents->load($torrentID);
+            if ($torrent instanceof Torrent) {
+                $username = anon_username($torrent->uploader->Username, $torrent->Anonymous);
+                $overlay = get_overlay_html($torrent->Title, $username, $torrent->group->Image, $torrent->Seeders, $torrent->Leechers, $torrent->Size, $torrent->Snatched);
+                $str  = '<script>var overlay'.$torrent->ID.' = '.json_encode($overlay).'</script>';
+                $str .= '<a onmouseover="return overlib(overlay'.$torrent->ID.', FULLHTML);" onmouseout="return nd();" href="/torrents.php?id='.$torrent->GroupID.'&amp;torrentid='.$torrent->ID.'"><span class="taglabel">Torrent: </span>'.display_str($torrent->Title).'</a>';
+                if (!empty($matches['postid'])) {
+                    $str .= '&nbsp;&nbsp;<a onmouseover="return overlib(overlay'.$torrent->ID.', FULLHTML);" onmouseout="return nd();" href="/torrents.php?torrentid='.$torrent->ID.'&amp;postid='.$matches['postid'].'#post'.$matches['postid'].'"><span class="taglabel">comment: </span>'.$matches['postid'].'</a>';
                 }
-            } else {
-                $Str = '<a title="Torrent not found, maybe deleted, or never existed" href="torrents.php?id='.$Matches['id'].'"><span class="taglabel">Torrent: </span> #'.$Matches['id'].'</a>';
+                return $str;
             }
-        } else {
-            $Str = '[torrent]' . str_replace('[inlineurl]', '', $value) . '[/torrent]';
+            return '<a title="Torrent not found, maybe deleted, or never existed" href="/torrents.php?torrentid='.$torrentID.'"><span class="taglabel">Torrent: </span> #'.$torrentID.'</a>';
         }
-        return $Str;
+        return '[torrent]' . str_replace('[inlineurl]', '', $value) . '[/torrent]';
     }
 
-    function requestTag($value)
-    {
-        $Matches = $this->getQueryParameters($value, 'requests', ['page' => '\d+']);
-        if (!empty($Matches['id'])) {
-            $Request = get_requests(array($Matches['id']), true);
-            if (!empty($Request['matches'][$Matches['id']])) {
-                include_once(SERVER_ROOT.'/Legacy/sections/requests/functions.php');
-                $Request = $Request['matches'][$Matches['id']];
+    private function requestTag($value) {
+        global $master;
+        $matches = $this->getQueryParameters($value, 'requests', ['page' => '\d+', 'postid' => '\d+']);
+        if (!empty($matches['id'])) {
+            $Request = get_requests([$matches['id']], true);
+            if (!empty($Request['matches'][$matches['id']])) {
+                include_once($master->applicationPath.'/Legacy/sections/requests/functions.php');
+                $Request = $Request['matches'][$matches['id']];
                 $RequestVotes = get_votes_array($Request['ID']);
                 $VoteCount = count($RequestVotes['Voters']);
                 $IsFilled = ($Request['TorrentID'] != 0);
-                $Overlay = get_request_overlay_html($Request['Title'], $Request['2'], $Request['Image'], $RequestVotes['TotalBounty'], $VoteCount, $IsFilled);
-                $Str  = '<script>var overlay_req'.$Request['ID'].' = '.json_encode($Overlay).'</script>';
-                $Str .= '<a onmouseover="return overlib(overlay_req'.$Request['ID'].', FULLHTML);" onmouseout="return nd();" href="requests.php?action=view&id='.$Matches['id'].'"><span class="taglabel">Request: </span>'.display_str($Request['Title']).'</a>';
-                if (!empty($Matches['postid'])) {
-                    $Page = !empty($Matches['page']) ? '&page='.$Matches['page'] : '';
-                    $Str .= '&nbsp;&nbsp;<a onmouseover="return overlib(overlay_req'.$Request['ID'].', FULLHTML);" onmouseout="return nd();" href="requests.php?action=view&id='.$Matches['id'].$Page.'#post'.$Matches['postid'].'"><span class="taglabel">comment: </span>'.$Matches['postid'].'</a>';
+                $Overlay = get_request_overlay_html($Request['Title'], $Request['Username'], $Request['Image'], $RequestVotes['TotalBounty'], $VoteCount, $IsFilled);
+                $str  = '<script>var overlay_req'.$Request['ID'].' = '.json_encode($Overlay).'</script>';
+                $str .= '<a onmouseover="return overlib(overlay_req'.$Request['ID'].', FULLHTML);" onmouseout="return nd();" href="/requests.php?action=view&id='.$matches['id'].'"><span class="taglabel">Request: </span>'.display_str($Request['Title']).'</a>';
+                if (!empty($matches['postid'])) {
+                    $Page = !empty($matches['page']) ? '&page='.$matches['page'] : '';
+                    $str .= '&nbsp;&nbsp;<a onmouseover="return overlib(overlay_req'.$Request['ID'].', FULLHTML);" onmouseout="return nd();" href="/requests.php?action=view&id='.$matches['id'].$Page.'#post'.$matches['postid'].'"><span class="taglabel">comment: </span>'.$matches['postid'].'</a>';
                 }
             } else {
-                $Str = '<a title="Request not found, maybe deleted, or never existed" href="requests.php?action=view&id='.$Matches['id'].'"><span class="taglabel">Request: </span> #'.$Matches['id'].'</a>';
+                $str = '<a title="Request not found, maybe deleted, or never existed" href="/requests.php?action=view&id='.$matches['id'].'"><span class="taglabel">Request: </span> #'.$matches['id'].'</a>';
             }
         } else {
-            $Str = '[request]' . str_replace('[inlineurl]', '', $value) . '[/request]';
+            $str = '[request]' . str_replace('[inlineurl]', '', $value) . '[/request]';
         }
-        return $Str;
+        return $str;
     }
 
-    function collageTag($value)
-    {
-        $Matches = $this->getQueryParameters($value, 'collages', ['postid' => '\d+']);
-        if (!empty($Matches['id'])) {
-            $Title = getCollageName($Matches['id']);
+    private function collageTag($value) {
+        $matches = $this->getQueryParameters($value, 'collage/(?<collageid>\d+)', ['collageid' => '\d+', 'page' => '\d+', 'postid' => '\d+']);
+        if (!empty($matches['collageid'])) {
+            $Title = getCollageName($matches['collageid']);
             if ($Title) {
-                $Str = '<a href="collages.php?id='.$Matches['id'].'"><span class="taglabel">Collage: </span>'.display_str($Title).'</a>';
-                if (!empty($Matches['postid'])) {
-                    $Str .= '&nbsp;&nbsp;<a href="collages.php?id='.$Matches['id'].'#post'.$Matches['postid'].'"><span class="taglabel">comment: </span>'.$Matches['postid'].'</a>';
+                $str = '<a href="/collage/'.$matches['collageid'].'"><span class="taglabel">Collage: </span>'.display_str($Title).'</a>';
+                if (!empty($matches['postid'])) {
+                    $Page = !empty($matches['page']) ? '&page='.$matches['page'] : '';
+                    $str .= '&nbsp;&nbsp;<a href="/collage/'.$matches['collageid'].'#post'.$matches['postid'].'"><span class="taglabel">comment: </span>'.$matches['postid'].'</a>';
                 }
             } else {
-                $Str = '<a title="Collage not found, maybe deleted, or never existed" href="collages.php?id='.$Matches['id'].'"><span class="taglabel">Collage: </span> #'.$Matches['id'].'</a>';
+                $str = '<a title="Collage not found, maybe deleted, or never existed" href="/collage/'.$matches['collageid'].'"><span class="taglabel">Collage: </span> #'.$matches['collageid'].'</a>';
             }
         } else {
-            $Str = '[collage]' . str_replace('[inlineurl]', '', $value) . '[/collage]';
+            $str = '[collage]' . str_replace('[inlineurl]', '', $value) . '[/collage]';
         }
-        return $Str;
+        return $str;
     }
 
-    function threadTag($value)
-    {
-        $Matches = $this->getQueryParameters($value, 'forums', ['threadid' => '\d+', 'postid' => '\d+']);
-        if (!empty($Matches['threadid'])) {
-            $Title = getThreadName($Matches['threadid']);
+    private function threadTag($value) {
+        $matches = $this->getQueryParameters($value, '(forums|forum/thread/(?<threadid>\d+))', ['threadid' => '\d+', 'postid' => '\d+']);
+        if (!empty($matches['threadid'])) {
+            $Title = getThreadName($matches['threadid']);
             if ($Title) {
-                $Str = '<a href="forums.php?action=viewthread&threadid='.$Matches['threadid'].'"><span class="taglabel">Thread: </span>'.display_str($Title).'</a>';
-                if (!empty($Matches['postid'])) {
-                    $Str .= '&nbsp;&nbsp;<a href="forums.php?action=viewthread&threadid='.$Matches['threadid'].'&postid='.$Matches['postid'].'#post'.$Matches['postid'].'"><span class="taglabel">post: </span>'.$Matches['postid'].'</a>';
+                $str = '<a href="/forum/thread/'.$matches['threadid'].'"><span class="taglabel">Thread: </span>'.display_str($Title).'</a>';
+                if (!empty($matches['postid'])) {
+                    $str .= '&nbsp;&nbsp;<a href="/forum/thread/'.$matches['threadid'].'?postid='.$matches['postid'].'#post'.$matches['postid'].'"><span class="taglabel">post: </span>'.$matches['postid'].'</a>';
                 }
             } else {
-                $Str = '<a title="Thread not found, maybe deleted, or never existed" href="forums.php?action=viewthread&threadid='.$Matches['threadid'].'"><span class="taglabel">Thread: </span> #'.$Matches['threadid'].'</a>';
+                $str = '<a title="Thread not found, maybe deleted, or never existed" href="/forum/thread/'.$matches['threadid'].'"><span class="taglabel">Thread: </span> #'.$matches['threadid'].'</a>';
             }
         } else {
-            $Str = '[thread]' . str_replace('[inlineurl]', '', $value) . '[/thread]';
+            $str = '[thread]' . str_replace('[inlineurl]', '', $value) . '[/thread]';
         }
-        return $Str;
+        return $str;
     }
 
-    function forumTag($value)
-    {
-        $Matches = $this->getQueryParameters($value, 'forums', ['forumid' => '\d+']);
-        if (!empty($Matches['forumid'])) {
-            $Title = getForumName($Matches['forumid']);
+    private function forumTag($value) {
+        $matches = $this->getQueryParameters($value, '(forums|forum/(?<forumid>\d+))', ['forumid' => '\d+']);
+        if (!empty($matches['forumid'])) {
+            $Title = getForumName($matches['forumid']);
             if ($Title) {
-                $Str = '<a href="forums.php?action=viewforum&forumid='.$Matches['forumid'].'"><span class="taglabel">Forum: </span>'.display_str($Title).'</a>';
+                $str = '<a href="/forum/'.$matches['forumid'].'"><span class="taglabel">Forum: </span>'.display_str($Title).'</a>';
             } else {
-                $Str = '<a title="Forum not found, maybe deleted, or never existed" href="forums.php?action=viewforum&forumid='.$Matches['forumid'].'"><span class="taglabel">Forum: </span> #'.$Matches['forumid'].'</a>';
+                $str = '<a title="Forum not found, maybe deleted, or never existed" href="/forum/'.$matches['forumid'].'"><span class="taglabel">Forum: </span> #'.$matches['forumid'].'</a>';
             }
         } else {
-            $Str = '[forum]' . str_replace('[inlineurl]', '', $value) . '[/forum]';
+            $str = '[forum]' . str_replace('[inlineurl]', '', $value) . '[/forum]';
         }
-        return $Str;
+        return $str;
     }
 
-    function userTag($value)
-    {
-        $Matches = $this->getQueryParameters($value, 'user');
-        if (!empty($Matches['id'])) {
-            $Title = getUserName($Matches['id']);
+    private function staffPMTag($value) {
+        $matches = $this->getQueryParameters($value, 'staffpm');
+        if (!empty($matches['id'])) {
+            $Title = getStaffPMSubject($matches['id']);
             if ($Title) {
-                $Str = '<a href="user.php?id='.$Matches['id'].'"><span class="taglabel">User: </span>'.display_str($Title).'</a>';
+                $str = '<a href="/staffpm.php?action=viewconv&id='.$matches['id'].'"><span class="taglabel">StaffPM: </span>'.display_str($Title).'</a>';
             } else {
-                $Str = '<a title="User not found, maybe deleted, or never existed" href="user.php?id='.$Matches['id'].'"><span class="taglabel">User: </span> #'.$Matches['id'].'</a>';
+                $str = '<a title="StaffPM not found, maybe deleted, above your level, or never existed" href="/staffpm.php?action=viewconv&id='.$matches['id'].'"><span class="taglabel">StaffPM: </span> #'.$matches['id'].'</a>';
             }
         } else {
-            $Str = '[user]' . str_replace('[inlineurl]', '', $value) . '[/user]';
+            $str = '[staffpm]' . str_replace('[inlineurl]', '', $value) . '[/staffpm]';
         }
-        return $Str;
+        return $str;
     }
 
-    public function raw_text($Array, $StripURL = false)
-    {
-        $Str = '';
-        foreach ($Array as $Block) {
-            if (is_string($Block)) {
-                $Str.=$Block;
+    private function uploaderTag($value, $attrs = '') {
+        global $master;
+        $attrs = trim($attrs);
+        $torrent = $master->repos->torrents->load($value);
+        if ($torrent instanceof Torrent) {
+            return torrent_username($torrent->uploader->ID, boolval($torrent->Anonymous));
+        } else {
+            if (!empty($attrs)) {
+                $attrs = explode(',', $attrs);
+                if (count($attrs) == 1) {
+                    return torrent_username($attrs[0], true);
+                } elseif (count($attrs) > 1) {
+                    return torrent_username($attrs[0], boolval($attrs[1]));
+                }
+            } else {
+                $str= 'System';
+            }
+        }
+    }
+
+    private function userTag($value) {
+        $matches = $this->getQueryParameters($value, 'user');
+        if (!empty($matches['id'])) {
+            $Title = getUserName($matches['id']);
+            if ($Title) {
+                $str = '<a href="/user.php?id='.$matches['id'].'"><span class="taglabel">User: </span>'.display_str($Title).'</a>';
+            } else {
+                $str = '<a title="User not found, maybe deleted, or never existed" href="/user.php?id='.$matches['id'].'"><span class="taglabel">User: </span> #'.$matches['id'].'</a>';
+            }
+        } else {
+            $str = '[user]' . str_replace('[inlineurl]', '', $value) . '[/user]';
+        }
+        return $str;
+    }
+
+    public function raw_text($Array, $stripURL = false) {
+        $str = '';
+        foreach ($Array as $block) {
+            if (is_string($block)) {
+                $str.=$block;
                 continue;
             }
-            switch ($Block['Type']) {
+            switch ($block['Type']) {
 
                 case 'b':
                 case 'u':
@@ -2089,16 +2135,17 @@ class Text
                 case 'bg':
                 case 'table':
                 case 'td':
-                    $Str.=$this->raw_text($Block['Val']);
+                    $str.=$this->raw_text($block['Val']);
                     break;
                 case 'tr':
-                    $Str.=$this->raw_text($Block['Val'])."\n";
+                    $str.=$this->raw_text($block['Val'])."\n";
                     break;
                 case 'br':
-                    $Str.= "\n";
+                    $str.= "\n";
                     break;
                 case 'tex': //since this will never strip cleanly, just remove it
                     break;
+                case '```':
                 case 'user':
                 case 'pre':
                 case 'code':
@@ -2106,36 +2153,36 @@ class Text
                 case 'img':
                 case 'imgalt':
                 case 'imgnm':
-                    $Str.=$Block['Val'];
+                    $str.=$block['Val'];
                     break;
                 case 'list':
-                    foreach ($Block['Val'] as $Line) {
-                        $Str.=$Block['Tag'] . $this->raw_text($Line);
+                    foreach ($block['Val'] as $Line) {
+                        $str.=$block['Tag'] . $this->raw_text($Line);
                     }
                     break;
 
                 case 'url':
                 case 'link':
-                    if ($StripURL)
+                    if ($stripURL)
                         break;
                     // Make sure the URL has a label
-                    if (empty($Block['Val'])) {
-                        $Block['Val'] = $Block['Attr'];
+                    if (empty($block['Val'])) {
+                        $block['Val'] = $block['Attr'];
                     } else {
-                        $Block['Val'] = $this->raw_text($Block['Val']);
+                        $block['Val'] = $this->raw_text($block['Val']);
                     }
 
-                    $Str.=$Block['Val'];
+                    $str.=$block['Val'];
                     break;
 
                 case 'inlineurl':
-                    if (!$this->valid_url($Block['Attr'], '', true)) {
-                        $Array = $this->parse($Block['Attr']);
-                        $Block['Attr'] = $Array;
-                        $Str.=$this->raw_text($Block['Attr']);
-                        $Str.="RAW";
+                    if (!$this->valid_url($block['Attr'], '', true)) {
+                        $Array = $this->parse($block['Attr']);
+                        $block['Attr'] = $Array;
+                        $str.=$this->raw_text($block['Attr']);
+                        $str.="RAW";
                     } else {
-                        $Str.=$Block['Attr'];
+                        $str.=$block['Attr'];
                     }
 
                     break;
@@ -2144,18 +2191,17 @@ class Text
             }
         }
 
-        return $Str;
+        return $str;
     }
 
-    public function smileys($Str)
-    {
-        global $LoggedUser;
-        if (!empty($LoggedUser['DisableSmileys'])) {
-            return $Str;
+    public function smileys($str) {
+        global $master;
+        if ($master->request->user->options('DisableSmileys', false)) {
+            return $str;
         }
-        $Str = strtr($Str, $this->Smileys);
+        $str = strtr($str, $this->Smileys);
 
-        return $Str;
+        return $str;
     }
 
     /*
@@ -2171,9 +2217,7 @@ class Text
       // they will not get that benefit
      */
 
-    public function display_bbcode_assistant($textarea, $AllowAdvancedTags = false, $start_num_smilies = 0, $load_increment = 240, $load_increment_first = 30)
-    {
-        global $LoggedUser;
+    public function display_bbcode_assistant($textarea, $AllowAdvancedTags = false, $start_num_smilies = 0, $load_increment = 240, $load_increment_first = 30) {
         if ($load_increment_first == -1) {
             $load_increment_first = $load_increment;
         }
@@ -2200,7 +2244,7 @@ class Text
                             <a class="bb_button" onclick="tag('quote', '<?= $textarea; ?>')" title="Quote text: [quote]text[/quote]" alt="Quote">Quote</a>
 
                             <a class="bb_button" onclick="video('<?= $textarea; ?>')" title="Youtube video: [video=http://www.youtube.com/v/abcd]" alt="Youtube">Video</a>
-        <?php if (check_perms('site_moderate_forums')) { ?>
+        <?php if (check_perms('forum_moderate')) { ?>
                             <a class="bb_button" onclick="flash('<?= $textarea; ?>')" title="Flash object: [flash]http://url.swf[/flash]" alt="Flash">Flash</a>
         <?php       } ?>
                             <a class="bb_button" onclick="spoiler('<?= $textarea; ?>')" title="Spoiler: [spoiler=title]hidden text[/spoiler]" alt="Spoiler">Spoiler</a>
@@ -2222,7 +2266,7 @@ class Text
                         </div>
                     </td><td class="colhead" style="padding: 2px 6px 0px 0px" rowspan=2>
                         <div class="bb_buttons_right">
-                            <a class="bb_help" href="<?= "http://" . SITE_URL . "/articles.php?topic=bbcode" ?>" target="_blank">Help</a>
+                            <a class="bb_help" href="/articles/view/bbcode" target="_blank">Help</a>
                         </div>
                     </td></tr><tr>
                     <td class="colhead" style="padding: 2px 2px 0px 6px">
@@ -2259,8 +2303,9 @@ class Text
                             <a class="bb_button" onclick="insert('[plot]', '<?= $textarea; ?>')" title="Plot icon: [plot]" alt="plot">plot</a>
                             <a class="bb_button" onclick="insert('[screens]', '<?= $textarea; ?>')" title="Screens icon: [screens]" alt="screens">screens</a>
 
-        <?php if (check_perms('site_moderate_forums')) { ?>
+        <?php if (check_perms('forum_moderate')) { ?>
                                 <a class="bb_button" style="border: 2px solid #600;" onclick="tag('mcom', '<?= $textarea; ?>')" title="Staff Comment: [mcom]text[/mcom]" alt="Mod comment">Mod</a>
+                                <a class="bb_button" style="border: 2px solid #600;" onclick="tag('hide', '<?= $textarea; ?>')" title="Hidden Comment: [hide]text[/hide]" alt="Hidden comment">Hide</a>
         <?php } ?>
                         </div>
                         <div class="bb_buttons_right">
@@ -2288,15 +2333,14 @@ class Text
     }
 
     // output smiley data in xml (we dont just draw the html because we want maxsmilies in js)
-    public function draw_smilies_from_XML($indexfrom = 0, $indexto = -1)
-    {
+    public function draw_smilies_from_XML($positionndexfrom = 0, $positionndexto = -1) {
         $count = 0;
         echo "<smilies>";
         foreach ($this->Smileys as $Key => $Val) {
-            if ($indexto >= 0 && $count >= $indexto) {
+            if ($positionndexto >= 0 && $count >= $positionndexto) {
                 break;
             }
-            if ($count >= $indexfrom) {
+            if ($count >= $positionndexfrom) {
                 echo '    <smiley>
         <bbcode>' . $Key . '</bbcode>
         <url>' . htmlentities($Val) . '</url>
@@ -2309,14 +2353,13 @@ class Text
 </smilies>';
     }
 
-    public function draw_smilies_from($indexfrom = 0, $indexto = -1, $textarea)
-    {
+    public function draw_smilies_from($positionndexfrom = 0, $positionndexto = -1, $textarea = '') {
         $count = 0;
         foreach ($this->Smileys as $Key => $Val) {
-            if ($indexto >= 0 && $count >= $indexto) {
+            if ($positionndexto >= 0 && $count >= $positionndexto) {
                 break;
             }
-            if ($count >= $indexfrom) {  // ' &nbsp;' .$Key. - jsut for printing in dev
+            if ($count >= $positionndexfrom) {  // ' &nbsp;' .$Key. - jsut for printing in dev
                 echo '<a class="bb_smiley" title="' . $Key . '" href="javascript:insert(\' ' . $Key . ' \',\'' . $textarea . '\');">' . $Val . '</a>';
             }
             $count++;
@@ -2324,8 +2367,7 @@ class Text
         reset($this->Smileys);
     }
 
-    public function draw_all_smilies($Sort = true, $AZ = true)
-    {
+    public function draw_all_smilies($Sort = true, $AZ = true) {
         $count = 0;
         if ($Sort) {
             if ($AZ)
@@ -2345,33 +2387,34 @@ class Text
         reset($this->Smileys);
     }
 
-    public function clean_bbcode($Str, $Advanced)
-    {
+    public function clean_bbcode($str, $Advanced) {
         // Change mcom tags into quote tags for non-mod users
-        if (!check_perms('site_moderate_forums')) {
-            $Str = preg_replace('/\[mcom\]/i', '[quote=Staff Comment]', $Str);
-            $Str = preg_replace('/\[\/mcom\]/i', '[/quote]', $Str);
-            $Str = preg_replace('/\[flash=([^\]])*\]/i', '[quote=Flash Object]', $Str);
-            $Str = preg_replace('/\[\/flash\]/i', '[/quote]', $Str);
+        if (!check_perms('forum_moderate')) {
+            $str = preg_replace('/\[mcom\]/i', '[quote=Staff Comment]', $str);
+            $str = preg_replace('/\[\/mcom\]/i', '[/quote]', $str);
+            $str = preg_replace('/\[hide\]/i', '[quote=Hidden Comment]', $str);
+            $str = preg_replace('/\[\/hide\]/i', '[/quote]', $str);
+            $str = preg_replace('/\[flash=([^\]])*\]/i', '[quote=Flash Object]', $str);
+            $str = preg_replace('/\[\/flash\]/i', '[/quote]', $str);
         }
 
-        return $Str;
+        return $str;
     }
 
 }
 
 /*
   //Uncomment this part to test the class via command line:
-  public function display_str($Str) {return $Str;}
+  public function display_str($str) {return $str;}
   public function check_perms($Perm) {return true;}
-  $Str = "hello
-  [pre]http://anonym.to/?http://whatshirts.portmerch.com/
+  $str = "hello
+  [pre]http://anonym.es/?http://whatshirts.portmerch.com/
   ====hi====
   ===hi===
   ==hi==[/pre]
   ====hi====
   hi";
-  $Text = NEW TEXT;
-  echo $Text->full_format($Str);
+  $bbCode = new \Luminance\Legacy\Text;
+  echo $bbCode->full_format($str);
   echo "\n"
  */

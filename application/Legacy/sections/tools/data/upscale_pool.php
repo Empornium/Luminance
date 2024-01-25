@@ -6,40 +6,46 @@ show_header('Upscale Pool');
     <h2>Ratio Watch</h2>
 <?php
 define('USERS_PER_PAGE', 50);
-list($Page,$Limit) = page_limit(USERS_PER_PAGE);
+list($Page, $Limit) = page_limit(USERS_PER_PAGE);
 
-$RS = $DB->query("SELECT
-    SQL_CALC_FOUND_ROWS
-    m.ID,
-    m.Username,
-    m.Uploaded,
-    m.Downloaded,
-    m.PermissionID,
-    m.Enabled,
-    i.Donor,
-    i.JoinDate,
-    i.RatioWatchEnds,
-    i.RatioWatchDownload,
-    m.RequiredRatio
-    FROM users_main AS m
-    LEFT JOIN users_info AS i ON i.UserID=m.ID
-    WHERE i.RatioWatchEnds != '0000-00-00 00:00:00'
-    AND m.Enabled = '1'
-    ORDER BY i.RatioWatchEnds ASC LIMIT $Limit");
-$DB->query("SELECT FOUND_ROWS()");
-list($Results) = $DB->next_record();
-$DB->query("SELECT COUNT(UserID) FROM users_info WHERE BanDate != '0000-00-00 00:00:00' AND BanReason = '2'");
-list($TotalDisabled) = $DB->next_record();
-$DB->set_query_id($RS);
+$records = $master->db->rawQuery(
+    "SELECT SQL_CALC_FOUND_ROWS
+            u.ID,
+            u.Username,
+            um.Uploaded,
+            um.Downloaded,
+            um.PermissionID,
+            um.Enabled,
+            ui.Donor,
+            ui.JoinDate,
+            ui.RatioWatchEnds,
+            ui.RatioWatchDownload,
+            um.RequiredRatio
+       FROM users AS u
+  LEFT JOIN users_main AS um ON um.ID=u.ID
+  LEFT JOIN users_info AS ui ON ui.UserID=u.ID
+      WHERE ui.RatioWatchEnds != '0000-00-00 00:00:00'
+        AND um.Enabled = '1'
+   ORDER BY ui.RatioWatchEnds ASC
+      LIMIT {$Limit}"
+)->fetchAll(\PDO::FETCH_NUM);
+$Results = $master->db->foundRows();
 
-if ($DB->record_count()) {
+$TotalDisabled = $master->db->rawQuery(
+    "SELECT COUNT(UserID)
+       FROM users_info
+      WHERE BanDate != '0000-00-00 00:00:00'
+        AND BanReason = '2'"
+)->fetchColumn();
+
+if ($Results > 0) {
 ?>
         <div class="box pad">
         <p>There are currently <?=number_format($Results)?> users queued by the system and <?=number_format($TotalDisabled)?> already disabled.</p>
     </div>
     <div class="linkbox">
 <?php
-    $Pages=get_pages($Page,$Results,USERS_PER_PAGE,11) ;
+    $Pages = get_pages($Page, $Results, USERS_PER_PAGE, 11);
     echo $Pages;
 ?>
     </div>
@@ -54,15 +60,15 @@ if ($DB->record_count()) {
             <td>Gamble</td>
             <td>Registered</td>
             <td>Remaining</td>
-            <td>Lifespan</td>
         </tr>
 <?php
-    while (list($UserID, $Username, $Uploaded, $Downloaded, $PermissionID, $Enabled, $Donor, $Joined, $RatioWatchEnds, $RatioWatchDownload, $RequiredRatio)=$DB->next_record()) {
-    $Row = ($Row == 'b') ? 'a' : 'b';
+    foreach ($records as $record) {
+    list($userID, $Username, $Uploaded, $Downloaded, $PermissionID, $enabled, $Donor, $Joined, $RatioWatchEnds, $RatioWatchDownload, $RequiredRatio) = $record;
+    $row = ($row ?? 'a') == 'a' ? 'b' : 'a';
 
 ?>
-        <tr class="row<?=$Row?>">
-            <td><?=format_username($UserID, $Username, $Donor, true, $Enabled, $PermissionID)?></td>
+        <tr class="row<?=$row?>">
+            <td><?=format_username($userID, $Donor, true, $enabled, $PermissionID)?></td>
             <td><?=get_size($Uploaded)?></td>
             <td><?=get_size($Downloaded)?></td>
             <td><?=ratio($Uploaded, $Downloaded)?></td>
@@ -71,7 +77,6 @@ if ($DB->record_count()) {
             <td><?=get_size($Downloaded-$RatioWatchDownload)?></td>
             <td><?=time_diff($Joined,2)?></td>
             <td><?=time_diff($RatioWatchEnds)?></td>
-            <td><?php //time_diff(strtotime($Joined), strtotime($RatioWatchEnds))?></td>
         </tr>
 <?php 	} ?>
     </table>

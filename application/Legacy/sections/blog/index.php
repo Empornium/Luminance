@@ -4,6 +4,7 @@ enforce_login();
 require(SERVER_ROOT.'/Legacy/sections/blog/functions.php');
 
 // we also use this code for the contests section
+$blogSection = ($blogSection ?? 'Blog');
 if (!in_array($blogSection,['Blog', 'Contests'])) $blogSection = 'Blog';
 
 $thispage = lcfirst($blogSection).'.php';
@@ -14,10 +15,15 @@ if (!empty($_REQUEST['action'])) {
     switch ($_REQUEST['action']) {
         case 'removelink' :
             authorize();
-            if (is_number($_GET['id'])) {
-                $master->db->raw_query("UPDATE blog SET ThreadID=NULL WHERE ID=:blogid", [':blogid' => $_GET['id']]);
-                $master->cache->delete_value(strtolower($blogSection));
-                $master->cache->delete_value('feed_blog');
+            if (is_integer_string($_GET['id'])) {
+                $master->db->rawQuery(
+                    "UPDATE blog
+                        SET ThreadID = NULL
+                      WHERE ID = ?",
+                    [$_GET['id']]
+                );
+                $master->cache->deleteValue(strtolower($blogSection));
+                $master->cache->deleteValue('feed_blog');
             }
             header('Location: '.$thispage);
             break;
@@ -29,11 +35,16 @@ if (!empty($_REQUEST['action'])) {
 
         case 'deletepost':
             authorize();
-            if (is_number($_GET['id'])) {
-                $master->db->raw_query("DELETE FROM blog WHERE ID=:blogid", [':blogid' => $_GET['id']]);
-                $master->cache->delete_value(strtolower($blogSection));
-                $master->cache->delete_value(strtolower($blogSection.'_latest_id'));
-                $master->cache->delete_value('feed_blog');
+            if (is_integer_string($_GET['id'])) {
+                $master->db->rawQuery(
+                    "DELETE
+                       FROM blog
+                      WHERE ID = ?",
+                    [$_GET['id']]
+                );
+                $master->cache->deleteValue(strtolower($blogSection));
+                $master->cache->deleteValue(strtolower($blogSection.'_latest_id'));
+                $master->cache->deleteValue('feed_blog');
             }
             header('Location: '.$thispage);
             break;

@@ -3,32 +3,41 @@ if (!check_perms('admin_update_geoip')) error(403);
 
 set_time_limit(0);
 
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
 $num_users = isset($_REQUEST['numusers'])?(int) $_REQUEST['numusers']:10;
 
-if($num_users<=0)$num_users=1;
+if ($num_users<=0)$num_users=1;
 
 $done='';
 
 if ($_REQUEST['submit']=='process') {
-    $done= 'done';
-    $DB->query("SELECT ID, IP, Username FROM users_main
-                 WHERE Enabled='1'
-                   AND ipcc=''
-                   AND IP!='0.0.0.0' AND IP!=''
-              ORDER BY ID DESC
-                 LIMIT $num_users");
-    $Users = $DB->to_array();
+    $done = 'done';
+    $Users = $master->db->rawQuery(
+        "SELECT u.ID, INET6_NTOA(i.StartAddress) AS IP, u.Username
+           FROM users AS u
+      LEFT JOIN users_main AS um ON u.ID = um.ID
+      LEFT JOIN ips AS i ON u.IPID = i.ID
+          WHERE Enabled = '1'
+            AND ipcc = ''
+            AND IP != '0.0.0.0' AND IP != ''
+       ORDER BY ID DESC
+          LIMIT {$num_users}"
+    )->fetchAll(\PDO::FETCH_NUM);
 
     foreach ($Users as $User) {
-        list($UserID, $IP, $Username) = $User;
+        list($userID, $IP, $Username) = $User;
 
         // auto set if we have an ip to work with and data is missing
         if ($IP) {
             $ipcc = geoip($IP);
-            $DB->query("UPDATE users_main SET ipcc='$ipcc' WHERE ID='$UserID'");
-            $Results[] = "| " . str_pad($UserID, 7)."| ". str_pad($Username, 14)."| ".str_pad($ipcc,2)." |"; //  ($IP)
+            $master->db->rawQuery(
+                "UPDATE users_main
+                    SET ipcc = ?
+                  WHERE ID = ?",
+                [$ipcc, $userID]
+            );
+            $Results[] = "| " . str_pad($userID, 7)."| ". str_pad($Username, 14)."| ".str_pad($ipcc,2)." |"; //  ($IP)
         }
     }
 
@@ -46,20 +55,22 @@ if ($_REQUEST['submit']=='process') {
 
     $done= 'filled users_geo_distribution';
 
-    $DB->query("TRUNCATE TABLE users_geodistribution");
-    $DB->query("INSERT INTO users_geodistribution (Code, Users)
-                       SELECT ipcc, COUNT(ID) AS NumUsers
-                         FROM users_main
-                        WHERE Enabled='1' AND ipcc != ''
-                        GROUP BY ipcc
-                     ORDER BY NumUsers DESC");
+    $master->db->rawQuery("TRUNCATE TABLE users_geodistribution");
+    $master->db->rawQuery(
+        "INSERT INTO users_geodistribution (Code, Users)
+            SELECT ipcc, COUNT(ID) AS NumUsers
+              FROM users_main
+             WHERE Enabled = '1' AND ipcc != ''
+          GROUP BY ipcc
+          ORDER BY NumUsers DESC"
+    );
+    $numinserted = $master->db->foundRows();
 
-    $numinserted = $DB->affected_rows();
-    $ret = "[b]inserted $numinserted records[/b]";
-    $Cache->delete_value('geodistribution');
+    $ret = "[b]inserted {$numinserted} records[/b]";
+    $master->cache->deleteValue('geodistribution');
 }
 
-show_header('Repair Geo-Distribution','bbcode');
+show_header('Repair Geo-Distribution', 'bbcode');
 
 ?>
 <div class="thin">
@@ -76,14 +87,14 @@ show_header('Repair Geo-Distribution','bbcode');
                     <form action="" method="post">
                         <input type="hidden" name="action" value="repair_geoip" />
                         <label for="numusers" >num:</label>
-                        <input size="6" type="text" name="numusers" value="<?=$num_users?>" />
+                        <input size="6" type="text" id="numusers" name="numusers" value="<?=$num_users?>" />
                         <input type="submit" name="submit" value="process"/>
                     </form><br/>
                 </td>
             </tr>
             <tr>
                 <td style="vertical-align: top" class="center">
-                    <?php  if($done) echo $Text->full_format( "[size=2][b][color=red]status: $done [/color][/b][/size][br]$ret " );?>
+                    <?php  if ($done) echo $bbCode->full_format( "[size=2][b][color=red]status: $done [/color][/b][/size][br]$ret ");?>
                 </td>
             </tr>
             <tr>

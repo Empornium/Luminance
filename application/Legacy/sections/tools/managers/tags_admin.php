@@ -5,7 +5,7 @@ if (!check_perms('admin_manage_tags')) {
 
 $UseMultiInterface= true;
 
-show_header('Official Tags Manager','tagmanager');
+show_header('Official Tags Manager', 'tagmanager');
 
 printRstMessage();
 ?>
@@ -17,7 +17,7 @@ printRstMessage();
     <h2>permanently remove tag</h2>
     <form  class="" action="tools.php" method="post">
         <input type="hidden" name="action" value="tags_admin_alter" />
-        <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+        <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
         <div class="tagtable">
             <div class="box pad center shadow">
                 <div class="pad" style="text-align:left">
@@ -47,7 +47,7 @@ printRstMessage();
     <h2>recount tag uses</h2>
     <form  class="" action="tools.php" method="post">
         <input type="hidden" name="action" value="tags_admin_alter" />
-        <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+        <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
         <div class="tagtable">
             <div class="box pad center shadow">
                 <div class="pad" style="text-align:left">

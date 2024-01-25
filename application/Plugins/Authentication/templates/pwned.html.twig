@@ -1,11 +1,22 @@
-{% extends "core/base.html.twig" %}
+{% extends "core/public_page.html.twig" %}
 
-{% block content %}
-    <div style="color:red;font-weight:bold; background-color: rgba(255, 255, 255, 0.12); width:300px;border-radius:5px;padding:10px;">
-        <h2>Your account has been blocked</h2></br>
-        <p>You have re-used the same password on another site that got breached.</p><br>
-        <p>
-            To avoid anyone getting access to your Empornium account, you need to <a href="/users/recover">change your password</a> to a unique password used only on Empornium.
-        </p>
+{% block main_content %}
+    <div class="full_width centered">
+        <div class="important">
+            <h2>Your account has been blocked!</h2></br>
+            <p>You have re-used the same password on another site that got breached.</p>
+            <br>
+            <p>To avoid anyone getting access to your {{ settings.main.site_name }} account, you need to change your password to a strong, unique password used only on {{ settings.main.site_name }}.</p>
+            </br>
+            <p>If you cannot remember your registered email simply input your username on the recovery page and a password reset email will be sent to your default email address.</p>
+            </br>
+            <p>If you no longer have access to your email or require assistance please use the IRC window below to contact staff.</p>
+            </br>
+            <p>
+                <span class="underline"><a href="/user/recover">Click here to change your password.</a></span>
+            </p>
+        </div>
+        </br>
+        <iframe src="{{web_irc}}" width="98%" height="600"></iframe>
     </div>
 {% endblock %}

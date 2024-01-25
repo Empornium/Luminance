@@ -1,0 +1,54 @@
+<div class="head">
+        <strong>Description</strong>
+        <span style="float:right;"><a href="#" id="desctoggle" onclick="Desc_Toggle(); return false;">(Hide)</a></span>
+</div>
+<div class="box">
+    <div id="descbox" >
+        <div id="content{{ group.ID }}" class="body">
+            {% if group.Body is not empty %}
+                {{ bbcode.full_format(group.Body)|raw }}
+            {% else %}
+                There is no information on this torrent.
+            {% endif %}
+
+            {% if auth.isAllowed('torrent_review') %}
+                {% if group.EditedUserID is not empty %}
+                    <div class="post_footer">
+                        <a href="#descbox" onclick="LoadTorEdit({{ group.ID }}, 1); return false;">&laquo;</a>
+                        <span class="editedby">Last edited by
+                            {{ render.username(group.EditedUserID, usernameOptions)|raw }} {{ time_diff(group.EditedTime, 2, true, true)|raw }}
+                        </span>
+                        &nbsp;&nbsp;
+                        <a href="#content{{ group.ID }}{{ torrents[0].ID }}" onclick="RevertEdit({{ group.ID }}); return false;" title="remove last edit">&reg;</a>
+                    </div>
+                {% endif %}
+            {% endif %}
+            {% if not torrents[0].Anonymous %}
+                {% set torrentSig = torrents[0].uploader.legacy['TorrentSignature'] %}
+                {% if torrentSig is not empty %}
+                    <div id="torrentsigbox" style="max-height: {{constant('TORRENT_SIG_MAX_HEIGHT') }}px">
+                        {{ bbcode.full_format(torrentSig)|raw }}
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% if group.thanks.names is not empty or group.canThank(ActiveUser) %}
+    <div class="head">Thanks</div>
+    <div class="box pad center">
+        {% if group.canThank(ActiveUser) %}
+            <form action="torrents.php" method="post" id="thanksform">
+                <input type="hidden" name="action" value="thank" />
+                <input type="hidden" name="groupid" value="{{ group.ID }}" />
+                <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                <input id="thanksbutton" type="button" onclick="Say_Thanks()" value="Thank the uploader!" class=" center" style="font-weight:bold;font-size:larger;" />
+           </form>
+        {% endif %}
+        <div  id="thanksdiv" class="pad {{ group.thanks.names is empty ? 'hidden'}}" style="text-align:left">
+            <p>
+                <strong id="thanksdigest">The following {{ group.thanks.count }} people said thanks!</strong> &nbsp;<span id="thankstext">{{ group.thanks.names|decode }}</span>
+            </p>
+        </div>
+    </div>
+{% endif %}

@@ -3,68 +3,69 @@ namespace Luminance\Services;
 
 use Luminance\Core\Master;
 use Luminance\Core\Service;
+
+use Luminance\Errors\InternalError;
 use Luminance\Errors\ConfigurationError;
 use Luminance\Errors\SystemError;
 use Luminance\Errors\AuthError;
+use Luminance\Errors\InputError;
 
 use \Defuse\Crypto\Crypto as DCrypto;
 use \Defuse\Crypto\Exception as DCryptoEx;
-use Luminance\Errors\UserError;
 
 class Crypto extends Service {
 
-    protected $CryptoKey;
-    protected $DerivedKeys = [];
+    protected $cryptoKey;
+    protected $derivedKeys = [];
 
     public function __construct(Master $master) {
         parent::__construct($master);
-        require_once($master->library_path . '/php-encryption/autoload.php');
-        $this->CryptoKey = $this->hex2bin($this->master->settings->keys->crypto_key);
-        if (strlen($this->CryptoKey) != 16) {
+        $this->cryptoKey = $this->hex2bin($this->master->settings->keys->crypto_key);
+        if (!(strlen($this->cryptoKey) === 16)) {
             throw new ConfigurationError('No valid encryption key set!');
         }
     }
 
-    public function encrypt($Message, $KeyIdentifier = 'default', $Hex = false) {
-        $Key = $this->get_derived_key($KeyIdentifier);
-        if (is_array($Message)) $Message = serialize($Message);
+    public function encrypt($message, $keyIdentifier = 'default', $hex = false) {
+        $key = $this->getDerivedKey($keyIdentifier);
+        if (is_array($message)) $message = serialize($message);
         try {
-            $Ciphertext = DCrypto::encrypt($Message, $Key);
+            $ciphertext = DCrypto::encrypt($message, $key);
         } catch (DCryptoEx\CryptoTestFailedException $ex) {
             throw new SystemError('Cannot safely perform encryption');
-        } catch (DCryptoEx\CannotPerformOperationException $ex) {
+        } catch (DCryptoEx\CannotPerformOperation $ex) {
             throw new SystemError('Cannot safely perform encryption');
         }
-        if ($Hex) $Ciphertext = $this->bin2hex($Ciphertext);
-        return $Ciphertext;
+        if ($hex === true) $ciphertext = $this->bin2hex($ciphertext);
+        return $ciphertext;
     }
 
-    public function decrypt($Ciphertext, $KeyIdentifier = 'default', $Hex = false) {
+    public function decrypt($ciphertext, $keyIdentifier = 'default', $hex = false) {
         # Always check for return value === false when using this!
         # It implies the ciphertext was invalid.
-        if ($Hex) {
-            if (!ctype_xdigit($Ciphertext)) {
-                throw new UserError('Invalid token format');
+        if ($hex === true) {
+            if (!ctype_xdigit($ciphertext)) {
+                throw new InputError('Invalid token format');
             }
-            $Ciphertext = $this->hex2bin($Ciphertext);
+            $ciphertext = $this->hex2bin($ciphertext);
         }
-        $Key = $this->get_derived_key($KeyIdentifier);
+        $key = $this->getDerivedKey($keyIdentifier);
         try {
-            $Message = DCrypto::decrypt($Ciphertext, $Key);
+            $message = DCrypto::decrypt($ciphertext, $key);
         } catch (DCryptoEx\InvalidCiphertextException $ex) {
             # This *could* be an attempt at sabotage. Unless the key was recently changed.
             return false;
         } catch (DCryptoEx\CryptoTestFailedException $ex) {
             throw new SystemError('Cannot safely perform encryption');
-        } catch (DCryptoEx\CannotPerformOperationException $ex) {
+        } catch (DCryptoEx\CannotPerformOperation $ex) {
             throw new SystemError('Cannot safely perform encryption');
         }
-        if (@unserialize($Message)) $Message = unserialize($Message);
-        return $Message;
+        if (@unserialize($message)) $message = unserialize($message);
+        return $message;
     }
 
     protected function shortHMAC($keyIdentifier, $data) {
-        $key = $this->get_derived_key($keyIdentifier);
+        $key = $this->getDerivedKey($keyIdentifier);
         return substr(hash_hmac('sha256', $data, $key, true), 0, 12);
     }
 
@@ -84,10 +85,14 @@ class Crypto extends Service {
             $fullToken = $this->hex2bin($token);
             $baseToken = substr($fullToken, 0, 12);
             if (strlen($baseToken) < 12) {
-                throw new AuthError("Malformed Auth Token", "Unauthorized");
+                throw new AuthError('Unauthorized', 'Malformed Auth Token', '/login');
             }
             $unpacked = unpack('a4actionHash/a4cid/Ntimestamp', $baseToken);
-            $minTimestamp = intval(date('U')) - $duration;
+            if ($duration === 0) {
+                $minTimestamp = $unpacked['timestamp'];
+            } else {
+                $minTimestamp = intval(date('U')) - $duration;
+            }
             $result = (
                 $this->shortHash($action) === $unpacked['actionHash'] &&
                 $this->shortHash($cid) === $unpacked['cid'] &&
@@ -95,21 +100,21 @@ class Crypto extends Service {
                 $unpacked['timestamp'] >= $minTimestamp
             );
             return $result;
-        } catch (Exception $e) {
-            throw new AuthError("Bots are forbidden", "Unauthorized", "/login");
+        } catch (\Exception $e) {
+            throw new AuthError('Unauthorized', 'Invalid authentication token', '/login');
         }
     }
 
-    public function random_bytes($length) {
+    public function randomBytes($length) {
         $strong = null;
         $bytes = openssl_random_pseudo_bytes($length, $strong);
-        if ($strong !== true) {
+        if (!($strong === true)) {
             throw new SystemError("No strong PRNG available.");
         }
         return $bytes;
     }
 
-    public function random_string($length = 32, $chars = 'abcdefghijklmnopqrstuvwxyz0123456789') {
+    public function randomString($length = 32, $chars = 'abcdefghijklmnopqrstuvwxyz0123456789') {
         # This is intended to provide an unbiased random string suitable for use in strong crypto.
         # Don't mess with it unless you fully understand it.
         $mod = strlen($chars);
@@ -118,7 +123,7 @@ class Crypto extends Service {
 
         while (strlen($target) < $length) {
             $req = $length - strlen($target);
-            $bytes = $this->random_bytes($req);
+            $bytes = $this->randomBytes($req);
             for ($i = 0; $i < $req; $i++) {
                 $val = ord(substr($bytes, $i, 1));
                 if ($val < $max) {
@@ -129,88 +134,88 @@ class Crypto extends Service {
         return $target;
     }
 
-    protected function get_derived_key($Identifier) {
-        if (array_key_exists($Identifier, $this->DerivedKeys)) {
-            $DerivedKey = $this->DerivedKeys[$Identifier];
+    protected function getDerivedKey($identifier) {
+        if (array_key_exists($identifier, $this->derivedKeys)) {
+            $derivedKey = $this->derivedKeys[$identifier];
         } else {
             # We prefix a short fixed random string to the actual identifier used for key derivation.
             # This might help make attacks against commonly used identifiers more difficult, or it might not help at all.
             # Either way, it can't do any harm.
             # Just don't change it and expect existing sessions etc. to still be valid!
-            $FixedRandom = 'j0Q7';
-            $DerivedKey = $this->derive_key($this->CryptoKey, 16, $FixedRandom . $Identifier);
-            $this->DerivedKeys[$Identifier] = $DerivedKey;
+            $fixedRandom = 'j0Q7';
+            $derivedKey = $this->deriveKey($this->cryptoKey, 16, $fixedRandom . $identifier);
+            $this->derivedKeys[$identifier] = $derivedKey;
         }
-        if (!strlen($DerivedKey)) {
-            throw new InternalException("Derived key failure");
+        if (!strlen($derivedKey)) {
+            throw new InternalError("Derived key failure");
         }
-        return $DerivedKey;
+        return $derivedKey;
     }
 
-    protected static function derive_key($ikm, $length, $info = '', $salt = null) {
+    protected static function deriveKey($ikm, $length, $info = '', $salt = null) {
         # This function has been borrowed from the php-encryption library ("HKDF" function).
         # Although the library recommends only using its public methods, there appear to be
         # no other general purpose key derivation functions available, and this is still better
         # than no key derivation at all.
 
         $hash = 'sha256';
-        // Find the correct digest length as quickly as we can.
-        $digest_length = 32;
+        # Find the correct digest length as quickly as we can.
+        $digestLength = 32;
 
-        // Sanity-check the desired output length.
+        # Sanity-check the desired output length.
         if (empty($length) || !\is_int($length) ||
-            $length < 0 || $length > 255 * $digest_length) {
+            $length < 0 || $length > 255 * $digestLength) {
             throw new InternalError(
-                "Bad output length requested of derive_key."
+                "Bad output length requested of deriveKey."
             );
         }
 
-        // "if [salt] not provided, is set to a string of HashLen zeroes."
+        # "if [salt] not provided, is set to a string of HashLen zeroes."
         if (\is_null($salt)) {
-            $salt = \str_repeat("\x00", $digest_length);
+            $salt = \str_repeat("\x00", $digestLength);
         }
 
-        // HKDF-Extract:
-        // PRK = HMAC-Hash(salt, IKM)
-        // The salt is the HMAC key.
+        # HKDF-Extract:
+        # PRK = HMAC-Hash(salt, IKM)
+        # The salt is the HMAC key.
         $prk = \hash_hmac($hash, $ikm, $salt, true);
 
-        // HKDF-Expand:
+        # HKDF-Expand:
 
-        // This check is useless, but it serves as a reminder to the spec.
-        if (self::our_strlen($prk) < $digest_length) {
-            throw new InternalError('Failed check in derive_key');
+        # This check is useless, but it serves as a reminder to the spec.
+        if (self::ourStrlen($prk) < $digestLength) {
+            throw new InternalError('Failed check in deriveKey');
         }
 
-        // T(0) = ''
+        # T(0) = ''
         $t = '';
-        $last_block = '';
-        for ($block_index = 1; self::our_strlen($t) < $length; ++$block_index) {
-            // T(i) = HMAC-Hash(PRK, T(i-1) | info | 0x??)
-            $last_block = \hash_hmac(
+        $lastBlock = '';
+        for ($blockIndex = 1; self::ourStrlen($t) < $length; ++$blockIndex) {
+            # T(i) = HMAC-Hash(PRK, T(i-1) | info | 0x??)
+            $lastBlock = \hash_hmac(
                 $hash,
-                $last_block . $info . \chr($block_index),
+                $lastBlock . $info . \chr($blockIndex),
                 $prk,
                 true
             );
-            // T = T(1) | T(2) | T(3) | ... | T(N)
-            $t .= $last_block;
+            # T = T(1) | T(2) | T(3) | ... | T(N)
+            $t .= $lastBlock;
         }
 
-        // ORM = first L octets of T
-        $orm = self::our_substr($t, 0, $length);
+        # ORM = first L octets of T
+        $orm = self::ourSubstr($t, 0, $length);
         if ($orm === false) {
-            throw new InternalError('Failed check in derive_key');
+            throw new InternalError('Failed check in deriveKey');
         }
         return $orm;
     }
 
-    protected static function our_strlen($str) {
+    protected static function ourStrlen($str) {
         static $exists = null;
         if ($exists === null) {
             $exists = \function_exists('mb_strlen');
         }
-        if ($exists) {
+        if (!empty($exists)) {
             $length = \mb_strlen($str, '8bit');
             if ($length === false) {
                 throw new SystemError(
@@ -223,17 +228,17 @@ class Crypto extends Service {
         }
     }
 
-    protected static function our_substr($str, $start, $length = null) {
+    protected static function ourSubstr($str, $start, $length = null) {
         static $exists = null;
         if ($exists === null) {
             $exists = \function_exists('mb_substr');
         }
-        if ($exists) {
-            // mb_substr($str, 0, NULL, '8bit') returns an empty string on PHP
-            // 5.3, so we have to find the length ourselves.
+        if (!empty($exists)) {
+            # mb_substr($str, 0, NULL, '8bit') returns an empty string on PHP
+            # 5.3, so we have to find the length ourselves.
             if (!isset($length)) {
                 if ($start >= 0) {
-                    $length = self::our_strlen($str) - $start;
+                    $length = self::ourStrlen($str) - $start;
                 } else {
                     $length = -$start;
                 }
@@ -242,7 +247,7 @@ class Crypto extends Service {
             return \mb_substr($str, $start, $length, '8bit');
         }
 
-        // Unlike mb_substr(), substr() doesn't accept NULL for length
+        # Unlike mb_substr(), substr() doesn't accept NULL for length
         if (isset($length)) {
             return \substr($str, $start, $length);
         } else {
@@ -250,11 +255,15 @@ class Crypto extends Service {
         }
     }
 
-    public static function bin2hex($BinString) {
-        return DCrypto::binToHex($BinString);
+    public static function bin2hex($binString) {
+        return DCrypto::binToHex($binString);
     }
 
-    public static function hex2bin($HexString) {
-        return DCrypto::hexToBin($HexString);
+    public static function hex2bin($hexString) {
+        try {
+            return DCrypto::hexToBin($hexString);
+        } catch (\RangeException $error) {
+            throw new InputError('Invalid token format');
+        }
     }
 }

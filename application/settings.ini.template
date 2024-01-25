@@ -27,7 +27,7 @@
 ; (was: INTERNAL_URLS_REGEX)
 ;non_anon_domains = 'friendly.site.sx,imagehost.somelinkedsite.com'
 ;non_anon_urls_regex = ''
-
+site_logo = 'styles/public/images/logo.svg'
 
 [keys]
 ;enckey = ''

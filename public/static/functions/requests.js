@@ -1,4 +1,3 @@
-
 // 1 gb
 var minNewBounty = 1024 * 1024 * 1024;
 // 100 mb
@@ -57,7 +56,7 @@ function Get_Cookie() {
 }
 
 
-function Load_Details_Cookie()  {
+function Load_Details_Cookie() {
 
 
 	if(jQuery.cookie('requestDetailsState') == undefined) {
@@ -86,7 +85,7 @@ function Load_Details_Cookie()  {
 }
 
 function Load_Options() {
-    ajax.get('ajax.php?action=get_options', function (response) {
+    ajax.get('/ajax.php?action=get_options', function (response) {
         var options = json.decode(response);
         minNewBounty = options['MinCreateBounty'];
         minVote = options['MinVoteBounty'];
@@ -95,19 +94,33 @@ function Load_Options() {
 
 function Preview_Request() {
 	if ($('#preview').has_class('hidden')) {
-		var ToPost = [];
-		ToPost['body'] = $('#quickcomment').raw().value;
-		ajax.post('ajax.php?action=preview', ToPost, function (data) {
-			$('#preview').raw().innerHTML = data;
-			$('#preview').toggle();
-			$('#editor').toggle();
-			$('#previewbtn').raw().value = "Edit";
-		});
 	} else {
 		$('#preview').toggle();
 		$('#editor').toggle();
 		$('#previewbtn').raw().value = "Preview";
 	}
+}
+
+function Preview_Request() {
+    if ($('#preview_description').has_class('hidden')) {
+        var ToPost = [];
+        ToPost['body'] = $('#quickcomment').raw().value;
+        ajax.post('/ajax.php?action=preview', ToPost, function (data) {
+            $('#preview_description').raw().innerHTML = data;
+            $('#preview_description').toggle();
+            $('#editor').toggle();
+            $('#preview_image').raw().innerHTML = '<img class="scale_image" src="'+$('#image_id').raw().value+'">';
+            $('#preview_image').toggle();
+            $('.hidden_request').hide();
+            $('#previewbtn').raw().value = "Edit";
+        });
+    } else {
+        $('#preview_description').toggle();
+        $('#editor').toggle();
+        $('#preview_image').toggle();
+        $('.hidden_request').toggle();
+        $('#previewbtn').raw().value = "Preview";
+    }
 }
 
 // used on the requests page and user profile
@@ -123,7 +136,7 @@ function VotePromptMB(requestid) {
 
     if (!confirm(get_size(amount) + ' will immediately be removed from your upload total, are you sure?')) return;
 
-	ajax.get('requests.php?action=takevote&id=' + requestid + '&auth=' + $('#auth').raw().value + '&amount=' + amount, function (response) {
+	ajax.get('/requests.php?action=takevote&id=' + requestid + '&auth=' + $('#auth').raw().value + '&amount=' + amount, function (response) {
 
 			var x = json.decode(response);
 
@@ -167,7 +180,7 @@ function Vote(amount, requestid) {
         votecount = $('#vote_count_' + requestid).raw();
     }
 
-    ajax.get('requests.php?action=takevote&id=' + requestid + '&auth=' + $('#auth').raw().value + '&amount=' + amount, function (response) {
+    ajax.get('/requests.php?action=takevote&id=' + requestid + '&auth=' + $('#auth').raw().value + '&amount=' + amount, function (response) {
 
             var x = json.decode(response);
 

@@ -1,0 +1,9 @@
+<span class="languages" style="float:right;">
+    {% for userLanguage in user.languages %}
+        {% if userLanguage.language.flag_cc is not empty %}
+            <img style="vertical-align: bottom" alt="[{{ userLanguage.language.code }}]" title="[{{ userLanguage.language.code }}] {{ userLanguage.language.language }}" src="/static/common/flags/iso16/{{ userLanguage.language.flag_cc }}.png" />&nbsp;
+        {% else %}
+            <span class="language" title="[{{ userLanguage.language.code }}] {{ userLanguage.language.language }}" >[{{ userLanguage.language.code }}]&nbsp;
+        {% endif %}
+    {% endfor %}
+</span>

@@ -1,47 +1,137 @@
 var username;
 var postid;
 
-function Quote(section, post, place, user)
-{
+function GetSection() {
+    if (location.href.match(/forum/) || location.href.match(/userhistory\.php\?action\=posts/)) {
+        return {
+            link:'/forum/',
+            name:'forum',
+            endpoint:'/forum/post',
+            legacy: false
+        }
+    } else if (location.href.match(/collage/)) {
+        return {
+            link:'/collage/',
+            name:'collage',
+            endpoint:'/collage/post',
+            legacy: false
+        }
+    } else if (location.href.match(/requests\.php/)) {
+        return {
+            link:'/requests.php',
+            name:'requests',
+            legacy: true
+        }
+    } else if (location.href.match(/torrents\.php/) || location.href.match(/userhistory\.php\?action\=comments/)) {
+        return {
+            link:'/torrents.php',
+            name:'torrents',
+            legacy: true
+        }
+    } else if (location.href.match(/staffpm\.php/)) {
+        return {
+            link:'/staffpm.php',
+            name:'staffpm',
+            legacy: true
+        }
+    } else if (location.href.match(/user\/inbox/)) {
+        return {
+            link:'/user/inbox/',
+            name:'inbox',
+            endpoint:'/user/inbox/message',
+            legacy: false
+        }
+    }
+}
+
+const luminance = ['forum', 'collage', 'inbox'];
+
+function Quote(post, place, user) {
     username = user;
     postid = post;
-    ajax.get("?action=get_post&section=" + section + "&body=1&post=" + postid, function(response) {
+    section = GetSection();
+    var ajaxurl = section.link + "?action=get_post&section=" + section.name + "&body=1&post=" + postid;
+    if (luminance.includes(section.name)) {
+        ajaxurl = section.endpoint + '/' + postid + '/get?&body=1';
+    }
+    ajax.get(ajaxurl, function(response) {
+        if (luminance.includes(section.name)) {
+            var x = json.decode(response);
+        } else { // TODO fix all the other url endpoints to return JSON
+            var x = response;
+        }
         var params = place != '' ? ","+place+","+postid : '';
-        var s = "[quote="+username+params+"]" +  html_entity_decode(response) + "[/quote]";
+        var s = "[quote="+username+params+"]" +  html_entity_decode(x) + "[/quote]";
         if ( $('#quickpost').raw().value != '')   s = "\n" + s + "\n";
         insert( s, 'quickpost');
         resize('quickpost');
     });
 }
 
-function Edit_Form(section, post, key)
-{
+function Edit_Form(post) {
     postid = post;
+    section = GetSection();
+    if ($('#edit'+postid).disabled) {
+        return;
+    }
     $('#bar' + postid).raw().cancel = $('#content' + postid).raw().innerHTML;
     $('#bar' + postid).raw().oldbar = $('#bar' + postid).raw().innerHTML;
-    $('#content' + postid).raw().innerHTML = "<div id=\"preview" + postid + "\"></div><input type=\"hidden\" name=\"auth\" value=\"" + authkey + "\" /><input type=\"hidden\" id=\"key"+postid+"\" name=\"key\" value=\"" + key + "\" /><input type=\"hidden\" name=\"post\" value=\"" + postid + "\" /><div id=\"editcont" + postid + "\"></div>";
-    $('#bar' + postid).raw().innerHTML = "<input type=\"button\" value=\"Preview\" onclick=\"Preview_Edit('" + postid + "');\" /><input type=\"button\" value=\"Post\" onclick=\"Save_Edit('" + postid + "')\" /><input type=\"button\" value=\"Cancel\" onclick=\"Cancel_Edit('" + postid + "');\" />";
-    ajax.get("?action=get_post&section=" + section + "&post=" + postid, function(response) {
+    $('#content' + postid).raw().innerHTML = "<div id=\"preview" + postid + "\"></div><input type=\"hidden\" name=\"auth\" value=\"" + authkey + "\" /><input type=\"hidden\" name=\"post\" value=\"" + postid + "\" /><div id=\"editcont" + postid + "\"></div>";
+    $('#edit'+postid).disable(true);
+    if (section.legacy) {
+        bar  = "";
+        bar += "<input type=\"button\" value=\"Preview\" onclick=\"PreviewEdit('" + postid + "');\" />";
+        bar += "<input type=\"button\" value=\"Post\" onclick=\"SaveEdit('" + postid + "');\" />";
+        bar += "<input type=\"button\" value=\"Cancel\" onclick=\"CancelEdit('" + postid + "');\" />";
+        $('#bar' + postid).raw().innerHTML = bar;
+    } else {
+        $('#edit_preview_' + postid).show();
+        $('#edit_preview_cancel_' + postid).hide();
+        $('#edit_save_' + postid).show();
+        $('#edit_cancel_' + postid).show();
+    }
+    var ajaxurl = section.link + "?action=get_post&section=" + section.name + "&post=" + postid;
+    if (luminance.includes(section.name)) {
+        ajaxurl = '/'+section.name+'/post/' + postid + '/get';
+    }
+    ajax.get(ajaxurl, function(response) {
         $('#editcont' + postid).raw().innerHTML = response;
         resize('editbox' + postid);
     });
 }
 
-function Cancel_Edit(postid)
-{
-    $('#bar' + postid).raw().innerHTML = $('#bar' + postid).raw().oldbar;
+function CancelEdit(postid) {
+    if (section.legacy) {
+        $('#bar' + postid).raw().innerHTML = $('#bar' + postid).raw().oldbar;
+    } else {
+        $('#edit_preview_' + postid).hide();
+        $('#edit_preview_cancel_' + postid).hide();
+        $('#edit_save_' + postid).hide();
+        $('#edit_cancel_' + postid).hide();
+    }
     $('#content' + postid).raw().innerHTML = $('#bar' + postid).raw().cancel;
+    $('#edit'+postid).disable(false);
 }
 
-function Preview_Edit(postid)
-{
-    var ToPost = [];
-    ToPost['auth'] = authkey;
-    ToPost['key'] = $('#key'+postid).raw().value;
-    ToPost['post'] = postid;
-    ToPost['body'] = $('#editbox'+postid).raw().value;
-    $('#bar' + postid).raw().innerHTML = "<input type=\"button\" value=\"Editor\" onclick=\"Cancel_Preview('" + postid + "');\" /><input type=\"button\" value=\"Post\" onclick=\"Save_Edit('" + postid + "')\" /><input type=\"button\" value=\"Cancel\" onclick=\"Cancel_Edit('" + postid + "');\" />";
-    ajax.post("ajax.php?action=preview", ToPost, function(response) {
+function PreviewEdit(postid) {
+    var toPost = [];
+    toPost['auth'] = authkey;
+    toPost['post'] = postid;
+    toPost['body'] = $('#editbox'+postid).raw().value;
+
+    if (section.legacy) {
+        bar  = "";
+        bar += "<input type=\"button\" value=\"Editor\" onclick=\"CancelPreview('" + postid + "');\" />";
+        bar += "<input type=\"button\" value=\"Post\" onclick=\"SaveEdit('" + postid + "')\" />";
+        bar += "<input type=\"button\" value=\"Cancel\" onclick=\"CancelEdit('" + postid + "');\" />";
+        $('#bar' + postid).raw().innerHTML = bar;
+    } else {
+        $('#edit_preview_' + postid).hide();
+        $('#edit_preview_cancel_' + postid).show();
+        $('#edit_save_' + postid).show();
+        $('#edit_cancel_' + postid).show();
+    }
+    ajax.post("/ajax.php?action=preview", toPost, function(response) {
         $('#preview' + postid).raw().innerHTML = response;
         $('#editcont' + postid).hide();
         Prism.highlightAll();
@@ -50,54 +140,78 @@ function Preview_Edit(postid)
     });
 }
 
-function Cancel_Preview(postid)
-{
-    $('#bar' + postid).raw().innerHTML = "<input type=\"button\" value=\"Preview\" onclick=\"Preview_Edit('" + postid + "');\" /><input type=\"button\" value=\"Post\" onclick=\"Save_Edit('" + postid + "')\" /><input type=\"button\" value=\"Cancel\" onclick=\"Cancel_Edit('" + postid + "');\" />";
+function CancelPreview(postid) {
+    if (section.legacy) {
+        bar  = "";
+        bar += "<input type=\"button\" value=\"Preview\" onclick=\"PreviewEdit('" + postid + "');\" />";
+        bar += "<input type=\"button\" value=\"Post\" onclick=\"SaveEdit('" + postid + "');\" />";
+        bar += "<input type=\"button\" value=\"Cancel\" onclick=\"CancelEdit('" + postid + "');\" />";
+        $('#bar' + postid).raw().innerHTML = bar;
+    } else {
+        $('#edit_preview_' + postid).show();
+        $('#edit_preview_cancel_' + postid).hide();
+        $('#edit_save_' + postid).show();
+        $('#edit_cancel_' + postid).show();
+    }
     $('#preview' + postid).raw().innerHTML = "";
     $('#editcont' + postid).show();
 }
 
+function SaveEdit(postid, token = null) {
+    var toPost = [];
+    toPost['body'] = $('#editbox'+postid).raw().value;
+    var ajaxurl = '/ajax.php?action=takeedit_post';
 
+    section = GetSection();
+    toPost['section'] = section.name;
+    toPost['token'] = token;
 
-
-function Save_Edit(postid)
-{
-    var ToPost = [];
-    ToPost['auth'] = authkey;
-    ToPost['key']  = $('#key'+postid).raw().value;
-    ToPost['post'] = postid;
-    ToPost['body'] = $('#editbox'+postid).raw().value;
-    var ajaxurl = 'ajax.php?action=takeedit_post';
-
-    if (location.href.match(/forums\.php/) || location.href.match(/userhistory\.php\?action\=posts/)) {
-        ajaxurl = "forums.php?action=takeedit";
-        ToPost['section'] = 'forums'
-    } else if (location.href.match(/collages?\.php/)) {
-        //ajaxurl = "collages.php?action=takeedit_comment";
-        ToPost['section'] = 'collages'
-    } else if (location.href.match(/requests\.php/)) {
-        //ajaxurl = "requests.php?action=takeedit_comment";
-        ToPost['section'] = 'requests'
-    } else if (location.href.match(/staffpm\.php/)) {
-        //ajaxurl = "staffpm.php?action=takeedit";
-        ToPost['section'] = 'staffpm'
+    // Split Luminance and Gazelle endpoints
+    if (luminance.includes(section.name)) {
+        ajaxurl = '/'+section.name+'/post/'+postid+'/edit';
     } else {
-        //ajaxurl = "torrents.php?action=takeedit_post";
-        ToPost['section'] = 'torrents'
+        toPost['auth'] = authkey;
+        toPost['post'] = postid;
     }
 
-    ajax.post(ajaxurl, ToPost, function (response) {
+    ajax.post(ajaxurl, toPost, function (response) {
         var x = json.decode(response);
         if (!is_array(x)) {
              alert(x);
              return;
         }
         if (x[0]=='saved') {
-            $('#bar' + postid).raw().innerHTML = $('#bar' + postid).raw().oldbar;
+            if (section.legacy) {
+                $('#bar' + postid).raw().innerHTML = $('#bar' + postid).raw().oldbar;
+            } else {
+                $('#edit_preview_' + postid).hide();
+                $('#edit_preview_cancel_' + postid).hide();
+                $('#edit_save_' + postid).hide();
+                $('#edit_cancel_' + postid).hide();
+            }
+
             $('#editcont' + postid).raw().innerHTML = '';
-            $('#content' + postid).raw().innerHTML = x[1];
+
+            // Forum is "special"
+            if (luminance.includes(section.name)) {
+                $('#post' + postid).raw().innerHTML = x[1];
+            } else {
+                $('#content' + postid).raw().innerHTML = x[1];
+            }
+            $('#edit'+postid).disable(false);
         } else {
-            $('#bar' + postid).raw().innerHTML = "<input type=\"button\" value=\"Editor\" onclick=\"Cancel_Preview('" + postid + "');\" /><input type=\"button\" value=\"Post\" onclick=\"Save_Edit('" + postid + "')\" /><input type=\"button\" value=\"Cancel\" onclick=\"Cancel_Edit('" + postid + "');\" />";
+            if (section.legacy) {
+                bar  = "";
+                bar += "<input type=\"button\" value=\"Editor\" onclick=\"CancelPreview('" + postid + "');\" />";
+                bar += "<input type=\"button\" value=\"Post\" onclick=\"SaveEdit('" + postid + "')\" />";
+                bar += "<input type=\"button\" value=\"Cancel\" onclick=\"CancelEdit('" + postid + "');\" />";
+                $('#bar' + postid).raw().innerHTML = bar;
+            } else {
+                $('#edit_preview_' + postid).hide();
+                $('#edit_preview_cancel_' + postid).show();
+                $('#edit_save_' + postid).show();
+                $('#edit_cancel_' + postid).show();
+            }
             $('#preview' + postid).raw().innerHTML = x[1];
         }
         $('#editcont' + postid).hide();
@@ -108,35 +222,76 @@ function Save_Edit(postid)
 
 }
 
-
-function ModUnlock(postid)
-{
-    var ToPost = [];
-    ToPost['auth'] = authkey;
-    ToPost['post'] = postid;
-    if (location.href.match(/forums\.php/) || location.href.match(/userhistory\.php\?action\=posts/)) {
-        ajax.post("forums.php?action=modunlock",ToPost, function (response) {
-            $('#content' + postid).raw().innerHTML = response;
-            $('#modunlock' + postid).remove();
+function EditLock(postid, status, token) {
+    var toPost = [];
+    toPost['status'] = status;
+    toPost['token'] = token;
+    console.log(toPost);
+    if (location.href.match(/forum/) || location.href.match(/userhistory\.php\?action\=posts/)) {
+        ajax.post("/forum/post/"+postid+"/editlock", toPost, function (response) {
+            $('#post' + postid).raw().innerHTML = response;
+        });
+    }
+    if (location.href.match(/collage/)) {
+        ajax.post("/collage/post/"+postid+"/editlock", toPost, function (response) {
+            $('#post' + postid).raw().innerHTML = response;
         });
     }
 }
 
-function TimeUnlock(postid)
-{
-    var ToPost = [];
-    ToPost['auth'] = authkey;
-    ToPost['post'] = postid;
-    if (location.href.match(/forums\.php/) || location.href.match(/userhistory\.php\?action\=posts/)) {
-        ajax.post("forums.php?action=timeunlock",ToPost, function (response) {
-            $('#timeunlock' + postid).raw().innerHTML = response;
+function TimeLock(postid, status, token) {
+    var toPost = [];
+    toPost['status'] = status;
+    toPost['token'] = token;
+    console.log(toPost);
+    if (location.href.match(/forum/) || location.href.match(/userhistory\.php\?action\=posts/)) {
+        ajax.post("/forum/post/"+postid+"/timelock", toPost, function (response) {
+            $('#post' + postid).raw().innerHTML = response;
+        });
+    }
+    if (location.href.match(/collage/)) {
+        ajax.post("/collage/post/"+postid+"/timelock", toPost, function (response) {
+            $('#post' + postid).raw().innerHTML = response;
         });
     }
 }
 
-function SetSplitInterface()
-{
-    $('#split_threadid').disable( !$('#split_merge').raw().checked );
+function PinPost(postid, status, token) {
+    var toPost = [];
+    toPost['status'] = status;
+    toPost['token'] = token;
+    console.log(toPost);
+    if (location.href.match(/forum/) || location.href.match(/userhistory\.php\?action\=posts/)) {
+        ajax.post("/forum/post/"+postid+"/pinpost", toPost, function (response) {
+            $('#post' + postid).raw().innerHTML = response;
+        });
+    }
+    if (location.href.match(/collage/)) {
+        ajax.post("/collage/post/"+postid+"/pinpost", toPost, function (response) {
+            $('#post' + postid).raw().innerHTML = response;
+        });
+    }
+}
+
+function TrashPost(postid, status, token) {
+    var toPost = [];
+    toPost['status'] = status;
+    toPost['token'] = token;
+    console.log(toPost);
+    if (location.href.match(/forum/) || location.href.match(/userhistory\.php\?action\=posts/)) {
+        ajax.post("/forum/post/"+postid+"/trash", toPost, function (response) {
+            jQuery('#post' + postid).replaceWith(response);
+        });
+    }
+    if (location.href.match(/collage/)) {
+        ajax.post("/collage/post/"+postid+"/trash", toPost, function (response) {
+            jQuery('#post' + postid).replaceWith(response);
+        });
+    }
+}
+
+function SetSplitInterface() {
+    $('#splitintothreadid').disable( !$('#split_merge').raw().checked );
     $('#split_comment').disable( !$('#split_trash').raw().checked );
     if ( $('#split_new').raw().checked ) {
        jQuery('#split_forum').css("color", 'black');
@@ -151,20 +306,20 @@ function SetSplitInterface()
     }
 }
 
-function Trash(threadid, postid)
-{
+function Trash(threadid, postid) {
     var reason = prompt('Move this post to the Trash forum\n\nComment:');
     if (reason && reason != '') {
-        var ToPost = [];
-        ToPost['action']= 'trash_post';
-        ToPost['auth'] = authkey;
-        ToPost['threadid']= threadid;
-        ToPost['postid'] = postid;
-        ToPost['comment'] = reason;
-        ajax.post("forums.php", ToPost, function (response) {
+        var toPost = [];
+        toPost['action']= 'trash_post';
+        toPost['auth'] = authkey;
+        toPost['threadid']= threadid;
+        toPost['postid'] = postid;
+        toPost['comment'] = reason;
+        ajax.post("/forum/post/" + postid + "/trash", toPost, function (response) {
             var x = json.decode(response);
             if (is_array(x)) {
                 $('#post' + postid).hide();
+                jQuery.modal.close();
                 //location.href=x[0];
             } else {    // error from ajax
                 alert(x);
@@ -174,36 +329,52 @@ function Trash(threadid, postid)
 }
 
 
+function DeletePost(post, token = null) {
+    postid = post;
+    section = GetSection();
+    var toPost = [];
+    if (confirm('Are you sure you wish to delete this post?') == true) {
+        if (luminance.includes(section.name)) {
+            ajaxurl = '/' + section.name + '/post/' + postid + '/delete';
+            toPost['token'] = token;
+            ajax.post(ajaxurl, toPost, function(response) {
+                var x = json.decode(response);
+                if (is_array(x)) {
+                    $('#post' + postid).hide();
+                    jQuery.modal.close();
+                // error from ajax... will be set inside the cookie
+                } else {
+                    alert(x);
+                }
+            });
+        } else {
+            switch(section.name) {
 
-function Delete(post)
-{
-  postid = post;
-  if (confirm('Are you sure you wish to delete this post?') == true) {
-    if (location.href.match(/forums\.php/) || location.href.match(/userhistory\.php\?action\=posts/)) {
-      ajax.get("forums.php?action=delete&auth=" + authkey + "&postid=" + postid, function () {
-        $('#post' + postid).hide();
-      });
-    } else if (location.href.match(/collage\.php/)) {
-      ajax.get("collage.php?action=delete_comment&auth=" + authkey + "&postid=" + postid, function () {
-        $('#post' + postid).hide();
-      });
-    } else if (location.href.match(/requests\.php/)) {
-      ajax.get("requests.php?action=delete_comment&auth=" + authkey + "&postid=" + postid, function () {
-        $('#post' + postid).hide();
-      });
-    } else {
-      ajax.get("torrents.php?action=delete_post&auth=" + authkey + "&postid=" + postid, function () {
-        $('#post' + postid).hide();
-      });
+                case 'torrents':
+                    ajax.get("/torrents.php?action=delete_post&auth=" + authkey + "&postid=" + postid, function () {
+                      $('#post' + postid).hide();
+                    });
+                    break;
+
+                case 'requests':
+                    ajax.get("/requests.php?action=delete_comment&auth=" + authkey + "&postid=" + postid, function () {
+                      $('#post' + postid).hide();
+                    });
+                    break;
+
+                default:
+                    // can't delete other types of post
+                    break;
+            }
+        }
     }
-  }
 }
 
 function Quick_Preview() {
   //var quickreplybuttons;
   $('#post_preview').raw().value = "Make changes";
   $('#post_preview').raw().preview = true;
-  ajax.post("ajax.php?action=preview","quickpostform", function(response){
+  ajax.post("/ajax.php?action=preview","quickpostform", function(response) {
     $('#quickreplypreview').show();
     $('#contentpreview').raw().innerHTML = response;
     $('#quickreplytext').hide();
@@ -224,17 +395,17 @@ function Quick_Edit() {
 function Newthread_Preview(mode) {
   $('#newthreadpreviewbutton').toggle();
   $('#newthreadeditbutton').toggle();
-  if(mode) { // Preview
-    ajax.post("ajax.php?action=preview","newthreadform", function(response){
+  if (mode) { // Preview
+    ajax.post("/ajax.php?action=preview","newthreadform", function(response) {
       $('#contentpreview').raw().innerHTML = response;
     });
     $('#newthreadtitle').raw().innerHTML = $('#title').raw().value;
     var pollanswers = $('#answer_block').raw();
-    if(pollanswers && pollanswers.children.length > 4) {
+    if (pollanswers && pollanswers.children.length > 4) {
       pollanswers = pollanswers.children;
       $('#pollquestion').raw().innerHTML = $('#pollquestionfield').raw().value;
-      for(var i=0; i<pollanswers.length; i+=2) {
-        if(!pollanswers[i].value) {continue;}
+      for (var i=0; i<pollanswers.length; i+=2) {
+        if (!pollanswers[i].value) {continue;}
         var el = document.createElement('input');
         el.id = 'answer_'+(i+1);
         el.type = 'radio';
@@ -247,7 +418,7 @@ function Newthread_Preview(mode) {
         $('#pollanswers').raw().appendChild(el);
         $('#pollanswers').raw().appendChild(document.createElement('br'));
       }
-      if($('#pollanswers').raw().children.length > 4) {
+      if ($('#pollanswers').raw().children.length > 4) {
         $('#pollpreview').show();
       }
     }
@@ -255,7 +426,7 @@ function Newthread_Preview(mode) {
     $('#pollpreview').hide();
     $('#newthreadtitle').raw().innerHTML = 'New Topic';
     var pollanswers = $('#pollanswers').raw();
-    if(pollanswers) {
+    if (pollanswers) {
       var el = document.createElement('div');
       el.id = 'pollanswers';
       pollanswers.parentNode.replaceChild(el, pollanswers);
@@ -266,44 +437,79 @@ function Newthread_Preview(mode) {
   $('#subscribediv').toggle();
 }
 
-function LoadEdit(type, post, depth) {
-    ajax.get("?action=ajax_get_edit&postid=" + post + "&depth=" + depth + "&type=" + type, function(response) {
-        $('#content' + post).raw().innerHTML = response;
+function LoadEdit(postid, depth) {
+    section = GetSection();
+    if (luminance.includes(section.name)) {
+        ajaxurl = '/'+section.name + '/post/' + postid + '/edit?&depth=' + depth;
+    } else {
+        var ajaxurl = section.link + "?action=ajax_get_edit&postid=" + postid + "&depth=" + depth + "&type=" + section.name;
+    }
+    ajax.get(ajaxurl, function(response) {
+        $('#content' + postid).raw().innerHTML = response;
     });
 }
 
-function RevertEdit(post) {
-    var ToPost = [];
-    ToPost['action']= 'revertedit';
-    ToPost['auth'] = authkey;
-    ToPost['post'] = post;
-    ajax.post("forums.php", ToPost, function(response) {
-        $('#content' + post).raw().innerHTML = response;
+function LoadTorEdit(postid, depth) {
+    section = GetSection();
+    ajaxurl = "/torrents.php?action=ajax_get_edit&postid=" + postid + "&depth=" + depth + "&type=descriptions";
+
+    ajax.get(ajaxurl, function(response) {
+        $('#content' + postid).raw().innerHTML = response;
     });
 }
 
-function AddPollOption(id) {
+function RevertEdit(postid, token = null) {
+    var toPost = [];
+    section = GetSection();
+    var ajaxurl = section.link;
+
+    // Split Luminance and Gazelle endpoints
+    if (luminance.includes(section.name)) {
+        ajaxurl = '/'+section.name+'/post/'+postid+'/revert';
+        toPost['token'] = token;
+    } else {
+        toPost['action']= 'revertedit';
+        toPost['auth'] = authkey;
+        toPost['post'] = postid;
+    }
+
+    ajax.post(ajaxurl, toPost, function(response) {
+        var x = json.decode(response);
+        $('#post' + postid).raw().innerHTML = x;
+    });
+}
+
+function pollVote(threadID, vote, token) {
+    var toPost = [];
+    toPost['token'] = token;
+    toPost['vote'] = vote;
+    section = GetSection();
+    ajax.post("/forum/thread/"+threadID+"/poll/vote", toPost, function() {
+        location.reload();
+    });
+}
+
+function removePollOption(threadID, vote, token) {
+    var toPost = [];
+    toPost['token'] = token;
+    toPost['vote'] = vote;
+    section = GetSection();
+    ajax.post("/forum/thread/"+threadID+"/poll/remove", toPost, function() {
+        location.reload();
+    });
+}
+
+function addPollOption(threadID, token) {
   var list = $('#poll_options').raw();
   var item = document.createElement("li");
     var form = document.createElement("form");
     form.method = "POST";
+    form.action = "/forum/thread/"+threadID+"/poll/add";
       var auth = document.createElement("input");
       auth.type = "hidden";
-      auth.name = "auth";
-      auth.value = authkey;
+      auth.name = "token";
+      auth.value = token;
       form.appendChild(auth);
-
-      var action = document.createElement("input");
-      action.type = "hidden";
-      action.name = "action";
-      action.value = "add_poll_option";
-      form.appendChild(action);
-
-      var threadid = document.createElement("input");
-      threadid.type = "hidden";
-      threadid.name = "threadid";
-      threadid.value = id;
-      form.appendChild(threadid);
 
       var input = document.createElement("input");
       input.type = "text";
@@ -319,3 +525,47 @@ function AddPollOption(id) {
     item.appendChild(form);
   list.appendChild(item);
 }
+
+function check(checked) {
+    var checkboxes = document.getElementById('forumfilterdiv').getElementsByTagName('input');
+
+    if (checked) {
+        for (var i = 0; i < checkboxes.length; i++) {
+            if (checkboxes[i].type == 'checkbox') {
+                checkboxes[i].checked = true;
+            }
+        }
+    } else {
+        for (var i = 0; i < checkboxes.length; i++) {
+            if (checkboxes[i].type == 'checkbox') {
+                checkboxes[i].checked = false;
+            }
+        }
+    }
+}
+
+function Toggle_view(elem_id) {
+    jQuery('#'+elem_id+'div').toggle();
+
+    if (jQuery('#'+elem_id+'div').is(':hidden')) {
+        jQuery('#'+elem_id+'button').text('(Show)');
+        jQuery.cookie('allpost_forums', 0);
+    } else {
+        jQuery('#'+elem_id+'button').text('(Hide)');
+        jQuery.cookie('allpost_forums', 1);
+    }
+
+    return false;
+}
+
+document.addEventListener('LuminanceLoaded', function() {
+    var state = jQuery.cookie('allpost_forums');
+
+    if (state == 1) {
+        jQuery('#forumfilterbutton').text('(Hide)');
+        jQuery('#forumfilterdiv').show();
+    } else {
+        jQuery('#forumfilterbutton').text('(Show)');
+        jQuery('#forumfilterdiv').hide();
+    }
+});

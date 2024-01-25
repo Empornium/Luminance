@@ -6,13 +6,16 @@ Complete the number and date validation
 Finish the GenerateJS stuff
 //-----------------------------------*/
 
-class Validate
-{
+
+use RemoteImageInfo\RemoteImageInfo;
+
+class Validate {
+
     public $Fields=[];
     public $OnlyValidateKeys =false;
     public $Weight;
-    public function SetFields($FieldName,$Required,$FieldType,$ErrorMessage,$Options=array())
-    {
+
+    public function SetFields($FieldName,$Required,$FieldType,$ErrorMessage,$Options=[]) {
         $Field = ['Name' => $FieldName, 'Type' => strtolower($FieldType), 'Required' => $Required, 'ErrorMessage' => $ErrorMessage];
         if (isset($Options['maxlength'])) {
             $Field['MaxLength']=$Options['maxlength'];
@@ -53,6 +56,21 @@ class Validate
         if (isset($Options['maxfilesizeGB'])) {
             $Field['MaxFilesize']=$Options['maxfilesizeGB']*1024*1024*1024;
         }
+        if (isset($Options['maximageweight'])) {
+            $Field['MaxImageWeight']=$Options['maximageweight'];
+        }
+        if (isset($Options['maximageweightKB'])) {
+            $Field['MaxImageWeight']=$Options['maximageweightKB']*1024;
+        }
+        if (isset($Options['maximageweightMB'])) {
+            $Field['MaxImageWeight']=$Options['maximageweightMB']*1024*1024;
+        }
+        if (isset($Options['maxwidth'])) {
+            $Field['MaxWidth']=$Options['maxwidth'];
+        }
+        if (isset($Options['maxheight'])) {
+            $Field['MaxHeight']=$Options['maxheight'];
+        }
         if (isset($Options['dimensions'])) {
             $Field['MaxWidth']=$Options['dimensions'][0];
             $Field['MaxHeight']=$Options['dimensions'][1];
@@ -69,18 +87,17 @@ class Validate
         $this->Fields[] = $Field;
     }
 
-    public function ValidateForm($ValidateArray, $Text = null)
-    {
+    public function ValidateForm($ValidateArray, $bbCode = null) {
         reset($this->Fields);
         foreach ($this->Fields as $Field) {
-            $ValidateRaw=$ValidateArray[$Field['Name']];
+            $ValidateRaw = $ValidateArray[$Field['Name']] ?? null;
             if (is_array($ValidateRaw))
                 $VarArray = $ValidateRaw;
             else {
-                $VarArray = array();
+                $VarArray = [];
                 $VarArray[] = $ValidateRaw;
             }
-            foreach ($VarArray as $Key=>$ValidateVar) {
+            foreach ($VarArray as $Key => $ValidateVar) {
                 if (is_array($this->OnlyValidateKeys) && !in_array($Key, $this->OnlyValidateKeys))
                     continue;
 
@@ -88,19 +105,19 @@ class Validate
                     switch($Field['Type']) {
 
                         case 'string':
-                            $MaxLength     = (isset($Field['MaxLength']))     ? $Field['MaxLength']     : 255;
-                            $MinLength     = (isset($Field['MinLength']))     ? $Field['MinLength']     :   1;
-                            $MaxWordLength = (isset($Field['MaxWordLength'])) ? $Field['MaxWordLength'] :   0;
+                            $MaxLength     = $Field['MaxLength']     ?? 255;
+                            $MinLength     = $Field['MinLength']     ??   1;
+                            $MaxWordLength = $Field['MaxWordLength'] ??   0;
 
                             if (strlen($ValidateVar)>$MaxLength) {
-                                return "$Field[ErrorMessage] Max length of field is $MaxLength characters.";
+                                return "{$Field['ErrorMessage']} Max length of field is {$MaxLength} characters.";
                             } elseif (strlen($ValidateVar)<$MinLength) {
-                                return "$Field[ErrorMessage] Min length of field is $MinLength characters.";
+                                return "{$Field['ErrorMessage']} Min length of field is {$MinLength} characters.";
                             } elseif ($MaxWordLength>0) {
                                 $Words = explode(' ', $ValidateVar);
                                 foreach ($Words as $Word) {
                                     if ($Word && strlen($Word) > $MaxWordLength )
-                                        return "$Field[ErrorMessage] The maximum allowed length of a single word is $MaxWordLength, please add some spaces in your text.";
+                                        return "{$Field['ErrorMessage']} The maximum allowed length of a single word is {$MaxWordLength}, please add some spaces in your text.";
                                 }
                             }
                             break;
@@ -109,14 +126,14 @@ class Validate
                         case 'int':
                         case 'float':
                         case 'double':
-                            $MaxLength   = (isset($Field['MaxLength']))    ? $Field['MaxLength']   : null;
-                            $MinLength   = (isset($Field['MinLength']))    ? $Field['MinLength']   : 0;
+                            $MaxLength   = $Field['MaxLength']   ?? null;
+                            $MinLength   = $Field['MinLength']   ?? 0;
 
-                            $Match='0-9';
-                            if (isset($Field['AllowPeriod'])) $Match.='.';
-                            if (isset($Field['AllowComma'])) $Match.=',';
+                            $match='0-9';
+                            if (isset($Field['AllowPeriod'])) $match.='.';
+                            if (isset($Field['AllowComma'])) $match.=',';
 
-                            if (preg_match('/[^'.$Match.']/', $ValidateVar) || strlen($ValidateVar)<1) {
+                            if (preg_match('/[^'.$match.']/', $ValidateVar) || strlen($ValidateVar)<1) {
                                 return $Field['ErrorMessage'];
                             } elseif (!is_null($MaxLength) && $ValidateVar>$MaxLength) {
                                 return $Field['ErrorMessage']."!!";
@@ -130,20 +147,20 @@ class Validate
                             break;
 
                         case 'email':
-                            $MaxLength   = (isset($Field['MaxLength']))    ? $Field['MaxLength']   : 255;
-                            $MinLength   = (isset($Field['MinLength']))    ? $Field['MinLength']   :  6;
+                            $MaxLength   = $Field['MaxLength']   ?? 255;
+                            $MinLength   = $Field['MinLength']   ??  6;
 
                             if (strlen($ValidateVar)>$MaxLength) return $Field['ErrorMessage'];
                             if (strlen($ValidateVar)<$MinLength) return $Field['ErrorMessage'];
                             if (!preg_match("/^".EMAIL_REGEX."$/i", $ValidateVar)) return $Field['ErrorMessage'];
                             // get validation result
                             $result = validate_email($ValidateVar);
-                            if ($result !== true) return "$Field[ErrorMessage]<br/>".display_str($result);
+                            if ($result !== true) return "{$Field['ErrorMessage']}<br/>".display_str($result);
                             break;
 
                         case 'link':
-                            $MaxLength   = (isset($Field['MaxLength']))    ? $Field['MaxLength']   : 255;
-                            $MinLength   = (isset($Field['MinLength']))    ? $Field['MinLength']   :  10;
+                            $MaxLength   = $Field['MaxLength']   ?? 255;
+                            $MinLength   = $Field['MinLength']   ??  10;
 
                             if (!preg_match('/^(https?):\/\/([a-z0-9\-\_]+\.)+([a-z]{1,5}[^\.])(\/[^<>]+)*$/i', $ValidateVar)) {
                                 return $Field['ErrorMessage'];
@@ -155,8 +172,8 @@ class Validate
                             break;
 
                         case 'username':
-                            $MaxLength   = (isset($Field['MaxLength']))    ? $Field['MaxLength']   : 20;
-                            $MinLength   = (isset($Field['MinLength']))    ? $Field['MinLength']   :  1;
+                            $MaxLength      = $Field['MaxLength'] ?? 20;
+                            $MinLength      = $Field['MinLength'] ??  1;
 
                             if (preg_match('/[^a-z0-9_\-?\.]/i', $ValidateVar)) {
                                 return $Field['ErrorMessage'];
@@ -195,7 +212,7 @@ class Validate
                                 if ($date > $MaxDate) return $Field['ErrorMessage'];
                                 if ($date < $MinDate) return $Field['ErrorMessage'];
                             } else {
-                                return "$Field[ErrorMessage]<br/>Invalid Date";
+                                return "{$Field['ErrorMessage']}<br/>Invalid Date";
                             }
                             break;
 
@@ -233,26 +250,24 @@ class Validate
                         // 3) optional filesize of image (probably should not use in large batches as has to fetch remote image)
 
                             // Get parameters to validate against from fields set
-                            $MaxLength      = (isset($Field['MaxLength']))         ? $Field['MaxLength']        : 255;
-                            $MinLength      = (isset($Field['MinLength']))         ? $Field['MinLength']        :  10;
-                            $MaxFileSize    = (isset($Field['MaxFilesize']))       ? $Field['MaxFilesize']      :  -1;
-                            $MaxWidth       = (isset($Field['MaxWidth']))          ? $Field['MaxWidth']         :  -1;
-                            $MaxHeight      = (isset($Field['MaxHeight']))         ? $Field['MaxHeight']        :  -1;
-                            $MaxImageWeight = (isset($Field['MaxImageWeight']))    ? $Field['MaxImageWeight']   :  (25*1024*1024);
-
-                            $WLRegex = (isset($Field['Regex'])) ? $Field['Regex'] : '/.*/';
+                            $MaxLength      = $Field['MaxLength']      ?? 255;
+                            $MinLength      = $Field['MinLength']      ??  10;
+                            $MaxFileSize    = $Field['MaxFilesize']    ??  -1;
+                            $MaxWidth       = $Field['MaxWidth']       ??  -1;
+                            $MaxHeight      = $Field['MaxHeight']      ??  -1;
+                            $WLRegex        = $Field['Regex']          ?? '/.*/';
 
                             // get validation result
                             $result = validate_imageurl($ValidateVar, $MinLength, $MaxLength, $WLRegex);
-                            if ($result !== true) return "$Field[ErrorMessage]<br/>".display_str($result);
+                            if ($result !== true) return "{$Field['ErrorMessage']}<br/>".display_str($result);
 
                             // check image dimensions if max dimensions are specified
                             if ($MaxWidth>=0 && $MaxHeight>=0) {
-                                $image_attribs = getimagesize($ValidateVar);
-                                if ($image_attribs!==false) { // i guess we should ignore it if it fails .. hmmm...
-                                    list($width, $height, $type, $attr) = $image_attribs;
+                                $image = new RemoteImageInfo($ValidateVar);
+                                if($image->checkLoad()) { // i guess we should ignore it if it fails .. hmmm...
+                                    list($width, $height) = $image->getSize();
                                     if ($width>$MaxWidth || $height > $MaxHeight)
-                                        return "$Field[ErrorMessage]<br/>Image dimensions are too big; width: {$width}px  height: {$height}px<br/>Max Image dimensions; width: {$MaxWidth}px  height: {$MaxHeight}px<br/>File: ".display_str($ValidateVar);
+                                        return "{$Field['ErrorMessage']}<br/>Image dimensions are too big; width: {$width}px  height: {$height}px<br/>Max Image dimensions; width: {$MaxWidth}px  height: {$MaxHeight}px<br/>File: ".display_str($ValidateVar);
                                 }
                             }
 
@@ -260,9 +275,9 @@ class Validate
                             if ($MaxFileSize>=0) {
                                 $filesize = $this->get_remote_file_size($ValidateVar);
                                 if ($filesize<0)
-                                    return "$Field[ErrorMessage]<br/>Imagehost did not return file size.";
+                                    return "{$Field['ErrorMessage']}<br/>Imagehost did not return file size.";
                                 if ($filesize>$MaxFileSize)
-                                    return "$Field[ErrorMessage]<br/>Filesize is too big: " . get_size($filesize). "<br/>MaxFilesize: ".get_size($MaxFileSize). "<br/>File: ".display_str($ValidateVar);
+                                    return "{$Field['ErrorMessage']}<br/>Filesize is too big: " . get_size($filesize). "<br/>MaxFilesize: ".get_size($MaxFileSize). "<br/>File: ".display_str($ValidateVar);
                             }
                             break;
 
@@ -273,21 +288,20 @@ class Validate
                             // we will hardcode changes to return messages as this class matches fields by
                             // name (so one check per field only) and I dont want to redesign it
 
-                            $MaxLength      = (isset($Field['MaxLength']))         ? $Field['MaxLength']        : 255;
-                            $MinLength      = (isset($Field['MinLength']))         ? $Field['MinLength']        :   1;
-                            $MaxImages      = (isset($Field['MaxImages']))         ? $Field['MaxImages']        : 255;
-                            $MinImages      = (isset($Field['MinImages']))         ? $Field['MinImages']        :   0;
-                            $MaxWidth       = (isset($Field['MaxWidth']))          ? $Field['MaxWidth']         :  -1;
-                            $MaxHeight      = (isset($Field['MaxHeight']))         ? $Field['MaxHeight']        :  -1;
-                            $MaxImageWeight = (isset($Field['MaxImageWeight']))    ? $Field['MaxImageWeight']   :  (25*1024*1024);
+                            $MaxLength      = $Field['MaxLength']      ?? 255;
+                            $MinLength      = $Field['MinLength']      ??   1;
+                            $MaxImages      = $Field['MaxImages']      ?? 255;
+                            $MinImages      = $Field['MinImages']      ??   0;
+                            $MaxWidth       = $Field['MaxWidth']       ??  -1;
+                            $MaxHeight      = $Field['MaxHeight']      ??  -1;
+                            $MaxImageWeight = $Field['MaxImageWeight'] ?? (25*1024*1024);
+                            $WLRegex        = $Field['Regex']          ?? '/.*/';
 
-                            $WLRegex = (isset($Field['Regex'])) ? $Field['Regex'] : '/.*/';
-
-                            if (!$Text) {
-                                $Text = new Text;
+                            if (!$bbCode) {
+                                $bbCode = new \Luminance\Legacy\Text;
                             }
-                            //$TextLength =  strlen($Text->db_clean_search($ValidateVar));
-                            $TextLength =  $Text->text_count($ValidateVar);
+
+                            $TextLength =  $bbCode->text_count($ValidateVar);
                             $RealLength =  strlen($ValidateVar);
 
                             if ($TextLength>$MaxLength) {
@@ -320,11 +334,11 @@ class Validate
 
                                     // check image dimensions if max dimensions are specified
                                     if ($MaxWidth>=0 && $MaxHeight>=0) {
-                                        $image_attribs = getimagesize($imageurls[1][$j]);
-                                        if ($image_attribs!==false) { // i guess we should ignore it if it fails .. hmmm...
-                                            list($width, $height, $type, $attr) = $image_attribs;
+                                        $image = new RemoteImageInfo($imageurls[1][$j]);
+                                        if($image->checkLoad()) { // i guess we should ignore it if it fails .. hmmm...
+                                            list($width, $height) = $image->getSize();
                                             if ($width>$MaxWidth || $height > $MaxHeight)
-                                                return "$Field[ErrorMessage] field:<br/>Image dimensions are too big; width: {$width}px  height: {$height}px<br/>Max Image dimensions; width: {$MaxWidth}px  height: {$MaxHeight}px<br/>File: ".display_str($imageurls[1][$j]);
+                                                return "{$Field['ErrorMessage']} field:<br/>Image dimensions are too big; width: {$width}px  height: {$height}px<br/>Max Image dimensions; width: {$MaxWidth}px  height: {$MaxHeight}px<br/>File: ".display_str($imageurls[1][$j]);
                                         }
                                     }
                                  }
@@ -360,18 +374,18 @@ class Validate
 
                             // Max. number of images in posts
                             $MaxImages = (int) $master->options->MaxImagesCount; // Global option
-                            $MaxImages = isset($Field['MaxImages']) ? (int) $Field['MaxImages'] : $MaxImages; // Local option
+                            $MaxImages = (int) $Field['MaxImages'] ?? $MaxImages; // Local option
 
                             // Max. size for images in posts (MB)
                             $MaxWeight = (int) $master->options->MaxImagesWeight;
-                            $MaxWeight = isset($Field['MaxImagesWeight']) ? (int) $Field['MaxImageWeight'] : $MaxWeight;
+                            $MaxWeight = (int) $Field['MaxImageWeight'] ?? $MaxWeight;
                             $MaxWeight = $MaxWeight * 1024 * 1024;
 
                             // Parse all images inside the post
                             // TODO: have a global RegEx for this?
-                            $Matched = preg_match_all('#(?|\[thumb\](.*?)\[/thumb\]|\[img\](.*?)\[/img\]|\[imgnm\](.*?)\[/imgnm\]|\[imgalt\](.*?)\[/imgalt\]|\[img\=(.*?)\])#ism', $ValidateVar, $ImagesMatches);
+                            $matched = preg_match_all('#(?|\[thumb\](.*?)\[/thumb\]|\[img\](.*?)\[/img\]|\[imgnm\](.*?)\[/imgnm\]|\[imgalt\](.*?)\[/imgalt\]|\[img\=(.*?)\])#ism', $ValidateVar, $ImagesMatches);
 
-                            if ($Matched) {
+                            if ($matched) {
                                 $ImagesURLs = array_unique($ImagesMatches[1]);
                                 if (count($ImagesURLs) > $MaxImages) {
                                     $Error  = "Your post contains too many images. (Max: $MaxImages)<br>";
@@ -382,7 +396,7 @@ class Validate
                                 foreach ($ImagesURLs as $ImagesURL) {
                                     $FileSize = $this->get_remote_file_size($ImagesURL);
                                     if ($FileSize<0)
-                                        return "$Field[ErrorMessage]<br/>Imagehost did not return file size.";
+                                        return "{$Field['ErrorMessage']}<br/>Imagehost did not return file size.";
                                     if ($FileSize > 0) { $TotalSize += $FileSize; }
                                 }
                                 if ($TotalSize > $MaxWeight) {
@@ -402,8 +416,7 @@ class Validate
         } // foreach
     } // function
 
-    public function GenerateJS($FormID)
-    {
+    public function GenerateJS($FormID) {
         $ReturnJS="<script type=\"text/javascript\" language=\"javascript\">\r\n";
         $ReturnJS.="//<![CDATA[\r\n";
         $ReturnJS.="function formVal() {\r\n";
@@ -418,11 +431,11 @@ class Validate
                 $ValItem.=') { return showError(\''.$Field['Name'].'\',\''.$Field['ErrorMessage'].'\'); }'."\r\n";
 
             } elseif ($Field['Type']=="number") {
-                $Match='0-9';
-                if (!empty($Field['AllowPeriod'])) { $Match.='.'; }
-                if (!empty($Field['AllowComma'])) { $Match.=','; }
+                $match='0-9';
+                if (!empty($Field['AllowPeriod'])) { $match.='.'; }
+                if (!empty($Field['AllowComma'])) { $match.=','; }
 
-                $ValItem='	if($(\'#'.$Field['Name'].'\').raw().value.match(/[^'.$Match.']/) || $(\'#'.$Field['Name'].'\').raw().value.length<1';
+                $ValItem='	if($(\'#'.$Field['Name'].'\').raw().value.match(/[^'.$match.']/) || $(\'#'.$Field['Name'].'\').raw().value.length<1';
                 if (!empty($Field['MaxLength'])) { $ValItem.=' || $(\'#'.$Field['Name'].'\').raw().value/1>'.$Field['MaxLength']; }
                 if (!empty($Field['MinLength'])) { $ValItem.=' || $(\'#'.$Field['Name'].'\').raw().value/1<'.$Field['MinLength']; }
                 $ValItem.=') { return showError(\''.$Field['Name'].'\',\''.$Field['ErrorMessage'].'\'); }'."\r\n";
@@ -490,112 +503,90 @@ class Validate
 
     public function get_presentation_size($urls) {
 
+        # Ensure array keys are numerical and contiguous!
+        $urls = array_values($urls);
+
         // make sure the rolling window isn't greater than the # of urls
         $rolling_window = 25;
-        $rolling_window = (sizeof($urls) < $rolling_window) ? sizeof($urls) : $rolling_window;
+        $rolling_window = (count($urls) < $rolling_window) ? count($urls) : $rolling_window;
 
-        $curl_arr = array();
+        $curl_arr = [];
         $total=0;
 
-        // add additional curl options here
-        $std_options = array(CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HEADER => true,
-        CURLOPT_NOBODY => true,
-        CURLOPT_MAXREDIRS => 5,
-        CURLOPT_CONNECTTIMEOUT => 2);
-        $options = ($custom_options) ? ($std_options + $custom_options) : $std_options;
+        // curl options
+        $options = [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HEADER         => true,
+            CURLOPT_NOBODY         => true,
+            CURLOPT_MAXREDIRS      => 5,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_SSL_VERIFYPEER => 0,
+            CURLOPT_SSL_VERIFYHOST => 0,
+        ];
 
         // initialise all curl handles first
         foreach($urls as $i => $url) {
             $ch[] = curl_init();
         }
 
-        $master = curl_multi_init();
+        $curlMulti = curl_multi_init();
 
         // preload the window
         for ($i = 0; $i < $rolling_window; $i++) {
             $options[CURLOPT_URL] = $urls[$i];
-            curl_setopt_array($ch[$i],$options);
-            curl_multi_add_handle($master, $ch[$i]);
+            curl_setopt_array($ch[$i], $options);
+            curl_multi_add_handle($curlMulti, $ch[$i]);
         }
 
         // Reset
         $i = 0;
 
         do {
-            while(($execrun = curl_multi_exec($master, $running)) == CURLM_CALL_MULTI_PERFORM);
+            while(($execrun = curl_multi_exec($curlMulti, $running)) == CURLM_CALL_MULTI_PERFORM);
             usleep(50000);
             if($execrun != CURLM_OK)
                 break;
             // a request was just completed -- find out which one
-            while($done = curl_multi_info_read($master)) {
+            while($done = curl_multi_info_read($curlMulti)) {
                 $info = curl_getinfo($done['handle']);
-                if ($info['http_code'] == 200 && !is_null($ch[$i])) {
-                    $total += curl_getinfo($done['handle'],  CURLINFO_CONTENT_LENGTH_DOWNLOAD);
 
-                    // start a new request (it's important to do this before removing the old one)
-                    $options[CURLOPT_URL] = $urls[$i];
-                    curl_setopt_array($ch[$i],$options);
-                    curl_multi_add_handle($master, $ch[$i]);
+                if (array_key_exists($i, $ch)) {
+                    if ($info['http_code'] == 200 && !is_null($ch[$i])) {
+                        $total += curl_getinfo($done['handle'],  CURLINFO_CONTENT_LENGTH_DOWNLOAD);
 
-                    // increment the handle pointer
-                    $i++;
+                        // start a new request (it's important to do this before removing the old one)
+                        $options[CURLOPT_URL] = $urls[$i];
+                        curl_setopt_array($ch[$i],$options);
+                        curl_multi_add_handle($curlMulti, $ch[$i]);
 
-                    // remove the curl handle that just completed
-                    curl_multi_remove_handle($master, $done['handle']);
-                } else {
-                    // request failed.  add error handling.
+                        // increment the handle pointer
+                        $i++;
+
+                        // remove the curl handle that just completed
+                        curl_multi_remove_handle($curlMulti, $done['handle']);
+                    }
                 }
             }
         } while ($running);
 
-        curl_multi_close($master);
+        curl_multi_close($curlMulti);
         return $total;
     }
 
-    public function get_remote_file_size($url, $user = "", $pw = "")
-    {
-        ob_start();
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_HEADER, 1);
-        curl_setopt($ch, CURLOPT_NOBODY, 1);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); // Ignore SSL issues when checking files
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0); // Ignore SSL issues when checking files
+    public function get_remote_file_size($url) {
+        global $master;
+        $headers = $master->secretary->getHttpRemoteHeaders($url);
 
-        if (!empty($user) && !empty($pw)) {
-            $headers = array('Authorization: Basic ' . base64_encode("$user:$pw"));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        if (!empty($headers['location'])) {
+            return $this->get_remote_file_size($headers['location']);
         }
-        // slightly convoluted way to get remote filesize but is more bulletproof than @fsockopen methods
-        $ok = curl_exec($ch);
-        $errors = curl_error($ch);
-        curl_close($ch);
-        $retheaders = ob_get_contents();
-        ob_end_clean();
 
-        $return = false;
-        $retheaders = explode("\n", $retheaders);
-        foreach ($retheaders as $header) {
-            // follow redirect
-            $s = 'Location: ';
-            if (substr(strtolower ($header), 0, strlen($s)) == strtolower($s)) {
-                $url = trim(substr($header, strlen($s)));
-
-                return $this->get_remote_file_size($url, $user, $pw );
-            }
-
-            // parse for content length
-            $s = "Content-Length: ";
-            if (substr(strtolower ($header), 0, strlen($s)) == strtolower($s)) {
-                $return = trim(substr($header, strlen($s)));
-
-                return $return ? $return : -2;
-            }
+        if (!empty($headers['content-length'])) {
+            $return = intval(trim($headers['content-length']));
+            return $return ? $return : -2;
         }
 
         return -1;
     }
-
 }

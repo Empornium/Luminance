@@ -1,0 +1,48 @@
+{% import "macros/icon.html.twig" as icon %}
+
+<div class="torrent_grid">
+    {% for group in groups %}
+        {% set warned = group.mfd ? 'warned' %}
+        <div class="torrent_grid__torrent {{ warned }}">
+            {# This is a hack for 1:1 aspect ratios in legacy firefox #}
+            <svg viewBox="0 0 1 1"></svg>
+            <a href="/torrents.php?id={{ group.ID }}">
+                {% if group.Image is not empty %}
+                    <div class="torrent__cover" style="background-image: url({{ group.Image }})"></div>
+                {% else %}
+                    <div class="torrent__cover" style="background-image: url('/static/common/noartwork/noimage.png')"></div>
+                {% endif %}
+            </a>
+            <span class="torrent_grid__torrent__cat {{ warned }}">{{ categories[group.Category].name }}</span>
+            {% if group.torrents|last.FreeTorrent %}
+                <span class='torrent--freeleech'><img src='static/common/symbols/freedownload.gif' alt='Freeleech' title='Freeleech' /></span>
+            {% endif %}
+            <div class="torrent_grid__torrent__info {{ warned }}">
+                <a href="/torrents.php?id={{ group.ID }}">
+                    <h3 class="trim" title="{{ group.Name }}">{{ group.Name }}</h3>
+                </a>
+                <div>
+                    <span class="seeders">
+                        {{ icon.render("torrent_icons", ['nav_seeding']) }}
+                        <span style="color: #3FEB00;">{{ group.Torrents|last.Seeders|number_format }}</span>
+                    </span>
+                    <span class="leechers">
+                        {{ icon.render("torrent_icons", ['nav_leeching']) }}
+                        <span style="color: #FF0000;">{{ group.Torrents|last.Leechers|number_format }}</span>
+                    </span>
+                    <span class="torrent__size">{{ get_size(group.Torrents|last.Size) }}</span>
+                    <span class="uploader" style="float:right;">{{ torrent_username(group.Torrents|last.UserID, group.Torrents|last.Anonymous)|raw }}</span>
+                </div>
+                <div class="torrent__info_extra">
+                    <span style="float:left;">
+                        {{ group.icons|raw }}
+                    </span>
+                    <span style="float:right;">
+                        {{ time_diff(group.Torrents|last.Time, 1)|raw }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    <div class="clear"></div>
+</div>

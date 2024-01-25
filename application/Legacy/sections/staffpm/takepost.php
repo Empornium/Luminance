@@ -1,11 +1,13 @@
 <?php
-if ($Message = db_string($_POST['message'])) {
 
-    include(SERVER_ROOT.'/Legacy/sections/staffpm/functions.php');
-    $Text = new Luminance\Legacy\Text;
-    $Text->validate_bbcode($_POST['message'],  get_permissions_advtags($LoggedUser['ID']));
+include_once(SERVER_ROOT.'/Legacy/sections/staffpm/functions.php');
 
-    if ($_POST['note'] && $IsStaff) {
+if ($Message = ($_POST['message'] ?? null)) {
+
+    $bbCode = new \Luminance\Legacy\Text;
+    $bbCode->validate_bbcode($_POST['message'],  get_permissions_advtags($activeUser['ID']));
+
+    if (($_POST['note'] ?? false) && $IsStaff) {
 
         // make a staff note
         $ConvID = (int) $_POST['convid'];
@@ -13,32 +15,56 @@ if ($Message = db_string($_POST['message'])) {
         // Is the user allowed to access this StaffPM
         check_access($ConvID);
 
-        $Message = "[b]".sqltime()." - Notes added by ".$LoggedUser['Username'].":[/b] ".$Message;
+        $Message = "[b]".sqltime()." - Notes added by ".$activeUser['Username'].":[/b] ".$Message;
         make_staffpm_note($Message, $ConvID);
 
         header("Location: staffpm.php?action=viewconv&id=$ConvID");
 
-    } else if ($Subject = db_string($_POST['subject'])) {
+    } else if (empty($_POST['subject']) === false) {
 
-        // New staff pm conversation
-        $Level = db_string($_POST['level']);
-        $DB->query("
-            INSERT INTO staff_pm_conversations
-                (Subject, Status, Level, UserID, Date)
-            VALUES
-                ('{$Subject}', 'Unanswered', '{$Level}', '{$LoggedUser['ID']}', '".sqltime()."')"
-        );
+        $conv = $master->db->rawQuery(
+            "SELECT ID
+               FROM staff_pm_conversations
+              WHERE UserID = ?
+                AND Subject = ?
+           ORDER BY ID DESC
+              LIMIT 1",
+            [$activeUser['ID'], $_POST['subject']]
+        )->fetch();
+
+        // Append to existing $StaffPMs
+        if (empty($conv['ID'])) {
+            // New staff pm conversation
+            $master->db->rawQuery(
+                "INSERT INTO staff_pm_conversations (Subject, Status, Level, UserID, Date)
+                      VALUES (?, 'Unanswered', ?, ?, ?)",
+                [$_POST['subject'], $_POST['level'], $activeUser['ID'], sqltime()]
+            );
+            $conv['ID'] = $master->db->lastInsertID();
+        } else {
+            if (empty($conv['Urgent']) || $conv['Urgent'] === 'Respond') {
+                $conv['Urgent'] = 'No';
+            }
+            $master->db->rawQuery(
+                "UPDATE staff_pm_conversations
+                    SET Date = ?,
+                        Unread = false,
+                        Status = 'Unanswered',
+                        Urgent = ?
+                  WHERE ID = ?",
+                [sqltime(), $conv['Urgent'], $conv['ID']]
+            );
+
+        }
 
         if (isset($_POST['forwardbody'])) {
-            $Message = db_string($_POST['forwardbody']) .$Message;
+            $Message = $_POST['forwardbody'] .$Message;
         }
         // New message
-        $ConvID = $DB->inserted_id();
-        $DB->query("
-            INSERT INTO staff_pm_messages
-                (UserID, SentDate, Message, ConvID, IsNotes)
-            VALUES
-                (".$LoggedUser['ID'].", '".sqltime()."', '$Message', $ConvID, FALSE)"
+        $master->db->rawQuery(
+            "INSERT INTO staff_pm_messages (UserID, SentDate, Message, ConvID, IsNotes)
+                  VALUES (?, ?, ?, ?, FALSE)",
+            [$activeUser['ID'], sqltime(), $Message, $conv['ID']]
         );
 
         header('Location: staffpm.php?action=user_inbox');
@@ -48,37 +74,88 @@ if ($Message = db_string($_POST['message'])) {
         // Is the user allowed to access this StaffPM
         check_access($ConvID);
         // Respond to existing conversation
-        $DB->query("SELECT UserID, Urgent FROM staff_pm_conversations WHERE ID=$ConvID");
-        list($TargetUserID, $Urgent) = $DB->next_record();
-        if (empty($Urgent)) $Urgent = 'No';
+        $conv = $master->db->rawQuery(
+            "SELECT UserID,
+                    Urgent
+               FROM staff_pm_conversations
+              WHERE ID = ?",
+            [$ConvID]
+        )->fetch();
+        if (empty($conv['Urgent'])) $conv['Urgent'] = 'No';
 
-        $DB->query("SELECT ID FROM staff_pm_messages WHERE ConvID=$ConvID ORDER BY ID DESC LIMIT 1");
-        list($LastMessageID) = $DB->next_record();
+        $LastMessageID = $master->db->rawQuery(
+            "SELECT ID
+               FROM staff_pm_messages
+              WHERE ConvID = ?
+           ORDER BY ID DESC
+              LIMIT 1",
+            [$ConvID]
+        )->fetchColumn();
         if ($LastMessageID != $_POST['lastmessageid']) {
-            error("There is a message you have not read, please go back and refresh the page.");
+            error("There is a message you have not read, please go back and refresh the page. Your Ninja'd Text: " . $_POST['message']);
         }
 
-        $DB->query("
-            INSERT INTO staff_pm_messages
-                (UserID, SentDate, Message, ConvID, IsNotes)
-            VALUES
-                (".$LoggedUser['ID'].", '".sqltime()."', '$Message', $ConvID, FALSE)"
+        $master->db->rawQuery(
+            "INSERT INTO staff_pm_messages (UserID, SentDate, Message, ConvID, IsNotes)
+                  VALUES (?, ?, ?, ?, FALSE)",
+            [$activeUser['ID'], sqltime(), $Message, $ConvID]
         );
 
         // Update conversation
-        if ($TargetUserID != $LoggedUser['ID']) {
+        if ($conv['UserID'] != $activeUser['ID']) {
             // FLS/Staff
-            $DB->query("UPDATE staff_pm_conversations SET Date='".sqltime()."', Unread=true, Status='Open' WHERE ID=$ConvID");
+            $master->db->rawQuery(
+                "UPDATE staff_pm_conversations
+                    SET Date = ?,
+                        Unread = true,
+                        Status = 'Open'
+                  WHERE ID = ?",
+                [sqltime(), $ConvID]
+            );
         } else {
             // User replied
-            if ($Urgent == 'Respond') $ExtraSet = ", Urgent='No'";
-            $DB->query("UPDATE staff_pm_conversations SET Date='".sqltime()."', Unread=false, Status='Unanswered'$ExtraSet WHERE ID=$ConvID");
+            if ($conv['Urgent'] == 'Respond') {
+                $conv['Urgent'] = 'No';
+            }
+            $master->db->rawQuery(
+                "UPDATE staff_pm_conversations
+                    SET Date = ?,
+                        Unread = false,
+                        Status = 'Unanswered',
+                        Urgent = ?
+                  WHERE ID = ?",
+                [sqltime(), $conv['Urgent'], $ConvID]
+            );
         }
 
         // Clear cache for user
-        $Cache->delete_value('staff_pm_new_'.$TargetUserID);
-        //$Cache->delete_value('staff_pm_new_'.$LoggedUser['ID']);
-        $master->cache->delete_value('staff_pm_urgent_'.$TargetUserID);
+        $master->cache->deleteValue('staff_pm_new_'.$conv['UserID']);
+        $master->cache->deleteValue('staff_pm_urgent_'.$conv['UserID']);
+
+        if ($_POST['resolve'] ?? false) {
+              // Conversation belongs to user or user is staff, resolve it
+              if ($conv['UserID'] == $activeUser['ID']) {
+                  if ($conv['Urgent'] == 'Respond')  {
+                      error("You cannot resolve this conversation until you respond to it.");
+                  }
+                  $Resolve = 'User Resolved';
+              } else {
+                  $Resolve = 'Resolved';
+              }
+              $master->db->rawQuery(
+                  "UPDATE staff_pm_conversations
+                      SET Date = ?,
+                          Status = ?,
+                          ResolverID = ?
+                    WHERE ID = ?",
+                  [sqltime(), $Resolve, $activeUser['ID'], $ConvID]
+              );
+              $master->cache->deleteValue('staff_pm_new_'.$activeUser['ID']);
+
+              // Add a log message to the StaffPM
+              $Message = sqltime()." - Resolved by ".$activeUser['Username'];
+              make_staffpm_note($Message, $ConvID);
+        }
 
         header("Location: staffpm.php?action=viewconv&id=$ConvID");
 
@@ -87,9 +164,50 @@ if ($Message = db_string($_POST['message'])) {
         header("Location: staffpm.php?action=viewconv&id=$ConvID");
     }
 } elseif ($ConvID = (int) $_POST['convid']) {
-    // No message, but conversation id
-    header("Location: staffpm.php?action=viewconv&id=$ConvID");
+    if ($_POST['resolve'] ?? false) {
+          // Is the user allowed to access this StaffPM
+          check_access($ConvID);
 
+          // Check if conversation belongs to user
+          $conv = $master->db->rawQuery(
+              "SELECT UserID,
+                      Urgent
+                 FROM staff_pm_conversations
+                WHERE ID = ?",
+              [$ConvID]
+          )->fetch();
+          if (empty($conv['Urgent'])) {
+              $conv['Urgent'] = 'No';
+          }
+
+          // Conversation belongs to user or user is staff, resolve it
+          if ($conv['UserID'] == $activeUser['ID']) {
+              if ($conv['Urgent'] == 'Respond') {
+                  error("You cannot resolve this conversation until you respond to it.");
+              }
+              $Resolve = 'User Resolved';
+          } else {
+              $Resolve = 'Resolved';
+          }
+          $master->db->rawQuery(
+              "UPDATE staff_pm_conversations
+                  SET Date = ?,
+                      Status = ?,
+                      ResolverID = ?
+                WHERE ID = ?",
+              [sqltime(), $Resolve, $activeUser['ID'], $ConvID]
+          );
+          $master->cache->deleteValue('staff_pm_new_'.$activeUser['ID']);
+
+          // Add a log message to the StaffPM
+          $Message = sqltime()." - Resolved by ".$activeUser['Username'];
+          make_staffpm_note($Message, $ConvID);
+
+          header('Location: staffpm.php?view=open');
+    } else {
+        // No message, but conversation id
+        header("Location: staffpm.php?action=viewconv&id=$ConvID");
+    }
 } else {
     // No message or conversation id
     header('Location: staffpm.php?view=open');

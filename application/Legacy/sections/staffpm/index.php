@@ -3,23 +3,22 @@ enforce_login();
 
 if (!isset($_REQUEST['action'])) $_REQUEST['action'] = '';
 
-// get vars from LoggedUser
-$SupportFor = $LoggedUser['SupportFor'];
-$DisplayStaff = $LoggedUser['DisplayStaff'];
-// Logged in user is staff
-$IsStaff = ($DisplayStaff == 1);
-// Logged in user is Staff or FLS
-$IsFLS = ($SupportFor != '' || $IsStaff);
-
-switch ($_REQUEST['action']) {
+$IsStaff = check_perms('site_staff_inbox');
+$IsFLS = check_perms('site_staff_inbox');
+$Action = ($_REQUEST['action'] ?? false);
+switch ($Action) {
 
     case 'takenewpost': // == start a staff conversation
         authorize();
         if (!$IsStaff) error(403);
 
-        if (empty($_POST['toid']) || !is_number($_POST['toid'])) {
-            $DB->query("SELECT ID FROM users_main WHERE Username='".db_string($_POST['user'])."'");
-            list($ToID) = $DB->next_record();
+        if (empty($_POST['toid']) || !is_integer_string($_POST['toid'])) {
+            $ToID = $master->db->rawQuery(
+                "SELECT ID
+                   FROM users
+                  WHERE Username = ?",
+                [$_POST['user']]
+            )->fetchColumn();
         } else $ToID = $_POST['toid'];
 
         $ConvID = startStaffConversation($ToID, $_POST['subject'], $_POST['message']);
@@ -102,7 +101,7 @@ switch ($_REQUEST['action']) {
         break;
     case 'staff_inbox': //
     default:
-        if ($IsStaff || $IsFLS) {
+        if ($IsStaff) {
             require 'staff_inbox.php';
         } else {
             require 'user_inbox.php';

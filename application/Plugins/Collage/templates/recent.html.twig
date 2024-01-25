@@ -1,0 +1,27 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/collage/recent">All collage comments</a>
+{% endblock %}
+
+{% block main_content %}
+    {{ render.latestForumThreads() }}
+    <div class="linkbox">
+        [<a href="/torrents.php?action=allcomments">Latest Torrent Comments</a>]&nbsp;
+        [<a href="/requests.php?action=allcomments">Latest Request Comments</a>]&nbsp;
+        [<a href="/forum/recent">Latest Forum Posts</a>]
+    </div>
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9)|raw }}
+    </div>
+    {% for comment in comments if comments is not empty %}
+        {{ render.post('collage comment', comment) }}
+    {% endfor %}
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9)|raw }}
+    </div>
+{% endblock %}

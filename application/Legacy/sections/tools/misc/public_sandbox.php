@@ -6,10 +6,10 @@ show_header();
 
     <div class="head"></div>
     <div class="box pad shadow">
-        <form action="" method="post" onsubmit="return Validate_Form('message','quickpost')" style="display: block; text-align: center;">
+        <form action="" method="post" onsubmit="return Validate_Form('message', 'quickpost')" style="display: block; text-align: center;">
             <input type="hidden" name="action" value="public_sandbox" />
             <input type="hidden" name="simulate" value="1" />
-            <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+            <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
             <div>
                 <input type="submit" value="Run Ducky Award Schedule" tabindex="1" />
             </div>
@@ -27,7 +27,7 @@ show_header();
         // preview
         $minSnatched=1;
         // get all the users who have a pending torrent ducky award - torrents that have been okayed that now have Snatched>1
-        $pending = $master->db->raw_query("SELECT t.ID, t.UserID
+        $pending = $master->db->rawQuery("SELECT t.ID, t.UserID
                                              FROM torrents AS t
                                              JOIN torrents_awards AS ta ON ta.TorrentID=t.ID
                                             WHERE ta.Ducky = '0'

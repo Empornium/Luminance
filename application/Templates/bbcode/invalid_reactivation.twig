@@ -1,0 +1,25 @@
+A reactivation request was submitted for the user [url=/user.php?id={{ user.ID }}]{{ user.Username }}[/url] with the email {{ email.Address }}.
+
+The inactivity estimate given was {{ info }}.
+
+Request IP: [url=/user.php?action=search&action=search&ip={{ ip }}]{{ ip }}[/url]
+
+The public request has silently failed for the user. This could be because;
+[*] The user used a deleted email address
+[*] Information on the form was incorrect
+[*] The user was disabled for something other than inactivity such as a hacked account, cheating, or a manual disable
+
+The following information was supplied:
+
+[*] Username: {{ username }}
+[*] Email: {{ emailAddress }}
+[*] Inactivity Estimate: {{ information }}
+{% if proof %}
+[*] Proof One: {{ proof }}
+{% endif %}
+{% if proofTwo %}
+[*] Proof Two: {{ proofTwo }}
+{% endif %}
+{% if proofThree %}
+[*] Proof Three: {{ proofThree }}
+{% endif %}

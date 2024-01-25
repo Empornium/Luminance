@@ -1,0 +1,10 @@
+{% extends "@API/torznab/base.xml.twig" %}
+
+{% block content %}
+<rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed"> {# simplexml_load_string hates undefined XML namespaces #}
+<channel>
+{% block rss %}
+{% endblock %}
+</channel>
+</rss>
+{% endblock %}

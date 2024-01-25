@@ -30,7 +30,7 @@ function Select_Action(element_id)
     <tr class="rowa">
     <form action="tools.php" method="post">
         <input type="hidden" name="action" value="shop_alter" />
-        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
         <td>
             <input class="medium" type="text" name="name" value="new name" />
         </td>
@@ -42,7 +42,7 @@ function Select_Action(element_id)
         </td>
         <td>
                 <select name="shopaction" id="shopaction0" onchange="Select_Action(0)">
-<?php                   foreach ($ShopActions as $act) {   ?>
+<?php                   foreach ($shopActions as $act) {   ?>
                         <option value="<?=$act?>"><?=$act?>&nbsp;&nbsp;</option>
 <?php                   } ?>
                 </select>
@@ -72,15 +72,15 @@ function Select_Action(element_id)
     <form action="tools.php" method="post">
         <input type="hidden" name="action" value="shop_alter" />
         <input type="hidden" name="autosynch" value="autosynch" />
-        <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+        <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
 
         <div style="margin-left: auto; margin-right: auto; max-width: 700px;">
             <span style="float: left">
                 <label for="sort">Add sort values starting from this number</label>
-                <input size="3" type="text" name="sort" value="100" />
+                <input size="3" type="text" id="sort" name="sort" value="100" />
             </span>
             <span style="float: right">
-                <input type="checkbox" value="1" name="delete" checked="checked" title="If checked all current badge items will be removed from the shop before adding items from badge table" />
+                <input type="checkbox" value="1" id="delete" name="delete" checked="checked" title="If checked all current badge items will be removed from the shop before adding items from badge table" />
                 <label for="delete">Delete current badges before insertion</label>
             </span>
         </div>
@@ -104,7 +104,7 @@ function Select_Action(element_id)
     </tr>
 <?php
 
-$DB->query("SELECT
+$records = $master->db->rawQuery("SELECT
                         s.ID,
                         s.Title,
                         s.Description,
@@ -115,15 +115,16 @@ $DB->query("SELECT
                         s.Gift
             FROM bonus_shop_actions AS s
                     LEFT JOIN badges AS b ON b.ID=s.Value
-            ORDER BY s.Sort");
+            ORDER BY s.Sort")->fetchAll(\PDO::FETCH_NUM);
 $Row = 'b';
-while (list($ID, $Title, $Description, $ShopAction, $Value, $Cost, $Sort, $Gift) = $DB->next_record()) {
+foreach ($records as $record) {
+list($ID, $Title, $Description, $ShopAction, $Value, $Cost, $Sort, $Gift) = $record;
     $Row = ($Row === 'a' ? 'b' : 'a');
 ?>
     <tr class="row<?=$Row?>">
       <form action="tools.php" method="post">
                 <input type="hidden" name="action" value="shop_alter" />
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <input type="hidden" name="id" value="<?=$ID?>" />
 
         <td>
@@ -137,7 +138,7 @@ while (list($ID, $Title, $Description, $ShopAction, $Value, $Cost, $Sort, $Gift)
         </td>
         <td>
                 <select name="shopaction" id="shopaction<?=$ID?>" onchange="Select_Action(<?=$ID?>)">
-<?php                   foreach ($ShopActions as $act) {   ?>
+<?php                   foreach ($shopActions as $act) {   ?>
                         <option value="<?=$act?>"<?=($act==$ShopAction?' selected="selected" ':'')?>><?=$act?>&nbsp;&nbsp;</option>
 <?php                   } ?>
                 </select>

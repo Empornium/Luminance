@@ -1,0 +1,24 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% block title %}Passkey history for <a href="/user.php?id={{ userID.ID }}">{{ user.Username}}</a>{% endblock %}
+
+{% block main_content %}
+    <table width="100%">
+        <tr class="colhead">
+            <td>Old</td>
+            <td>New</td>
+            <td>Changed</td>
+            <td>IP [<a href="/userhistory.php?action=ips&userid={{ user.ID }}">H</a>]</td>
+        </tr>
+        {% for passkey in user.passkeys %}
+            <tr class="row{{ loop.index % 2 ? 'a' : 'b' }}">
+                <td>{{ passkey.OldPassKey }}</td>
+                <td>{{ passkey.NewPassKey }}</td>
+                <td>{{ time_diff(passkey.Time)|raw }}</td>
+                <td>{{ passkey.ip }} [<a href="/user.php?action=search&ip_history=on&ip={{ passkey.ip }}" title="Search">S</a>]<br />{{ get_host(passkey.ip)|raw }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

@@ -48,45 +48,43 @@
  */
 
         //Payout and Reels for slot machine
-$Payout = array();
-$Payout['A'] = array(6, 12);
-$Payout['B'] = array(10, 25);
-$Payout['C'] = array(20, 50);
-$Payout['D'] = array(35, 100);
-$Payout['E'] = array(50, 1000);
-$Payout['F'] = array(100, 10000);
+$payout = [];
+$payout['A'] = [6, 12];
+$payout['B'] = [10, 25];
+$payout['C'] = [20, 50];
+$payout['D'] = [35, 100];
+$payout['E'] = [50, 1000];
+$payout['F'] = [100, 10000];
 
-$Reel = array();
-$Reel[0] = array('E', 'C', 'A', 'A', 'D', 'A', 'F', 'D', 'B', 'X', 'C', 'B', 'B', 'C', 'C', 'A', 'D', 'B', 'A', 'X');
-$Reel[1] = array('C', 'X', 'A', 'A', 'X', 'D', 'D', 'X', 'B', 'B', 'X', 'E', 'B', 'D', 'F', 'B', 'C', 'C', 'X', 'A');
-$Reel[2] = array('B', 'X', 'F', 'C', 'B', 'C', 'E', 'C', 'X', 'B', 'B', 'D', 'X', 'A', 'A', 'X', 'A', 'A', 'E', 'D');
-$Reel[3] = array('D', 'X', 'B', 'D', 'B', 'X', 'E', 'X', 'A', 'B', 'X', 'C', 'A', 'X', 'A', 'B', 'A', 'F', 'X', 'C');
+$reel = [];
+$reel[0] = ['E', 'C', 'A', 'A', 'D', 'A', 'F', 'D', 'B', 'X', 'C', 'B', 'B', 'C', 'C', 'A', 'D', 'B', 'A', 'X'];
+$reel[1] = ['C', 'X', 'A', 'A', 'X', 'D', 'D', 'X', 'B', 'B', 'X', 'E', 'B', 'D', 'F', 'B', 'C', 'C', 'X', 'A'];
+$reel[2] = ['B', 'X', 'F', 'C', 'B', 'C', 'E', 'C', 'X', 'B', 'B', 'D', 'X', 'A', 'A', 'X', 'A', 'A', 'E', 'D'];
+$reel[3] = ['D', 'X', 'B', 'D', 'B', 'X', 'E', 'X', 'A', 'B', 'X', 'C', 'A', 'X', 'A', 'B', 'A', 'F', 'X', 'C'];
 
 // draw payout
-function print_payout_table($BetAmount)
-{
-    global $Payout;
+function print_payout_table($betAmount, $payout) {
     ?>
     <div>
-        <span class="payout"><?= number_format($BetAmount * 2) ?></span>
+        <span class="payout"><?= number_format($betAmount * 2) ?></span>
         <img src="<?= STATIC_SERVER ?>common/casino/iconA.png" />
     </div>
     <div>
-        <span class="payout"><?= number_format($BetAmount * 4) ?></span>
+        <span class="payout"><?= number_format($betAmount * 4) ?></span>
         <img src="<?= STATIC_SERVER ?>common/casino/iconA.png" />
         <img src="<?= STATIC_SERVER ?>common/casino/iconA.png" />
     </div>
-    <?php foreach ($Payout as $Pic => $P) { ?>
+    <?php foreach ($payout as $Pic => $P) { ?>
         <div>
-            <span class="payout"><?= number_format($BetAmount * $P[0]) ?></span>
+            <span class="payout"><?= number_format($betAmount * $P[0]) ?></span>
             <img src="<?= STATIC_SERVER ?>common/casino/icon<?= $Pic ?>.png" />
             <img src="<?= STATIC_SERVER ?>common/casino/icon<?= $Pic ?>.png" />
             <img src="<?= STATIC_SERVER ?>common/casino/icon<?= $Pic ?>.png" />
         </div>
     <?php }
-    foreach ($Payout as $Pic => $P) { ?>
+    foreach ($payout as $Pic => $P) { ?>
         <div>
-            <span class="payout"><?= number_format($BetAmount * $P[1]) ?></span>
+            <span class="payout"><?= number_format($betAmount * $P[1]) ?></span>
             <img src="<?= STATIC_SERVER ?>common/casino/icon<?= $Pic ?>.png" />
             <img src="<?= STATIC_SERVER ?>common/casino/icon<?= $Pic ?>.png" />
             <img src="<?= STATIC_SERVER ?>common/casino/icon<?= $Pic ?>.png" />

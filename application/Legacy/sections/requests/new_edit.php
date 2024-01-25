@@ -6,41 +6,57 @@
  * maintaining 2 copies of almost identical files.
  */
 
-$Text = new Luminance\Legacy\Text;
+$bbCode = new \Luminance\Legacy\Text;
 
-if(!check_perms('site_submit_requests')) error(403);
+if (!check_perms('site_submit_requests')) error(403);
 
 $NewRequest   = ($_GET['action'] == "new" ? true : false);
 
 if (!$NewRequest) {
     $RequestID = $_GET['id'];
-    if (!is_number($RequestID)) {
+    if (!is_integer_string($RequestID)) {
         error(404);
     }
 }
 
-if ($NewRequest && ($LoggedUser['BytesUploaded'] < 250*1024*1024 || !check_perms('site_submit_requests'))) {
+if ($NewRequest && ($activeUser['BytesUploaded'] < 250*1024*1024 || !check_perms('site_submit_requests'))) {
     error('You do not have enough uploaded to make a request.');
 }
 
 if (!$NewRequest) {
     if (empty($ReturnEdit)) {
 
-        $Request = get_requests(array($RequestID));
+        $Request = get_requests([$RequestID]);
         $Request = $Request['matches'][$RequestID];
         if (empty($Request)) {
             error(404);
         }
 
-        list($RequestID, $RequestorID, $RequestorName, $TimeAdded, $LastVote, $CategoryID, $Title, $Image, $Description,
-             $FillerID, $FillerName, $TorrentID, $TimeFilled, $GroupID) = $Request;
+        list(
+            'ID'          => $RequestID,
+            'UserID'      => $RequestorID,
+            'Username'    => $RequestorName,
+            'TimeAdded'   => $timeAdded,
+            'LastVote'    => $LastVote,
+            'CategoryID'  => $CategoryID,
+            'Title'       => $Title,
+            'Image'       => $Image,
+            'Description' => $Description,
+            'FillerID'    => $FillerID,
+            'TorrentID'   => $torrentID,
+            'TimeFilled'  => $timeFilled,
+            'GroupID'     => $GroupID,
+            'UploaderID'  => $UploaderID,
+            'Anonymous'   => $IsAnon,
+            'Tags'        => $Tags
+        ) = $Request;
         $VoteArray = get_votes_array($RequestID);
         $VoteCount = count($VoteArray['Voters']);
 
-        $IsFilled = !empty($TorrentID);
-        $CategoryName = $OpenCategories[$CategoryID]['name'];
+        $IsFilled = !empty($torrentID);
+        $CategoryName = $openCategories[$CategoryID]['name'];
         $ProjectCanEdit = (check_perms('site_project_team') && !$IsFilled && (($CategoryID == 0)));
-        $CanEdit = ((!$IsFilled && $LoggedUser['ID'] == $RequestorID && $VoteCount < 2) || $ProjectCanEdit || check_perms('site_moderate_requests'));
+        $CanEdit = ((!$IsFilled && $activeUser['ID'] == $RequestorID && $VoteCount < 2) || $ProjectCanEdit || check_perms('site_moderate_requests'));
 
         if (!$CanEdit) {
             error(403);
@@ -50,16 +66,18 @@ if (!$NewRequest) {
     }
 }
 
-if ($NewRequest && !empty($_GET['groupid']) && is_number($_GET['groupid'])) {
-    $DB->query("SELECT
-                            tg.Name,
-                            tg.Image,
-                            GROUP_CONCAT(t.Name SEPARATOR ', '),
-                    FROM torrents_group AS tg
-                            JOIN torrents_tags AS tt ON tt.GroupID=tg.ID
-                            JOIN tags AS t ON t.ID=tt.TagID
-                    WHERE tg.ID = ".$_GET['groupid']);
-    if (list($Title, $Image, $Tags) = $DB->next_record()) {
+if ($NewRequest && !empty($_GET['groupid']) && is_integer_string($_GET['groupid'])) {
+    list($Title, $Image, $Tags) = $master->db->rawQuery(
+        "SELECT tg.Name,
+                tg.Image,
+                GROUP_CONCAT(t.Name SEPARATOR ', '),
+           FROM torrents_group AS tg
+           JOIN torrents_tags AS tt ON tt.GroupID = tg.ID
+           JOIN tags AS t ON t.ID = tt.TagID
+          WHERE tg.ID = ?",
+        [$_GET['groupid']]
+    )->fetch(\PDO::FETCH_NUM);
+    if ($master->db->foundRows() > 0) {
         $GroupID = trim($_REQUEST['groupid']);
     }
 } elseif ($NewRequest) {
@@ -88,14 +106,14 @@ if ($NewRequest && !empty($_GET['groupid']) && is_number($_GET['groupid'])) {
     }
 }
 
-show_header(($NewRequest ? "Create a request" : "Edit a request"), 'requests,bbcode,autocomplete,tag_autocomplete,jquery,jquery.cookie');
+show_header(($NewRequest ? "Create a request" : "Edit a request"), 'requests,bbcode,jquery,jquery.cookie');
 ?>
 <script type="text/javascript">//<![CDATA[
     function change_tagtext()
     {
         var tags = [];
 <?php
-foreach ($OpenCategories as $cat) {
+foreach ($openCategories as $cat) {
     echo 'tags[' . $cat['id'] . ']="' . $cat['tag'] . '"' . ";\n";
 }
 ?>
@@ -124,27 +142,20 @@ if (!empty($Properties))
     </div>
 <?php
     /* -------  Draw a box with imagehost whitelist  ------- */
-    $Whitelist = $Cache->get_value('imagehost_whitelist');
-    if ($Whitelist === FALSE) {
-        $DB->query("SELECT
-                    Imagehost,
-                    Link,
-                    Comment,
-                    Time,
-                    Hidden
-                    FROM imagehost_whitelist
-                    WHERE Hidden='0'
-                    ORDER BY Time DESC");
-        $Whitelist = $DB->to_array();
-        $Cache->cache_value('imagehost_whitelist', $Whitelist);
-    }
-    $DB->query("SELECT MAX(iw.Time), IF(MAX(t.Time) < MAX(iw.Time) OR MAX(t.Time) IS NULL,1,0)
-                  FROM imagehost_whitelist as iw
-             LEFT JOIN torrents AS t ON t.UserID = '$LoggedUser[ID]' ");
-    list($Updated, $NewWL) = $DB->next_record();
+    $Whitelist = $master->repos->imagehosts->find("Hidden='0'", null, 'Time DESC', null, 'imagehost_whitelist');
+    list($Updated, $NewWL) = $master->db->rawQuery(
+        "SELECT MAX(iw.Time),
+                IF (MAX(t.Time) < MAX(iw.Time) OR MAX(t.Time) IS NULL, 1, 0)
+           FROM imagehost_whitelist as iw
+      LEFT JOIN torrents AS t ON t.UserID = ?",
+        [$activeUser['ID']]
+    )->fetch(\PDO::FETCH_NUM);
 // test $HideWL first as it may have been passed from upload_handle
-    if (!$HideWL)
-        $HideWL = check_perms('torrents_hide_imagehosts') || !$NewWL;
+    if (!($HideWL ?? false)) {
+        $HideWL = check_perms('torrent_hide_imagehosts') || !$NewWL;
+    } else {
+        $HideWL = false;
+    }
     ?>
     <div class="head">Approved Imagehosts</div>
     <div class="box pad">
@@ -161,21 +172,19 @@ if (!empty($Properties))
                 <td><strong>Comment</strong></td>
             </tr>
 <?php
-foreach ($Whitelist as $ImageHost) {
-    list($Host, $Link, $Comment, $Updated) = $ImageHost;
-    ?>
-                <tr>
-                    <td><?=$Text->full_format($Host)?>
-    <?php
-    // if a goto link is supplied and is a validly formed url make a link icon for it
-    if (!empty($Link) && $Text->valid_url($Link)) {
-        ?><a href="/<?= $Link ?>"  target="_blank"><img src="<?=STATIC_SERVER?>common/symbols/offsite.gif" width="16" height="16" style="" alt="Goto <?= $Host ?>" /></a>
-    <?php  } // endif has a link to imagehost  ?>
-                    </td>
-                    <td><?=$Text->full_format($Comment)?></td>
-                </tr>
-    <?php  } ?>
-        </table>
+foreach ($Whitelist as $ImageHost) { ?>
+          <tr>
+              <td><?=$bbCode->full_format($ImageHost->Imagehost)?>
+  <?php
+  // if a goto link is supplied and is a validly formed url make a link icon for it
+  if (!empty($ImageHost->Link) && $bbCode->valid_url($ImageHost->Link)) {
+      ?><a href="<?= $ImageHost->Link ?>"  target="_blank"><img src="<?=STATIC_SERVER?>common/symbols/offsite.gif" width="16" height="16" style="" alt="Goto <?= $ImageHost->Imagehost ?>" /></a>
+  <?php  } // endif has a link to imagehost  ?>
+              </td>
+              <td><?=$bbCode->full_format($ImageHost->Comment)?></td>
+          </tr>
+  <?php  } ?>
+      </table>
     </div>
       <div class="head"><?=($NewRequest ? "Create New Request" : "Edit Request")?></div>
     <div class="box pad">
@@ -183,12 +192,12 @@ foreach ($Whitelist as $ImageHost) {
 <?php  if (!$NewRequest) { ?>
                 <input type="hidden" name="requestid" value="<?=$RequestID?>" />
 <?php  } ?>
-                <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
+                <input type="hidden" name="auth" value="<?=$activeUser['AuthKey']?>" />
                 <input type="hidden" name="action" value="<?=$NewRequest ? 'takenew' : 'takeedit'?>" />
 
             <table>
                 <tr>
-                    <td colspan="2" class="center">Please make sure your request follows <a href="/articles.php?topic=requests">the request rules!</a></td>
+                    <td colspan="2" class="center">Please make sure your request follows <a href="/articles/view/requests">the request rules!</a></td>
                 </tr>
 <?php 	if ($NewRequest || $CanEdit) { ?>
                 <tr class="pad">
@@ -196,14 +205,14 @@ foreach ($Whitelist as $ImageHost) {
                         <strong class="important_text">NOTE: Requests automatically expire after 90 days. At this time if the bounty has not been filled all outstanding bounties are returned to those who placed them</strong>
                     </td>
                 </tr>
-                <tr>
+                <tr class="hidden_request">
                     <td class="label">
                         Category
                     </td>
-                    <td>
+                    <td> <div class="box pad hidden"></div>
                         <select id="category" name="category" onchange="change_tagtext();">
                                         <option value="0">---</option>
-                                    <?php  foreach ($OpenCategories as $category) { ?>
+                                    <?php  foreach ($openCategories as $category) { ?>
                                         <option value="<?=$category['id']?>"<?php
                                             if (isset($CategoryID) && $CategoryID==$category['id']) {
                                                 echo ' selected="selected"';
@@ -212,7 +221,7 @@ foreach ($Whitelist as $ImageHost) {
                         </select>
                     </td>
                 </tr>
-                <tr>
+                <tr class="hidden_request">
                     <td class="label">Title</td>
                     <td>
                         <input type="text" name="title" class="long" value="<?=(!empty($Title) ? display_str($Title) : '')?>" />
@@ -220,22 +229,29 @@ foreach ($Whitelist as $ImageHost) {
                 </tr>
                 <tr id="image_tr">
                             <td class="label">Cover Image</td>
-                            <td>    <strong>Enter the full url for your image.</strong><br/>
-                                        Note: Do not add a thumbnail image as cover, rather leave this field blank if you don't have a good cover image or an image of the actor(s).
-                                 <input type="text" id="image" class="long" name="image" value="<?=(!empty($Image) ? display_str($Image) : '')?>" />
+                            <td> <div id="preview_image" class="box pad hidden"></div>
+                                <div  id="image" class="hidden_request">
+                                    <strong class="hidden_request">Enter the full url for your image.</strong><br/>
+                                     <input type="text" id="image_id" class="long" name="image" value="<?=(!empty($Image) ? display_str($Image) : '')?>" />
+                                 </div>
                             </td>
+                        </div>
                 </tr>
 <?php 	} ?>
-                <tr>
+                <tr class="hidden_request">
                     <td class="label">Tags</td>
                     <td>
                     <div id="tagtext"></div>
 <?php
-    $GenreTags = $Cache->get_value('genre_tags');
+    $GenreTags = $master->cache->getValue('genre_tags');
     if (!$GenreTags) {
-        $DB->query('SELECT Name FROM tags WHERE TagType=\'genre\' ORDER BY Name');
-        $GenreTags =  $DB->collect('Name');
-        $Cache->cache_value('genre_tags', $GenreTags, 3600*6);
+        $GenreTags = $master->db->rawQuery(
+            "SELECT Name
+               FROM tags
+              WHERE TagType = 'genre'
+           ORDER BY Name"
+        )->fetchAll(\PDO::FETCH_COLUMN);
+        $master->cache->cacheValue('genre_tags', $GenreTags, 3600*6);
     }
 ?>
                         <select id="genre_tags" name="genre_tags" onchange="add_tag();return false;" >
@@ -245,66 +261,59 @@ foreach ($Whitelist as $ImageHost) {
 <?php 	} ?>
                         </select>
 
-                        <div style="vertical-align:middle;display:inline-block;" title="Toggle Autocomplete mode on/off (when off you can access browser form history)">
-                            <input id="autocomplete_toggle" onclick="ToggleAutoComplete();" type="checkbox" value="1" name="autocomplete_toggle" checked/>
-                            Autocomplete Tags
-                        </div>
                         <br>
-                        <div id="autoresults" class="autoresults">
-                            <ul id="tagdropdown"></ul>
-                        </div>
+                        <textarea id="taginput" name="taglist" class="medium"><?=(!empty($Tags) ? display_str($Tags) : '')?></textarea>
                         <br>
-                        <!-- we have to insert the font here for js to be able to grab it (js bug?) -->
-                        <textarea id="taginput" name="taglist" class="medium" style="font: 10pt monospace;"
-                                  onkeyup="resize('taginput'); return autocomp.keyup(event); "
-                                  onkeydown="return autocomp.keydown(event);"
-                                  onchange="resize('taginput');"
-                                  autocomplete="off"><?=(!empty($Tags) ? display_str($Tags) : '')?></textarea>
+                        <label class="checkbox_label" title="Toggle autocomplete mode on or off.&#10;When turned off, you can access your browser's form history.">
+                            <input id="autocomplete_toggle" type="checkbox" name="autocomplete_toggle" checked/>
+                            Autocomplete tags
+                        </label>
 
                         <br />
                     <?php
                                       $taginfo = get_article('tagrulesinline');
-                                      if($taginfo) echo $Text->full_format($taginfo, true);
+                                      if ($taginfo) echo $bbCode->full_format($taginfo, true);
                               ?>
                     </td>
                 </tr>
                 <tr>
                     <td class="label">Description</td>
-                    <td>  <div id="preview" class="box pad hidden"></div>
+                    <td>  <div id="preview_description" class="box pad hidden"></div>
                                     <div  id="editor">
-                                         <?php  $Text->display_bbcode_assistant("quickcomment", get_permissions_advtags($LoggedUser['ID'], $LoggedUser['CustomPermissions'])); ?>
+                                         <?php  $bbCode->display_bbcode_assistant("quickcomment", get_permissions_advtags($activeUser['ID'], $activeUser['CustomPermissions'])); ?>
                                         <textarea  id="quickcomment" name="description" class="long" rows="7"><?=(!empty($Description) ? $Description : '')?></textarea>
                                     </div>
-                                    <input type="button" id="previewbtn" value="Preview" style="margin-right: 40px;" onclick="Preview_Request();" />
+                                    <!--<input type="button" id="previewbtn" value="Preview" style="margin-right: 40px;" onclick="Preview_Request();" />-->
                               </td>
                 </tr>
 
 <?php 	if ($NewRequest) { ?>
-                <tr id="voting">
+                <tr id="voting" class="hidden_request">
                     <td class="label" id="bounty">Bounty</td>
                     <td>
-                        <input type="text" id="amount_box" size="8" value="<?=((!empty($Bounty) ? $Bounty : $master->options->MinCreateBounty) / (1024*1024*1024) )?>" onchange="Calculate();" onkeyup="Calculate();" />
+                        <input type="text" id="amount_box" size="8" value="<?=((!empty($Bounty) ? $Bounty : $master->options->MinCreateBounty) / (1024*1024*1024))?>" onchange="Calculate();" onkeyup="Calculate();" />
                         <select id="unit" name="unit" onchange="Calculate();">
-                            <option value='gb'<?=(!empty($_POST['unit']) && $_POST['unit'] == 'gb' ? ' selected="selected"' : '') ?>>GB</option>
-                            <option value='tb'<?=(!empty($_POST['unit']) && $_POST['unit'] == 'tb' ? ' selected="selected"' : '') ?>>TB</option>
+                            <option value='gb'<?=(!empty($_POST['unit']) && $_POST['unit'] == 'gb' ? ' selected="selected"' : '') ?>>GiB</option>
+                            <option value='tb'<?=(!empty($_POST['unit']) && $_POST['unit'] == 'tb' ? ' selected="selected"' : '') ?>>TiB</option>
                         </select>
                         <input type="button" value="Preview" onclick="Calculate();"/>
                         <strong id="inform"></strong>
                     </td>
                 </tr>
-                <tr>
+                <tr class="hidden_request">
                     <td class="label">Post request information</td>
                     <td>
-                        <input type="hidden" id="amount" name="amount" value="<?=(!empty($Bounty) ? $Bounty : $master->options->MinCreateBounty )?>" />
-                        <input type="hidden" id="current_uploaded" value="<?=$LoggedUser['BytesUploaded']?>" />
-                        <input type="hidden" id="current_downloaded" value="<?=$LoggedUser['BytesDownloaded']?>" />
+                        <input type="hidden" id="amount" name="amount" value="<?=(!empty($Bounty) ? $Bounty : $master->options->MinCreateBounty)?>" />
+                        <input type="hidden" id="current_uploaded" value="<?=$activeUser['BytesUploaded']?>" />
+                        <input type="hidden" id="current_downloaded" value="<?=$activeUser['BytesDownloaded']?>" />
                         If you add the entered <strong><span id="new_bounty"><?=get_size($master->options->MinCreateBounty);?></span></strong> of bounty, your new stats will be: <br/>
-                        Uploaded: <span id="new_uploaded"><?=get_size($LoggedUser['BytesUploaded'])?></span><br/>
-                        Ratio: <span id="new_ratio"><?=ratio($LoggedUser['BytesUploaded'],$LoggedUser['BytesDownloaded'])?></span>
+                        Uploaded: <span id="new_uploaded"><?=get_size($activeUser['BytesUploaded'])?></span><br/>
+                        Ratio: <span id="new_ratio"><?=ratio($activeUser['BytesUploaded'], $activeUser['BytesDownloaded'])?></span>
                     </td>
                 </tr>
                 <tr>
                     <td colspan="2" class="center">
+                        <input type="button" id="previewbtn" value="Preview" onclick="Preview_Request();" />
                         <input type="submit" id="button_vote" value="Create request" />
                     </td>
                 </tr>

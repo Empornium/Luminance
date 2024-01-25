@@ -1,274 +1,412 @@
 /*
-Spent hours debugging opera, turns out they reserve the global variable autocomplete. Bitches.
+    Usage:
+        AutoComplete.addInput(element, section)
+            Starts monitoring the specified element and provides suggestions based on input.
+            section: remote end to get suggestions, such as /tags.php
+            element: the element to monitor, can be either an input or textarea
+        AutoComplete.stop([element])
+            Stops monitoring the specified element. If no element is provided, then stops monitoring all elements.
+        AutoComplete.resume([element])
+            Resumes monitoring the specified or all elements.
+
+    Example:
+
+    document.body.addEventListener('DOMContentLoaded', function () {
+        AutoComplete.addInput(document.getElementById('searchbox_tags'), '/tags.php');
+    });
 */
-/*
- *   Elements needed to make this work:
- *   'section' (eg. tags) where /section/index.php has a switch for action=autocomplete&name=searchvalue (to fetch results)
- *   'cacheprefix' - a string to prefix to js cache results
- *   input text should have keydown and keyup events attached to autocomp.keydown(event) etc
- *   a ul element for results, pass id's for these elements in startup call
- *   a function submitted() {} event which is called when the user presses enter with nothing selected
- *   and an initialising event (DOMLoad is good) where autocomp.start(section,cacheprefix,inputid,listid) is called
-EXAMPLE:
+'use strict';
 
-addDOMLoadEvent(startAutoComp);
+document.addEventListener('DOMContentLoaded', function () {
+    // enable autocomplete for the following elements
+    var tag_elements = [ 'searchbox_tags', 'taginput' ];
 
-function startAutoComp() {
-    autocomp.start('section','cacheprefix','inputid', 'listid');
-}
+    for (var i = 0; i < tag_elements.length; i++) {
+        var element = document.getElementById(tag_elements[i]);
 
-function submitted() {
-    // do something when the enter key is pressed with nothing selected in the dropdown
-    $('#search_form').submit();
-}
+        if (element) {
+            AutoComplete.addInput(element, '/tags.php');
+        }
+    }
 
- * html example:
-                        <div class="autoresults">
-                            <input type="text" id="inputid"
-                                        onkeyup="return autocomp.keyup(event);"
-                                        onkeydown="return autocomp.keydown(event);"
-                                        autocomplete="off"
-                                        title="enter text to search for tags, click (or enter) to select a tag from the drop-down" />
-                            <ul id="listid"></ul>
-                        </div>
- */
-"use strict";
-var autocomp = {
-    id_prefix: "",
-    section: "",
-    wordvalue: "",
-    wordindex: -1,
-    left: 0,
-    top: 0,
-    tag: null,
-    timer: null,
-    input: null,
-    list: null,
-    pos: -1,
-    ignore: ['and','or','not','+','|','-','&','!','(',')'],
-    cache : [],
-    start : function(section, id_prefix, inputid, listid)
-    {
-        this.section = section;
-        this.id_prefix = id_prefix;
-        this.cache[id_prefix] = ["", [], [], [] ];
-        this.input = document.getElementById(inputid);
-        this.list = document.getElementById(listid);
-        listener.set(document.body, 'click', function() {
-            autocomp.end();
-        });
+    var autocompleteToggle = document.getElementById('autocomplete_toggle');
+
+    // turn off in case the option is disabled and there's no toggle
+    if (!autocompleteToggle) {
+        if (localStorage.getItem('tag_autocomplete_toggle') == 'off') {
+            AutoComplete.stop();
+        }
+        return;
+    }
+
+    // in order to enable browser suggestions we need to replace textarea with input
+    var textarea = document.getElementById('taginput');
+    var input = document.createElement('input');
+    input.id = textarea.id;
+    input.name = textarea.name;
+    input.title = textarea.title;
+    input.autocomplete = 'on';
+    input.setAttribute('style', 'font: 10pt monospace;');
+    input.classList.add('inputtext', 'medium');
+
+    function swapInputs (newInput, oldInput) {
+        newInput.value = oldInput.value;
+        oldInput.parentElement.replaceChild(newInput, oldInput);
+    }
+
+    // toggle listener
+    autocompleteToggle.addEventListener('change', function (event) {
+        if (this.checked) {
+            AutoComplete.resume();
+            swapInputs(textarea, input);
+        }
+        else {
+            AutoComplete.stop();
+            swapInputs(input, textarea);
+        }
+        localStorage.setItem('tag_autocomplete_toggle', this.checked ? 'on' : 'off');
+    });
+
+    // turn off in case the option is disabled
+    if (localStorage.getItem('tag_autocomplete_toggle') == 'off') {
+        if (autocompleteToggle.checked) {
+            autocompleteToggle.click(); // simulate change event to turn off
+        }
+        else {
+            swapInputs(input, textarea); // in case the page was refreshed and the toggle is unchecked
+        }
+    }
+});
+
+var AutoComplete = {
+    // properties
+    inputs:    [],
+    sections:  [],
+    listeners: [],
+    cache:     {},
+
+    // methods
+    addInput: function (element, section) {
+        // check if element has already been added
+        if (this.inputs.indexOf(element) != -1) return;
+
+        // generate and store listener so it's possible to remove
+        var listener = this.keydown.bind(this);
+
+        this.inputs.push(element);
+        this.sections.push(section);
+        this.listeners.push(listener);
+
+        // start listening
+        element.setAttribute('autocomplete', 'off'); // disable browser autocomplete
+        element.addEventListener('keydown', listener);
+
+        // hide tooltip when the input element loses focus; see note below
+        element.addEventListener('blur', this.tooltip.hideIfNotFocused.bind(this.tooltip));
+
+        // init tooltip
+        this.tooltip.init();
+
+        // only do once
+        if (this.inputs.length == 1) {
+            // as the blur event comes before click, we have to monitor when the tooltip is active
+            // otherwise, the tooltip is hidden before the user is able to click on a suggestion
+            this.tooltip.wrapper.addEventListener('mouseenter', this.tooltip.onFocus.bind(this.tooltip));
+            this.tooltip.wrapper.addEventListener('mouseleave', this.tooltip.onBlur.bind(this.tooltip));
+        }
     },
-    end : function()
-    {
-        this.tag = null;
-        this.highlight('none');
-        this.list.style.visibility = 'hidden';
+    stop: function (element) {
+        if (element) {
+            var i = this.inputs.indexOf(element);
+
+            if (i != -1) {
+                this.inputs[i].setAttribute('autocomplete', 'on');
+                this.inputs[i].removeEventListener('keydown', this.listeners[i]);
+            }
+        }
+        else {
+            for (var i = 0; i < this.inputs.length; i++) {
+                this.inputs[i].setAttribute('autocomplete', 'on');
+                this.inputs[i].removeEventListener('keydown', this.listeners[i]);
+            }
+        }
+    },
+    resume: function (element) {
+        if (element) {
+            var i = this.inputs.indexOf(element);
+
+            if (i != -1) {
+                this.inputs[i].setAttribute('autocomplete', 'off');
+                this.inputs[i].addEventListener('keydown', this.listeners[i]);
+            }
+        }
+        else {
+            for (var i = 0; i < this.inputs.length; i++) {
+                this.inputs[i].setAttribute('autocomplete', 'off');
+                this.inputs[i].addEventListener('keydown', this.listeners[i]);
+            }
+        }
+    },
+    keydown: function (event) {
         clearTimeout(this.timer);
-    },
-    setwordvalue: function()
-    {
-        var caretPos = this.input.selectionStart;
+        this.input = event.target;
 
-        if (!this.input.value || this.input.value.trim()=='') {
-            this.wordvalue = '';
-        } else {
-            var words = this.input.value.split(' ');
-            if (words && is_array(words) && words.length>0) {
-                var count=0;
-                // find the word under the current caret
-                for (var i = 0; i < words.length; i++) {
-                    count += words[i].length;
-                    if (count >= caretPos) {
-                        this.wordvalue = words[i].trim();
-                        this.wordindex = i;
-                        break;
-                    }
-                    // add count for spaces between words
-                    count++;
-                }
-            }
-            if (in_array(this.wordvalue.toLowerCase(), this.ignore)) {
-                this.wordvalue ='';
-            }
-        }
-        if (this.wordvalue == '') {
-            this.wordindex = -1;
-            this.end();
-        } else {
-            var coords = getCaretCoordinates(this.input, caretPos);
-            this.left = coords.left;
-            this.top = coords.top + 18;
-        }
-    },
-    clicked : function(tag)
-    {
-        if (tag === null || tag == '' || this.wordindex < 0) return;
-        var prefix = '';
-        var startPosition = this.input.selectionStart;
-        var caretPos = 0;
-        var inputtext = this.input.value;
-        var words = inputtext.split(" ");
-        if (words && is_array(words) && words.length > 0) {
-            // wordindex was stored at lookup
-            if (this.wordindex >= words.length) return;
-            var word = words[this.wordindex];
-            // if lastword has an operator as the first character grab it
-            var result = /^[!&\|\-\+]/i.exec(word);
-            if (result && result.index === 0) {
-                prefix = result[0];
-            }
-            // replace searched on word with selected word & rebuild input string
-            words[this.wordindex] = prefix + tag;
-            // add space if we appended at the end of wordlist
-            if (this.wordindex == words.length - 1) {
-                words[this.wordindex] += " ";
-            }
-            
-            inputtext = words.join(" ");
-            // to find the caret position of the end of the inserted word we loop through and add whole word lengths
-            var count = 0;
-            for (var i = 0; i < words.length; i++) {
-                count += words[i].length;
-                if (count >= startPosition) {
-                    caretPos = count;
-                    break;
-                }
-                // add count for spaces between words
-                count++;
-            }
-        }
-        this.input.value = inputtext;
-        this.input.focus();
-        this.input.selectionStart = caretPos;
-        this.input.selectionEnd = caretPos;
-    },
-    keyup : function(e)
-    {
-        clearTimeout(this.timer);
-        this.setwordvalue();
-        var key = (window.event) ? window.event.keyCode : e.keyCode;
-        switch (key) {
-            case 27: //esc
-            case 9:  //tab
-                this.end();
-                break;
-            case 8:  //backspace
-                this.list.style.visibility = 'hidden';
-                if (this.wordvalue.length > 0) {
-                    this.timer = setTimeout(function() { autocomp.get((autocomp.wordvalue)); }, 300);
+        if (event.shiftKey || event.ctrlKey || event.altKey) return;
+
+        switch (event.keyCode) {
+            case 27: // esc
+                if (this.tooltip.visible) {
+                    this.tooltip.hide();
+                    event.preventDefault();
                 }
                 break;
-            case 38: //up
-                this.highlight('up');
-                break;
-            case 40: //down
-                this.highlight('down');
-                break;
-            case 13: //enter
-                if (this.tag != null) {
-                    this.clicked(this.tag);
-                } else if (typeof submitted == 'function') {
-                    // if there is an external submitted() function then call it
-                    submitted();
+            case 38: // up
+                if (this.tooltip.visible) {
+                    this.tooltip.selectPrevious();
+                    event.preventDefault();
                 }
-                this.end();
+                break;
+            case 40: // down
+                if (this.tooltip.visible) {
+                    this.tooltip.selectNext();
+                    event.preventDefault();
+                }
+                break;
+            case 9:  // tab
+                if (this.tooltip.visible) {
+                    this.replace();
+                    event.preventDefault();
+                }
+                break;
+            case 13: // enter
+                if (this.tooltip.visible) {
+                    this.replace();
+                    event.preventDefault();
+                }
+                else if (this.input.nodeName == 'TEXTAREA' && this.input.form) {
+                    this.input.form.submit();
+                    event.preventDefault();
+                }
+                break;
+            case 37: // left
+            case 39: // right
                 break;
             default:
-                if (this.wordvalue.length > 0) {
-                    this.timer = setTimeout(function() { autocomp.get((autocomp.wordvalue)); }, 200);
-                }
-                return true;
+                this.timer = setTimeout(this.getSuggestions.bind(this), 300);
         }
-        return false;
     },
-    keydown : function(e)
-    {
-        switch ((window.event) ? window.event.keyCode : e.keyCode) {
-            case 27: //esc
-            case 9:  //tab
-                this.end();
-                return false;
-                break;
-            case 38: //up
-            case 40: //down
-                e.preventDefault();
-                return 1;
-                break;
-            case 13: //enter
-                return false;
+    getSuggestions: function () {
+        // ignore special chars
+        var word = this.getCurrentWord().replace(/[^a-zA-Z0-9.]/g, '');
+
+        if (!word.length) return this.tooltip.hide();
+
+        var i = this.inputs.indexOf(this.input);
+        var url = this.sections[i] + '?action=autocomplete&name=' + word;
+
+        if (this.cache.hasOwnProperty(url)) {
+            this.tooltip.display(this.generateList(this.cache[url]), this.tooltipCoords, url);
+            this.tooltip.select(0);
         }
-        return 1;
+        else {
+            ajax.get(url, function(response) {
+                // data = [query, [ [suggestion1, html], ... ] ];
+                var data = json.decode(response);
+                this.cache[url] = data[1];
+                this.tooltip.display(this.generateList(data[1]), this.tooltipCoords, url);
+                this.tooltip.select(0);
+            }.bind(this));
+        }
     },
-    highlight : function(change)
-    {
-        //No highlights on no list
-        if (this.list.children.length === 0) return;
-        this.list.style.visibility = 'visible';
+    getCurrentWord: function () {
+        this.wordStart = this.wordEnd = this.input.selectionStart;
 
-        //Remove the previous highlight
-        if (this.pos >= 0 && this.pos < this.list.children.length) {
-            this.list.children[this.pos].className = "";
+        // set index after previous space or start
+        do {
+            this.wordStart--;
+        } while(this.wordStart > -1 && this.input.value.charAt(this.wordStart) != ' ');
+        this.wordStart++;
+
+        // if the first char is a boolean operator, skip it.
+        // Doing it with a switch to maximize browser compat,
+        // a bit hacky looking but it works nice.
+        switch(this.input.value.charAt(this.wordStart)) {
+            case '-':
+            case '!':
+            case '|':
+            case '&':
+            case '(':
+            case ')':
+                this.wordStart++;
         }
 
-        //Change position
-        if (change == 'down') ++this.pos;
-        else if (change == 'up') --this.pos;
-        else if (change == 'none') this.pos = -20;
-        else this.pos = parseInt(change);
+        // set index before next space or end
+        while (this.input.value.charAt(this.wordEnd) != ' ' && this.wordEnd < this.input.value.length) {
+            this.wordEnd++;
+        }
 
-        if (this.pos !== -20) {
-            // wrap around
-            if (this.pos >= this.list.children.length) {
-                this.pos = 0;
-            } else if (this.pos < 0) {
-                this.pos = this.list.children.length - 1;
+        // set tooltip coords
+        var rect = this.input.getBoundingClientRect(); // IE uses rect.left & rect.top instead of rect.x & rect.y
+        this.tooltipCoords = {
+            x: (rect.left || rect.x) + pageXOffset + getCaretCoordinates(this.input, this.wordStart).left,
+            y: (rect.top || rect.y) + pageYOffset + getCaretCoordinates(this.input, this.wordStart).top + 20
+        };
+
+        return this.input.value.substring(this.wordStart, this.wordEnd);
+    },
+    generateList: function (data) {
+        var list = [ ];
+        var i;
+
+        var click = function (event) {
+        }.bind(this);
+
+        for (i = 0; i < data.length; i++) {
+            var li = document.createElement('li');
+            li.dataset.tag = data[i][0];
+            li.dataset.index = i;
+            li.insertAdjacentHTML('afterbegin', data[i][1]);
+            li.addEventListener('mouseenter', this.suggestionHover.bind(this));
+            li.addEventListener('click', this.suggestionClick.bind(this));
+            list.push(li);
+        }
+
+        return list;
+    },
+    replace: function () {
+        var suggestion = this.tooltip.getSelection().dataset.tag;
+        this.input.value = (
+            // before word
+            this.input.value.substring(0, this.wordStart) +
+
+            // new word
+            suggestion +
+
+            // inject space
+            ' ' +
+
+            // after word
+            this.input.value.substring(this.wordEnd)
+        );
+
+        // position caret after the suggestion, as changing the value puts the caret at the end
+        this.input.setSelectionRange(this.wordStart + suggestion.length + 1, this.wordStart + suggestion.length + 1);
+        this.tooltip.hide();
+    },
+
+    //events
+    suggestionHover: function (event) {
+        this.tooltip.select(event.target.dataset.index);
+    },
+    suggestionClick: function (event) {
+        this.replace();
+        this.input.focus();
+
+        event.preventDefault();
+        event.stopPropagation();
+    },
+};
+
+AutoComplete.tooltip = {
+    // properties
+    isFocused: false,
+
+    // methods
+    init: function () {
+        if (this.wrapper) return;
+
+        this.wrapper = document.createElement('ul');
+        this.wrapper.id = 'autoresults';
+        this.wrapper.style.position = 'absolute';
+        this.hide();
+
+        document.body.appendChild(this.wrapper);
+    },
+    display: function (list, coords, id) {
+        // check list length
+        if (!list.length) return this.hide();
+
+        // same list as last
+        if (this.id == id) {
+            if (this.coords != coords) {
+                this.coords = coords;
+                this.position();
             }
-            this.tag = this.list.children[this.pos].tag;
-            this.list.children[this.pos].className = "highlight";
-        } else {
-            this.tag = null;
-        }
-    },
-    get : function(value)
-    {
-        this.tag = null;
-        this.pos = -1;
-
-        if (typeof this.cache[this.id_prefix + value] === 'object') {
-            this.display(this.cache[this.id_prefix + value]);
             return;
         }
 
-        ajax.get(this.section + '.php?action=autocomplete&name=' + value, function(jstr) {
-            var data = json.decode(jstr);
-            autocomp.cache[autocomp.id_prefix + data[0]] = data[1];
-            autocomp.display(data[1]);
-        });
+        this.id     = id;
+        this.coords = coords;
+        this.list   = list;
+
+        // clear previous entries
+        while (this.wrapper.firstChild) {
+            this.wrapper.removeChild(this.wrapper.firstChild);
+        }
+
+        // append list
+        var i;
+        for (i = 0; i < list.length; i++) {
+            this.wrapper.appendChild(list[i]);
+        }
+
+        // position and display
+        this.position();
     },
-    display : function(data)
-    {
-        var i, il, li;
-        this.list.innerHTML = '';
-        il = data.length;
-        for (i = 0; i < il; i++) {
-            li = document.createElement('li');
-            li.tag = data[i][0];
-            li.innerHTML = data[i][1];
-            li.i = i;
-            listener.set(li, 'mouseover', function() {
-                autocomp.highlight(this.i);
-            });
-            listener.set(li, 'click', function() {
-                autocomp.clicked(this.tag);
-            });
-            this.list.appendChild(li);
+    hide: function () {
+        this.visible = 0;
+        this.wrapper.style.display = 'none';
+    },
+    position: function () {
+        this.wrapper.style.top     = this.coords.y + 'px';
+        this.wrapper.style.left    = this.coords.x + 'px';
+        this.wrapper.style.display = 'inline-block';
+        this.visible = 1;
+    },
+    select: function (index) {
+        if (!this.list || this.list.length == 0) return;
+        if (this.selected == this.list[index]) return;
+
+        // wrap around
+        if (index > this.list.length - 1) {
+            index = 0;
         }
-        if (i > 0) {
-            this.list.style.left = this.left + 'px';
-            this.list.style.top =  this.top + 'px';
-            this.list.style.visibility = 'visible';
-        } else {
-            this.list.style.visibility = 'hidden';
+        if (index < 0) {
+            index = this.list.length - 1;
         }
-    }
+
+        if (this.selected) {
+            this.selected.classList.remove('highlight');
+        }
+
+        this.selected = this.list[index];
+        this.selected.classList.add('highlight');
+        this.selectedIndex = index;
+    },
+    selectNext: function () {
+        if (this.visible)
+            this.select(this.selectedIndex + 1);
+    },
+    selectPrevious: function () {
+        if (this.visible)
+            this.select(this.selectedIndex - 1);
+    },
+    getSelection: function () {
+        if (this.selectedIndex == undefined)
+            return null;
+        return this.list[this.selectedIndex];
+    },
+
+    // events
+    onFocus: function (event) {
+        this.isFocused = true;
+    },
+    onBlur: function (event) {
+        this.isFocused = false;
+    },
+    hideIfNotFocused: function (event) {
+        if (!this.isFocused) {
+            this.hide();
+        }
+    },
 };

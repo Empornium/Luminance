@@ -21,7 +21,7 @@
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `staff_pm_responses` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
-  `Message` text,
+  `Message` mediumtext,
   `Name` text,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

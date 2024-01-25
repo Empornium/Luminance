@@ -1,0 +1,103 @@
+{% import "macros/icon.html.twig" as icon %}
+
+{% block content %}
+    <div class="thin">
+        <h2>Subscribed Forum Threads{{ showUnread ? ' with unread posts' : '' }}</h2>
+        {{ render.latestForumThreads() }}
+        <div class="linkbox">
+            {% if not showUnread %}
+                <br /><br />
+                <a href="/userhistory.php?action=subscriptions&amp;showunread=1">Only display topics with unread replies</a>&nbsp;&nbsp;&nbsp;
+            {% else %}
+                <br /><br />
+                <a href="/userhistory.php?action=subscriptions&amp;showunread=0">Show all subscribed topics</a>&nbsp;&nbsp;&nbsp;
+            {% endif %}
+            {% if results > 0 %}
+                <a href="#" onclick="Collapse();return false;" id="collapselink">{{ showCollapsed ? 'Show' : 'Hide' }} post bodies</a>&nbsp;&nbsp;&nbsp;
+            {% endif %}
+            <a href="/userhistory.php?action=catchup&amp;auth={{ ActiveUser.legacy.AuthKey }}">Catch up</a>&nbsp;&nbsp;&nbsp;
+            <a href="/userhistory.php?action=subscribed_collages">Go to collage subscriptions</a>&nbsp;&nbsp;&nbsp;
+            <a href="/userhistory.php?action=posts&amp;group=0&amp;showunread=0">Go to post history</a>&nbsp;&nbsp;&nbsp;
+            <a href="/userhistory.php?action=comments&amp;userid={{ ActiveUser.ID }}">Go to comment history</a>
+        </div>
+
+        <div class="linkbox pager">
+            {{ render.pagelinks(page, results, pageSize, 11) }}
+        </div>
+
+        <div class="head">Forum Subscriptions</div>
+        <table>
+            <tr class="colhead">
+                <td style="width:30%;">Forum</td>
+                <td>Thread</td>
+                <td></td>
+            </tr>
+            {% if posts is empty %}
+                <tr>
+                    <td colspan="3">
+                        <p class="center">
+                            No subscribed threads{{ showUnread ? ' with unread posts' : '' }}
+                        </p>
+                    </td>
+                </tr>
+            {% else %}
+                {% for postID, newPosts in posts %}
+                    {% set post = master.repos.forumposts.load(postID) %}
+                    <tr id="header_post{{ post.ID }}" class="row{{ loop.index % 2 ? 'b' : 'a' }}">
+                        <td>
+                            <a href="/forum/{{ post.thread.forum.ID }}">{{ post.thread.forum.Name|decode }}</a>
+                        </td>
+                        <td>
+                            <span class="float_left last_thread">
+                                <a href="/forum/thread/{{ post.thread.ID }}" title="{{ post.thread.Title|decode }}">{{ post.thread.Title|truncate(75)|decode }}</a>
+                            </span>
+                            {% if newPosts > 0 %}
+                                <span title="{{ newPosts }} new post{{ newPosts > 1 ? 's' : '' }}!" class="float_left newstatus" style="color: inherit">
+                                    &ensp;(New!)
+                                </span>
+                            {% endif %}
+                            <span class="float_left" title="Jump to last read">
+                                <a href="/forum/thread/{{ post.thread.ID }}?postid={{ post.ID }}#post{{ post.ID }}">
+                                    {{ icon.render("forum_icons clickable", ['forum_latest']) }}
+                                </a>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="float_right">
+                                [<a href="#" onclick="Collapse({{ post.ID }});return false;" >Show post</a>]
+                                &nbsp;
+                                [<a href="#" onclick="Subscribe({{ post.thread.ID }});return false;" class="subscribelink{{ post.thread.ID }}">Unsubscribe</a>]
+                            </span>
+                        </td>
+                    </tr>
+                    <tr id="subscribed_post{{ post.ID }}" class="{{ showCollapsed ? ' hidden' : ''}}" style="background: none;">
+                        <td colspan="3">
+                            <div class="head" style="margin-top: 10px;">
+                                <span class="float_left">
+                                    <a href="/forum">Forums</a> &gt;
+                                    <a href="/forum/{{ post.thread.forum.ID }}">{{ post.thread.forum.Name|decode }}</a> &gt;
+                                    {{ post.thread.Title|decode }}
+                                    {% if newPosts > 0 %}
+                                        <span title="{{ newPosts }} new post{{ newPosts > 1 ? 's' : '' }}!" class="newstatus">(New!)</span>
+                                    {% endif %}
+                                </span>
+                                <span class="float_left" title="Jump to last read">
+                                    <a href="/forum/thread/{{ post.thread.ID }}?postid={{ post.ID }}#post{{ post.ID }}">
+                                        {{ icon.render("forum_icons clickable", ['forum_latest']) }}
+                                    </a>
+                                </span>
+                                <span class="float_right">
+                                    [<a href="#" onclick="Collapse({{ post.ID }});return false;" >Hide post</a>]
+                                </span>
+                            </div>
+                            {{ render.post('forum', post) }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
+        </table>
+        <div class="linkbox pager">
+            {{ render.pagelinks(page, results, pageSize, 11) }}
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "core/private_page.html.twig" %}
+
+{% import "macros/icon.html.twig" as icon %}
+
+{% set usernameOptions = {
+    'drawInBox' : false,
+    'colorname' : false,
+    'dropDown'  : false,
+    'useSpan'   : true,
+    'noIcons'   : true,
+    'noGroup'   : true,
+    'noClass'   : true,
+    'noTitle'   : true,
+} %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/collage">Collages</a>
+{% endblock %}
+
+{% block main_content %}
+    <div class="head">Search</div>
+    <form action="" method="get">
+        <table cellpadding="6" cellspacing="1" border="0" width="100%">
+            <tr>
+                <td class="label"><strong>Search for:</strong></td>
+                <td colspan="1">
+                    <input type="text" name="terms" size="70" value="{{ terms }}" />
+                </td>
+            </tr>
+            <tr>
+                <td class="label"><strong>Tags:</strong></td>
+                <td colspan="1">
+                    <input id="taginput" type="text" name="tags" size="70" value="{{ tags }}" />
+                </td>
+            </tr>
+            <tr>
+                <td class="label"><strong>Categories:</strong></td>
+                <td colspan="1">
+                    {% for category in categories %}
+                        <input id="categories_{{ category.ID }}" name="cats[{{ category.ID }}]" type="checkbox" value="{{ category.ID }}" {{ selected(category.ID, '1', 'checked', searchCategories) }}>
+                        <label for="categories_{{ category.ID }}">{{ category.Name }}</label>
+                    {% endfor %}
+                </td>
+            </tr>
+            <tr>
+                <td class="label"><strong>Search in:</strong></td>
+                <td colspan="2">
+                    <input type="radio" name="type" id="type_title" value="title"
+                    {%  if type == 'title' %}
+                        checked="checked"
+                    {% endif %}
+                    />
+                    <label for="type_title">Titles</label>
+                    <input type="radio" name="type" id="type_body" value="description"
+                    {%  if type == 'body' %}
+                        checked="checked"
+                    {% endif %}
+                    />
+                    <label for="type_body">Descriptions</label>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" class="center">
+                    <input type="submit" value="Search" />
+                </td>
+            </tr>
+        </table>
+    </form>
+
+    <div class="linkbox">
+        {% if auth.isAllowed('collage_create') %}
+            {% if ActiveUser.isTwoFactorEnabled() %}
+                <a href="/collage/create">[New collage]</a>
+            {% else %}
+                <a class="disabled_link" role="link" title="Requires 2FA enabled on account" >[New collage]</a>
+            {% endif %}
+        {% else %}
+            {% if minPersonalClass is not empty %}
+                <em> <a href="/articles/view/collagehelp">You must be a {{ minPersonalClass.Name }} with a ratio of at least 1.05 to be able to create a collage.</a></em><br/>
+            {% endif %}
+        {% endif %}
+
+        {% if auth.isAllowed('collage_personal') %}
+            {% if personalCollages|length == 1 %}
+                {% for psersonalCollage in personalCollages %}
+                    <a href="/collage/{{ psersonalCollage.ID }}">[My personal collage]</a>
+                {% endfor %}
+            {% elseif personalCollages|length > 1 %}
+                <a href="/collage/mine">[My personal collages]</a>
+            {% endif %}
+        {% endif %}
+        {% if auth.isAllowed('collage_subscribe') %}
+            <a href="/userhistory.php?action=subscribed_collages">[My Subscribed Collages]</a>
+        {% endif %}
+
+        <br />
+
+        <a href="/collage/user/{{ ActiveUser.ID }}">[Collages you started]</a>
+        <a href="/collage/user/{{ ActiveUser.ID }}/contributions">[Collages you've contributed to]</a>
+    </div>
+
+
+    <br />
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, collagesPerPage, 9) }}
+    </div>
+
+    <div class="head">Browse collages</div>
+    {% if collages is empty %}
+        <div class="box pad" align="center">
+            <h2>Your search did not match anything.</h2>
+            <p>Make sure all names are spelled correctly, or try making your search less specific.</p>
+        </div>
+    {% else %}
+        {% include '@Collage/snippets/collage_table.html.twig' %}
+        <div class="linkbox pager">
+            {{ render.pagelinks(page, results, collagesPerPage, 9) }}
+        </div>
+    {% endif %}
+{% endblock %}

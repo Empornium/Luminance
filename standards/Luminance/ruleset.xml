@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<ruleset name="Luminance">
+ <description>The Luminance coding standard; modified PSR2.</description>
+
+ <exclude-pattern>/common/*</exclude-pattern>
+ <exclude-pattern>/Legacy/*</exclude-pattern>
+ <exclude-pattern>/Templates/*</exclude-pattern>
+
+ <!-- 2. General -->
+
+ <!-- 2.1 Basic Coding Standard -->
+
+ <!-- Include the whole PSR-2 standard except those we override below-->
+ <rule ref="PSR2">
+  <exclude name="Squiz.Functions.FunctionDeclaration"/>
+  <exclude name="Squiz.Functions.MultiLineFunctionDeclaration.BraceOnSameLine"/>
+  <exclude name="Squiz.ControlStructures.ControlSignature.NewlineAfterOpenBrace"/>
+  <exclude name="Squiz.WhiteSpace.ScopeClosingBrace"/>
+  <exclude name="Generic.ControlStructures.InlineControlStructure"/>
+  <exclude name="Generic.Files.LineLength.TooLong"/>
+  <exclude name="Generic.Functions.FunctionCallArgumentSpacing.TooMuchSpaceAfterComma"/>
+  <exclude name="Generic.Sniffs.Functions.OpeningFunctionBraceBsdAllman"/>
+  <exclude name="PSR2.Classes.ClassDeclaration.OpenBraceNewLine"/>
+ </rule>
+
+ <!-- Include specific standard sniffs-->
+ <rule ref="Generic.Functions.OpeningFunctionBraceKernighanRitchie"/>
+ <rule ref="Generic.Classes.OpeningBraceSameLine"/>
+ <rule ref="Luminance.NamingConventions.ValidVariableName"/>
+ <rule ref="Luminance.NamingConventions.ValidFunctionName"/>
+ <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses"/>
+
+</ruleset>

@@ -1,36 +1,38 @@
 <?php
 namespace Luminance\Services;
 
-use Luminance\Core\Master;
 use Luminance\Core\Service;
-use Luminance\Entities\User;
-use Luminance\Errors\ConfigurationError;
-use Luminance\Errors\SystemError;
-use Luminance\Errors\UserError;
-use Luminance\Errors\AuthError;
-use Luminance\Errors\InternalError;
-use Luminance\Errors\ForbiddenError;
-use Luminance\Errors\UnauthorizedError;
 use Luminance\Entities\Invite;
 
 class InviteManager extends Service {
 
-    protected static $useRepositories = [
-        'invites' => 'InviteRepository',
+    protected static $defaultOptions = [
+        'InviteValidPeriod'  => [
+            'value' => '72',
+            'section' => 'invites',
+            'displayRow' => 1,
+            'displayCol' => 1,
+            'type' => 'int',
+            'description' => 'Invite valid period in hours'
+        ],
     ];
 
     protected static $useServices = [
+        'cache'   => 'Cache',
+        'options' => 'Options',
+        'repos'   => 'Repos',
     ];
 
-    public function newInvite($userID, $email) {
-        $inviteKey = $this->master->secretary->getExternalToken($email, 'users.register');
-        $expires = new \DateTime('+72 hour');
+    public function newInvite($userID, $email, $anon, $comment) {
+        $expires = new \DateTime('+'.$this->options->InviteValidPeriod.' hour');
         $invite = new Invite();
         $invite->InviterID = $userID;
-        $invite->InviteKey = $inviteKey;
-        $invite->Email = $email;
-        $invite->Expires = $expires->format('Y-m-d H:i:s');
-        $this->invites->save($invite);
+        $invite->Email     = $email;
+        $invite->Anon      = $anon;
+        $invite->Comment   = $comment;
+        $invite->Expires   = $expires->format('Y-m-d H:i:s');
+        $this->cache->deleteValue("invite_{$email}");
+        $this->repos->invites->save($invite);
         return $invite;
     }
 
@@ -45,11 +47,11 @@ class InviteManager extends Service {
      * @throws InternalError if no user could be found
      */
     public function giveInvite($user, $amount = 1, $max = 4) {
-        $user   = $this->master->repos->users->load($user);
+        $user   = $this->repos->users->load($user);
         $params = [$max, $amount, $user->ID];
-        $result = $this->master->db->raw_query("UPDATE users_main SET Invites = LEAST(?, Invites + ?)  WHERE ID = ?", $params);
+        $result = $this->master->db->rawQuery("UPDATE users_main SET Invites = LEAST(?, Invites + ?)  WHERE ID = ?", $params);
 
-        $this->master->repos->users->uncache($user->ID);
+        $this->repos->users->uncache($user->ID);
         return (bool) $result->rowCount();
     }
 
@@ -64,16 +66,16 @@ class InviteManager extends Service {
      * @throws InternalError if no user could be found
      */
     public function takeInvite($user, $amount = 1, $min = 0) {
-        // Do not decrease if user has unlimited invites
+        # Do not decrease if user has unlimited invites
         if ($this->master->auth->isAllowed('site_send_unlimited_invites')) {
             return false;
         }
 
-        $user   = $this->master->repos->users->load($user);
+        $user   = $this->repos->users->load($user);
         $params = [$min, $amount, $user->ID];
-        $result = $this->master->db->raw_query("UPDATE users_main SET Invites = GREATEST(?, Invites - ?)  WHERE ID = ?", $params);
+        $result = $this->master->db->rawQuery("UPDATE users_main SET Invites = GREATEST(?, Invites - ?)  WHERE ID = ?", $params);
 
-        $this->master->repos->users->uncache($user->ID);
+        $this->repos->users->uncache($user->ID);
         return (bool) $result->rowCount();
     }
 }

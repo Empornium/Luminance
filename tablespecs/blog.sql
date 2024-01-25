@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `blog` (
   `ID` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `UserID` int(10) unsigned NOT NULL,
   `Title` varchar(255) NOT NULL,
-  `Body` text NOT NULL,
+  `Body` mediumtext NOT NULL,
   `Time` datetime DEFAULT NULL,
   `ThreadID` int(10) unsigned DEFAULT NULL,
   `Section` ENUM ('Blog','Contests') DEFAULT 'Blog',

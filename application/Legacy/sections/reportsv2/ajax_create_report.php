@@ -13,17 +13,17 @@
 authorize(true);
 if (!check_perms('admin_reports'))
     error(403, true);
-if (!is_number($_POST['torrentid']))
+if (!is_integer_string($_POST['torrentid']))
     error(0, true);
-if (!isset($_POST['type']) || !array_key_exists($_POST['type'], $Types))
+if (!isset($_POST['type']) || !array_key_exists($_POST['type'], $types))
     error('Missing or invalid type', true);
 
 // Default init
-$ReporterID = $LoggedUser['ID'];
+$ReporterID = $activeUser['ID'];
 $ExtraID    = $_POST['otherid'];
-$TorrentID  = $_POST['torrentid'];
+$torrentID  = $_POST['torrentid'];
 $Type       = $_POST['type'];
-$ReportType = $Types[$Type];
+$ReportType = $types[$Type];
 $Extra      = '';
 
 // Overriding
@@ -31,47 +31,49 @@ if (!empty($_POST['usercomment']))
     $Extra = $_POST['usercomment'];
 if (!empty($_POST['extra']))
     $Extra = $_POST['extra'];
-if (!empty($_POST['reporterid']) && is_number($_POST['reporterid']))
+if (!empty($_POST['reporterid']) && is_integer_string($_POST['reporterid']))
     $ReporterID = (int) $_POST['reporterid'];
 
 // Check if the torrent actually exists
-$Query = $master->db->raw_query("SELECT tg.NewCategoryID
-                                 FROM torrents_group AS tg
-                                 JOIN torrents AS t ON t.GroupID = tg.ID
-                                 WHERE t.ID = ?",
-                                 [$TorrentID]);
+$Query = $master->db->rawQuery(
+    "SELECT tg.NewCategoryID
+       FROM torrents_group AS tg
+       JOIN torrents AS t ON t.GroupID = tg.ID
+       WHERE t.ID = ?",
+       [$torrentID]
+  );
 if ($Query->rowCount() < 1)
     error(404, true);
 
 // Check if the user did not report the same torrent in the last few seconds
-$Query = $master->db->raw_query("SELECT ID
-                                 FROM reportsv2
-                                 WHERE TorrentID = :TorrentID AND ReporterID = :ReporterID AND ReportedTime > :ReportedTime",
-                                 [
-                                     ':TorrentID'    => $TorrentID,
-                                     ':ReporterID'   => $ReporterID,
-                                     ':ReportedTime' => time_minus(3)
-                                 ]);
+$Query = $master->db->rawQuery(
+    "SELECT ID
+       FROM reportsv2
+      WHERE TorrentID = ?
+        AND ReporterID = ?
+        AND ReportedTime > ?",
+     [$torrentID, $ReporterID, time_minus(3)]
+);
 if ($Query->rowCount() > 0)
     error('You just reported this torrent.', true);
 
 // Insert the new report
-$master->db->raw_query("INSERT INTO reportsv2
-                        (ReporterID, TorrentID, Type, UserComment, Status, ReportedTime, ExtraID)
-                        VALUES (:ReporterID, :TorrentID, :Type, :UserComment, :Status, :ReportedTime, :ExtraID)",
-                        [
-                            ':ReporterID'   => $ReporterID,
-                            ':TorrentID'    => $TorrentID,
-                            ':Type'         => $Type,
-                            ':UserComment'  => $Extra,
-                            ':Status'       => 'New',
-                            ':ReportedTime' => sqltime(),
-                            ':ExtraID'      => $ExtraID
-                        ]);
-$ReportID = $master->db->last_insert_id();
+$master->db->rawQuery(
+    "INSERT INTO reportsv2 (ReporterID, TorrentID, Type, UserComment, Status, ReportedTime, ExtraID)
+          VALUES (?, ?, ?, ?, 'New', ?, ?)",
+    [
+        $ReporterID,
+        $torrentID,
+        $Type,
+        $Extra,
+        sqltime(),
+        $ExtraID
+    ]
+);
+$ReportID = $master->db->lastInsertID();
 
 // Update cache
-$Cache->delete_value('reports_torrent_'.$TorrentID);
-$Cache->increment('num_torrent_reportsv2');
+$master->cache->deleteValue('reports_torrent_'.$torrentID);
+$master->cache->incrementValue('num_torrent_reportsv2');
 
 echo $ReportID;

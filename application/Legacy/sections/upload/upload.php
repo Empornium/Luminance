@@ -10,117 +10,129 @@
 //*********************************************************************//
 
 ini_set('max_file_uploads', '100');
-show_header('Upload', 'upload,bbcode,autocomplete,tag_autocomplete,jquery');
+show_header('Upload', 'upload,bbcode,jquery');
 
-if (empty($Properties) && !empty($_POST['fill']) && is_number($_POST['template']) && check_perms('site_use_templates') ) {
+$TemplateID = null;
+if (empty($Properties) && !empty($_POST['fill']) && is_integer_string($_POST['template']) && check_perms('site_use_templates')) {
     /* -------  Get template ------- */
     $TemplateID = (int) $_POST['template'];
-    $Properties = $Cache->get_value('template_' . $TemplateID);
+    $Properties = $master->cache->getValue('template_' . $TemplateID);
     if ($Properties === FALSE) {
-        $DB->query("SELECT
-                            t.ID,
-                            t.UserID,
-                            t.Name,
-                            t.Title,
-                            t.CategoryID AS Category,
-                            t.Title,
-                            t.Image,
-                            t.Body AS GroupDescription,
-                            t.Taglist AS TagList,
-                            t.TimeAdded,
-                            t.Public,
-                            u.Username AS Authorname
-                       FROM upload_templates as t
-                  LEFT JOIN users_main AS u ON u.ID=t.UserID
-                      WHERE t.ID='$TemplateID'");
-        list($Properties) = $DB->to_array(false, MYSQLI_BOTH);
+        $Properties = $master->db->rawQuery(
+            "SELECT t.ID,
+                    t.UserID,
+                    t.Name,
+                    t.Title,
+                    t.CategoryID AS Category,
+                    t.Title,
+                    t.Image,
+                    t.Body AS GroupDescription,
+                    t.Taglist AS TagList,
+                    t.TimeAdded,
+                    t.Public,
+                    u.Username AS Authorname
+               FROM upload_templates as t
+          LEFT JOIN users AS u ON u.ID = t.UserID
+              WHERE t.ID = ?",
+            [$TemplateID]
+        )->fetch(\PDO::FETCH_BOTH);
         if ($Properties) {
-            $Properties['TemplateFooter'] = "[bg=#0074b7][bg=#0074b7,90%][color=white][align=right][b][i][font=Courier New]$Properties[Name] template by $Properties[Authorname][/font][/i][/b][/align][/color][/bg][/bg]";
+            $Properties['TemplateFooter'] = "[bg=#0074b7][bg=#0074b7,90%][color=white][align=right][b][i][font=Courier New]{$Properties['Name']} template by {$Properties['Authorname']}[/font][/i][/b][/align][/color][/bg][/bg]";
             $Properties['TemplateID'] = $TemplateID;
-            $Cache->cache_value('template_' .$TemplateID, $Properties, 96400 * 7);
+            $master->cache->cacheValue('template_' .$TemplateID, $Properties, 96400 * 7);
         } else { // catch the case where a public template has been unexpectedly removed but left in a random users cache
-            $Cache->delete_value('templates_ids_' .$LoggedUser['ID']); // remove from their template list
+            $master->cache->deleteValue('templates_ids_' .$activeUser['ID']); // remove from their template list
             $Err = "That template has been deleted - sorry!";
         }
     }
     if ($Properties) {
         // only the uploader can use this to prefill (if not a public template)
-        if ($Properties['Public']==0 && $Properties['UserID'] != $LoggedUser['ID']) {
+        if ($Properties['Public']==0 && $Properties['UserID'] != $activeUser['ID']) {
             unset($Properties);
         }
     }
 
-} elseif (empty($Properties) && !empty($_GET['groupid']) && is_number($_GET['groupid'])) {
-    $DB->query("SELECT
-        tg.ID as GroupID,
-        tg.NewCategoryID AS Category,
-        tg.Name AS Title,
-        tg.Image AS Image,
-        tg.Body AS GroupDescription,
-        t.UserID
-        FROM torrents_group AS tg
-        LEFT JOIN torrents AS t ON t.GroupID = tg.ID
-        WHERE tg.ID='$_GET[groupid]'");
-    if ($DB->record_count()) {
-        list($Properties) = $DB->to_array(false, MYSQLI_BOTH);
+} elseif (empty($Properties) && !empty($_GET['groupid']) && is_integer_string($_GET['groupid'])) {
+    $Properties = $master->db->rawQuery(
+        "SELECT tg.ID as GroupID,
+                tg.NewCategoryID AS Category,
+                tg.Name AS Title,
+                tg.Image AS Image,
+                tg.Body AS GroupDescription,
+                t.UserID
+           FROM torrents_group AS tg
+      LEFT JOIN torrents AS t ON t.GroupID = tg.ID
+          WHERE tg.ID = ?",
+        [$_GET['groupid']]
+    )->fetch(\PDO::FETCH_BOTH);
+    if ($master->db->foundRows()) {
         // only the uploader can use this to prefill
-        if ($Properties['UserID'] != $LoggedUser['ID']) {
+        if ($Properties['UserID'] != $activeUser['ID']) {
             unset($Properties);
             unset($_GET['groupid']);
         } else {
-            $DB->query("SELECT
-                      GROUP_CONCAT(tags.Name SEPARATOR ', ') AS TagList
-                      FROM torrents_tags AS tt JOIN tags ON tags.ID=tt.TagID
-                      WHERE tt.GroupID='$_GET[groupid]'");
+            $tagList = $master->db->rawQuery(
+                "SELECT GROUP_CONCAT(tags.Name SEPARATOR ', ') AS TagList
+                   FROM torrents_tags AS tt JOIN tags ON tags.ID = tt.TagID
+                  WHERE tt.GroupID = ?",
+                [$_GET[groupid]]
+            )->fetchColumn();
 
-            list($Properties['TagList']) = $DB->next_record();
+            $Properties['TagList'] = $tagList;
         }
     } else {
         unset($_GET['groupid']);
     }
-    if (!empty($_GET['requestid']) && is_number($_GET['requestid'])) {
+    if (!empty($_GET['requestid']) && is_integer_string($_GET['requestid'])) {
         $Properties['RequestID'] = $_GET['requestid'];
     }
-} elseif (empty($Properties) && !empty($_GET['requestid']) && is_number($_GET['requestid'])) {
+} elseif (empty($Properties) && !empty($_GET['requestid']) && is_integer_string($_GET['requestid'])) {
     include(SERVER_ROOT . '/Legacy/sections/requests/functions.php');
-    $DB->query("SELECT
-        r.ID AS RequestID,
-        r.CategoryID,
-        r.Title AS Title,
-        r.Image
-        FROM requests AS r
-        WHERE r.ID=" . $_GET['requestid']);
+    $Properties = $master->db->rawQuery(
+        "SELECT ID AS RequestID,
+                CategoryID,
+                Title,
+                Image
+           FROM requests
+          WHERE ID = ?",
+        [$_GET['requestid']]
+    )->fetch(\PDO::FETCH_BOTH);
 
-    list($Properties) = $DB->to_array(false, MYSQLI_BOTH);
     $Properties['TagList'] = implode(" ", get_request_tags($_GET['requestid']));
 }
 
-$TorrentForm = new Luminance\Legacy\TorrentForm($Properties, $Err);
+$TorrentForm = new Luminance\Legacy\TorrentForm(($Properties ?? false), ($Err ?? false));
 
-if (!isset($Text)) {
-    $Text = new Luminance\Legacy\Text;
+if (!isset($bbCode)) {
+    $bbCode = new \Luminance\Legacy\Text;
 }
 
 /* -------  Draw a box with do_not_upload list  -------   */
-$DNU = $Cache->get_value('do_not_upload_list');
+$DNU = $master->cache->getValue('do_not_upload_list');
 if ($DNU === FALSE) {
-    $DB->query("SELECT
-              d.Name,
-              d.Comment,
-              d.Time
-              FROM do_not_upload as d
-              ORDER BY d.Time");
-    $DNU = $DB->to_array();
-    $Cache->cache_value('do_not_upload_list', $DNU);
+    $DNU = $master->db->rawQuery(
+        "SELECT Name,
+                Comment,
+                Time
+           FROM do_not_upload
+       ORDER BY Time"
+    )->fetchAll(\PDO::FETCH_BOTH);
+    $master->cache->cacheValue('do_not_upload_list', $DNU);
 }
 list($Name, $Comment, $Updated) = end($DNU);
 reset($DNU);
-$DB->query("SELECT IF(MAX(t.Time) < '$Updated' OR MAX(t.Time) IS NULL,1,0) FROM torrents AS t
-            WHERE UserID = " . $LoggedUser['ID']);
-list($NewDNU) = $DB->next_record();
+$NewDNU = $master->db->rawQuery(
+    "SELECT IF(MAX(Time) < '{$Updated}' OR MAX(Time) IS NULL, 1, 0)
+       FROM torrents
+      WHERE UserID = ?",
+    [$activeUser['ID']]
+)->fetchColumn();
 // test $HideDNU first as it may have been passed from upload_handle
-if (!$HideDNU)
-    $HideDNU = check_perms('torrents_hide_dnu') || !$NewDNU;
+if (!($HideDNU ?? false)) {
+    $HideDNU = check_perms('torrent_hide_dnu') || !$NewDNU;
+} else {
+    $HideDNU = false;
+}
 ?>
 
 
@@ -147,35 +159,28 @@ if (!$HideDNU)
                 list($Name, $Comment, $Updated) = $BadUpload;
                 ?>
                 <tr>
-                    <td><?= $Text->full_format($Name) ?></td>
-                    <td><?= $Text->full_format($Comment) ?></td>
+                    <td><?= $bbCode->full_format($Name) ?></td>
+                    <td><?= $bbCode->full_format($Comment) ?></td>
                 </tr>
     <?php  } ?>
         </table>
     </div>
     <?php
     /* -------  Draw a box with imagehost whitelist  ------- */
-    $Whitelist = $Cache->get_value('imagehost_whitelist');
-    if ($Whitelist === FALSE) {
-        $DB->query("SELECT
-                    Imagehost,
-                    Link,
-                    Comment,
-                    Time,
-                    Hidden
-                    FROM imagehost_whitelist
-                    WHERE Hidden='0'
-                    ORDER BY Time DESC");
-        $Whitelist = $DB->to_array();
-        $Cache->cache_value('imagehost_whitelist', $Whitelist);
-    }
-    $DB->query("SELECT MAX(iw.Time), IF(MAX(t.Time) < MAX(iw.Time) OR MAX(t.Time) IS NULL,1,0)
-                  FROM imagehost_whitelist as iw
-             LEFT JOIN torrents AS t ON t.UserID = '$LoggedUser[ID]' ");
-    list($Updated, $NewWL) = $DB->next_record();
+    $Whitelist = $master->repos->imagehosts->find("Hidden='0'", null, 'Time DESC', null, 'imagehost_whitelist');
+    list($Updated, $NewWL) = $master->db->rawQuery(
+        "SELECT MAX(iw.Time),
+                IF(MAX(t.Time) < MAX(iw.Time) OR MAX(t.Time) IS NULL, 1, 0)
+           FROM imagehost_whitelist as iw
+      LEFT JOIN torrents AS t ON t.UserID = ?",
+        [$activeUser['ID']]
+    )->fetch(\PDO::FETCH_NUM);
 // test $HideWL first as it may have been passed from upload_handle
-    if (!$HideWL)
-        $HideWL = check_perms('torrents_hide_imagehosts') || !$NewWL;
+    if (!($HideWL ?? false)) {
+        $HideWL = check_perms('torrent_hide_imagehosts') || !$NewWL;
+    } else {
+        $HideWL = false;
+    }
     ?>
     <div class="head">Approved Imagehosts</div>
     <div class="box pad">
@@ -192,20 +197,18 @@ if (!$HideDNU)
                 <td><strong>Comment</strong></td>
             </tr>
 <?php
-foreach ($Whitelist as $ImageHost) {
-    list($Host, $Link, $Comment, $Updated) = $ImageHost;
-    ?>
-                <tr>
-                    <td><?=$Text->full_format($Host)?>
-    <?php
-    // if a goto link is supplied and is a validly formed url make a link icon for it
-    if (!empty($Link) && $Text->valid_url($Link)) {
-        ?><a href="<?= $Link ?>"  target="_blank"><img src="<?=STATIC_SERVER?>common/symbols/offsite.gif" width="16" height="16" style="" alt="Goto <?= $Host ?>" /></a>
-    <?php  } // endif has a link to imagehost  ?>
-                    </td>
-                    <td><?=$Text->full_format($Comment)?></td>
-                </tr>
-    <?php  } ?>
+foreach ($Whitelist as $ImageHost) { ?>
+          <tr>
+              <td><?=$bbCode->full_format($ImageHost->Imagehost)?>
+  <?php
+  // if a goto link is supplied and is a validly formed url make a link icon for it
+  if (!empty($ImageHost->Link) && $bbCode->valid_url($ImageHost->Link)) {
+      ?><a href="<?= $ImageHost->Link ?>"  target="_blank"><img src="<?=STATIC_SERVER?>common/symbols/offsite.gif" width="16" height="16" style="" alt="Goto <?= $ImageHost->Imagehost ?>" /></a>
+  <?php  } // endif has a link to imagehost  ?>
+              </td>
+              <td><?=$bbCode->full_format($ImageHost->Comment)?></td>
+          </tr>
+  <?php  } ?>
         </table>
     </div>
 <?php
@@ -219,7 +222,7 @@ foreach ($Whitelist as $ImageHost) {
                     <label for="template">select template: </label>
                     <div id="template_container" style="display: inline-block">
 <?php
-                        echo get_templatelist_html($LoggedUser['ID'], $TemplateID);
+                        echo get_templatelist_html($activeUser['ID'], $TemplateID);
 ?>
 
                     </div>
@@ -245,7 +248,10 @@ foreach ($Whitelist as $ImageHost) {
         {
             SelectTemplate(<?=$CanDelAny?>);
         }
-            addDOMLoadEvent(SynchTemplates);
+
+            document.addEventListener('LuminanceLoaded', function() {
+                addDOMLoadEvent(SynchTemplates);
+            });
         //]]></script>
 
         <script type="text/javascript">//<![CDATA[
@@ -253,7 +259,7 @@ foreach ($Whitelist as $ImageHost) {
             {
                 var tags = [];
         <?php
-        foreach ($OpenCategories as $cat) {
+        foreach ($openCategories as $cat) {
             echo 'tags[' . $cat['id'] . ']="' . $cat['tag'] . '"' . ";\n";
         }
         ?>
@@ -265,7 +271,7 @@ foreach ($Whitelist as $ImageHost) {
             }
         <?php
         if (!empty($Properties))
-            echo "addDOMLoadEvent(SynchInterface);";
+            echo "document.addEventListener('LuminanceLoaded', function() {addDOMLoadEvent(SynchInterface);});";
         ?>
         //]]></script>
 <?php

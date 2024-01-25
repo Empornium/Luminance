@@ -9,7 +9,7 @@ html, body {
 
 body {
     font-family: "Bitstream Vera Sans", Tahoma, sans-serif;
-    font-size: 11px;
+    /*font-size: 11px;*/
     /*color: #a5a5a5;*/
     color: #c5c5c5;
     background: radial-gradient(circle, rgba(27,34,94,1) 40%, rgba(12,17,40,1));
@@ -21,7 +21,7 @@ table {
 }
 
 a {
-    color:#a5a5a5;
+    color: inherit;
     text-decoration: none;
 }
 
@@ -57,21 +57,30 @@ input[type="text"], input[type="password"] {
     margin-top:2px;
 }
 
-#username, #password, #email {
-    width: 300px;
+input[type="text"], input[type="date"] {
+    border-radius:3px;
+    padding: 2px;
+    margin-bottom: 2px;
+    margin-top:2px;
+}
+
+#username, #password, #email, #identifier {
+    width: 100%;
     padding: 5px 0px 1px 0px;
     font-family: "tahoma", "arial", "helvetica", "sans-serif";
     font-size: 12pt;
 }
-input[name="email"] {
-    font-size: 10pt !important;
-    margin-bottom: 5px;
-}
 
 #options {
-    width: 200px;
+    width: 100%;
     padding-top: 5px;
+    padding-bottom: 10px;
     text-align: left;
+}
+
+#options label{
+    margin-top: 5px;
+    display: block;
 }
 
 #options p{
@@ -90,8 +99,6 @@ input[type="submit"] {
     background-image: -ms-linear-gradient(top, #5579e6, #4260b3);
     background-image: -o-linear-gradient(top, #5579e6, #4260b3);
     background-image: linear-gradient(to bottom, #5579e6, #4260b3);
-    -webkit-border-radius: 3;
-    -moz-border-radius: 3;
     border-radius: 3px;
     color: #c5c5c5;
     padding: 5px 10px 5px 10px;
@@ -109,29 +116,11 @@ input[type="submit"]:hover {
     text-decoration: none;
 }
 
-#forgottenpw {
-    width:200px;
-    margin-top: 10px;
-    padding: 5px 2px 2px 2px;
-    float:none;
-    text-align:center;
-}
-
-/* input[type="submit"] {
-    margin: 5px;
-}
-
-input[type="checkbox"] {
-    float: left;
-    margin-right: 5px;
-}*/
-
 input[type="text"], input[type="password"] {
-    /*padding:1px 3px 0px 3px;*/
     font-family: "tahoma", "arial", "helvetica", "sans-serif";
     font-size: 12pt;
     color: #000000;
-    width:200px;
+    width: 100%;
 }
 
 input[type="text"]:valid, input[type="password"]:valid {
@@ -147,6 +136,8 @@ input[type="text"]:invalid, input[type="password"]:invalid {
 }
 
 #head, #foot {
+    position: fixed;
+    left: 0;
     height: 6%;
     min-height: 25px;
     width: 100%;
@@ -154,7 +145,12 @@ input[type="text"]:invalid, input[type="password"]:invalid {
     overflow: hidden;
 }
 
+#head {
+    top: 0;
+}
+
 #foot {
+    bottom: 0;
     text-align: center;
 }
 
@@ -169,20 +165,23 @@ input[type="text"]:invalid, input[type="password"]:invalid {
 }
 
 #maincontent {
-    width:80%;
-    height:88%;
-    margin: 0px auto;
+    width: 100%;
+    min-height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #logo {
     height: 80px;
-    width: 280px;
+    width: auto;
     text-align: center;
+    padding: 0px 0px 50px 0px;
 }
 
 #logo .svg {
+    height: 100%;
     margin: auto;
-    padding: 0px 0px 10px 0px;
     /*
      * Drop shadow extends past the bounding box
      * of the image, so best to make it part of
@@ -192,17 +191,25 @@ input[type="text"]:invalid, input[type="password"]:invalid {
             filter: drop-shadow( -5px 5px 5px #000 );
 }
 
-#logo ul {
-    margin: 0 auto;
+#motto {
+    padding: 0px 0px 25px 0px;
+    font-weight: bold;
 }
 
-#logo ul li {
+#menu ul {
+    /*margin: 0 auto;*/
+    font-weight: bold;
+    /*font-size: 14pt; */
+    padding: 0px 0px 25px 0px;
+}
+
+#menu ul li {
     display: inline;
     margin: 0 0.5em 0 0.5em;
     list-style: none;
 }
 
-.poetry {
+.motto {
     width: 320px;
     text-align: justify;
 }
@@ -218,4 +225,76 @@ input[type="text"]:invalid, input[type="password"]:invalid {
 
 .password {
     -webkit-text-security: disc;
+}
+
+/*
+.important {
+    color:red;
+    background-color: rgba(255, 255, 255, 0.12);
+    width:300px;
+}
+*/
+
+.important {
+    margin: auto;
+    font-weight: bold;
+    font-size: 14px;
+    background-color: rgba(255, 255, 255, 0.12);
+    width: 600px;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.important h2 {
+    color: #AA0000;
+    font-size: 2.5em;
+    text-shadow: -1px -1px 0 #000,
+                  1px -1px 0 #000,
+                 -1px  1px 0 #000,
+                  1px  1px 0 #000;
+}
+
+.important h2, .important a {
+    font-size: 2em;
+}
+
+.important a:hover {
+    color: white;
+}
+
+.underline {
+    text-decoration: underline;
+}
+
+.center {
+    min-width: 300px;
+    text-align: center;
+    margin: auto;
+    display: inline-block;
+}
+
+.pad {
+    padding-top: 15vh;
+    padding-bottom: 15vh;
+}
+
+.flex_container {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+
+.flex_item {
+    margin: auto;
+    flex-basis: auto;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.full_width {
+    width: 80vw;
+    margin: auto;
+    overflow-x: hidden;
 }

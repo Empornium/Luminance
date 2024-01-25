@@ -1,0 +1,55 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/forum/">Forum</a>
+    &gt;
+    <a href="/forum/{{ forum.ID }}">{{ forum.Name }}</a>
+    &gt;
+    Edit forum specific rules
+{% endblock %}
+
+{% block main_content %}
+    <div class="head">
+        <a href="/forum/">Forum</a>
+        &gt;
+        <a href="/forum/{{ forum.ID }}">{{ forum.Name }}</a>
+        &gt;
+        Edit forum specific rules
+    </div>
+    <div class="box pad">
+        ThreadID's entered here are shown at the top of the forum page in the 'forum specific rules' box
+    </div>
+    <table>
+        <tr class="colhead">
+            <td colspan="2">Thread ID</td>
+            <td></td>
+        </tr>
+        <tr>
+        <form action="/forum/{{ forum.ID }}/rules/add" method="post">
+            <input type="hidden" name="token" value="{{ secretary.getToken("forum.rules.add") }}" />
+            <td colspan="2">
+                <input name="threadid" type="text" size="8" />
+            </td>
+            <td>
+                <input type="submit" name="add" value="Add thread" />
+            </td>
+        </form>
+        {% for rule in rules %}
+            <tr>
+                <td>{{ rule.thread.ID }}</td>
+                <td>{{ rule.thread.Title }}</td>
+                <td>
+                    <form action="/forum/{{ forum.ID }}/rules/delete" method="post">
+                        <input type="hidden" name="token" value="{{ secretary.getToken("forum.rules.delete") }}" />
+                        <input type="hidden" name="ruleid" value="{{ rule.ID }}" />
+                        <input type="submit" name="del" value="Delete link" />
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

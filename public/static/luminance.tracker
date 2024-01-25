@@ -24,49 +24,53 @@
    - ***** END LICENSE BLOCK ***** -->
 
 <trackerinfo
-	type="emp"
-	shortName="Emp"
-	longName="Empornium"
-	siteName="empornium.me">
+  type=""
+  shortName=""
+  longName=""
+  siteName="">
 
-	<settings>
-		<description/>
-		<torrent_pass/>
-	</settings>
+  <settings>
+    <gazelle_description/>
+    <gazelle_authkey/>
+    <gazelle_torrent_pass/>
+  </settings>
 
-	<servers>
-		<server
-			network="DigitalIRC"
-			serverNames="irc.empornium.me"
-			channelNames="#empornium-announce"
-			announcerNames="^Wizard^"
-			/>
-	</servers>
+  <servers>
+    <server
+      network=""
+      serverNames=""
+      channelNames=""
+      announcerNames=""
+      />
+  </servers>
 
-	<parseinfo>
-		<linepatterns>
-			<extract>
-				<regex value="^\[(.*?)\] (.*?) -- Uploader: (.*?) -- (https://.*torrents.php\?)id=(.*)$"/>
-				<vars>
-					<var name="category"/>
-					<var name="torrentName"/>
-					<var name="uploader"/>
-					<var name="$baseUrl"/>
-					<var name="$torrentId"/>
-				</vars>
-			</extract>
-		</linepatterns>
-		<linematched>
-			<var name="torrentUrl">
-				<var name="$baseUrl"/>
-				<string value="action=download&amp;id="/>
-				<var name="$torrentId"/>
-				<string value="&amp;torrent_pass="/>
-				<var name="torrent_pass"/>
-			</var>
-		</linematched>
-		<ignore>
-			<regex value="^\[News\]"/>
-		</ignore>
-	</parseinfo>
+  <parseinfo>
+    <linepatterns>
+      <extract>
+          <regex value="^(.*?) - Size: ([0-9]+?.*?) - Uploader: (.*?) - Tags: (.*?) - (https://.*torrents.php\?)torrentid=(.*)$"/>
+        <vars>
+          <var name="torrentName"/>
+          <var name="$torrentSize"/>
+          <var name="uploader"/>
+          <var name="tags"/>
+          <var name="$baseUrl"/>
+          <var name="$torrentId"/>
+        </vars>
+      </extract>
+    </linepatterns>
+    <linematched>
+      <var name="torrentUrl">
+        <var name="$baseUrl"/>
+        <string value="action=download&amp;id="/>
+        <var name="$torrentId"/>
+        <string value="&amp;authkey="/>
+        <var name="authkey"/>
+        <string value="&amp;torrent_pass="/>
+        <var name="torrent_pass"/>
+      </var>
+    </linematched>
+    <ignore>
+      <regex value="^\[News\]"/>
+    </ignore>
+  </parseinfo>
 </trackerinfo>

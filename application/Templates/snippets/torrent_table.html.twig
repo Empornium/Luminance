@@ -1,0 +1,72 @@
+{% import "macros/icon.html.twig" as icon %}
+
+<table class="torrent_table" id="torrent_table">
+    <tr class="head">
+        <td><!-- Category --></td>
+        <td width="50%"><a href="{{ header_link('Title', 'asc')|striptags|raw }}">Torrents</a></td>
+        <td width="20%"><a href="{{ header_link('Added')|striptags|raw }}" style="float:right">Added</a></td>
+        <td><a href="{{ header_link('UploadDate')|striptags|raw }}">Uploaded</a></td>
+        <td><a href="{{ header_link('Size')|striptags|raw }}">Size</a></td>
+        <td class="sign">
+            <a href="{{ header_link('Snatched')|striptags|raw }}">
+                {{ icon.render('', ['torrent_snatched']) }}
+            </a>
+        </td>
+        <td class="sign">
+            <a href="{{ header_link('Seeders')|striptags|raw  }}">
+                {{ icon.render('', ['nav_seeding']) }}
+            </a>
+        </td>
+        <td class="sign">
+            <a href="{{ header_link('Leechers')|striptags|raw }}">
+                {{ icon.render('', ['nav_leeching']) }}
+            </a>
+        </td>
+    </tr>
+
+{% for group in groups %}
+    <tr class="torrent {{ group.mfd ? 'redbar' : (loop.index is divisible by(2) ? 'rowb' : 'rowa') }}" id="{{ group.ID }}">
+    <td class="center">
+        <img src="/static/common/caticons/{{ categories[group.Category].image }}" alt="{{ categories[group.Category].tag }}" title="{{ categories[group.Category].tag }}"/>
+    </td>
+    <td>
+        <strong>
+            {% if not ActiveUser.legacy.HideFloat and group.overlay is defined %}
+                <script>
+                    var overlay{{ group.ID }} = {{ group.overlay|json_encode()|raw }}
+                </script>
+                {% set overlay %}
+                    onmouseover="return overlib(overlay{{ group.ID }}, FULLHTML);" onmouseout="return nd();"
+                {% endset %}
+            {% endif %}
+
+            {% if group.Torrents|last.ReportCount > 0 %}
+                <a href="/torrents.php?id={{ group.ID }}" {{ overlay|raw }} title="View Torrent">{{ group.Name }}  /<span class="reported" title="This torrent has {{ group.Torrents|last.ReportCount }} active {{ group.Torrents|last.ReportCount > 1 ? 'reports' : 'report' }}"> Reported</span>'</a>
+            {% else %}
+                <a href="/torrents.php?id={{ group.ID }}" {{ overlay|raw }} title="View Torrent">{{ group.Name }}</a>
+            {% endif %}
+        </strong>
+        <br/>
+        {% if ActiveUser.options('HideTagsInLists') != 1 %}
+            <div class="tags">
+                {% for tag in (group.TagList|replace({'_': '.'})|split(' ')|slice(0, ActiveUser.legacy.MaxTags)) %}
+                    <a href="/torrents.php?taglist={{ tag }}">{{ tag }}</a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </td>
+    <td>
+        {{ group.icons|raw }}
+        <br></br>
+        <span style="float:right;">{{ time_diff(group.added)|raw }}</span>
+    </td>
+    <td>
+        <span style="float:right;">{{ time_diff(group.Torrents|last.Time)|raw }}</span>
+    </td>
+    <td class="nobr">{{ get_size(group.Torrents|last.Size) }}</td>
+    <td>{{ group.Torrents|last.Snatched|number_format }}</td>
+    <td {{ group.Torrents|last.Seeders == 0 ? ' class="r00"' }}>{{ group.Torrents|last.Seeders|number_format }}</td>
+    <td>{{ group.Torrents|last.Leechers|number_format }}</td>
+</tr>
+{% endfor %}
+</table>

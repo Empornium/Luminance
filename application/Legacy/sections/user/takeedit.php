@@ -1,37 +1,62 @@
 <?php
 authorize();
 
-$UserID = $_REQUEST['userid'];
-if (!is_number($UserID)) {
+use Luminance\Entities\UserHistoryPasskey;
+
+$userID = $_REQUEST['userid'];
+if (!is_integer_string($userID)) {
     error(404);
 }
 
-//For the entire of this page we should in general be using $UserID not $LoggedUser['ID'] and $U[] not $LoggedUser[]
-$U = user_info($UserID);
+//For the entire of this page we should in general be using $userID not $activeUser['ID'] and $U[] not $activeUser[]
+$U = user_info($userID);
 
 if (!$U) {
     error(404);
 }
 
-$Permissions = get_permissions($U['PermissionID']);
-if ($UserID != $LoggedUser['ID'] && !check_perms('users_edit_profiles', $Permissions['Class'])) {
-    send_irc("PRIVMSG ".ADMIN_CHAN." :User ".$LoggedUser['Username']." (http://".SITE_URL."/user.php?id=".$LoggedUser['ID'].") just tried to edit the profile of http://".SITE_URL."/user.php?id=".$_REQUEST['userid']);
+$permissions = get_permissions($U['PermissionID']);
+if ($userID != $activeUser['ID'] && !check_perms('users_edit_profiles', $permissions['Class'])) {
+    $master->irker->announceAdmin("User ".$activeUser['Username']." (http://".SITE_URL."/user.php?id=".$activeUser['ID'].") just tried to edit the profile of http://".SITE_URL."/user.php?id=".$_REQUEST['userid']);
     error(403);
 }
 $whitelistregex = get_whitelist_regex();
-$Val->SetFields('stylesheet',1,"number","You forgot to select a stylesheet.");
-$Val->SetFields('timezone',1,"inarray","Invalid TimeZone.",array('inarray'=>timezone_identifiers_list()));
-$Val->SetFields('postsperpage',1,"inarray","You forgot to select your posts per page option.",array('inarray'=>array(25,50,100)));
-$Val->SetFields('torrentsperpage',1,"inarray","You forgot to select your torrents per page option.",array('inarray'=>array(25,50,100)));
-//$Val->SetFields('hidecollage',1,"number","You forgot to select your collage option.",array('minlength'=>0,'maxlength'=>1));
-$Val->SetFields('collagecovers',1,"number","You forgot to select your collage option.");
-$Val->SetFields('showtags',1,"number","You forgot to select your show tags option.",array('minlength'=>0,'maxlength'=>1));
-$Val->SetFields('maxtags',1,"number","You forgot to select your maximum tags to show in lists option.",array('minlength'=>0,'maxlength'=>10000));
-$Val->SetFields('avatar',0,'image', 'Avatar: The image URL you entered was not valid.',
-                 array('regex' => $whitelistregex, 'maxlength' => 255, 'minlength' => 6, 'maxfilesizeKB'=>$master->options->AvatarSizeKiB, 'dimensions'=>array(300,500)));
-$Val->SetFields('info',0,'desc','Info',array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>20000));
-$Val->SetFields('signature',0,'desc','Signature',array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>$Permissions['MaxSigLength'], 'dimensions'=>array(SIG_MAX_WIDTH, SIG_MAX_HEIGHT)));
-$Val->SetFields('torrentsignature',0,'desc','Signature',array('regex'=>$whitelistregex,'minlength'=>0,'maxlength'=>$Permissions['MaxSigLength']));
+$Val->SetFields('stylesheet', 1, "number", "You forgot to select a stylesheet.");
+$Val->SetFields('timezone', 1, "inarray", "Invalid TimeZone.", ['inarray'=>timezone_identifiers_list()]);
+$Val->SetFields('messagesperpage', 1, "inarray", "You forgot to select your messages per page option.", ['inarray' => [25, 50, 100]]);
+$Val->SetFields('postsperpage', 1, "inarray", "You forgot to select your posts per page option.", ['inarray' => [25, 50, 100]]);
+$Val->SetFields('torrentsperpage', 1, "inarray", "You forgot to select your torrents per page option.", ['inarray' => [25, 50, 100]]);
+$Val->SetFields('collagesperpage', 1, "inarray", "You forgot to select your collages per page option.", ['inarray' => [25, 50, 100]]);
+//$Val->SetFields('hidecollage', 1, "number", " You forgot to select your collage option.", ['minlength' => 0, 'maxlength' => 1]);
+//$Val->SetFields('collagecovers', 1, "inarray", "You forgot to select your collage option.", ['inarray' => ["on", "off"]]));
+$Val->SetFields('showtags', 1, "number", "You forgot to select your show tags option.", ['minlength' => 0, 'maxlength' => 1]);
+$Val->SetFields('maxtags', 1, "number", "You forgot to select your maximum tags to show in lists option.", ['minlength' => 0, 'maxlength' => 10000]);
+$Val->SetFields('avatar', 0, 'image', 'Avatar: The image URL you entered was not valid.', [
+    'regex'         => $whitelistregex,
+    'maxlength'     => 255,
+    'minlength'     => 6,
+    'maxfilesizeKB' => $master->options->AvatarSizeKiB,
+    'dimensions'    => [300, 500]
+]);
+$Val->SetFields('info', 0, 'desc', 'Info',[
+    'regex'         => $whitelistregex,
+    'minlength'     => 0,
+    'maxlength'     => 20000
+]);
+$Val->SetFields('signature', 0, 'desc', 'Signature',[
+    'regex'             => $whitelistregex,
+    'minlength'         => 0,
+    'maxlength'         => $permissions['MaxSigLength'],
+    'dimensions'        => [SIG_MAX_WIDTH, SIG_MAX_HEIGHT],
+    'maximageweightMB'  => 1,
+]);
+$Val->SetFields('torrentsignature', 0, 'desc', 'Signature', [
+    'regex'             => $whitelistregex,
+    'minlength'         => 0,
+    'maxlength'         => $permissions['MaxSigLength'],
+    'maxheight'         => TORRENT_SIG_MAX_HEIGHT,
+    'maximageweightMB'  => 1,
+]);
 
 $Err = $Val->ValidateForm($_POST);
 
@@ -39,7 +64,7 @@ if ($Err) {
     error($Err);
 }
 
-// Begin building $Paranoia
+// Begin building $paranoia
 // Reduce the user's input paranoia until it becomes consistent
 
 if (isset($_POST['p_collagecontribs_l'])) {
@@ -53,7 +78,7 @@ if (isset($_POST['p_snatched_c']) && isset($_POST['p_seeding_c']) && isset($_POS
 
 // if showing exactly 2 of stats, show all 3 of stats
 $StatsShown = 0;
-$Stats = array('downloaded', 'uploaded', 'ratio');
+$Stats = ['downloaded', 'uploaded', 'ratio'];
 foreach ($Stats as $S) {
     if (isset($_POST['p_'.$S])) {
         $StatsShown++;
@@ -66,51 +91,51 @@ if ($StatsShown == 2) {
     }
 }
 
-$Paranoia = array();
-$Checkboxes = array('downloaded', 'uploaded', 'ratio', 'lastseen', 'requiredratio', 'invitedcount');
+$paranoia = [];
+$Checkboxes = ['downloaded', 'uploaded', 'ratio', 'lastseen', 'requiredratio', 'invitedcount'];
 foreach ($Checkboxes as $C) {
     if (!isset($_POST['p_'.$C])) {
-        $Paranoia[] = $C;
+        $paranoia[] = $C;
     }
 }
 
-$SimpleSelects = array('torrentcomments', 'collages', 'collagecontribs', 'uploads', 'seeding', 'leeching', 'snatched', 'grabbed', 'tags');
+$SimpleSelects = ['torrentcomments', 'collages', 'collagecontribs', 'uploads', 'seeding', 'leeching', 'snatched', 'grabbed', 'tags'];
 foreach ($SimpleSelects as $S) {
     if (!isset($_POST['p_'.$S.'_c']) && !isset($_POST['p_'.$S.'_l'])) {
         // Very paranoid - don't show count or list
-        $Paranoia[] = $S . '+';
+        $paranoia[] = $S . '+';
     } elseif (!isset($_POST['p_'.$S.'_l'])) {
         // A little paranoid - show count, don't show list
-        $Paranoia[] = $S;
+        $paranoia[] = $S;
     }
 }
 
-$Bounties = array('requestsfilled', 'requestsvoted');
+$Bounties = ['requestsfilled', 'requestsvoted'];
 foreach ($Bounties as $B) {
     if (isset($_POST['p_'.$B.'_list'])) {
         $_POST['p_'.$B.'_count'] = 'on';
         $_POST['p_'.$B.'_bounty'] = 'on';
     }
     if (!isset($_POST['p_'.$B.'_list'])) {
-        $Paranoia[] = $B.'_list';
+        $paranoia[] = $B.'_list';
     }
     if (!isset($_POST['p_'.$B.'_count'])) {
-        $Paranoia[] = $B.'_count';
+        $paranoia[] = $B.'_count';
     }
     if (!isset($_POST['p_'.$B.'_bounty'])) {
-        $Paranoia[] = $B.'_bounty';
+        $paranoia[] = $B.'_bounty';
     }
 }
-// End building $Paranoia
+// End building $paranoia
 
-if (!$Err && ($UserID == $LoggedUser['ID'])) {
-    if ($master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::AVATAR) && $_POST['avatar'] != $U['Avatar']) {
+if (!$Err && ($userID == $activeUser['ID'])) {
+    if ($master->repos->restrictions->isRestricted($activeUser['ID'], Luminance\Entities\Restriction::AVATAR) && $_POST['avatar'] != $U['Avatar']) {
         $Err = "Your avatar rights have been removed.";
     }
-    if ($master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::SIGNATURE) && $_POST['signature'] != $U['Signature']) {
+    if ($master->repos->restrictions->isRestricted($activeUser['ID'], Luminance\Entities\Restriction::SIGNATURE) && $_POST['signature'] != $U['Signature']) {
         $Err = "Your signature rights have been removed.";
     }
-    if ($master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::TORRENTSIGNATURE) && $_POST['torrentsignature'] != $U['TorrentSignature']) {
+    if ($master->repos->restrictions->isRestricted($activeUser['ID'], Luminance\Entities\Restriction::TORRENTSIGNATURE) && $_POST['torrentsignature'] != $U['TorrentSignature']) {
         $Err = "Your torrent signature rights have been removed.";
     }
 }
@@ -119,16 +144,23 @@ if ($Err) {
     error($Err);
 }
 
-if (!empty($LoggedUser['DefaultSearch'])) {
-    $Options['DefaultSearch'] = $LoggedUser['DefaultSearch'];
+$Options = [];
+if (!empty($activeUser['DefaultSearch'])) {
+    $Options['DefaultSearch'] = $activeUser['DefaultSearch'];
 }
 
-$Options['TorrentsPerPage'] = (int) $_POST['torrentsperpage'];
-$Options['PostsPerPage'] = (int) $_POST['postsperpage'];
-$Options['TorrentPreviewWidth'] = max(min((int) $_POST['torrentpreviewwidth'], 800), 200);
-$Options['TorrentPreviewWidthForced'] = (bool) $_POST['torrentpreviewwidth-forced'];
+$Options['MessagesPerPage'] = (int) ($_POST['messagesperpage'] ?? 25);
+$Options['IpsPerPage'] = (int) ($_POST['ipsperpage'] ?? 25);
+$Options['DumpData'] = (int) ($_POST['dumpdata'] ?? 0);
+$Options['ShowElapsed'] = (int) ($_POST['showelapsed'] ?? 0);
+$Options['ExtendedIPSearch'] = (int) ($_POST['extendedipsearch'] ?? 0);
+$Options['TorrentsPerPage'] = (int) ($_POST['torrentsperpage'] ?? 50);
+$Options['CollagesPerPage'] = (int) ($_POST['collagesperpage'] ?? 25);
+$Options['PostsPerPage'] = (int) ($_POST['postsperpage'] ?? 25);
+$Options['TorrentPreviewWidth'] = max(min((int) $_POST['torrentpreviewwidth'] ?? 0, 800), 200);
+$Options['TorrentPreviewWidthForced'] = (bool) ($_POST['torrentpreviewwidth-forced'] ?? false);
 //$Options['HideCollage'] = (!empty($_POST['hidecollage']) ? 1 : 0);
-$Options['CollageCovers'] = empty($_POST['collagecovers']) ? 0 : $_POST['collagecovers'];
+$Options['CollageCovers'] = (($_POST['collagecovers'] ?? false) && $_POST['collagecovers'] === "on") ? 1 : 0;
 $Options['HideCats'] = (!empty($_POST['hidecats']) ? 1 : 0);
 $Options['ShowTags'] = (!empty($_POST['showtags']) ? 1 : 0);
 $Options['HideTagsInLists'] = (!empty($_POST['hidetagsinlists']) ? 1 : 0);
@@ -136,7 +168,6 @@ $Options['AutoSubscribe'] = (!empty($_POST['autosubscribe']) ? 1 : 0);
 $Options['DisableLatestTopics'] = (!empty($_POST['disablelatesttopics']) ? 1 : 0);
 $Options['DisableSmileys'] = (!empty($_POST['disablesmileys']) ? 1 : 0);
 $Options['DisableAvatars'] = (!empty($_POST['disableavatars']) ? 1 : 0);
-$Options['DisablePMAvatars'] = (!empty($_POST['disablepmavatars']) ? 1 : 0);
 $Options['DisableSignatures'] = (!empty($_POST['disablesignatures']) ? 1 : 0);
 $Options['TimeStyle'] = (!empty($_POST['timestyle']) ? 1 : 0);
 $Options['NotVoteUpTags'] = (!empty($_POST['voteuptags']) ? 0 : 1);
@@ -145,15 +176,17 @@ $Options['HideUserTorrents'] = (!empty($_POST['showusertorrents']) ? 0 : 1);
 $Options['SplitByDays'] = (!empty($_POST['splitbydays']) ? 1 : 0);
 $Options['HideFloat'] = (!empty($_POST['hidefloatinfo']) ? 1 : 0);
 $Options['HideDetailsSidebar'] = (!empty($_POST['hidedetailssidebar']) ? 1 : 0);
+$Options['HideForumSidebar'] = (!empty($_POST['hideforumsidebar']) ? 1 : 0);
+$Options['ShowTorrentChecker'] = (!empty($_POST['showtorrentchecker']) ? 1 : 0);
 $Options['NotForceLinks'] = (!empty($_POST['forcelinks']) ? 0 : 1);
 $Options['MaxTags'] = (isset($_POST['maxtags']) ? (int) $_POST['maxtags'] : 16);
-$Options['ShowGames'] = (!empty($_POST['showgames']) ? 1 : 0);
+$Options['NoForumAlerts'] = (!empty($_POST['noforumalerts']) ? 1 : 0);
 $Options['NoNewsAlerts'] = (!empty($_POST['nonewsalerts']) ? 1 : 0);
 $Options['NoBlogAlerts'] = (!empty($_POST['noblogalerts']) ? 1 : 0);
 $Options['NoContestAlerts'] = (!empty($_POST['nocontestalerts']) ? 1 : 0);
 
-if (isset($LoggedUser['DisableFreeTorrentTop10'])) {
-    $Options['DisableFreeTorrentTop10'] = $LoggedUser['DisableFreeTorrentTop10'];
+if (isset($activeUser['DisableFreeTorrentTop10'])) {
+    $Options['DisableFreeTorrentTop10'] = $activeUser['DisableFreeTorrentTop10'];
 }
 
 if (!empty($_POST['hidetypes'])) {
@@ -161,7 +194,7 @@ if (!empty($_POST['hidetypes'])) {
         $Options['HideTypes'][] = (int) $Type;
     }
 } else {
-    $Options['HideTypes'] = array();
+    $Options['HideTypes'] = [];
 }
 
 
@@ -170,114 +203,157 @@ if (!empty($_POST['hidetypes'])) {
 // probably want to see _most_ of the forum sections -> should be more efficient
 //
 // We don't check Permitted/RestrictedForums or even MinClassRead here. It's not really needed.
-require_once(SERVER_ROOT.'/Legacy/sections/forums/functions.php');
-$Forums = get_forums_info();
-$DisabledLatestTopics = array();
+$Forums = $master->repos->forums->getForumInfo();
+$DisabledLatestTopics = [];
 foreach ($Forums as $Forum) {
-    if (empty($_POST['disable_lt_'.$Forum['ID']]))
+    if (empty($_POST['disable_lt_'.$Forum['ID']])) {
         $DisabledLatestTopics[] = $Forum['ID'];
+    }
 }
-if (count($DisabledLatestTopics) > 0)
+if (count($DisabledLatestTopics) > 0) {
     $Options['DisabledLatestTopics'] = $DisabledLatestTopics;
-
-//TODO: Remove the following after a significant amount of time
-unset($Options['ShowQueryList']);
-unset($Options['ShowCacheList']);
+}
 
 $DownloadAlt = (isset($_POST['downloadalt']))? 1:0;
 $TrackIPv6 = (isset($_POST['trackipv6']))? 1:0;
 $UnseededAlerts = (isset($_POST['unseededalerts']))? 1:0;
 
 // Information on how the user likes to download torrents is stored in cache
-if ($DownloadAlt != $LoggedUser['DownloadAlt']) {
-    $Cache->delete_value('user_'.$LoggedUser['torrent_pass']);
+if ($DownloadAlt != $activeUser['DownloadAlt']) {
+    $master->cache->deleteValue('user_'.$activeUser['torrent_pass']);
 }
+
 $BlockPMs = (!empty($_POST['blockPMs']) ? (int) $_POST['blockPMs'] : 0);
-if (!in_array($BlockPMs,array(0,1,2))) $BlockPMs =0;
+if (!in_array($BlockPMs, [0, 1, 2])) {
+    $BlockPMs =0;
+}
+
 $BlockGifts = (!empty($_POST['blockgifts']) ? (int) $_POST['blockgifts'] : 0);
-if (!in_array($BlockGifts,array(0,1,2))) $BlockGifts =0;
+if (!in_array($BlockGifts, [0, 1, 2])) {
+    $BlockGifts =0;
+}
+
 $CommentsNotify = (isset($_POST['commentsnotify']))? 1:0;
-
-
-$TimeOffset=get_timezone_offset($_POST['timezone']);
-
-$master->repos->users->uncache($UserID);
+$timeOffset=get_timezone_offset($_POST['timezone']);
+$master->repos->users->uncache($userID);
 
 $Flag = (isset($_POST['flag']))? $_POST['flag']:'';
 
-$SQL="UPDATE users_main AS m JOIN users_info AS i ON m.ID=i.UserID SET
-    i.StyleID='".db_string($_POST['stylesheet'])."',
-    i.Avatar='".db_string($_POST['avatar'])."',
-    i.SiteOptions='".db_string(serialize($Options))."',
-    i.Info='".db_string($_POST['info'])."',
-    i.TimeZone='".db_string($_POST['timezone'])."',
-    i.BlockPMs='".$BlockPMs."',
-    i.BlockGifts='".$BlockGifts."',
-    i.CommentsNotify='".$CommentsNotify."',
-    i.DownloadAlt='$DownloadAlt',
-    m.track_ipv6='$TrackIPv6',
-    i.UnseededAlerts='$UnseededAlerts',
-    m.Flag='".db_string($Flag)."',
-    i.TorrentSignature='".db_string($_POST['torrentsignature'])."',
-    m.Signature='".db_string($_POST['signature'])."',";
+$SQL=
+    "UPDATE users_main AS m
+       JOIN users_info AS i ON m.ID = i.UserID
+        SET i.StyleID = ?,
+            i.Avatar = ?,
+            i.SiteOptions = ?,
+            i.Info = ?,
+            i.TimeZone = ?,
+            i.BlockPMs = ?,
+            i.BlockGifts = ?,
+            i.CommentsNotify = ?,
+            i.DownloadAlt = ?,
+            m.track_ipv6 = ?,
+            i.UnseededAlerts = ?,
+            m.Flag = ?,
+            i.TorrentSignature = ?,
+            m.Signature = ?,
+            m.Paranoia = ?";
 
-if ($LoggedUser['ID'] != $UserID) {
-    $SQL .= 'i.AdminComment = CONCAT("'.sqltime().' - User settings modified by '.$LoggedUser['Username'].'\n", i.AdminComment),';
+$params = [];
+$params[] = $_POST['stylesheet'];
+$params[] = $_POST['avatar'];
+$params[] = serialize($Options);
+$params[] = $_POST['info'];
+$params[] = $_POST['timezone'];
+$params[] = $BlockPMs;
+$params[] = $BlockGifts;
+$params[] = $CommentsNotify;
+$params[] = $DownloadAlt;
+$params[] = $TrackIPv6;
+$params[] = $UnseededAlerts;
+$params[] = $Flag;
+$params[] = ($_POST['torrentsignature'] ?? '');
+$params[] = ($_POST['signature'] ?? '');
+$params[] = serialize($paranoia);
+
+if ($activeUser['ID'] != $userID) {
+    $SQL .= ','.PHP_EOL.'i.AdminComment = CONCAT(?, " - User settings modified by ", ?, "\n", i.AdminComment)';
+    $params[] = sqltime();
+    $params[] = $activeUser['Username'];
 }
 
 if (!empty($_POST['resetlastbrowse'])) {
-    $SQL .= "i.LastBrowse='0000-00-00 00:00:00',";
+    $SQL .= ','.PHP_EOL."i.LastBrowse='0000-00-00 00:00:00'";
 }
 
-$SQL .= "m.Paranoia='".db_string(serialize($Paranoia))."'";
-
 if (isset($_POST['resetpasskey'])) {
-    $UserInfo = user_heavy_info($UserID);
-    $OldPassKey = db_string($UserInfo['torrent_pass']);
-    $NewPassKey = db_string(make_secret());
-    $ChangerIP = db_string($LoggedUser['IP']);
-    $SQL.=",m.torrent_pass='$NewPassKey'";
+    $UserInfo = user_heavy_info($userID);
+    $OldPassKey = $UserInfo['torrent_pass'];
+    $NewPassKey = make_secret();
+    $SQL.=','.PHP_EOL.'m.torrent_pass = ?';
+    $params[] = $NewPassKey;
 
     // Log passkey reset
-    $master->security->log->passkeyChange((int) $UserID);
+    $master->repos->securityLogs->passkeyChange((int) $userID);
 
-    $DB->query("INSERT INTO users_history_passkeys
-            (UserID, OldPassKey, NewPassKey, ChangerIP, ChangeTime) VALUES
-            ('$UserID', '$OldPassKey', '$NewPassKey', '$ChangerIP', '".sqltime()."')");
-    $master->repos->users->uncache($UserID);
-    $Cache->delete_value('user_'.$OldPassKey);
+    $passkeyHistory = new UserHistoryPasskey;
+    $passkeyHistory->UserID = $userID;
+    $passkeyHistory->IPID = $master->request->ip->ID;
+    $passkeyHistory->Time = new \DateTime;
+    $passkeyHistory->OldPassKey = $OldPassKey;
+    $passkeyHistory->NewPassKey = $NewPassKey;
+    $master->repos->userhistorypasskeys->save($passkeyHistory);
 
-    //update_tracker('change_passkey', array('oldpasskey' => $OldPassKey, 'newpasskey' => $NewPassKey));
+    $master->repos->users->uncache($userID);
+    $master->cache->deleteValue("user_{$OldPassKey}");
     $master->tracker->changePasskey($OldPassKey, $NewPassKey);
 }
 
-$SQL.="WHERE m.ID='".db_string($UserID)."'";
-$DB->query($SQL);
+$SQL .= PHP_EOL."WHERE m.ID = ?";
+$params[] = $userID;
+$master->db->rawQuery($SQL, $params);
 
 
 if (check_perms('site_set_language')) {
-
-    $DelLangs = $_POST['del_lang'];
-    if (is_array($DelLangs) ) {
-
-          $Div = '';
-          $SQL_IN ='';
-          foreach ($DelLangs as $langID) { //
-                $SQL_IN .= "$Div " . (int) $langID ;
-                $Div = ',';
+    $DelLangs = $_POST['del_lang'] ?? [];
+    if (is_array($DelLangs)) {
+          foreach ($DelLangs as &$langID) { //
+                $langID = (int) $langID ;
           }
-          if ($SQL_IN) $DB->query("DELETE FROM users_languages WHERE UserID='$UserID' AND LangID IN ( $SQL_IN )");
+          if (count($DelLangs) > 0) {
+              $inQuery = implode(', ', array_fill(0, count($DelLangs), '?'));
+              $params = $DelLangs;
+              $params = array_merge([$userID], $params);
+              $master->db->rawQuery(
+                  "DELETE
+                     FROM users_languages
+                    WHERE UserID = ?
+                      AND LangID IN ({$inQuery})",
+                  $params
+              );
+          }
     }
 
-    if (isset($_POST['new_lang']) && is_number($_POST['new_lang'])) {
-        $DB->query("INSERT IGNORE INTO users_languages (UserID, LangID) VALUES ('$UserID', '$_POST[new_lang]' )");
-        $Cache->delete_value('user_langs_'.$UserID);
-    } elseif ($SQL_IN) {
-        $Cache->delete_value('user_langs_'.$UserID);
+    if (isset($_POST['new_lang']) && is_integer_string($_POST['new_lang'])) {
+        $master->db->rawQuery(
+            "INSERT IGNORE INTO users_languages (UserID, LangID)
+                         VALUES (?, ?)",
+            [$userID, $_POST['new_lang']]
+        );
+        $master->cache->deleteValue('user_langs_'.$userID);
+    } elseif (!empty($inQuery)) {
+        $master->cache->deleteValue('user_langs_'.$userID);
     }
 }
 
-$trackerOptions = $master->db->raw_query("SELECT torrent_pass, can_leech, Visible AS visible, track_ipv6 FROM users_main WHERE ID=:userID", [':userID' => $UserID])->fetch();
+$trackerOptions = $master->db->rawQuery(
+    "SELECT torrent_pass,
+            can_leech,
+            Visible AS visible,
+            track_ipv6
+       FROM users_main
+      WHERE ID = ?",
+    [$userID]
+)->fetch();
 $master->tracker->updateUser($trackerOptions['torrent_pass'], $trackerOptions['can_leech'], $trackerOptions['visible'], $trackerOptions['track_ipv6']);
 
-header('Location: user.php?action=edit&userid='.$UserID);
+header('Location: user.php?action=edit&userid='.$userID);

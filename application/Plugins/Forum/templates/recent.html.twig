@@ -1,0 +1,55 @@
+{% extends "core/private_page.html.twig" %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/forum/recent">All forum posts</a>
+{% endblock %}
+
+{% block main_content %}
+    {{ render.latestForumThreads() }}
+    <div class="linkbox">
+        [<a href="/torrents.php?action=allcomments">Latest Torrent Comments</a>]&nbsp;
+        [<a href="/requests.php?action=allcomments">Latest Request Comments</a>]&nbsp;
+        [<a href="/collage/recent">Latest Collage Comments</a>]
+    </div>
+
+    <div class="head">
+        <span style="float:left;">Forum</span>
+        <span style="float:right;">
+            <a id="forumfilterbutton" href="#" onclick="return Toggle_view('forumfilter');">(Hide)</a>
+        </span>
+    </div>
+    <div id="forumfilterdiv" class="box pad">
+        <form action="/forum/recent" method="get">
+            {% include '@Forum/snippets/forum_filter.html.twig' %}
+            <table>
+                <tr>
+                    <td class="left">
+                        <input type="submit" value="Filter">
+                    </td>
+                    <td class="right">
+                        <button type="submit" name="makedefault" value="1">Make default</button>
+                        <button type="submit" name="cleardefault" value="1">Clear</button>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9) }}
+    </div>
+    {% for post in posts if posts is not empty %}
+        <div class="head">
+            <a href="/forum">Forum</a> &gt;
+            <a href="/forum/{{ post.thread.forum.ID }}">{{ post.thread.forum.Name|decode }}</a> &gt;
+            <a href="/forum/thread/{{ post.thread.ID }}">{{ post.thread.Title|decode }}</a>
+        </div>
+        {{ render.post('forum', post) }}
+    {% endfor %}
+    <div class="linkbox pager">
+        {{ render.pagelinks(page, results, pageSize, 9) }}
+    </div>
+{% endblock %}

@@ -6,7 +6,7 @@ if (!check_perms('admin_convert_tags')) {
 $goodtags = getGoodTags();
 $badtags = getBadTags();
 
-show_header('Good & Bad Tags Manager','tagmanager');
+show_header('Good & Bad Tags Manager', 'tagmanager');
 
 printRstMessage();
 ?>
@@ -28,10 +28,10 @@ show_footer();
 
 function printTagTable($taglist, $tagtype, $desc)
 {
-    global $LoggedUser;
+    global $activeUser;
 
     $tagtype = strtolower($tagtype);
-    if (!in_array($tagtype, ['bad','good'])) $tagtype = 'bad';
+    if (!in_array($tagtype, ['bad', 'good'])) $tagtype = 'bad';
 ?>
     <br/>
     <h2><?=ucfirst($tagtype)?> Tags</h2>
@@ -40,7 +40,7 @@ function printTagTable($taglist, $tagtype, $desc)
         <form action="tools.php" method="post">
             <input type="hidden" name="action" value="tags_goodbad_alter" />
             <input type="hidden" name="tagtype" value="<?=$tagtype?>" />
-            <input type="hidden" name="auth" value="<?= $LoggedUser['AuthKey'] ?>" />
+            <input type="hidden" name="auth" value="<?= $activeUser['AuthKey'] ?>" />
 
             <div class="box shadow" style="text-align:left">
                 <div class="pad">
@@ -56,7 +56,7 @@ function printTagTable($taglist, $tagtype, $desc)
                     </tr>
 <?php
                 $x = 0; $y =0;
-                foreach($taglist as $tag) {
+                foreach ($taglist as $tag) {
 
                     if ($x==0) { ?>
                         <tr class="<?= (($y % 2) ? 'rowa' : 'rowb') ?>">
@@ -76,7 +76,7 @@ function printTagTable($taglist, $tagtype, $desc)
 <?php               }
                 }
                 if ($x>0) {
-                    for ( ;$x<4;$x++ ) {   ?>
+                    for (; $x < 4; $x++) {   ?>
                         <td>&nbsp;</td><td>&nbsp;</td>
 <?php                   if ($x<3) {  ?>
                         <td>&nbsp;</td>
@@ -89,7 +89,7 @@ function printTagTable($taglist, $tagtype, $desc)
 ?>
                     <tr class="<?= (($y % 2) ? 'rowa' : 'rowb') ?>">
                         <td colspan="11"><label for="new<?=$tagtype?>tag">Add <?=ucfirst($tagtype)?> tag(s): </label>
-                            <input type="text" class="medium" name="new<?=$tagtype?>tag" />
+                            <input type="text" class="medium" id="new<?=$tagtype?>tag" name="new<?=$tagtype?>tag" />
                         </td>
                     </tr>
                     <tr style="border-top: thin solid #98AAB1">

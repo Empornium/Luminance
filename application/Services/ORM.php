@@ -1,11 +1,11 @@
 <?php
 namespace Luminance\Services;
 
-use Luminance\Core\Master;
 use Luminance\Core\Service;
 use Luminance\Core\Entity;
+
+use Luminance\Errors\SystemError;
 use Luminance\Errors\InternalError;
-use Luminance\Services\DB\LegacyWrapper;
 
 use PhpMyAdmin\SqlParser\Parser;
 use PhpMyAdmin\SqlParser\Statements\CreateStatement;
@@ -13,241 +13,357 @@ use PhpMyAdmin\SqlParser\Statements\CreateStatement;
 class ORM extends Service {
 
     protected $db;
+    protected $tableSpecs = [];
 
     protected static $useServices = [
         'db' => 'DB',
     ];
 
-    public function load($entity_class, $ID) {
-        $cls = "Luminance\\Entities\\{$entity_class}";
+    public function load($entityClass, $ID) {
+        $cls = "Luminance\\Entities\\{$entityClass}";
         $table = $cls::$table;
-        $pkey_column = $cls::get_pkey_property();
-        $sql = "SELECT * FROM `{$table}` WHERE `{$pkey_column}` = ?";
-        $stmt = $this->db->raw_query($sql, [$ID]);
+        $pKeyColumns = $cls::getPKeyProperties();
+        foreach ($pKeyColumns as &$pKeyColumn) {
+            $pKeyColumn = "`{$pKeyColumn}` = ?";
+        }
+        $pKeyColumns = implode(' AND ', $pKeyColumns);
+        $sql = "SELECT * FROM `{$table}` WHERE {$pKeyColumns}";
+
+        # Ensure keys are in a numerically indexed array
+        if (!is_array($ID)) $ID = [$ID];
+        $ID = array_values($ID);
+
+        $stmt = $this->db->rawQuery($sql, $ID);
         $res = $stmt->fetch(\PDO::FETCH_ASSOC);
-        if ($res) {
-            $entity = $cls::create_from_db($res);
+        if (!empty($res)) {
+            $entity = $cls::createFromDB($res);
             return $entity;
         } else {
             return null;
         }
     }
 
-    public function get($entity_class, $where, $params = null) {
-        $cls = "Luminance\\Entities\\{$entity_class}";
+    public function get($entityClass, $where, array $params = null) {
+        $cls = "Luminance\\Entities\\{$entityClass}";
         $table = $cls::$table;
-        $where_clause = $this->get_where_clause($where);
-        $sql = "SELECT * FROM `{$table}` {$where_clause}";
-        $stmt = $this->db->raw_query($sql, $params);
+        $whereClause = $this->getWhereClause($where);
+        $pKeyColumns = implode(',', $cls::getPKeyProperties());
+
+        if (is_null($pKeyColumns)) {
+            throw new InternalError("No primary key in table {$table}");
+        }
+
+        $sql = "SELECT {$pKeyColumns} FROM `{$table}` {$whereClause}";
+        $stmt = $this->db->rawQuery($sql, $params);
         $res = $stmt->fetch(\PDO::FETCH_ASSOC);
-        if ($res) {
-            $entity = $cls::create_from_db($res);
-            return $entity;
+
+        if (!empty($res)) {
+            return $res;
         } else {
             return null;
         }
     }
 
-    public function find($entity_class, $where = null, $params = null) {
-        $cls = "Luminance\\Entities\\{$entity_class}";
-        $table = $cls::$table;
-        $where_clause = $this->get_where_clause($where);
-        $sql = "SELECT * FROM `{$table}` {$where_clause}";
-        $stmt = $this->db->raw_query($sql, $params);
-        $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        $objects = [];
-        foreach ($results as $result) {
-            $object = $cls::create_from_db($result);
-            $objects[] = $object;
+    public function updateOrCreate($entityClass, array $where, array $updates) {
+        $sql = [];
+        $params = [];
+        foreach ($where as $column => $value) {
+            $sql[] = "{$column} = ?";
+            $params[] = $value;
         }
-        return $objects;
-    }
-
-    public function find_count($entity_class, $where = null, $params = null) {
-        $cls = "Luminance\\Entities\\{$entity_class}";
-        $table = $cls::$table;
-        $where_clause = $this->get_where_clause($where);
-        $sql = "SELECT SQL_CALC_FOUND_ROWS * FROM `{$table}` {$where_clause}";
-        $stmt = $this->db->raw_query($sql, $params);
-        $count = $this->db->found_rows();
-        $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        $objects = [];
-        foreach ($results as $result) {
-            $object = $cls::create_from_db($result);
-            $objects[] = $object;
+        $sql = implode(" AND ", $sql);
+        $res = $this->get($entityClass, $sql, $params);
+        if (empty($res)) {
+            $res = $this->create($entityClass, $updates);
+        } else {
+            $updates = array_merge($where, $updates);
+            foreach ($updates as $column => $value) {
+                $res->$column = $value;
+            }
+            $res = $this->save($res);
         }
-        $result = [$objects, $count];
-        return $result;
+        return $res;
     }
 
-    protected function get_where_clause($where = null) {
-        $where_clause = ($where) ? "WHERE {$where}" : '';
-        return $where_clause;
+    public function create($entityClass, array $tuples) {
+        $cls = "Luminance\\Entities\\{$entityClass}";
+        $entity = new $cls;
+        foreach ($tuples as $key => $value) {
+            $entity->$key = $value;
+        }
+        $res = $this->save($entity);
+        return $res;
     }
 
-    public function save(Entity $entity) {
-        if ($entity->exists_in_db()) {
+    public function find($entityClass, $where = null, array $params = null, $order = null, $limit = null) {
+        $cls = "Luminance\\Entities\\{$entityClass}";
+        $table = $cls::$table;
+        $whereClause = $this->getWhereClause($where);
+        $orderClause = $this->getOrderClause($order);
+        $limitClause = $this->getLimitClause($limit);
+        $pKeyColumns = implode(',', $cls::getPKeyProperties());
+        if (is_null($pKeyColumns)) throw new InternalError("No primary key in table {$table}");
+        $sql = "SELECT {$pKeyColumns} FROM `{$table}` {$whereClause} {$orderClause} {$limitClause}";
+        $stmt = $this->db->rawQuery($sql, $params);
+        $res = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        if (!empty($res)) {
+            return $res;
+        } else {
+            return null;
+        }
+    }
+
+    public function findCount($entityClass, $where = null, array $params = null, $order = null, $limit = null) {
+        $cls = "Luminance\\Entities\\{$entityClass}";
+        $table = $cls::$table;
+        $whereClause = $this->getWhereClause($where);
+        $orderClause = $this->getOrderClause($order);
+        $limitClause = $this->getLimitClause($limit);
+        $pKeyColumns = implode(',', $cls::getPKeyProperties());
+        if (is_null($pKeyColumns)) throw new InternalError("No primary key in table {$table}");
+        $sql = "SELECT SQL_CALC_FOUND_ROWS {$pKeyColumns} FROM `{$table}` {$whereClause} {$orderClause} {$limitClause}";
+        $stmt = $this->db->rawQuery($sql, $params);
+        $count = $this->db->foundRows();
+        $res = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        if (!empty($res)) {
+            return [$res, $count];
+        } else {
+            return [null, 0];
+        }
+    }
+
+    protected function getWhereClause($where = null) {
+        $whereClause = !empty($where) ? "WHERE {$where}" : '';
+        return $whereClause;
+    }
+
+    protected function getOrderClause($order = null) {
+        $orderClause = !empty($order) ? "ORDER BY {$order}" : '';
+        return $orderClause;
+    }
+
+    protected function getLimitClause($limit = null) {
+        $limitClause = !empty($limit) ? "LIMIT {$limit}" : '';
+        return $limitClause;
+    }
+
+    public function save(Entity $entity, $allowUpdate = false) {
+        if ($entity->existsInDB()) {
             $entity = $this->update($entity);
         } else {
-            // Default logic for Created columns
-            //if ($entity-> && is_null($entity->Created)) {
-            //$entity->Created = new \DateTime();
-            //}
-            $entity = $this->insert($entity);
+            $entity = $this->insert($entity, $allowUpdate);
         }
         return $entity;
     }
 
-    public function insert(Entity $entity) {
-        $table = $entity->get_table();
-        $values = $entity->get_unsaved_values();
+    public function insert(Entity $entity, $allowUpdate = false) {
+        $table = $entity->getTable();
+        $values = $entity->getUnsavedValues();
 
         $columns = [];
-        $param_names = [];
-        $param_values = [];
+        $parameterNames = [];
+        $parameterValues = [];
         foreach ($values as $name => $value) {
             $columns[] = "`{$name}`";
-            $param_name = ":{$name}";
-            $param_names[] = $param_name;
-            $param_values[$param_name] = $value;
+            $parameterName = ":{$name}";
+            $parameterNames[] = $parameterName;
+            $parameterValues[$parameterName] = $value;
         }
 
-        $sql = "INSERT INTO `{$table}` (".implode(',', $columns).") VALUES (".implode(',', $param_names).")";
-        $this->db->raw_query($sql, $param_values);
+        $sql = "INSERT INTO `{$table}` (".implode(',', $columns).") VALUES (".implode(',', $parameterNames).")";
+        if ($allowUpdate === true) {
+            $sql .= " ON DUPLICATE KEY UPDATE ";
+            $updates = [];
+            foreach ($values as $name => $value) {
+                $updates[] = "`{$name}` = :{$name}_update";
+                $parameterValues[":{$name}_update"] = $value;
+            }
+            $sql .= implode(', ', $updates);
+        }
+        $this->db->rawQuery($sql, $parameterValues);
 
-        $auto_increment_column = $entity->get_auto_increment_column();
-        if ($auto_increment_column) {
-            $values[$auto_increment_column] = $this->db->last_insert_id();
+        $autoIncrementColumn = $entity->getAutoIncrementColumn();
+        if (!empty($autoIncrementColumn)) {
+            $values[$autoIncrementColumn] = $this->db->lastInsertID();
         }
 
-        $entity->set_saved_values($values);
+        $entity->setSavedValues($values);
         return $entity;
     }
 
     public function update(Entity $entity) {
-        $table = $entity->get_table();
-        $values = $entity->get_unsaved_values();
-        $pkey_value = $entity->get_pkey_value();
+        $table = $entity->getTable();
+        $values = $entity->getUnsavedValues();
+        $pKeyValues = $entity->getPKeyValues();
 
-        if (count($values) == 0) {
+        if (count($values) === 0) {
             return $entity;
         }
 
-        $column_clauses = [];
-        $param_values = [];
+        $columnClauses = [];
+        $parameterValues = [];
         foreach ($values as $name => $value) {
-            $column_clauses[] = "`{$name}` = :{$name}";
-            $param_values[":{$name}"] = $value;
+            $columnClauses[] = "`{$name}` = :{$name}";
+            $parameterValues[":{$name}"] = $value;
         }
 
-        $pkey_column = $entity->get_pkey_property();
-        $param_values[':_pkey_'] = $pkey_value;
+        $pKeyColumns = $entity->getPKeyProperties();
+        foreach ($pKeyValues as $index => $pKeyValue) {
+            $parameterValues[":_pkey{$index}_"] = $pKeyValue;
+        }
 
-        $sql = "UPDATE `{$table}` SET ".implode(', ', $column_clauses)." WHERE `{$pkey_column}` = :_pkey_";
-        $this->db->raw_query($sql, $param_values);
+        foreach ($pKeyColumns as $index => $pKeyColumn) {
+            $where[] = "`{$pKeyColumn}` = :_pkey{$index}_";
+        }
 
-        $entity->set_saved_values($values);
+        $columnClauses = implode(', ', $columnClauses);
+        $where = implode(' AND ', $where);
+
+        $sql = "UPDATE `{$table}` SET {$columnClauses} WHERE {$where}";
+        $this->db->rawQuery($sql, $parameterValues);
+
+        $entity->setSavedValues($values);
         return $entity;
     }
 
     public function delete(Entity $entity) {
-        $table = $entity->get_table();
-        $pkey_value = $entity->get_pkey_value();
-        $pkey_column = $entity->get_pkey_property();
-        $param_values[':_pkey_'] = $pkey_value;
-        $sql = "DELETE FROM `{$table}` WHERE `{$pkey_column}` = :_pkey_";
-        return $this->db->raw_query($sql, $param_values);
+        $table = $entity->getTable();
+        $pKeyValues = $entity->getPKeyValues();
+        $pKeyColumns = $entity->getPKeyProperties();
+        foreach ($pKeyValues as $index => $pKeyValue) {
+            $parameterValues[":_pkey{$index}_"] = $pKeyValue;
+        }
+        foreach ($pKeyColumns as $index => $pKeyColumn) {
+            $where[] = "`{$pKeyColumn}` = :_pkey{$index}_";
+        }
+        $where = implode(' AND ', $where);
+        $sql = "DELETE FROM `{$table}` WHERE {$where}";
+        return $this->db->rawQuery($sql, $parameterValues);
     }
 
     # Various rarely used DDL functions below:
 
 
-    public function get_tables() {
-        $table_info = $this->db->raw_query("SHOW TABLES;")->fetchAll(\PDO::FETCH_NUM);
+    public function getTables() {
+        $tableInfo = $this->db->rawQuery("SHOW TABLES;")->fetchAll(\PDO::FETCH_NUM);
         $tables = [];
-        foreach ($table_info as $t) {
+        foreach ($tableInfo as $t) {
             $tables[] = $t[0];
         }
         return $tables;
     }
 
-    protected function get_entity_classes() {
+    public function getEntityClasses() {
         # We have to work around the autoloader to ensure all Entity classes are actually loaded
-        $entity_dir = $this->master->application_path.'/Entities';
-        $entity_files = scandir($entity_dir);
-        foreach ($entity_files as $file) {
-            if (pathinfo($file, PATHINFO_EXTENSION) == 'php') {
-                require_once($entity_dir.'/'.$file);
+        $entityDir = $this->master->applicationPath.'/Entities';
+        $entityFiles = scandir($entityDir);
+        foreach ($entityFiles as $file) {
+            if (pathinfo($file, PATHINFO_EXTENSION) === 'php') {
+                require_once($entityDir.'/'.$file);
             }
         }
 
-        $entity_classes = [];
+        $entityClasses = [];
         foreach (get_declared_classes() as $cls) {
             if (is_subclass_of($cls, 'Luminance\Core\Entity')) {
-                $entity_classes[] = $cls;
+                $entityClasses[] = $cls;
             }
         }
-        return $entity_classes;
+        return $entityClasses;
     }
 
-    public function update_tables($sql = null) {
-        $entity_classes = $this->get_entity_classes();
-        $tables = $this->get_tables();
-        $this->db->raw_query('SET FOREIGN_KEY_CHECKS=0');
+    public function updateTables($sql = null) {
+        $entityClasses = $this->getEntityClasses();
+        $tables = $this->getTables();
+        $this->db->rawQuery('SET FOREIGN_KEY_CHECKS=0');
 
-        if ($sql) {
-            $vars = $this->parse_sql($sql);
+        if (!empty($sql)) {
+            $vars = $this->parseSQL($sql);
             if (in_array($vars['table'], $tables)) {
-                $this->update_table($vars);
+                $this->updateTable($vars);
             } else {
-                $this->create_table($vars);
+                $this->createTable($vars);
             }
         } else {
-            foreach ($entity_classes as $cls) {
+            foreach ($entityClasses as $cls) {
                 $vars = [];
-                $vars['table'] = $cls::get_table();
-                $vars['properties'] = $cls::get_properties();
-                $vars['indexes'] = $cls::get_indexes();
-                $vars['attributes'] = $cls::get_attributes();
+                $vars['table'] = $cls::getTable();
+                $vars['properties'] = $cls::getProperties();
+                $vars['indexes'] = $cls::getIndexes();
+                $vars['attributes'] = $cls::getAttributes();
                 if (in_array($vars['table'], $tables)) {
-                    $this->update_table($vars);
+                    $this->updateTable($vars);
                 } else {
-                    $this->create_table($vars);
+                    $this->createTable($vars);
                 }
             }
         }
     }
 
-    public function drop_tables() {
-        $this->db->raw_query('SET FOREIGN_KEY_CHECKS=0');
-        $tables = $this->get_tables();
-        foreach ($tables as $table) {
-            $this->drop_table($table);
+    public function pruneTables($sql = null) {
+        $entityClasses = $this->getEntityClasses();
+        $tables = $this->getTables();
+        $this->db->rawQuery('SET FOREIGN_KEY_CHECKS=0');
+
+        if (!empty($sql)) {
+            $vars = $this->parseSQL($sql);
+            if (in_array($vars['table'], $tables)) {
+                $this->pruneTable($vars);
+            }
+        } else {
+            foreach ($entityClasses as $cls) {
+                $vars = [];
+                $vars['table'] = $cls::getTable();
+                $vars['properties'] = $cls::getProperties();
+                $vars['indexes'] = $cls::getIndexes();
+                $vars['attributes'] = $cls::getAttributes();
+                if (in_array($vars['table'], $tables)) {
+                    $this->pruneTable($vars);
+                }
+            }
         }
     }
 
-    protected function get_table_specification($table) {
-        $tableSpec = $this->db->raw_query("SHOW CREATE TABLE {$table}")->fetch(\PDO::FETCH_ASSOC);
-        return $this->parse_sql($tableSpec['Create Table']);
+    public function dropTables() {
+        $this->db->rawQuery('SET FOREIGN_KEY_CHECKS=0');
+        $tables = $this->getTables();
+        foreach ($tables as $table) {
+            $this->dropTable($table);
+        }
     }
 
-    protected function get_index_parameters($indexes) {
-        $return_indexes = [];
+    public function getTableSpecification($table) {
+        try {
+            $sql = "SHOW CREATE TABLE {$table}";
+            $tableSpec = $this->db->rawQuery($sql)->fetch(\PDO::FETCH_ASSOC);
+            if (!array_key_exists($table, $this->tableSpecs)) {
+                $this->tableSpecs[$table] = $this->parseSQL($tableSpec['Create Table']);
+            }
+            return $this->tableSpecs[$table];
+        } catch (\PDOException $e) {
+            print($sql.PHP_EOL);
+            print($e->getMessage().PHP_EOL);
+            die();
+        }
+    }
+
+    protected function getIndexParameters($indexes) {
+        $returnIndexes = [];
         foreach ($indexes as $index) {
             if (is_array($index)) {
                 if (array_key_exists('length', $index)) {
-                    $return_indexes[] = $index;
+                    $returnIndexes[] = $index;
                 } elseif (array_key_exists('name', $index)) {
-                    $return_indexes[] = $index['name'];
+                    $returnIndexes[] = $index['name'];
                 }
             } else {
-                $return_indexes[] = $index;
+                $returnIndexes[] = $index;
             }
         }
-        return $return_indexes;
+        return $returnIndexes;
     }
 
-    protected function parse_sql($sql) {
+    protected function parseSQL($sql) {
         # We use the phpMyAdmin library and the raw SQL to create an ORM
         # entity definition on the fly, it's cleaner this way I think.
         $parser = new Parser($sql);
@@ -272,6 +388,30 @@ class ORM extends Service {
         foreach ($sql->fields as $property) {
             if (!is_null($property->type)) {
                 $var = [];
+
+                switch ($property->type->name) {
+                    case 'INT':
+                    case 'BIGINT':
+                    case 'TINYINT':
+                        $var['type'] = 'int';
+                        break;
+                    case 'FLOAT':
+                    case 'DOUBLE':
+                        $var['type'] = 'float';
+                        break;
+                    case 'VARCHAR':
+                    case 'VARBINARY':
+                    case 'TEXT':
+                    case 'MEDIUMTEXT':
+                    case 'ENUM':
+                    case 'BLOB':
+                        $var['type'] = 'str';
+                        break;
+                    case 'DATETIME':
+                        $var['type'] = 'timestamp';
+                        break;
+                }
+
                 $var['sqltype'] = $property->type->name;
                 if (!empty($property->type->parameters)) {
                     $var['sqltype'] .= '('.implode(',', $property->type->parameters).')';
@@ -308,15 +448,24 @@ class ORM extends Service {
                     $var['nullable'] = !array_key_exists('auto_increment', $var);
                 }
 
+                if (array_key_exists('nullable', $var) && array_key_exists('default', $var)) {
+                    if ($var['nullable'] === false && $var['default'] === null) {
+                        unset($var['default']);
+                    }
+                }
+
                 $vars['properties'][$property->name] = $var;
             }
             if (!is_null($property->key)) {
                 switch ($property->key->type) {
                     case 'PRIMARY KEY':
-                        $vars['indexes'][$property->key->name] = [
-                            'columns' => $this->get_index_parameters($property->key->columns),
-                            'type'    => 'primary',
-                        ];
+                        foreach ($this->getIndexParameters($property->key->columns) as $column) {
+                            if (!array_key_exists($column, $vars['properties'])) {
+                                throw new InternalError("Primary key column ({$column}) does not exist in table {$vars['table']}");
+                            } else {
+                                $vars['properties'][$column]['primary'] = true;
+                            }
+                        }
                         break;
                     case 'FOREIGN KEY':
                         $actions = [];
@@ -325,7 +474,7 @@ class ORM extends Service {
                         }
 
                         $vars['indexes'][$property->name] = [
-                            'columns' => $this->get_index_parameters($property->key->columns),
+                            'columns' => $this->getIndexParameters($property->key->columns),
                             'type'       => 'foreign',
                             'references' => [
                                 'table'    => $property->references->table->table,
@@ -336,19 +485,19 @@ class ORM extends Service {
                         break;
                     case 'UNIQUE KEY':
                         $vars['indexes'][$property->key->name] = [
-                            'columns' => $this->get_index_parameters($property->key->columns),
+                            'columns' => $this->getIndexParameters($property->key->columns),
                             'type'    => 'unique',
                         ];
                         break;
                     case 'FULLTEXT KEY':
                         $vars['indexes'][$property->key->name] = [
-                            'columns' => $this->get_index_parameters($property->key->columns),
+                            'columns' => $this->getIndexParameters($property->key->columns),
                             'type'    => 'fulltext',
                         ];
                         break;
                     default:
                         $vars['indexes'][$property->key->name] = [
-                            'columns' => $this->get_index_parameters($property->key->columns),
+                            'columns' => $this->getIndexParameters($property->key->columns),
                         ];
                 }
             }
@@ -363,133 +512,161 @@ class ORM extends Service {
         return $vars;
     }
 
-    protected function get_column_sql($name, $options) {
-        $nullable       = (array_key_exists('nullable', $options)) ? $options['nullable'] : true;
-        $auto_increment = (array_key_exists('auto_increment', $options)) ? $options['auto_increment'] : false;
-        $unsigned       = (array_key_exists('unsigned', $options)) ? $options['unsigned'] : false;
-        $zerofill       = (array_key_exists('zerofill', $options)) ? $options['zerofill'] : false;
-        $length         = (array_key_exists('length', $options)) ? $options['length'] : null;
-        $default        = (array_key_exists('default', $options)) ? $options['default'] : null;
-        if (array_key_exists('sqltype', $options)) {
-            $sqltype = $options['sqltype'];
-        } else {
-            switch ($options['type']) {
-                case 'int':
-                    if (is_null($length)) {
-                        $length = 11;
-                    }
-                    $sqltype = "INT({$length})";
-                    break;
-                case 'str':
-                    if (is_null($length)) {
-                        $length = 255;
-                    }
-                    $sqltype = "VARCHAR({$length})";
-                    break;
-                case 'bool':
-                    $sqltype = 'TINYINT(1)';
-                    break;
-                case 'timestamp':
-                    $sqltype = 'TIMESTAMP DEFAULT 0'; # this avoids MySQL's defaults, which are too specific
-                    break;
+    public function getColumnSQL($name, $options) {
+        $nullable       = $options['nullable']       ?? true;
+        $autoIncrement  = $options['auto_increment'] ?? false;
+        $unsigned       = $options['unsigned']       ?? false;
+        $zerofill       = $options['zerofill']       ?? false;
+        $length         = $options['length']         ?? null;
+        $sqltype        = $options['sqltype']        ?? null;
+        $type           = $options['type']           ?? null;
+        if (empty($sqltype)) {
+            if (!empty($type)) {
+                switch ($options['type']) {
+                    case 'int':
+                        if (is_null($length)) {
+                            $length = 11;
+                        }
+                        $sqltype = "INT({$length})";
+                        break;
+                    case 'str':
+                        if (is_null($length)) {
+                            $length = 255;
+                        }
+                        $sqltype = "VARCHAR({$length})";
+                        break;
+                    case 'bool':
+                        $sqltype = 'TINYINT(1)';
+                        break;
+                    case 'timestamp':
+                        $sqltype = 'TIMESTAMP DEFAULT 0'; # this avoids MySQL's defaults, which are too specific
+                        break;
+                }
+            } else {
+                throw new SystemError("Unknown column type for {$name}");
             }
         }
-        $col_sql = "`{$name}` {$sqltype}";
+        $columnSQL = "`{$name}` {$sqltype}";
         if ($unsigned | $zerofill) {
-            $col_sql .= ' UNSIGNED';
+            $columnSQL .= ' UNSIGNED';
         }
-        if ($zerofill) {
-            $col_sql .= ' ZEROFILL';
+        if ($zerofill === true) {
+            $columnSQL .= ' ZEROFILL';
         }
-        if (!is_null($default)) {
-            $col_sql .= " DEFAULT {$default}";
+        if (array_key_exists('default', $options)) {
+            $default = $options['default'];
+            if (is_null($default)) {
+                $default = "NULL";
+            }
+            if (empty($default)) {
+                $default = "'{$default}'";
+            }
+            $columnSQL .= " DEFAULT {$default}";
         }
-        if ($nullable) {
-            $col_sql .= ' NULL';
+        if ($nullable === true) {
+            $columnSQL .= ' NULL';
         } else {
-            $col_sql .= ' NOT NULL';
+            $columnSQL .= ' NOT NULL';
         }
-        if ($auto_increment) {
-            $col_sql .= ' AUTO_INCREMENT';
+        if ($autoIncrement === true) {
+            $columnSQL .= ' AUTO_INCREMENT';
         }
-        return $col_sql;
+        return $columnSQL;
     }
 
-    protected function get_index_sql($name, $options) {
-        $column_strings = [];
+    protected function getIndexSQL($name, $options) {
+        $columnStrings = [];
         foreach ($options['columns'] as $column) {
             if (is_array($column)) {
-                $column_strings[] = "`{$column['name']}`({$column['length']})";
+                $columnStrings[] = "`{$column['name']}`({$column['length']})";
             } else {
-                $column_strings[] = "`{$column}`";
+                $columnStrings[] = "`{$column}`";
             }
         }
         if (array_key_exists('type', $options)) {
             switch ($options['type']) {
                 case 'primary':
-                    $index_sql = 'PRIMARY KEY ';
+                    $indexSQL = 'PRIMARY KEY ';
                     break;
                 case 'foreign':
-                    $index_sql  = "CONSTRAINT `{$name}` FOREIGN KEY ";
-                    $index_sql .= '(' . implode(',', $column_strings) . ') REFERENCES ';
+                    $indexSQL  = "CONSTRAINT `{$name}` FOREIGN KEY ";
+                    $indexSQL .= '(' . implode(',', $columnStrings) . ') REFERENCES ';
                     foreach ($options['references']['columns'] as $column) {
-                        $reference_columns[] = "`{$column}`";
+                        $referenceColumns[] = "`{$column}`";
                     }
-                    $index_sql .= "`{$options['references']['table']}` (" . implode(',', $reference_columns) . ")";
+                    $indexSQL .= "`{$options['references']['table']}` (" . implode(',', $referenceColumns) . ")";
                     foreach ($options['actions'] as $action) {
-                        $index_sql .= " {$action}";
+                        $indexSQL .= " {$action}";
                     }
-                    return $index_sql;
+                    return $indexSQL;
                   break;
                 case 'unique':
-                    $index_sql = "UNIQUE KEY `{$name}` ";
+                    $indexSQL = "UNIQUE KEY `{$name}` ";
                     break;
                 case 'fulltext':
-                    $index_sql = "FULLTEXT KEY `{$name}` ";
+                    $indexSQL = "FULLTEXT KEY `{$name}` ";
                     break;
                 default:
-                    $index_sql = "INDEX `{$name}` ";
+                    $indexSQL = "INDEX `{$name}` ";
             }
         } else {
-            $index_sql = "INDEX `{$name}` ";
+            $indexSQL = "INDEX `{$name}` ";
         }
-        $index_sql .= '(' . implode(',', $column_strings) . ')';
-        return $index_sql;
+        $indexSQL .= '(' . implode(',', $columnStrings) . ')';
+        return $indexSQL;
     }
 
-    protected function get_storage_engines() {
-        $indexed_engines = $this->db->raw_query("SHOW ENGINES")->fetchAll();
-        $indexed_engines = array_column($indexed_engines, 'Engine');
-        foreach ($indexed_engines as $index => $engine) {
+    protected function getStorageEngines() {
+        $indexedEngines = $this->db->rawQuery("SHOW ENGINES")->fetchAll();
+        $indexedEngines = array_column($indexedEngines, 'Engine');
+        foreach ($indexedEngines as $index => $engine) {
             $engines[strtolower($engine)] = $engine;
         }
         return $engines;
     }
 
-    protected function get_attribute_sql($name, $option) {
+    protected function getAttributeSQL($name, $option) {
         switch ($name) {
             case 'engine':
-                $engines = $this->get_storage_engines();
+                $engines = $this->getStorageEngines();
                 $engine = (array_key_exists($option, $engines)) ? $engines[$option] : 'InnoDB';
-                return "Engine={$engine} ";
+                return "Engine={$engine} \n";
+                break;
+
+            case 'charset':
+                return "CHARSET={$option} \n";
+                break;
+            case 'collate':
+                return "COLLATE={$option} \n";
                 break;
         }
     }
 
-    protected function get_table_columns($table) {
-        $column_info = $this->master->db->raw_query("SHOW COLUMNS FROM `{$table}`")->fetchAll(\PDO::FETCH_NUM);
+    public function getTableColumns($table) {
+        $columnInfo = $this->master->db->rawQuery("SHOW COLUMNS FROM `{$table}`")->fetchAll(\PDO::FETCH_NUM);
         $columns = [];
-        foreach ($column_info as $c) {
+        foreach ($columnInfo as $c) {
             $columns[] = $c[0];
         }
         return $columns;
     }
 
-    protected function get_table_indexes($table) {
-        $index_info = $this->get_table_specification($table);
+    protected function getTableAutocolumns($table) {
+        $autoInfo = $this->getTableSpecification($table);
+        $autos = [];
+        foreach ($autoInfo['properties'] as $name => $i) {
+            if (@$i['auto_increment'] === true) {
+                $autos[$name] = $i;
+            }
+        }
+        return $autos;
+    }
+
+    protected function getTableIndexes($table) {
+        $indexInfo = $this->getTableSpecification($table);
         $indexes = [];
-        foreach ($index_info['indexes'] as $name => $i) {
-            if (@$i['type'] == 'primary') continue;
+        foreach ($indexInfo['indexes'] as $name => $i) {
+            if (@$i['type'] === 'primary') continue;
             if (!in_array($name, $indexes)) {
                 $indexes[] = $name;
             }
@@ -497,60 +674,83 @@ class ORM extends Service {
         return $indexes;
     }
 
-    protected function get_primary_index($table) {
-        $index_info = $this->get_table_specification($table);
-        $indexes = [];
-        foreach ($index_info['indexes'] as $name => $i) {
-            if (@$i['type'] == 'primary') {
-                return $i['columns'];
+    protected function getPrimaryIndexes($table) {
+        $indexInfo = $this->getTableSpecification($table);
+        $primaries = [];
+        foreach ($indexInfo['properties'] as $name => $i) {
+            if (@$i['primary'] === true) {
+                $primaries[] = $name;
             }
         }
-        return false;
+        return $primaries;
     }
 
-    protected function create_table($vars) {
-        print("Creating table {$vars['table']}\n");
-        $sql = "CREATE TABLE `{$vars['table']}` (\n";
+    protected function createTable($vars) {
+        print("Creating table {$vars['table']}".PHP_EOL);
+        $sql = "";
         $parts = [];
-        $primary_cols = [];
+        $primaryColumns = [];
         foreach ($vars['properties'] as $property => $options) {
             $primary = (array_key_exists('primary', $options)) ? $options['primary'] : false;
-            if ($primary) {
+            if ($primary === true) {
                 $options['nullable'] = false;
-                $primary_cols[] = "`{$property}`";
+                $primaryColumns[] = "`{$property}`";
             }
-            $col_sql = $this->get_column_sql($property, $options);
-            $parts[] = $col_sql;
+            $columnSQL = $this->getColumnSQL($property, $options);
+            $parts[] = $columnSQL;
         }
-        if (count($primary_cols)) {
-            $parts[] = "PRIMARY KEY (".implode(',', $primary_cols).")";
+        if (count($primaryColumns)) {
+            $parts[] = "PRIMARY KEY (".implode(',', $primaryColumns).")";
         }
         foreach ($vars['indexes'] as $index => $options) {
-            $index_sql = $this->get_index_sql($index, $options);
-            $parts[] = $index_sql;
+            $indexSQL = $this->getIndexSQL($index, $options);
+            $parts[] = $indexSQL;
         }
         $sql .= implode(",\n", $parts);
-        $sql .= "\n)";
-        foreach ($vars['attributes'] as $attribute => $options) {
-            $sql .= ' '.$this->get_attribute_sql($attribute, $options);
+        $sql = "CREATE TABLE `{$vars['table']}` (\n{$sql}\n)";
+
+        $defaultAttributes =  [
+            'engine'    => 'InnoDB',
+            'charset'   => 'utf8mb4',
+            'collate'   => 'utf8mb4_general_ci',
+        ];
+
+        $attributes = array_merge($defaultAttributes, $vars['attributes']);
+        foreach ($attributes as $attribute => $options) {
+            $sql .= ' '.$this->getAttributeSQL($attribute, $options);
         }
-        $sql .= "DEFAULT CHARSET=utf8\n";
-        $this->db->raw_query($sql);
+
+        try {
+            $this->db->rawQuery($sql);
+        } catch (\PDOException $e) {
+            print($sql.PHP_EOL);
+            print($e->getMessage().PHP_EOL);
+            die();
+        }
     }
 
-    protected function update_table($vars) {
-        # TODO: Detect unneeded columns (deleting automatically is too risky)
-        # TODO: Detect storage engine change
-        $columns   = $this->get_table_columns($vars['table']);
-        $tableSpec = $this->get_table_specification($vars['table']);
-        $last_column = null;
+    private function safeStringCompare($a, $b) {
+        # Handle null values
+        $a = (is_null($a)) ? 'NULL' : $a;
+        $b = (is_null($b)) ? 'NULL' : $b;
+
+        # Explicit cast to string
+        $a=trim((string)$a, "'");
+        $b=trim((string)$b, "'");
+        return $a === $b;
+    }
+
+    protected function updateTable($vars) {
+        $columns   = $this->getTableColumns($vars['table']);
+        $tableSpec = $this->getTableSpecification($vars['table']);
+        $lastColumn = null;
         $sql = null;
         foreach ($vars['properties'] as $property => $options) {
             # Column doesn't exist yet
             if (!in_array($property, $columns)) {
-                $col_sql = $this->get_column_sql($property, $options);
-                $after_sql = (is_null($last_column)) ? 'FIRST' : "AFTER `{$last_column}`";
-                $sql[] = "ADD COLUMN {$col_sql} {$after_sql}";
+                $columnSQL = $this->getColumnSQL($property, $options);
+                $afterSQL = (is_null($lastColumn)) ? 'FIRST' : "AFTER `{$lastColumn}`";
+                $sql[] = "ADD COLUMN {$columnSQL} {$afterSQL}";
 
             # Detect column changes and update if necessary
             } else {
@@ -559,7 +759,7 @@ class ORM extends Service {
                 # Check sqltype
                 if (array_key_exists('sqltype', $options)) {
                     # We always do string comparisons to avoid things like int(10) != string("'10'")
-                    if (trim((string)$tableSpec['properties'][$property]['sqltype'], "'") != trim((string)$options['sqltype'], "'")) {
+                    if ($this->safeStringCompare($tableSpec['properties'][$property]['sqltype'], $options['sqltype']) === false) {
                         # regex hack to handle unsigned types
                         if (preg_match('/unsigned/i', $options['sqltype'])) {
                             $options['sqltype'] = preg_replace('/ unsigned/i', '', $options['sqltype']);
@@ -576,14 +776,14 @@ class ORM extends Service {
                         $options['sqltype'] = preg_replace('/( )?,( )?/', ',', $options['sqltype']);
 
                         # regex hack to detect sqltypes without sizes
-                        if (preg_match('/\([\d]+\)/', $options['sqltype']) == 0) {
+                        if (preg_match('/\([\d]+\)/', $options['sqltype']) === 0) {
                             $test = preg_replace('/\([\d]+\)/', '', $tableSpec['properties'][$property]['sqltype']);
                         } else {
                             $test = $tableSpec['properties'][$property]['sqltype'];
                         }
 
                         # Column really was changed!
-                        if (trim((string)$test, "'") != trim((string)$options['sqltype'], "'")) {
+                        if ($this->safeStringCompare($test, $options['sqltype']) === false) {
                             $tableSpec['properties'][$property]['sqltype'] = $options['sqltype'];
                             $altered = true;
                         }
@@ -595,77 +795,168 @@ class ORM extends Service {
                     if (!array_key_exists('default', $tableSpec['properties'][$property])) {
                         $tableSpec['properties'][$property]['default'] = $options['default'];
                         $altered = true;
-                    } elseif (trim((string)$tableSpec['properties'][$property]['default'], "'") != trim((string)$options['default'], "'")) {
+                    } elseif ($this->safeStringCompare($tableSpec['properties'][$property]['default'], $options['default']) === false) {
                         $tableSpec['properties'][$property]['default'] = $options['default'];
                         $altered = true;
                     }
+                } else {
+                    unset($tableSpec['properties'][$property]['default']);
                 }
 
                 # Check nullable
                 if (!array_key_exists('nullable', $options)) {
-                    $options['nullable'] = !array_key_exists('auto_increment', $options);
+                    # Cannot be null if primary or auto-increment
+                    $autoIncrement = $options['auto_increment'] ?? false;
+                    $primary        = $options['primary']        ?? false;
+                    $options['nullable'] = !($autoIncrement || $primary);
                 }
-                if ($tableSpec['properties'][$property]['nullable'] != $options['nullable']) {
+                if (!($tableSpec['properties'][$property]['nullable'] === $options['nullable'])) {
                     $tableSpec['properties'][$property]['nullable'] = $options['nullable'];
                     $altered = true;
                 }
 
-                if ($altered) {
-                    $col_sql = $this->get_column_sql($property, $tableSpec['properties'][$property]);
-                    $sql[] = "MODIFY COLUMN {$col_sql}";
+                if ($altered === true) {
+                    $columnSQL = $this->getColumnSQL($property, $tableSpec['properties'][$property]);
+                    $sql[] = "MODIFY COLUMN {$columnSQL}";
                 }
             }
-            $last_column = $property;
+            $lastColumn = $property;
         }
 
-        $indexes = $this->get_table_indexes($vars['table']);
+        # Grab auto-columns of installed schema
+        $autos = $this->getTableAutocolumns($vars['table']);
+        $indexes = $vars['indexes'];
+
+        # Ensure auto-columns will have an index
+        foreach ($autos as $auto => $options) {
+            $exists = false;
+            if (array_key_exists($auto, $vars['properties'])) {
+                $autoColumn = $vars['properties'][$auto];
+                if (array_key_exists('primary', $autoColumn)) {
+                    if ($autoColumn['primary'] === true) {
+                        continue;
+                    }
+                }
+            }
+
+            # Uh-oh, the column got removed, check to see if we have an index for it
+            foreach ($indexes as $index) {
+                if (in_array($auto, $index['columns'])) {
+                    $exists = true;
+                }
+            }
+
+            # Nope, no index, we better add one.
+            if ($exists === false) {
+                $vars['indexes']['AUTO'] = [ 'columns' => [ $auto ] ];
+            }
+        }
+
+        $indexes = $this->getTableIndexes($vars['table']);
 
         # Add new index
         foreach ($vars['indexes'] as $index => $options) {
             if (!in_array($index, $indexes)) {
-                if (@$options['type'] == 'primary') continue;
-                $index_sql = $this->get_index_sql($index, $options);
-                $sql[] = "ADD {$index_sql}";
+                if (@$options['type'] === 'primary') continue;
+                $indexSQL = $this->getIndexSQL($index, $options);
+                $sql[] = "ADD {$indexSQL}";
             } else {
                 unset($indexes[array_search($index, $indexes)]);
             }
         }
 
         # Drop removed index
-        foreach ($indexes as $index) {
-            $sql[] = "DROP INDEX `{$index}`";
+        if (!empty($indexes)) {
+            foreach ($indexes as $index) {
+                $sql[] = "DROP INDEX `{$index}`";
+            }
         }
 
         # Handle primary index
-        #TODO handle multi-column primaries
-        $primary = $this->get_primary_index($vars['table']);
+        $oldPrimaries = $this->getPrimaryIndexes($vars['table']);
+        $newPrimaries = [];
         foreach ($vars['properties'] as $property => $options) {
-            if (@$options['primary'] !== true) {
+            if (!(@$options['primary'] === true)) {
                 continue;
             } else {
-                if ([$property] !== $primary) {
-                    $sql[] = "DROP PRIMARY KEY";
-                    $sql[] = "ADD PRIMARY KEY (`{$property}`)";
+                $newPrimaries[] = $property;
+            }
+        }
+
+        if (!empty(array_diff($newPrimaries, $oldPrimaries)) ||
+            !empty(array_diff($newPrimaries, $oldPrimaries))) {
+            if (!empty($oldPrimaries)) {
+                $sql[] = "DROP PRIMARY KEY";
+            }
+            $primaryKeys = [];
+            foreach ($newPrimaries as $newPrimary) {
+                $primaryKeys[] = "`{$newPrimary}`";
+            }
+            $primaryKeys = implode(', ', $primaryKeys);
+            $sql[] = "ADD PRIMARY KEY ({$primaryKeys})";
+        }
+
+        # Handle engine changes
+        if (array_key_exists('engine', $vars['attributes'])) {
+            $newEngine = strtolower($vars['attributes']['engine']);
+            $oldEngine = strtolower($tableSpec['attributes']['engine']);
+            $availableEngines = $this->getStorageEngines();
+
+            # Only submit the change if the new engine is available
+            if (array_key_exists($newEngine, $availableEngines)) {
+                if (!$this->safeStringCompare($newEngine, $oldEngine)) {
+                    # Lookup the exact name
+                    $newEngine = $availableEngines[$newEngine];
+                    $sql[] = "ENGINE = {$newEngine}";
                 }
             }
         }
 
         # Single atomic update for each table, should be quicker
         if (is_array($sql)) {
-            print("Upgrading table {$vars['table']}\n");
+            print("Upgrading table {$vars['table']}".PHP_EOL);
             $sql = "ALTER TABLE `{$vars['table']}` " . implode(', ', $sql);
             try {
-                $this->db->raw_query($sql);
+                $this->db->rawQuery($sql);
             } catch (\PDOException $e) {
-                var_dump($sql);
-                print($e->getMessage());
+                print($sql.PHP_EOL);
+                print($e->getMessage().PHP_EOL);
+                die();
+            }
+        }
+
+        foreach ($columns as $column) {
+            if (!in_array($column, array_keys($vars['properties']))) {
+                print("Extra column found in {$vars['table']}: {$column}".PHP_EOL);
+            }
+        }
+    }
+
+    protected function pruneTable($vars) {
+        $columns   = $this->getTableColumns($vars['table']);
+        $sql = null;
+        foreach ($columns as $column) {
+            if (!in_array($column, array_keys($vars['properties']))) {
+                $sql[] = "DROP COLUMN `{$column}`";
+            }
+        }
+
+        # Single atomic update for each table, should be quicker
+        if (is_array($sql)) {
+            print("Pruning table {$vars['table']}".PHP_EOL);
+            $sql = "ALTER TABLE `{$vars['table']}` " . implode(', ', $sql);
+            try {
+                $this->db->rawQuery($sql);
+            } catch (\PDOException $e) {
+                print($sql.PHP_EOL);
+                print($e->getMessage().PHP_EOL);
                 die();
             }
         }
     }
 
-    protected function drop_table($table) {
-        print("Deleting table {$table}\n");
-        $this->db->raw_query("DROP TABLE {$table}");
+    protected function dropTable($table) {
+        print("Deleting table {$table}".PHP_EOL);
+        $this->db->rawQuery("DROP TABLE {$table}");
     }
 }

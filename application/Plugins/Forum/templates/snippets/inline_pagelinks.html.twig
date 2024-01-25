@@ -1,0 +1,17 @@
+{% set links = (thread.numPostsInFlow/postsPerPage)|round(0, 'ceil') %}
+{% if links > 1 %}
+    ({% for i in 1..min(2, links) %}
+        <a href="/forum/thread/{{ thread.ID }}?page={{ i }}">{{ i }}</a>
+    {% endfor %}
+
+    {% if links > 4 %}
+        -
+        {% for i in (links-1)..links %}
+            <a href="/forum/thread/{{ thread.ID }}?page={{ i }}">{{ i }}</a>
+        {% endfor %}
+    {% elseif links > 2 %}
+        {% for i in 3..links %}
+            <a href="/forum/thread/{{ thread.ID }}?page={{ i }}">{{ i }}</a>
+        {% endfor %}
+    {% endif %})
+{% endif %}

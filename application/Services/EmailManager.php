@@ -1,25 +1,13 @@
 <?php
 namespace Luminance\Services;
 
-use Luminance\Core\Master;
 use Luminance\Core\Service;
-use Luminance\Entities\Invite;
-use Luminance\Errors\ConfigurationError;
-use Luminance\Errors\InputError;
-use Luminance\Errors\SystemError;
-use Luminance\Errors\UserError;
-use Luminance\Errors\AuthError;
-use Luminance\Errors\InternalError;
-use Luminance\Errors\ForbiddenError;
-use Luminance\Errors\UnauthorizedError;
 use Luminance\Entities\Email;
+use Luminance\Entities\Invite;
+use Luminance\Errors\UserError;
+use Luminance\Errors\InternalError;
 
 class EmailManager extends Service {
-
-    protected static $useRepositories = [
-        'emails' => 'EmailRepository',
-        'users'  => 'UserRepository',
-    ];
 
     protected static $useServices = [
         'db'        => 'DB',
@@ -30,11 +18,12 @@ class EmailManager extends Service {
         'settings'  => 'Settings',
         'flasher'   => 'Flasher',
         'render'    => 'Render',
+        'repos'     => 'Repos',
     ];
 
     public function reduceEmail($address) {
         $parts = explode('@', $address);
-        if (count($parts) != 2) {
+        if (!(count($parts) === 2)) {
             throw new InternalError("Passed invalid e-mail address to reduceEmail()");
         }
         list($user, $domain) = $parts;
@@ -55,20 +44,20 @@ class EmailManager extends Service {
     }
 
     public function validateAddress($address) {
-        $email = $this->emails->get('Address=:address', [':address' => $address]);
-        if (!$email) throw new UserError("Unknown email.");
+        $email = $this->repos->emails->getByAddress($address);
+        if (empty($email)) throw new UserError("Unknown email.");
         $email->setFlags(Email::VALIDATED);
-        $default = $this->emails->get(
+        $default = $this->repos->emails->get(
             'UserID=:userID AND Flags & :default != 0',
             [':userID' => $email->UserID, ':default' => Email::IS_DEFAULT]
         );
         if (is_null($default)) {
             $email->setFlags(Email::IS_DEFAULT);
-            $user = $this->users->load($email->UserID);
+            $user = $this->repos->users->load($email->UserID);
             $user->emailID = $email->ID;
-            $this->users->save($user);
+            $this->repos->users->save($user);
         }
-        $this->emails->save($email);
+        $this->repos->emails->save($email);
     }
 
     public function newEmail($userID, $address) {
@@ -88,14 +77,15 @@ class EmailManager extends Service {
             $email->IPID = 0;
         }
 
-        $this->emails->save($email);
+        $this->repos->emails->save($email);
+        $this->cache->deleteValue("address_{$address}");
 
         return $email;
     }
 
-    public function send_confirmation($emailID) {
-        $email = $this->emails->load($emailID);
-        $token = $this->secretary->getExternalToken($email->Address, 'users.email.confirm');
+    public function sendConfirmation($emailID) {
+        $email = $this->repos->emails->load($emailID);
+        $token = $this->secretary->getExternalToken($email->Address, 'user.email.confirm');
         $token = $this->crypto->encrypt(['email' => $email->Address, 'token' => $token], 'default', true);
 
         $subject = 'Confirm email address';
@@ -106,23 +96,23 @@ class EmailManager extends Service {
             'scheme'   => $this->master->request->ssl ? 'https' : 'http',
         ];
 
-        $email->send_email($subject, 'confirm_email', $variables);
+        $email->sendEmail($subject, 'confirm_email', $variables);
         $this->flasher->notice("An e-mail with further instructions has been sent to the provided address.");
 
         $email->Changed = new \DateTime;
-        $this->emails->save($email);
+        $this->repos->emails->save($email);
     }
 
     /**
      * Send an arbitrary email to an arbitrary address
-     * Use user->send_email() or email->send_email() instead
+     * Use user->sendEmail() or email->sendEmail() instead
      *
      * @param string $email
      * @param string $subject
      * @param string $body
      * @return void
      */
-    public function send_email($email, $subject, $body) {
+    public function sendEmail($email, $subject, $body) {
         if ($email instanceof Email) {
             $email = $email->Address;
         }
@@ -132,38 +122,92 @@ class EmailManager extends Service {
             'contentType' => 'text/plain',
         ];
 
-        $variables['to'] = $email;
-        $headers = str_replace("\n", "\r\n", $this->render->render("email/headers.twig", $headerVariables));
+        $headers = str_replace("\n", "\r\n", $this->render->template("email/headers.twig", $headerVariables));
         mail($email, $subject, $body, $headers, "-f " . $headerVariables['from'] . "@" . $this->settings->main->mail_domain);
+    }
+
+    /**
+     * Send an application e-mail
+     *
+     * @param email $email
+     * @return void
+     */
+    public function sendApplicationEmail($email, $request, $template) {
+        $subject = 'Your application for '.$this->settings->main->site_name;
+
+        $emailBody = [];
+        $emailBody['email']    = $email;
+        $emailBody['request']  = $request;
+        $emailBody['scheme']   = $this->master->request->ssl ? 'https' : 'http';
+
+        if ($this->settings->site->debug_mode) {
+            $body = $this->render->template($template, $emailBody);
+            $this->flasher->notice($body);
+        } else {
+            $body = $this->render->template($template, $emailBody);
+            $this->sendEmail($email, $subject, $body);
+        }
     }
 
     /**
      * Send an invite e-mail
      *
      * @param Invite $invite
-     * @param string $email
-     * @param string $username Inviter's username
      * @return void
      */
-    public function sendInviteEmail(Invite $invite, $email, $username, $anon = false) {
-        $token = $this->crypto->encrypt(['email' => $email, 'inviteID' => $invite->ID, 'token' => $invite->InviteKey], 'default', true);
+    public function sendInviteEmail(Invite $invite) {
+        $user = $this->repos->users->load($invite->InviterID);
+        $token = $this->crypto->encrypt(['inviteID' => $invite->ID], 'default', true);
 
         $subject = 'You have been invited to '.$this->settings->main->site_name;
 
-        $email_body = [];
-        $email_body['username'] = $username;
-        $email_body['email']    = $email;
-        $email_body['token']    = $token;
-        $email_body['anon']     = $anon;
-        $email_body['scheme']   = $this->master->request->ssl ? 'https' : 'http';
+        $emailBody = [];
+        $emailBody['username'] = $user->Username;
+        $emailBody['email']    = $invite->Email;
+        $emailBody['token']    = $token;
+        $emailBody['anon']     = $invite->Anon;
+        $emailBody['scheme']   = $this->master->request->ssl ? 'https' : 'http';
 
         if ($this->settings->site->debug_mode) {
-            $body = $this->render->render('email/invite_email.flash.twig', $email_body);
+            $body = $this->render->template('email/invite_email.flash.twig', $emailBody);
             $this->flasher->notice($body);
         } else {
-            $body = $this->render->render('email/invite_email.email.twig', $email_body);
-            $this->send_email($email, $subject, $body);
+            $body = $this->render->template('email/invite_email.email.twig', $emailBody);
+            $this->sendEmail($invite->Email, $subject, $body);
         }
+
+        $invite->Changed = new \DateTime;
+        $this->repos->invites->save($invite);
+    }
+
+    /**
+     * Send an applicant their invite e-mail
+     *
+     * @param Invite $invite
+     * @return void
+     */
+    public function sendAcceptEmail(Invite $invite) {
+        $user = $this->repos->users->load($invite->InviterID);
+        $token = $this->crypto->encrypt(['inviteID' => $invite->ID], 'default', true);
+
+        $subject = 'Your application to '.$this->settings->main->site_name.' has been accepted';
+
+        $emailBody = [];
+        $emailBody['username'] = $user->Username;
+        $emailBody['email']    = $invite->Email;
+        $emailBody['token']    = $token;
+        $emailBody['scheme']   = $this->master->request->ssl ? 'https' : 'http';
+
+        if ($this->settings->site->debug_mode) {
+            $body = $this->render->template('email/application_accepted.flash.twig', $emailBody);
+            $this->flasher->notice($body);
+        } else {
+            $body = $this->render->template('email/application_accepted.email.twig', $emailBody);
+            $this->sendEmail($invite->Email, $subject, $body);
+        }
+
+        $invite->Changed = new \DateTime;
+        $this->repos->invites->save($invite);
     }
 
     /**
@@ -174,8 +218,8 @@ class EmailManager extends Service {
      * @return void
      */
     public function validate($email) {
-        $this->emails->checkFormat($email);
-        $this->emails->checkAvailable($email);
-        $this->emails->checkBlacklisted($email);
+        $this->repos->emails->checkFormat($email);
+        $this->repos->emails->checkAvailable($email);
+        $this->repos->emails->checkBlacklisted($email);
     }
 }

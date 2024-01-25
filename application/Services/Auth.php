@@ -3,42 +3,34 @@ namespace Luminance\Services;
 
 use Luminance\Core\Master;
 use Luminance\Core\Service;
-use Luminance\Errors\ConfigurationError;
+
 use Luminance\Errors\SystemError;
 use Luminance\Errors\UserError;
 use Luminance\Errors\AuthError;
 use Luminance\Errors\InternalError;
 use Luminance\Errors\ForbiddenError;
 use Luminance\Errors\UnauthorizedError;
+use Luminance\Errors\InputError;
+
+use Luminance\Entities\APIKey;
 use Luminance\Entities\Email;
+use Luminance\Entities\Invite;
 use Luminance\Entities\Session;
-use Luminance\Entities\Style;
 use Luminance\Entities\User;
 use Luminance\Entities\IP;
-use Luminance\Services\Crypto;
+use Luminance\Entities\Permission;
+use Luminance\Entities\Restriction;
+use Luminance\Entities\UserHistoryPassword;
+use Luminance\Entities\UserWallet;
 
 class Auth extends Service {
 
     protected static $defaultOptions = [
-        'UsersLimit'             => ['value' => 5000,  'section' => 'users',    'displayRow' => 1, 'displayCol' => 1, 'type' => 'int',  'description' => 'Maximum users'],
-        'UsersStartingUpload'    => ['value' => 500,   'section' => 'users',    'displayRow' => 2, 'displayCol' => 1, 'type' => 'int',  'description' => 'Initial Upload Credit (MiB)'],
-        'UsersStartingInvites'   => ['value' => 0,     'section' => 'users',    'displayRow' => 2, 'displayCol' => 2, 'type' => 'int',  'description' => 'Initial Invites'],
-        'UsersStartingPFLDays'   => ['value' => 0,     'section' => 'users',    'displayRow' => 2, 'displayCol' => 3, 'type' => 'int',  'description' => 'Initial Personal Freeleech (days)'],
-        'UsersStartingFLTokens'  => ['value' => 0,     'section' => 'users',    'displayRow' => 2, 'displayCol' => 4, 'type' => 'int',  'description' => 'Initial Freeleech/Doubleseed Tokens'],
         'HaveIBeenPwned'         => ['value' => false, 'section' => 'security', 'displayRow' => 1, 'displayCol' => 1, 'type' => 'bool', 'description' => 'Check passwords against HIBP api'],
         'PasswordBlacklist'      => ['value' => false, 'section' => 'security', 'displayRow' => 1, 'displayCol' => 2, 'type' => 'bool', 'description' => 'Disallow blacklisted passwords'],
         'MinPasswordLength'      => ['value' => 0,     'section' => 'security', 'displayRow' => 1, 'displayCol' => 3, 'type' => 'int',  'description' => 'Minimum password length'],
         'DisabledHits'           => ['value' => false, 'section' => 'security', 'displayRow' => 1, 'displayCol' => 4, 'type' => 'bool', 'description' => 'Log disabled accounts logins'],
         'HaveIBeenPwnedPercent'  => ['value' => 100,   'section' => 'security', 'displayRow' => 2, 'displayCol' => 1, 'type' => 'int',  'description' => 'Chance in percent that HIBP is checked for a user'],
-    ];
-
-    protected static $useRepositories = [
-        'permissions' => 'PermissionRepository',
-        'sessions'    => 'SessionRepository',
-        'stylesheets' => 'StylesheetRepository',
-        'users'       => 'UserRepository',
-        'ips'         => 'IPRepository',
-        'emails'      => 'EmailRepository',
     ];
 
     protected static $useServices = [
@@ -52,10 +44,13 @@ class Auth extends Service {
         'emailManager'  => 'EmailManager',
         'log'           => 'Log',
         'security'      => 'Security',
+        'settings'      => 'Settings',
+        'render'        => 'Render',
+        'repos'         => 'Repos',
     ];
 
-    protected $SessionID = null;
-    protected $UserSessions = null;
+    protected $sessionID = null;
+    protected $userSessions = null;
     protected $CID = null;
     protected $activeUserPermissions = null;
     protected $minUserPermissions = null;
@@ -64,172 +59,280 @@ class Auth extends Service {
 
     public function __construct(Master $master) {
         parent::__construct($master);
-        $this->request = $this->master->request;
         $this->log = $this->master->log;
     }
 
+    const AUTH_NONE    = 0;
+    const AUTH_API     = 1;
+    const AUTH_LOGIN   = 2;
+    const AUTH_IPLOCK  = 3;
+    const AUTH_2FA     = 6;
+
     public function checkSession() {
         $this->secretary->checkClient();
-        $this->request->authLevel = 0;
+        $this->request->authLevel = self::AUTH_NONE;
 
         if (isset($this->request->cookie['sid'])) {
             $this->cookieAuth();
+        } else {
+            return;
         }
 
-        if (isset($this->request->user->twoFactorSecret)
-            && !$this->request->session->getFlag(SESSION::TWO_FACTOR)
-            && implode('/', $this->request->path) != 'twofactor/login'
-            && implode('/', $this->request->path) != 'twofactor/recover') {
-            throw new AuthError('Two Factor Login Required', 'Two Factor Login Required', '/twofactor/login');
+        $user = $this->request->user;
+        if (!($user instanceof User)) {
+            throw new AuthError('Unauthorized', 'Authentication Failure');
         }
 
-        // Because we <3 our staff
+        $session = $this->request->session;
+        if (!($session instanceof Session)) {
+            throw new AuthError('Unauthorized', 'Authentication Failure');
+        }
+
+        if ($user->isTwoFactorEnabled() && !$session->isTwoFactor()) {
+            $path = implode('/', $this->request->path);
+            if ($path === 'twofactor/login' || $path === 'twofactor/recover') {
+                return;
+            } else {
+                throw new AuthError('Unauthorized', 'Two Factor Login Required', '/twofactor/login');
+            }
+        }
+
+        # Because we <3 our staff
         if ($this->isAllowed('site_disable_ip_history')) {
             $this->master->server['REMOTE_ADDR'] = '127.0.0.1';
-            $this->request->ip = new IP('127.0.0.1');
+            $this->request->ip = $this->repos->ips->getOrNew('127.0.0.1');
         }
 
-        // At this point, we're either authenticated or we're not; it's not going to change anymore for this request.
-        if ($this->request->user &&
-            (!isset($this->request->user->twoFactorSecret) || (isset($this->request->user->twoFactorSecret) && $this->request->session->getFlag(SESSION::TWO_FACTOR))) &&
-            strtotime($this->request->user->legacy['LastAccess']) + 600 < time()) {
-            $this->db->raw_query(
-                "UPDATE users_main SET LastAccess=:lastaccess WHERE ID=:userid",
-                [':lastaccess' => sqltime(), ':userid' => $this->request->user->ID]
+        # At this point, we're either authenticated or we're not; it's not going to change anymore for this request.
+        if ((!$user->isTwoFactorEnabled() || $session->isTwoFactor()) &&
+            strtotime($user->legacy['LastAccess']) + 600 < time()) {
+            $this->db->rawQuery(
+                "UPDATE users_main
+                    SET LastAccess = ?
+                  WHERE ID = ?",
+                [sqltime(), $user->ID]
             );
 
-            if ($this->request->session->getFlag(Session::KEEP_LOGGED_IN)) {
-                // Re-set sid cookie every 10mins
-                $this->request->set_cookie('sid', $this->crypto->encrypt(strval($this->request->session->ID), 'cookie'), time()+(60*60*24)*28, true);
+            # Clear cache key for legacy user as we've changed the last access time
+            $this->cache->deleteValue("_entity_User_legacy_{$user->ID}");
+
+            if ($session->getFlag(Session::KEEP_LOGGED_IN)) {
+                # Re-set sid cookie every 10mins
+                $this->request->setCookie('sid', $this->crypto->encrypt(strval($session->ID), 'cookie'), time()+(60*60*24)*28, true);
             }
-            $this->request->session->Updated = new \DateTime();
-            $this->sessions->save($this->request->session);
+
+            $session->ClientID = $this->request->client->ID;
+            $session->Updated = new \DateTime();
+            $this->repos->sessions->save($session);
         }
 
-        // Throwback, for now
-        if ($this->request->user && ($this->request->user->IPID != $this->request->ip->ID)) {
-            $UserID = $this->request->user->ID;
-            $CurIP  = $this->ips->load($this->request->user->IPID);
-            $NewIP  = $this->request->ip;
+        # Throwback, for now
+        if (($user instanceof User) && !($user->IPID === $this->request->ip->ID)) {
+            $curIP  = $this->repos->ips->load($user->IPID);
+            $newIP  = $this->request->ip;
 
-            $this->db->raw_query(
-                "UPDATE users_history_ips SET EndTime=:endtime WHERE EndTime IS NULL AND UserID=:userid AND IP=:ip",
-                [':endtime' => sqltime(),
-                 ':userid'  => $UserID,
-                 ':ip'      => (string)$CurIP]
+            if (!($curIP instanceof IP)) {
+                # Probably first login of a new user, log it so we can debug more
+                trigger_error($user->IPID." IPID not found in the DB.");
+                $curIP = new \stdClass;
+                $curIP->ID = $user->IPID;
+            }
+
+            $this->db->rawQuery(
+                "UPDATE users_history_ips
+                    SET EndTime = ?
+                  WHERE EndTime IS NULL
+                    AND UserID = ?
+                    AND IPID = ?",
+                [sqltime(), $user->ID, $curIP->ID]
             );
-            $this->db->raw_query(
-                "INSERT IGNORE INTO users_history_ips (UserID, IP, StartTime) VALUES (:userid, :newip, :starttime)",
-                [':userid'    => $UserID,
-                 ':newip'     => (string)$NewIP,
-                 ':starttime' => sqltime()]
+            $this->db->rawQuery(
+                "INSERT IGNORE INTO users_history_ips (UserID, IPID, StartTime)
+                             VALUES (?, ?, ?)",
+                [$user->ID, $newIP->ID, sqltime()]
             );
 
-            $this->request->user->IPID = $NewIP->ID;
-            $this->users->save($this->request->user);
-            $this->db->raw_query(
-                "UPDATE users_main SET ipcc=:ipcc WHERE ID=:userid",
-                [':ipcc'   => geoip((string) $NewIP),
-                 ':userid' => $UserID]
+            $user->IPID = $newIP->ID;
+            $this->repos->users->save($user);
+            $this->db->rawQuery(
+                "UPDATE users_main
+                    SET ipcc = ?
+                  WHERE ID = ?",
+                [geoip((string) $newIP), $user->ID]
             );
 
-            $asn = $this->db->raw_query("SELECT ASN FROM geoip_asn WHERE INET_ATON(:ip) BETWEEN StartIP AND EndIP", [':ip' => $this->request->ip])->fetchColumn();
-            if (!empty($asn)) {
-                $this->db->raw_query(
-                    "INSERT INTO users_history_asns VALUES(:userID, :asn, :startTime, :endTime) ON DUPLICATE KEY UPDATE EndTime=VALUES(EndTime)",
-                    [':userID'    => $this->request->user->ID,
-                     ':asn'       => $asn,
-                     ':startTime' => sqltime(),
-                     ':endTime'   => sqltime()]
+            if (!empty($this->request->ip->ASN)) {
+                $this->db->rawQuery(
+                    "INSERT INTO users_history_asns
+                          VALUES (?, ?, ?, ?)
+                              ON DUPLICATE KEY
+                          UPDATE EndTime = VALUES(EndTime)",
+                    [$user->ID, $this->request->ip->ASN, sqltime(), sqltime()]
                 );
             }
 
-            $this->master->repos->users->uncache($UserID);
+            $this->repos->users->uncache($user->ID);
         }
     }
 
     public function cookieAuth() {
-        $sessionID = $this->crypto->decrypt($this->request->cookie['sid'], 'cookie');
-        if (!$sessionID) {
+        $sessionID = $this->crypto->decrypt($this->request->cookie['sid'], 'cookie', false);
+        if (empty($sessionID)) {
             # Corrupted cookie - delete it!
             $this->unauthenticate();
-            throw new AuthError('Corrupted session cookie', 'Unauthorized', '/login');
+            throw new AuthError('Unauthorized', 'Corrupted session cookie', '/login');
         }
 
-        $session = $this->sessions->load($sessionID);
-        if (!$session|| !$session->Active) {
+        #$this->repos->sessions->disableCache();
+        $session = $this->repos->sessions->load($sessionID);
+        if (!($session instanceof Session) || !($session->Active === true)) {
             # Expired or invalid session - delete it!
             $this->unauthenticate();
-            throw new AuthError('Expired session', 'Unauthorized', '/login');
+            throw new AuthError('Unauthorized', 'Expired session', '/login');
         }
 
-        $user = $this->users->load($session->UserID);
-        if (!$user) {
+        if (!($session->ClientID === $this->request->client->ID)) {
+            # Disabled exception for now, activate later once all current sessions update
+            // # Client changed, copied cookie to a different browser?
+            // $this->unauthenticate();
+            // throw new AuthError('Unauthorized', 'Corrupted session', '/login');
+
+            # Just create some log spam for the time being:
+            trigger_error("Session <> Client mismatch");
+        }
+
+        $user = $this->repos->users->load($session->UserID);
+        if (!($user instanceof User)) {
             throw new SystemError("No User {$session->UserID} for Session {$session->ID}");
         }
 
-        $lastip = $this->ips->load($session->IPID);
-        if ((!$lastip || !$lastip->match(new IP($this->request->ip))) && $session->getFlag(Session::IP_LOCKED)) {
+        # Check if user is enabled
+        if (!($user->legacy['Enabled'] === '1')) {
+            if ($user->legacy['BanReason'] === '3') {
+                throw new AuthError('Unauthorized', 'Account is disabled', '/reactivate');
+            } else {
+                throw new AuthError('Unauthorized', 'Account is disabled', '/disabled');
+            }
+        }
+
+        $lastip = $this->repos->ips->load($session->IPID);
+        if ((!($lastip instanceof IP) || !$lastip->match(IP::fromCIDR($this->request->ip))) && $session->getFlag(Session::IP_LOCKED)) {
             # Locked session moved IP
             $this->unauthenticate();
-            throw new AuthError('IP changed on locked session', 'IP changed on locked session', '/login');
+            throw new AuthError('Unauthorized', 'IP changed on locked session', '/login');
         }
 
         $this->request->session = $session;
         $this->request->user = $user;
-        $this->request->authLevel = 2;
-        // Not sure about this yet, but let's start here
-        if ($session->getFlag(Session::IP_LOCKED)) $this->request->authLevel++;
+        $this->request->authLevel = self::AUTH_LOGIN;
+
+        $this->secretary->updateClient($this->request->client);
+        $this->secretary->updateClientInfo();
+
+        # Emulate 2FA auth in debug mode
+        if ($this->settings->site->debug_mode) {
+            $this->request->authLevel = self::AUTH_2FA;
+        } else {
+            if ($session->getFlag(Session::IP_LOCKED))  $this->request->authLevel = self::AUTH_IPLOCK;
+            if ($session->getFlag(Session::TWO_FACTOR)) $this->request->authLevel = self::AUTH_2FA;
+        }
+    }
+
+    public function apiAuth() {
+        $apiKey = $this->request->getGetString('apikey');
+        if (strlen($apiKey)) {
+            $apiKey = $this->apiKeys->get('`Key` = ?', [$apiKey]);
+            if ($apiKey instanceof APIKey) {
+                $user = $apiKey->user;
+
+                # Check if API key is cancelled
+                if ($apiKey->isCancelled()) {
+                    throw new AuthError('Unauthorized', 'Unauthorized API key');
+                }
+
+                # Check if user is enabled
+                if (!($user->legacy['Enabled'] === '1')) {
+                    throw new AuthError('Unauthorized', 'Account is disabled');
+                }
+
+                # Check if user can access the API
+                if ($this->isAllowed('site_api_access', $user)) {
+                    throw new AuthError('Unauthorized', 'API access forbidden');
+                }
+
+                # Check if user has an API restriction
+                if ($this->restrictions->isRestricted($user, Restriction::API)) {
+                    throw new AuthError('Unauthorized', 'API access restricted');
+                }
+
+                $this->request->user = $user;
+                $this->request->authLevel = self::AUTH_API;
+            } else {
+                throw new AuthError('Unauthorized', 'Unauthorized API key');
+            }
+        }
     }
 
     public function authenticate($username, $password, $options) {
         if (is_null($this->request->authLevel)) {
             # Make sure auth status has been checked so we can abort if the client is already logged in.
-            throw new InternalError("Attempt to call authenticate() before check_auth()");
+            throw new InternalError('Attempt to call authenticate() before check_auth()');
         }
-        if ($this->request->authLevel >= 2) {
-            throw new UserError("Already logged in");
+        if ($this->request->authLevel >= self::AUTH_LOGIN) {
+            throw new UserError('Already logged in');
         }
+
+        # No cinfo means no JS, so it's a script or we're blocked.
         if (empty($options['width']) || empty($options['height']) || empty($options['colordepth'])) {
             # Deny access to bots
-            throw new AuthError("Bots are forbidden", "Unauthorized", "/login");
+            throw new AuthError('Unauthorized', 'Unsupported platform', '/login');
+        }
+
+        # Less than 16bit color? I don't believe you!
+        if ($options['colordepth'] < 16) {
+            # Deny access to bots
+            throw new AuthError('Unauthorized', 'Unsupported platform', '/login');
         }
 
         $this->secretary->updateClientInfo($options);
 
-        $user = $this->users->get_by_username($username);
-        if ($user && $this->check_password($user, $password)) {
-            $user = $this->users->load($user->ID);
-            if ($user->legacy['Enabled'] != '1') {
-                $this->guardian->log_disabled($user, $this->request->ip);
-                throw new AuthError("Account is disabled", "Unauthorized", "/disabled");
+        $user = $this->repos->users->getByUsername($username);
+        if ($user && $this->checkPassword($user, $password)) {
+            $user = $this->repos->users->load($user->ID);
+            if (!($user->legacy['Enabled'] === '1')) {
+                $this->guardian->logDisabled($user, $this->request->ip);
+                if ($user->legacy['BanReason'] === '3') {
+                    throw new AuthError('Unauthorized', 'Account is disabled', '/reactivate');
+                } else {
+                    throw new AuthError('Unauthorized', 'Account is disabled', '/disabled');
+                }
             }
 
-            // Check if password appeared in breaches
+            # Check if password appeared in breaches
             if ($this->security->passwordIsPwned($password, $user)) {
-                throw new AuthError("Access refused", "Unauthorized", "/pwned");
+                throw new AuthError('Unauthorized', 'Access refused', '/pwned');
             }
 
-            // Check if password appeared in breaches
+            # Check if password appeared in breaches
             $this->security->checkDisabledHits($user, $this->request->ip);
 
-            $session = $this->create_session($user, $options);
+            $session = $this->createSession($user, $options);
             $this->request->session = $session;
             if ($session->getFlag(Session::KEEP_LOGGED_IN)) {
                 $expires = time()+(60*60*24)*28;
             } else {
                 $expires = 0;
             }
-            $this->request->set_cookie('sid', $this->crypto->encrypt(strval($session->ID), 'cookie'), $expires, true);
+            $this->request->setCookie('sid', $this->crypto->encrypt(strval($session->ID), 'cookie'), $expires, true);
         } else {
-            $this->handle_login_failure($user);
-            throw new AuthError("Invalid username or password", "Unauthorized", "/login");
+            $this->handleLoginFailure($user);
+            throw new AuthError('Unauthorized', 'Invalid username or password', '/login');
         }
 
         return $session;
     }
 
-    public function twofactor_check($user, $code, $secret = null) {
+    public function twofactorCheck($user, $code, $secret = null) {
         if (is_null($secret)) {
             $secret = $this->crypto->decrypt($user->twoFactorSecret);
         }
@@ -241,26 +344,26 @@ class Auth extends Service {
         }
     }
 
-    public function twofactor_authenticate($user, $code) {
-        if ($this->twofactor_check($user, $code)) {
+    public function twofactorAuthenticate($user, $code) {
+        if ($this->twofactorCheck($user, $code)) {
             $this->request->session->setFlags(Session::TWO_FACTOR);
-            $this->sessions->save($this->request->session);
+            $this->repos->sessions->save($this->request->session);
         } else {
-            $Attempt = $this->guardian->log_attempt('2fa', $user->ID);
-            throw new AuthError('Invalid or expired code', 'Unauthorized', '/twofactor/login');
+            $this->guardian->logAttempt('failed 2fa login', $user->ID);
+            throw new AuthError('Unauthorized', 'Invalid or expired code', '/twofactor/login');
         }
     }
 
-    public function twofactor_enable($user, $secret, $code) {
-        if (!is_null($user->twoFactorSecret)) {
+    public function twofactorEnable($user, $secret, $code) {
+        if ($user->isTwoFactorEnabled()) {
             throw new UserError('Two Factor Authentication already enabled');
         }
-        if ($this->twofactor_check($user, $code, $secret)) {
+        if ($this->twofactorCheck($user, $code, $secret)) {
             $user->twoFactorSecret = $this->crypto->encrypt($secret);
-            $this->users->save($user);
-            if ($this->request->user->ID == $user->ID) {
+            $this->repos->users->save($user);
+            if ($this->request->user->ID === $user->ID) {
                 $this->request->session->setFlags(Session::TWO_FACTOR);
-                $this->sessions->save($this->request->session);
+                $this->repos->sessions->save($this->request->session);
             }
             return true;
         } else {
@@ -268,14 +371,14 @@ class Auth extends Service {
         }
     }
 
-    public function twofactor_disable($user, $code) {
-        if ($this->twofactor_check($user, $code) || $this->isAllowed('users_edit_2fa')) {
+    public function twofactorDisable($user, $code) {
+        if ($this->twofactorCheck($user, $code) || $this->isAllowed('users_edit_2fa')) {
             $user->twoFactorSecret = null;
-            $this->users->save($user);
-            $sessions = $this->sessions->find('UserID=? AND FLAGS&?=?', [$user->ID, SESSION::TWO_FACTOR, SESSION::TWO_FACTOR]);
+            $this->repos->users->save($user);
+            $sessions = $this->repos->sessions->find('userID=? AND FLAGS&?=?', [$user->ID, SESSION::TWO_FACTOR, SESSION::TWO_FACTOR]);
             foreach ($sessions as $session) {
                 $session->unsetFlags(Session::TWO_FACTOR);
-                $this->sessions->save($session);
+                $this->repos->sessions->save($session);
             }
             return true;
         } else {
@@ -283,7 +386,7 @@ class Auth extends Service {
         }
     }
 
-    public function twofactor_createSecret() {
+    public function twofactorCreateSecret() {
         $ga = new \PHPGangsta_GoogleAuthenticator();
         return $ga->createSecret();
     }
@@ -292,12 +395,16 @@ class Auth extends Service {
         if ($this->request->session) {
             $this->request->session->Active = false;
             $this->request->session->Updated = new \DateTime();
-            $this->sessions->save($this->request->session);
+            $this->repos->sessions->save($this->request->session);
         }
-        $this->purge_session();
+        if ($this->request->client) {
+            $this->repos->clients->delete($this->request->client);
+        }
+
+        $this->purgeSession();
     }
 
-    public function create_session($user, $options) {
+    public function createSession($user, $options) {
         $session = new Session();
         $session->UserID = $user->ID;
         $session->ClientID = $this->request->client->ID;
@@ -308,135 +415,137 @@ class Auth extends Service {
         $session->setFlagStatus(Session::KEEP_LOGGED_IN, $options['keeploggedin']);
         $session->setFlagStatus(Session::IP_LOCKED, $options['iplocked']);
 
-        $this->sessions->save($session);
-        $this->cache->delete_value('users_sessions_'.$user->ID);
+        $this->repos->sessions->save($session);
+        $this->cache->deleteValue('users_sessions_'.$user->ID);
         return $session;
     }
 
-    public function handle_login_failure($user = null) {
-        if ($user) {
-            $Attempt = $this->guardian->log_attempt('login', $user->ID);
+    public function handleLoginFailure($user = null) {
+        if ($user instanceof User) {
+            $attempt = $this->guardian->logAttempt('failed login', $user->ID);
         } else {
-            $Attempt = $this->guardian->log_attempt('login', '0');
+            $attempt = $this->guardian->logAttempt('failed login', '0');
         }
-        $this->purge_session();
-        return $Attempt;
+        $this->purgeSession();
+        return $attempt;
     }
 
-    public function purge_session() {
+    public function purgeSession() {
         if (array_key_exists('sid', $this->request->cookie)) {
-            $this->request->delete_cookie('sid');
+            $this->request->deleteCookie('sid');
+        }
+        if (array_key_exists('cid', $this->request->cookie)) {
+            $this->request->deleteCookie('cid');
         }
     }
 
     public function setLegacySessionGlobals() {
-        global $User, $SessionID, $UserSessions, $UserID, $Enabled, $UserStats,
-            $Permissions, $LightInfo, $HeavyInfo, $LoggedUser, $Browser, $OperatingSystem, $Mobile;
+        global $user, $sessionID, $userSessions, $userID, $enabled, $userStats,
+            $permissions, $lightInfo, $heavyInfo, $activeUser, $browser, $operatingSystem, $mobile;
 
-        $UA = $this->master->secretary;
-        $Browser = $UA->browser($_SERVER['HTTP_USER_AGENT']);
-        $OperatingSystem = $UA->operating_system($_SERVER['HTTP_USER_AGENT']);
-        $Mobile = false;
+        $useragent = $this->master->secretary;
+        $browser = $useragent->browser($_SERVER['HTTP_USER_AGENT']);
+        $operatingSystem = $useragent->operatingSystem($_SERVER['HTTP_USER_AGENT']);
+        $mobile = false;
 
-        $User = $this->request->user;
-        $SessionID = $this->SessionID;
-        $UserSessions = $this->UserSessions;
+        $user = $this->request->user;
+        $sessionID = $this->sessionID;
+        $userSessions = $this->userSessions;
 
-        $UserID = ($User) ? $User->ID : null;
-        $Enabled = ($User) ? $User->legacy['Enabled'] : null;
+        $userID  = ($user instanceof User) ? $user->ID : null;
+        $enabled = ($user instanceof User) ? $user->legacy['Enabled'] : null;
         if ($this->request->user) {
-            $UserStats = $this->get_user_stats($UserID);
-            $Permissions = $this->get_user_permissions($User);
-            $LightInfo = $User->info();
-            $HeavyInfo = $User->heavy_info();
-            $LoggedUser = $this->get_legacy_logged_user();
+            $userStats = $this->getUserStats($userID);
+            $permissions = $this->getUserPermissions($user);
+            $lightInfo = $user->info();
+            $heavyInfo = $user->heavyInfo();
+            $activeUser = $this->getLegacyLoggedUser();
         }
     }
 
-    public function check_login($userID, $password) {
-        $user = $this->users->load($userID);
-        return $this->check_password($user, $password);
+    public function checkLogin($userID, $password) {
+        $user = $this->repos->users->load($userID);
+        return $this->checkPassword($user, $password);
     }
 
-    public function set_password($user, $password) {
-        // If we're passed a userID the load the user object
+    public function setPassword($user, $password) {
+        # If we're passed a userID the load the user object
         $userID = false;
-        if (is_numeric($user)) {
+        if (is_integer_string($user)) {
             $userID = $user;
-            $user = $this->users->load($user);
+            $user = $this->repos->users->load($user);
         }
 
-        // Handle setting the password
+        # Handle setting the password
         if ($user && strlen($password)) {
-            $user->Password = $this->create_hash_bcrypt($password);
-            // Only save the user object if we loaded it
-            if ($userID && is_numeric($userID)) {
-                $this->users->save($user);
+            $user->Password = $this->createHashBcrypt($password);
+            # Only save the user object if we loaded it
+            if ($userID && is_integer_string($userID)) {
+                $this->repos->users->save($user);
             }
 
             if (!empty($this->request->ip)) {
-                // Save the password change
-                $this->db->raw_query(
-                    "INSERT INTO users_history_passwords
-                    (UserID, ChangerIP, ChangeTime) VALUES
-                    (:userid, :changerIP, :changetime)",
-                    [':userid'     => $user->ID,
-                     ':changerIP'  => $this->request->ip,
-                     ':changetime' => sqltime()]
-                );
+                # Save the password change
+                $passwordHistory = new UserHistoryPassword;
+                $passwordHistory->UserID = $user->ID;
+                $passwordHistory->IPID = $this->request->ip->ID;
+                $passwordHistory->Time = new \DateTime;
+
+                $this->repos->userHistoryPasswords->save($passwordHistory);
+                $this->repos->users->uncache($user);
             }
         } else {
-            throw new InternalError("Invalid set_password attempt.");
+            throw new InternalError("Invalid setPassword attempt.");
         }
     }
 
-    protected function rehash_password($user, $password) {
+    protected function rehashPassword($user, $password) {
             # Re-hash as bcrypt
-            $user->Password = $this->create_hash_bcrypt($password);
-            $this->users->save($user);
-            return $this->check_password($user, $password, false);
+            $user->Password = $this->createHashBcrypt($password);
+            $this->repos->users->save($user);
+            return $this->checkPassword($user, $password, false);
     }
 
-    public function check_password($user, $password, $allow_rehash = true) {
+    public function checkPassword($user, $password, $allowRehash = true) {
         if (is_null($user->Password) || !strlen($user->Password)) {
             throw new UserError("You must set a new password.");
         }
         if (is_null($password) || !strlen($password)) {
             throw new UserError("Password cannot be empty.");
         }
-        $password_fields = explode('$', $user->Password); # string should start with '$', so the first field is always an empty string
-        if (count($password_fields) < 3) {
+        $passwordFields = explode('$', $user->Password); # string should start with '$', so the first field is always an empty string
+        if (count($passwordFields) < 3) {
             throw new SystemError("Invalid password data.");
         }
-        $password_type = $password_fields[1];
-        $password_values = array_slice($password_fields, 2);
-        switch ($password_type) {
+        $passwordType = $passwordFields[1];
+        $passwordValues = array_slice($passwordFields, 2);
+        switch ($passwordType) {
             case 'salted-md5':
-                $result = $this->check_password_salted_md5($password, $password_values);
-                if ($result === true && $allow_rehash) {
-                    $this->rehash_password($user, $password);
+                $result = $this->checkPasswordSaltedMD5($password, $passwordValues);
+                if ($result === true && $allowRehash === true) {
+                    $this->rehashPassword($user, $password);
                 }
                 break;
             case 'md5':
-                $result = $this->check_password_md5($password, $password_values);
-                if ($result === true && $allow_rehash) {
-                    $this->rehash_password($user, $password);
+                $result = $this->checkPasswordMD5($password, $passwordValues);
+                if ($result === true && $allowRehash === true) {
+                    $this->rehashPassword($user, $password);
                 }
                 break;
             case 'salted-sha1':
-                $result = $this->check_password_salted_sha1($password, $password_values);
-                if ($result === true && $allow_rehash) {
-                    $this->rehash_password($user, $password);
+                $result = $this->checkPasswordSaltedSHA1($password, $passwordValues);
+                if ($result === true && $allowRehash === true) {
+                    $this->rehashPassword($user, $password);
                 }
                 break;
             case 'sha1':
-                $result = $this->check_password_sha1($password, $password_values);
-                if ($result === true && $allow_rehash) {
-                    $this->rehash_password($user, $password);
+                $result = $this->checkPasswordSHA1($password, $passwordValues);
+                if ($result === true && $allowRehash === true) {
+                    $this->rehashPassword($user, $password);
                 }
                 break;
             case 'bcrypt':
-                $result = $this->check_password_bcrypt($password, $password_values);
+                $result = $this->checkPasswordBcrypt($password, $passwordValues);
                 break;
             default:
                 throw new SystemError("Invalid password data.");
@@ -444,94 +553,96 @@ class Auth extends Service {
         return $result;
     }
 
-    protected function check_password_salted_md5($password, $values) {
-        list($encoded_secret, $encoded_hash) = $values;
-        $secret = base64_decode($encoded_secret);
+    protected function checkPasswordSaltedMD5($password, $values) {
+        list($encodedSecret, $encodedHash) = $values;
+        $secret = base64_decode($encodedSecret);
         # Use hex strings since strlen() might be risky for binary data (mbstring overload)
-        $stored_hash = Crypto::bin2hex(base64_decode($encoded_hash));
-        $actual_hash = md5(md5($secret) . md5($password));
+        $storedHash = Crypto::bin2hex(base64_decode($encodedHash));
+        $actualHash = md5(md5($secret) . md5($password));
         if (# Just a bunch of overly paranoid sanity checks
-            !strlen($password) ||
-            !strlen($secret) ||
-            !strlen($stored_hash) ||
-            strlen($actual_hash) != 32
+            !strlen($password)    ||
+            !strlen($secret)      ||
+            !strlen($storedHash) ||
+            !(strlen($actualHash) === 32)
         ) {
             throw new SystemError("Invalid password data.");
         }
-        $result = ($actual_hash === $stored_hash);
+        $result = ($actualHash === $storedHash);
         return $result;
     }
 
-    protected function check_password_md5($password, $values) {
-        list(, $encoded_hash) = $values;
+    protected function checkPasswordMD5($password, $values) {
+        list(, $encodedHash) = $values;
         # Use hex strings since strlen() might be risky for binary data (mbstring overload)
-        $stored_hash = Crypto::bin2hex(base64_decode($encoded_hash));
-        $actual_hash = md5($password);
+        $storedHash = Crypto::bin2hex(base64_decode($encodedHash));
+        $actualHash = md5($password);
         if (# Just a bunch of overly paranoid sanity checks
-            !strlen($password) ||
-            !strlen($stored_hash) ||
-            strlen($actual_hash) != 32
+            !strlen($password)    ||
+            !strlen($storedHash) ||
+            !(strlen($actualHash) === 32)
         ) {
             throw new SystemError("Invalid password data.");
         }
-        $result = ($actual_hash === $stored_hash);
+        $result = ($actualHash === $storedHash);
         return $result;
     }
 
-    protected function check_password_salted_sha1($password, $values) {
-        list($encoded_secret, $encoded_hash) = $values;
-        $secret = base64_decode($encoded_secret);
+    protected function checkPasswordSaltedSHA1($password, $values) {
+        list($encodedSecret, $encodedHash) = $values;
+        $secret = base64_decode($encodedSecret);
         # Use hex strings since strlen() might be risky for binary data (mbstring overload)
-        $stored_hash = Crypto::bin2hex(base64_decode($encoded_hash));
-        $actual_hash = sha1(sha1($secret) . sha1($password));
+        $storedHash = Crypto::bin2hex(base64_decode($encodedHash));
+        $actualHash = sha1(sha1($secret) . sha1($password));
         if (# Just a bunch of overly paranoid sanity checks
-            !strlen($password) ||
-            !strlen($secret) ||
-            !strlen($stored_hash) ||
-            strlen($actual_hash) != 40
+            !strlen($password)    ||
+            !strlen($secret)      ||
+            !strlen($storedHash) ||
+            !(strlen($actualHash) === 40)
         ) {
             throw new SystemError("Invalid password data.");
         }
-        $result = ($actual_hash === $stored_hash);
+        $result = ($actualHash === $storedHash);
         return $result;
     }
 
-    protected function check_password_sha1($password, $values) {
-        list(, $encoded_hash) = $values;
+    protected function checkPasswordSHA1($password, $values) {
+        list(, $encodedHash) = $values;
         # Use hex strings since strlen() might be risky for binary data (mbstring overload)
-        $stored_hash = Crypto::bin2hex(base64_decode($encoded_hash));
-        $actual_hash = sha1($password);
+        $storedHash = Crypto::bin2hex(base64_decode($encodedHash));
+        $actualHash = sha1($password);
         if (# Just a bunch of overly paranoid sanity checks
-            !strlen($password) ||
-            !strlen($stored_hash) ||
-            strlen($actual_hash) != 40
+            !strlen($password)    ||
+            !strlen($storedHash) ||
+            !(strlen($actualHash) === 40)
         ) {
             throw new SystemError("Invalid password data.");
         }
-        $result = ($actual_hash === $stored_hash);
+        $result = ($actualHash === $storedHash);
         return $result;
     }
 
-    protected function create_hash_bcrypt($password) {
+    protected function createHashBcrypt($password) {
         # password_hash does most of the work for us here
         # we use defaults for now, which is to generate a salt automatically and use cost = 10
-        $encoded_hash = password_hash($password, PASSWORD_DEFAULT);
-        $hash_string = "\$bcrypt{$encoded_hash}"; # dollar sign is already included
-        return $hash_string;
+        $encodedHash = password_hash($password, PASSWORD_DEFAULT);
+        $hashString = "\$bcrypt{$encodedHash}"; # dollar sign is already included
+        return $hashString;
     }
 
-    protected function check_password_bcrypt($password, $values) {
-        $hash_string = "\$" . implode("\$", $values);
-        $result = password_verify($password, $hash_string);
+    protected function checkPasswordBcrypt($password, $values) {
+        $hashString = "\$" . implode("\$", $values);
+        $result = password_verify($password, $hashString);
         return ($result === true);
     }
 
     public function getUserPermissions(User $user, $includeCustom = true) {
-        $userPermID = $user->legacy['PermissionID'];
-        $userPerms = $this->permissions->getLegacyPermission($userPermID);
-
-        $groupPermID = $user->legacy['GroupPermissionID'];
-        $groupPerms = $this->permissions->getLegacyPermission($groupPermID);
+        $userPerms = $this->repos->permissions->getLegacyPermission($user->class->ID);
+        if ($user->group instanceof Permission) {
+            $groupPerms = $this->repos->permissions->getLegacyPermission($user->group->ID);
+        } else {
+            $groupPerms = [];
+            $groupPerms['Permissions'] = [];
+        }
 
         if (!is_null($user->legacy['CustomPermissions']) && ($includeCustom === true)) {
             $customPerms = (array) unserialize($user->legacy['CustomPermissions']);
@@ -540,9 +651,9 @@ class Auth extends Service {
         }
 
         $maxCollages = 0;
-        $maxCollages += (array_key_exists('MaxCollages', $userPerms['Permissions'])) ? $userPerms['Permissions']['MaxCollages'] : 0;
-        $maxCollages += (array_key_exists('MaxCollages', $groupPerms['Permissions'])) ? $groupPerms['Permissions']['MaxCollages'] : 0;
-        $maxCollages += (array_key_exists('MaxCollages', $customPerms)) ? $customPerms['MaxCollages'] : 0;
+        $maxCollages += intval((array_key_exists('MaxCollages', $userPerms['Permissions'])) ? $userPerms['Permissions']['MaxCollages'] : 0);
+        $maxCollages += intval((array_key_exists('MaxCollages', $groupPerms['Permissions'])) ? $groupPerms['Permissions']['MaxCollages'] : 0);
+        $maxCollages += intval((array_key_exists('MaxCollages', $customPerms)) ? $customPerms['MaxCollages'] : 0);
 
         $userPermissions = array_merge($userPerms['Permissions'], $groupPerms['Permissions'], $customPerms, ['MaxCollages'=>$maxCollages]);
         return $userPermissions;
@@ -550,7 +661,7 @@ class Auth extends Service {
 
     public function getMinUserPermissions() {
         if (is_null($this->minUserPermissions)) {
-            $userPerms = $this->permissions->getLegacyPermission($this->permissions->getMinUserClassID());
+            $userPerms = $this->repos->permissions->getLegacyPermission($this->repos->permissions->getMinUserClassID());
             $this->minUserPermissions = $userPerms['Permissions'];
         }
         return $this->minUserPermissions;
@@ -567,21 +678,36 @@ class Auth extends Service {
     }
 
     protected function recordCheck($name) {
-        if (empty($this->usedPermissions[$name])) {
-            $this->usedPermissions[$name] = 1;
-        } else {
+        if (array_key_exists($name, $this->usedPermissions)) {
             $this->usedPermissions[$name]++;
+        } else {
+            $this->usedPermissions[$name] = 1;
         }
     }
 
-    public function isAllowed($name) {
+    public function isAllowed($name, $user = null) {
         # Determine if something is allowed, and return the answer as a boolean.
-        if (!$this->request->user) {
+        $user = $this->repos->users->load($user);
+        if (!($user instanceof User)) {
+            $user = $this->request->user;
+        }
+        if (!($user instanceof User)) {
             return false;
         }
-        $this->recordCheck($name);
         $permissions = $this->getActiveUserPermissions();
-        $allowed = array_key_exists($name, $permissions) && $permissions[$name];
+        if (is_array($name)) {
+            $kosher = [];
+            foreach ($name as $key => $perm) {
+                $this->recordCheck($perm);
+                $kosher[] = array_key_exists($perm, $permissions) && $permissions[$perm];
+                if (count(array_unique($kosher)) === 1) {
+                    $allowed = current($kosher);
+                }
+            }
+        } else {
+            $this->recordCheck($name);
+            $allowed = array_key_exists($name, $permissions) && $permissions[$name];
+        }
         return $allowed;
     }
 
@@ -593,9 +719,13 @@ class Auth extends Service {
         return $allowed;
     }
 
-    public function checkAllowed($name) {
+    public function checkAllowed($name, $user = null) {
         # Determine if something is allowed, and throw an exception if it's not the case.
-        if (!$this->request->user) {
+        $user = $this->repos->users->load($user);
+        if (!$user instanceof User) {
+            $user = $this->request->user;
+        }
+        if (!$user instanceof User) {
             throw new UnauthorizedError();
         }
         if (!$this->isAllowed($name)) {
@@ -603,82 +733,141 @@ class Auth extends Service {
         }
     }
 
-    public function checkLevel($userID) {
-        $user = $this->users->load($userID);
-        $userLevel = $this->permissions->load($user->legacy['PermissionID'])->Level;
-        $staffLevel = $this->permissions->load($this->request->user->legacy['PermissionID'])->Level;
-        if ($userLevel > $staffLevel) {
+    public function isLevel($level) {
+        $userLevel = $this->request->user->class->Level;
+        if ($level > $userLevel) {
+            return false;
+        }
+        return true;
+    }
+
+    public function checkLevel($level) {
+        # Determine if something is allowed, and throw an exception if it's not the case.
+        if (!$this->request->user) {
+            throw new UnauthorizedError();
+        }
+        if (!$this->isLevel($level)) {
             throw new ForbiddenError();
         }
     }
 
-    public function get_user_stats($userID) {
-            $UserStats = $this->cache->get_value('user_stats_' . $userID);
-        if (!is_array($UserStats)) {
-            $UserStats = $this->db->raw_query(
-                "SELECT Uploaded AS BytesUploaded,
-                        Downloaded AS BytesDownloaded,
-                        RequiredRatio, Credits as TotalCredits
-                   FROM users_main WHERE ID=:userid",
-                [':userid'=>$userID]
+    public function isUserLevel($user) {
+        # User can be user object or userID
+        $user = $this->repos->users->load($user);
+        $level = $user->class->Level;
+        return $this->isLevel($level);
+    }
+
+    public function checkUserLevel($user) {
+        # User can be user object or userID
+        $user = $this->repos->users->load($user);
+        $level = $user->class->Level;
+        $this->checkLevel($level);
+    }
+
+    public function getUserStats($userID) {
+        $userStats = $this->cache->getValue('user_stats_' . $userID);
+        if (!is_array($userStats)) {
+            $userStats = $this->db->rawQuery(
+                "SELECT m.Uploaded AS BytesUploaded,
+                        m.Downloaded AS BytesDownloaded,
+                        m.RequiredRatio AS RequiredRatio,
+                        w.Balance AS TotalCredits
+                   FROM users_main AS m
+                   JOIN users_wallets AS w ON m.ID = w.UserID
+                  WHERE m.ID = ?",
+                [$userID]
             )->fetch(\PDO::FETCH_ASSOC);
-            $this->cache->cache_value('user_stats_' . $userID, $UserStats, 3600);
+            $this->cache->cacheValue('user_stats_' . $userID, $userStats, 3600);
         }
-            return $UserStats;
+        return $userStats;
     }
 
-    public function get_user_permissions($user) {
-        $Permission = $this->permissions->getLegacyPermission($user->legacy['PermissionID']);
-        return $Permission;
-    }
-
-    public function get_active_user() {
+    public function getActiveUser() {
         return $this->request->user;
     }
 
-    public function get_legacy_logged_user() {
+    public function getLegacyLoggedUser() {
         if (!$this->request->user) {
             return [];
         }
         $user = $this->request->user;
-        $LoggedUser = array_merge(
-            $user->heavy_info(),
+        $activeUser = array_merge(
+            $user->heavyInfo(),
             $user->info(),
-            $this->permissions->getLegacyPermission($user->legacy['PermissionID']),
+            $this->repos->permissions->getLegacyPermission($user->class),
             $user->stats()
         );
-        $LoggedUser['RSS_Auth'] = $user->legacy['RSS_Auth'];
-        $LoggedUser['RatioWatch'] = $user->on_ratiowatch();
+        $activeUser['RSS_Auth'] = $user->legacy['RSS_Auth'];
+        $activeUser['RatioWatch'] = $user->onRatiowatch();
 
-        $LoggedUser['Permissions'] = $this->getUserPermissions($user);
+        $activeUser['Permissions'] = $this->getUserPermissions($user);
 
-        $Stylesheet = $this->master->repos->stylesheets->get_by_user($user);
-        $LoggedUser['StyleName'] = $Stylesheet->Name;
-        return $LoggedUser;
+        $stylesheet = $this->repos->stylesheets->getByUser($user);
+        $activeUser['StyleName'] = $stylesheet->Path;
+        return $activeUser;
     }
 
-    public function legacy_enforce_login() {
+    public function legacyEnforceLogin() {
         if (!$this->request->user) {
             $this->request->saveIntendedRoute();
-            throw new ForbiddenError();
+            throw new AuthError(null, null, '/login');
         }
     }
 
-    public function createUser($username, $password, $email, $inviter = 0) {
-        $this->users->checkAvailable($username);
-        $this->emails->checkAvailable($email);
+    public function createUser($username, $password, $email, $invite = null) {
+        $username = trim($username);
+        $email = trim($email);
+        $this->repos->users->checkAvailable($username);
+        $this->repos->users->checkValid($username);
+        try {
+            $this->emailManager->validate($email);
+        } catch (InputError $e) {
+            if ($e->getMessage() === "That email address is not available.") {
+                $subject = 'User attempted to register with a duplicate email address';
+                $message = $this->render->template(
+                    'bbcode/duplicate_email.twig',
+                    [
+                        'Email'       => (string) $email,
+                        'Username'    => (string) $username,
+                        'IP'          => (string) $this->request->ip,
+                        'CurrentTime' => sqltime(),
+                        'Inviter'     => false,
+                    ]
+                );
 
-        $torrentPass = $this->crypto->random_string(32);
-        $userCount = $this->db->raw_query("SELECT COUNT(*) FROM users_main")->fetchColumn();
-        // First user is SysOp
-        if ($userCount == 0) {
-            $permissionID = 1; # Should be true on new installs
-        } else {
-            $permissionID = $this->permissions->getMinUserClassID();
+                $staffClass = $this->repos->permissions->getMinClassPermission('users_view_ips');
+                if ($staffClass === false) {
+                    throw $e;
+                }
+
+                send_staff_pm($subject, $message, $staffClass->Level);
+            }
+            throw $e;
         }
 
-        if (!$permissionID) {
+        $torrentPass = $this->crypto->randomString(32);
+        $userCount = $this->db->rawQuery("SELECT COUNT(*) FROM users_main")->fetchColumn();
+        # First user is SysOp
+        if ($userCount === 0) {
+            $permissionID = 1; # Should be true on new installs
+        } else {
+            $permissionID = $this->repos->permissions->getMinUserClassID();
+        }
+
+        if (empty($permissionID)) {
             throw new UserError("No userclasses have been configured.");
+        }
+
+        if ($invite instanceof Invite) {
+            $inviter  = $invite->InviterID;
+            $sqltime  = sqltime();
+            $comment  = $invite->Comment;
+            $comment  = "{$sqltime} - {$comment}".PHP_EOL;
+            //$comment .= $time." invite sent";
+        } else {
+            $inviter = 0;
+            $comment = '';
         }
 
         $user = new User();
@@ -686,61 +875,82 @@ class Auth extends Service {
         $enabled = '1';
         try {
             $transactionInScope = false;
-            if (!$this->db->in_transaction()) {
-                $this->db->begin_transaction();
+            if (!$this->db->inTransaction()) {
+                $this->db->beginTransaction();
                 $transactionInScope = true;
             }
-            $this->db->raw_query(
-                "INSERT INTO users_main (Username, torrent_pass, PermissionID, Enabled, Uploaded, FLTokens, Invites, personal_freeleech)
-                 VALUES (:username, :torrentpass, :permissionID, :enabled, :uploaded, :fltokens, :invites, :personalFL)",
-                [':username'     => $username,
-                 ':torrentpass'  => $torrentPass,
-                 ':permissionID' => $permissionID,
-                 ':enabled'      => $enabled,
-                 ':uploaded'     => $this->options->UsersStartingUpload * 1024*1024,
-                 ':fltokens'     => $this->options->UsersStartingFLTokens,
-                 ':invites'      => $this->options->UsersStartingInvites,
-                 ':personalFL'   => date(
-                     'Y-m-d H:i:s',
-                     strtotime("+{$this->options->UsersStartingPFLDays} days")
-                 )]
+            $this->db->rawQuery(
+                "INSERT INTO users_main (torrent_pass, PermissionID, Enabled, Uploaded, FLTokens, Invites, personal_freeleech)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [
+                    $torrentPass,
+                    $permissionID,
+                    $enabled,
+                    $this->options->UsersStartingUpload * 1024*1024,
+                    $this->options->UsersStartingFLTokens,
+                    $this->options->UsersStartingInvites,
+                    date(
+                        'Y-m-d H:i:s',
+                        strtotime("+{$this->options->UsersStartingPFLDays} days")
+                    )
+                ]
             );
-            $userID = $this->db->last_insert_id();
-            $stylesheet = $this->stylesheets->getDefault();
-            $this->db->raw_query(
+            $userID = $this->db->lastInsertID();
+            if (!is_integer_string($userID)) {
+                throw new SystemError('Database failure');
+            }
+            $stylesheet = $this->repos->stylesheets->getDefault();
+            $this->db->rawQuery(
                 "INSERT INTO users_info
-                    SET UserID   = :userID,    StyleID  = :styleID,
-                        AuthKey  = :authKey,   JoinDate = :joinDate,
-                        RunHour  = :runHour,   Inviter  = :inviter",
-                [':userID'   => intval($userID),
-                 ':styleID'  => intval($stylesheet->ID),
-                 ':authKey'  => $this->crypto->random_string(32),
-                 ':joinDate' => sqltime(),
-                 ':runHour'  => rand(0, 23),
-                 ':inviter'  => $inviter]
+                    SET UserID       = ?,
+                        StyleID      = ?,
+                        AdminComment = ?,
+                        JoinDate     = ?,
+                        RunHour      = ?,
+                        Inviter      = ?",
+                [
+                    intval($userID),
+                    intval($stylesheet->ID),
+                    $comment,
+                    sqltime(),
+                    rand(0, 23),
+                    $inviter
+                ]
             );
 
             $user->ID = $userID;
             $user->Username = $username;
-            $this->set_password($user, $password);
+            $this->setPassword($user, $password);
+            if (!($inviter === 0)) {
+                $this->repos->inviteLogs->updateOnJoin($email, $userID, $inviter);
+            }
             $email = $this->emailManager->newEmail(intval($userID), $email);
             $email->setFlags(Email::IS_DEFAULT | Email::VALIDATED);
-            $this->emails->save($email);
+            $this->repos->emails->save($email);
             $user->EmailID = $email->ID;
-            $this->users->save($user);
-            if ($transactionInScope) {
-                $this->db->commit_transaction();
+            $this->repos->users->save($user);
+            $this->repos->inviteTrees->new($user);
+            $wallet = new UserWallet;
+            $wallet->UserID = $user->ID;
+            $this->repos->userWallets->save($wallet);
+            if ($transactionInScope === true) {
+                $this->db->commit();
             }
+
+            $this->cache->deleteValue("pending_invites_{$inviter}");
+            $this->cache->deleteValue("invitees_{$inviter}");
+            $usernameMD5 = md5($username);
+            $this->cache->deleteValue("_query_User_Username_{$usernameMD5}");
         } catch (\PDOException $e) {
-            error_log("Failed to create user, SQL error: ".$e->getMessage()."\n");
-            if ($transactionInScope) {
-                $this->db->rollback_transaction();
+            error_log("Failed to create user, SQL error: ".$e->getMessage().PHP_EOL);
+            if ($transactionInScope === true) {
+                $this->db->rollback();
             }
             return false;
         }
         sendIntroPM($user->ID);
 
-        // Add user before setting PFL on the tracker
+        # Add user before setting PFL on the tracker
         $this->tracker->addUser($torrentPass, $userID);
         $this->tracker->setPersonalFreeleech($torrentPass, strtotime("+{$this->options->UsersStartingPFLDays} days"));
 

@@ -1,7 +1,7 @@
 <?php
-include(SERVER_ROOT.'/Legacy/sections/staffpm/functions.php');
+include_once(SERVER_ROOT.'/Legacy/sections/staffpm/functions.php');
 
-if ($master->repos->restrictions->is_restricted($LoggedUser['ID'], Luminance\Entities\Restriction::STAFFPM)) {
+if ($master->repos->restrictions->isRestricted($activeUser['ID'], Luminance\Entities\Restriction::STAFFPM)) {
     error('Your staff PM rights have been disabled.');
 }
 
@@ -10,12 +10,17 @@ if ($ConvID = (int) ($_GET['id'])) {
     check_access($ConvID);
 
     // Conversation belongs to user or user is staff, unresolve it // changed from Unanswered to Open on unresolve
-    $DB->query("UPDATE staff_pm_conversations SET Status='Open' WHERE ID=$ConvID");
+    $master->db->rawQuery(
+        "UPDATE staff_pm_conversations
+            SET Status = 'Open'
+          WHERE ID = ?",
+        [$ConvID]
+    );
     // Clear cache for user
-    $Cache->delete_value('num_staff_pms_'.$LoggedUser['ID']);
+    $master->cache->deleteValue('num_staff_pms_'.$activeUser['ID']);
 
     // Add a log message to the StaffPM
-    $Message = sqltime()." - Unresolved by ".$LoggedUser['Username'];
+    $Message = sqltime()." - Unresolved by ".$activeUser['Username'];
     make_staffpm_note($Message, $ConvID);
 
     if (isset($_GET['return']))

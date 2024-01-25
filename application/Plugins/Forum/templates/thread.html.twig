@@ -1,0 +1,486 @@
+{% extends "core/private_page.html.twig" %}
+{% import "macros/icon.html.twig" as icon %}
+
+{% block scripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}
+    <a href="/forum">Forum</a>
+    &gt;
+    <a href="/forum/{{ forum.ID }}">{{ forum.Name }}</a>
+    &gt; {{ thread.Title|decode }}
+{% endblock %}
+
+{% block main_content %}
+    {% if not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::FORUM')) %}
+        {{ render.latestForumThreads() }}
+        <div class="linkbox">
+            [<a href="/reports.php?action=report&amp;type=thread&amp;id={{ thread.ID }}">Report Thread</a>]&nbsp;
+            [<a href="#" onclick="Subscribe({{ thread.ID }});return false;" class="subscribelink{{ thread.ID }}">{{ (thread.isSubscribed(ActiveUser)) ? 'Unsubscribe' : 'Subscribe' }}</a>]&nbsp;
+            [<a href="#" onclick="$('#searchthread').toggle(); this.innerHTML = (this.innerHTML == 'Search this Thread'?'Hide Search':'Search this Thread'); return false;">Search this Thread</a>]&nbsp;
+            [<a href="/forum/unread">Unread Posts</a>]
+        </div>
+        <div id="searchthread" class="hidden center">
+            <div style="display: inline-block;">
+                <br />
+                <div class="head">Search this thread:</div>
+                <form action="/forum/search" method="get">
+                    <table cellpadding="6" cellspacing="1" border="0" class="border">
+                        <input type="hidden" name="threadid" value="{{ thread.ID }}" />
+                        <tr>
+                            <td><strong>Search for:</strong></td><td><input type="text" id="searchbox" name="terms" size="70" /></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Username:</strong></td><td><input type="text" id="username" name="username" size="70" /></td>
+                        </tr>
+                        <tr><td colspan="2" style="text-align: center"><input type="submit" name="submit" value="Search" /></td></tr>
+                    </table>
+                </form>
+                <br />
+            </div>
+        </div>
+        <br/>
+        <div class="linkbox pager">
+            {{ render.pagelinks(page, thread.numPostsInFlow, pageSize, 9) }}
+        </div>
+        <br/>
+        <div class="head">
+            <a href="/forum">Forum</a> &gt;
+            <a href="/forum/{{ forum.ID }}">{{ forum.Name|decode }}</a> &gt;
+            {{ thread.Title|decode }}
+        </div>
+        {% if thread.poll is not empty %}
+            {% include '@Forum/snippets/thread_poll.html.twig' %}
+        {% endif %}
+
+        {# form for splitting posts... only include as appropriate #}
+        {% if auth.isAllowed('forum_thread_split') and thread.numPosts > 1 %}
+            <form method="post">
+        {% endif %}
+        {% for post in posts if posts is not empty %}
+            {{ render.post('forum', post) }}
+        {% endfor %}
+        <div class="breadcrumbs">
+            <a href="/forum">Forum</a> &gt;
+            <a href="/forum/{{ forum.ID }}">{{ forum.Name|decode }}</a> &gt;
+            {{ thread.Title|decode }}
+        </div>
+        <div class="linkbox pager">
+            {{ render.pagelinks(page, thread.numPostsInFlow, pageSize, 9) }}
+        </div>
+        <div class="linkbox">
+            [<a href="/reports.php?action=report&amp;type=thread&amp;id={{ thread.ID }}">Report Thread</a>]&nbsp;
+            [<a href="#" onclick="Subscribe({{ thread.ID }});return false;" class="subscribelink{{ thread.ID }}">{{ (thread.isSubscribed(ActiveUser)) ? 'Unsubscribe' : 'Subscribe' }}</a>]&nbsp;
+            [<a href="/forum/unread">Unread Posts</a>]
+        </div>
+
+        {% if auth.isAllowed('forum_thread_split') and thread.numPosts > 1 %}
+            <div id="splittool">
+                <div class="head split hidden">Split thread (select posts to be split) <span style="float:right"><a href="#splittool" onclick="$('.split').toggle();">Show/Hide split tool</a></span></div>
+                <table cellpadding="6" cellspacing="1" border="0" width="100%" class="border split hidden">
+                    <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                    <input type="hidden" name="threadid" value="{{ thread.ID }}" />
+                    <input type="hidden" name="page" value="{{ page }}" />
+                        <tr>
+                            <td class="label" title="Action to carry out on split">Split Type: </td>
+                            <td>
+                                        <input type="hidden" name="split" value="1"/>
+                                        <input type="radio" name="splitoption" id="split_new" value="newsplit" onchange="toggle_visible('splitoption'); SetSplitInterface()" checked="checked" /> into <em>new</em> thread &nbsp;&nbsp;&nbsp;
+                                        <input type="radio" name="splitoption" id="split_merge" value="mergesplit" onchange="toggle_visible('splitoption'); SetSplitInterface()" />
+                                        <label for="splitintothreadid">into <em>existing</em> thread with id:</label>
+                                        <input type="text" name="splitintothreadid" id="splitintothreadid" value="" disabled="disabled"/>&nbsp;&nbsp;&nbsp;&nbsp;
+                                        <input type="radio" name="splitoption" id="split_trash" value="trashsplit"  onchange="toggle_visible('splitoption'); SetSplitInterface()" /> Trash selected &nbsp;&nbsp;&nbsp;
+                                        {% if ((auth.isAllowed('forum_thread_delete') or auth.isAllowed('forum_post_delete')) and thread.numPosts > 1) %}
+                                            <input type="radio" name="splitoption" id="split_delete" value="deletesplit"  onchange="toggle_visible('splitoption'); SetSplitInterface()" /> Delete selected &nbsp;&nbsp;&nbsp;
+                                        {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label">New Title* </td>
+                            <td>
+                                <input type="text" name="title" id="split_title" class="long" value="{{ thread.Title|decode }}" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label">New forum* </td>
+                            <td>
+                                {{ render.forumSelect(thread.ForumID, 'split_forum') }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label">Comment**</td>
+                            <td>
+                                <input type="text" name="comment" id="split_comment" class="long" value="" disabled="disabled" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="center">
+                                <span style="float:left">*only used if splitting into new &nbsp;&nbsp; **only used if trashing</span>
+                                <input name="newsplit" class="splitoption" type="submit" value="Split selected posts" formaction="/forum/posts/split/new"/>
+                                <input name="mergesplit" class="splitoption hidden" type="submit" value="Split selected posts" formaction="/forum/posts/split/merge"/>
+                                <input name="trashsplit" class="splitoption hidden" type="submit" value="Split selected posts" formaction="/forum/posts/split/trash"/>
+                                {% if auth.isAllowed('forum_post_delete') and thread.numPosts > 1 %}
+                                <input name="deletesplit" class="splitoption hidden" type="submit" value="Split selected posts" formaction="/forum/posts/split/delete"/>
+                                {% endif %}
+                            </td>
+                        </tr>
+                  </table>
+                </div>
+            </form>
+        {% endif %}
+        {{ render.forumGoto(forum) }}
+        {% if not thread.IsLocked or auth.isAllowed('forum_moderate') %}
+            {% if forum.canWrite(ActiveUser.ID) and not master.repos.restrictions.isRestricted(ActiveUser.ID, constant('Luminance\\Entities\\Restriction::POST')) %}
+                <div class="messagecontainer" id="container">
+                    <div id="message" class="hidden center messagebar"></div>
+                </div>
+                <table id="quickreplypreview" class="forum_post box vertical_margin hidden {{ ActiveUser.options('DisableAvatars', 0) == 1 ? 'noavatar' }} {{ forum_unread }}" id="post{{ post.ID }}">
+                    <tr class="smallhead">
+                        <td colspan="2">
+                            <span style="float:left;">
+                                <a href='#quickreplypreview'>#XXXXXX</a>
+                                {% set usernameOptions = {
+                                    'drawInBox' : true,
+                                    'colorname' : false,
+                                    'dropDown'  : true,
+                                    'useSpan'   : true,
+                                    'noIcons'   : false,
+                                    'noGroup'   : false,
+                                    'noClass'   : false,
+                                    'noTitle'   : false,
+                                } %}
+                                {{ render.username(ActiveUser.ID, usernameOptions) }} Just now
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        {% if ActiveUser.options('DisableAvatars', 0) == 0 %}
+                            <td class="avatar" valign="top">
+                                {% if ActiveUser.legacy.Avatar is not empty %}
+                                    <img src="{{ ActiveUser.legacy.Avatar }}" class="avatar" style="{{ get_avatar_css(ActiveUser.class.MaxAvatarWidth, ActiveUser.class.MaxAvatarHeight) }}" alt="{{ ActiveUser.Username}}'s avatar" />
+                                {% else %}
+                                    <img src="/static/common/avatars/default.png"  class="avatar" style="{{ get_avatar_css(100, 120) }}" alt="Default avatar" />
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                        <td class="body" valign="top">
+                            <div id="contentpreview" class="preview_content" style="text-align:left;"></div>
+                        </td>
+                    </tr>
+                </table>
+                <div class="head">Post reply</div>
+                <div class="box pad shadow">
+                    <form id="quickpostform" action="/forum/thread/{{ thread.ID }}/reply" method="post" onsubmit="return Validate_Form('message','quickpost')" style="display: block; text-align: center;">
+                        <input type="hidden" name="token" value="{{ secretary.getToken("thread.reply") }}" />
+                        <div id="quickreplytext">
+                                {{ bbcode.display_bbcode_assistant("quickpost", get_permissions_advtags(ActiveUser.ID, ActiveUser.CustomPermissions)) }}
+                                <textarea id="quickpost" class="long" tabindex="1" onkeyup="resize('quickpost');" name="body" rows="8"></textarea> <br />
+                        </div>
+                        <div>
+                            {% if not thread.isSubscribed(ActiveUser) %}
+                                <input id="subscribebox" type="checkbox" name="subscribe" {{ ActiveUser.options('AutoSubscribe') ? ' checked="checked"':'' }} tabindex="2" value="1"/>
+                                <label for="subscribebox">Subscribe</label>
+                            {% endif %}
+
+                            {% if thread.lastPost.AuthorID == ActiveUser.ID and auth.isAllowed('forum_thread_double_post') %}
+                                {% if thread.lastPost.EditedUserID == ActiveUser.ID or thread.lastPost.EditedUserID is null %}
+                                    <input id="mergebox" type="checkbox" name="merge" checked="checked" tabindex="2" value="1"/>
+                                    <label for="mergebox">Merge</label>
+                                {% endif %}
+                            {% endif %}
+                            <input id="post_preview" type="button" value="Preview" tabindex="1" onclick="if (this.preview) {Quick_Edit();} else {Quick_Preview();}" />
+                            <input type="submit" value="Post reply" tabindex="1" />
+                        </div>
+                    </form>
+                </div>
+            {% endif %}
+        {% endif %}
+        {% if not ActiveUser.options('HideForumSidebar', false) %}
+            <div id="hidebar" class="content">
+                <div id="modal_content">
+                    <div class="details thin">
+                        <h2>
+                            <a href="/forum">Forum</a> &gt;
+                            <a href="/forum/{{ forum.ID }}">{{ forum.Name|decode }}</a> &gt;
+                            {{ thread.Title|decode }}
+                        </h2>
+                        {% if auth.isAllowed('forum_moderate') %}
+                            <br />
+                            {% if thread.Notes is not empty %}
+                                <div class="head">Staff notes</div>
+                                <div class="box pad">{{ bbcode.full_format(thread.Notes, true)|raw }}</div>
+                                <br />
+                            {% endif %}
+                            <div class="head">Edit thread</div>
+                            <form action="/forum/thread/{{ thread.ID }}/edit" method="post">
+                                <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                                <input type="hidden" name="threadid" value="{{ thread.ID }}" />
+                                <input type="hidden" name="page" value="{{ page }}" />
+                                <table cellpadding="6" cellspacing="1" border="0" width="100%" class="border">
+                                    {% if auth.isAllowed('forum_thread_pin') %}
+                                        <tr>
+                                            <td class="label">Sticky</td>
+                                            <td>
+                                                <input type="checkbox" name="sticky" {{ thread.IsSticky ? 'checked="checked"':'' }} tabindex="2" />
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                    {% if auth.isAllowed('forum_thread_lock') %}
+                                        <tr>
+                                            <td class="label">Locked</td>
+                                            <td>
+                                                <input type="checkbox" name="locked" {{ thread.IsLocked ? 'checked="checked"':'' }} />
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                    {% if auth.isAllowed('forum_thread_rename') %}
+                                        <tr>
+                                            <td class="label">Current Title</td>
+                                            <td>
+                                                <input type="text" id="floatoldtitle" name="titleorig" class="long" onclick="$('#floatnewtitle').raw().value = $('#floatoldtitle').raw().value; $('#floatnewtitle').raw().focus(); $('#floatnewtitle').raw().setSelectionRange(0,0);" title="click here to insert old title in the title field" value="{{ thread.Title|decode }}" readonly="readonly" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="label">Change Title To:</td>
+                                            <td>
+                                                <input id="floatnewtitle" type="text" name="title" class="long" value="" title="If left blank then title will be unchanged or automagically filled as appropriate. If merging and left blank the merged into threads title will be used." />
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                    {% if auth.isAllowed('forum_thread_move') %}
+                                        <tr>
+                                            <td class="label">Update thread location</td>
+                                            <td>
+                                                <input type="radio" name="send_thread" id="noop" value="noop" checked="checked" onchange="toggle_visible('send_thread')"/>
+                                                <label for="noop">no update &nbsp;&nbsp;&nbsp;</label>
+                                                <input type="radio" name="send_thread" id="forum" value="forum" onchange="toggle_visible('send_thread')"/>
+                                                <label for="forum">to <em>new</em> forum &nbsp;&nbsp;&nbsp;</label>
+                                                <input type="radio" name="send_thread" id="thread" value="thread" onchange="toggle_visible('send_thread')"/>
+                                                <label for="thread">to merge into <em>existing</em> thread &nbsp;&nbsp;&nbsp;</label>
+                                                {% if forum.ID != settings.forums.trash_forum_id %}
+                                                    <input type="radio" name="send_thread" id="trash" value="trash" onchange="toggle_visible('send_thread'); document.getElementById('send_thread_forum').selectedIndex={{ settings.forums.trash_forum_id }};"/>
+                                                    <label for="trash">to trash &nbsp;&nbsp;&nbsp;</label>
+                                                {% endif %}
+                                                {% if (auth.isAllowed('forum_thread_delete')) or (auth.isAllowed('forum_post_delete')) %}
+                                                    <input type="radio" name="send_thread" id="delete" value="delete" onchange="toggle_visible('send_thread')"/>
+                                                    <label for="delete">to permanent delete</label>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                    <tr name="noop" class="send_thread">
+                                        <td class="label">Notes</td>
+                                        <td>
+                                            <input type="text" name="note[]" class="long" value="" />
+                                        </td>
+                                    </tr>
+                                    <tr name="noop" class="send_thread">
+                                        <td colspan="2" class="center">
+                                            <input type="submit" value="Edit thread" />
+                                        </td>
+                                    </tr>
+                                    <tr name="forum" class="send_thread hidden">
+                                        <td class="label">Forum</td>
+                                        <td>
+                                            {{ render.forumSelect(thread.ForumID, 'send_thread_forum') }}
+                                        </td>
+                                    </tr>
+                                    <tr name="forum" class="send_thread hidden">
+                                        <td class="label">Notes</td>
+                                        <td>
+                                            <input type="text" name="note[]" class="long" value="" />
+                                        </td>
+                                    </tr>
+                                    <tr name="forum" class="send_thread hidden">
+                                        <td colspan="2" class="center">
+                                            <input type="submit" value="Edit thread" />
+                                        </td>
+                                    </tr>
+                                    <tr name="thread" class="send_thread hidden">
+                                        <td class="label">Thread ID</td>
+                                        <td>
+                                            <input type="number" name="mergethreadid">
+                                        </td>
+                                    </tr>
+                                    <tr name="thread" class="send_thread hidden">
+                                        <td colspan="2" class="center">
+                                            <input type="submit" value="Edit thread" formaction="/forum/thread/{{ thread.ID }}/merge" />
+                                        </td>
+                                    </tr>
+                                    {% if forum.ID != settings.forums.trash_forum_id %}
+                                        <tr name="trash" class="send_thread hidden">
+                                            <td class="label">Notes</td>
+                                            <td>
+                                                <input type="text" name="note[]" class="long" value="" />
+                                            </td>
+                                        </tr>
+                                        <tr name="trash" class="send_thread hidden">
+                                            <td colspan="2" class="center">
+                                                <input type="submit" value="Edit thread" />
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                    {% if auth.isAllowed('forum_thread_delete') %}
+                                        <tr name="delete" class="send_thread hidden">
+                                            <td colspan="2" class="center">
+                                                <input type="submit" value="Edit thread" formaction="/forum/thread/{{ thread.ID }}/delete" />
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                    {% if auth.isAllowed('forum_thread_split') and thread.numPosts > 1 %}
+                                        <tr>
+                                            <td class="label">Split thread</td>
+                                            <td>
+                                                <a href="#splittool" onclick="$('.split').toggle();">Show/Hide split tool</a>
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </table>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        {% if auth.isAllowed('forum_moderate') %}
+            <br />
+            {% if thread.Notes is not empty %}
+                <div class="head">Staff notes</div>
+                <div class="box pad">{{ bbcode.full_format(thread.Notes, true)|raw }}</div>
+                <br />
+            {% endif %}
+            <div class="head">Edit thread</div>
+            <form action="/forum/thread/{{ thread.ID }}/edit" method="post">
+                <input type="hidden" name="auth" value="{{ ActiveUser.legacy.AuthKey }}" />
+                <input type="hidden" name="threadid" value="{{ thread.ID }}" />
+                <input type="hidden" name="page" value="{{ page }}" />
+                <table cellpadding="6" cellspacing="1" border="0" width="100%" class="border">
+                    {% if auth.isAllowed('forum_thread_pin') %}
+                        <tr>
+                            <td class="label">Sticky</td>
+                            <td>
+                                <input type="checkbox" name="sticky" {{ thread.IsSticky ? 'checked="checked"':'' }} tabindex="2" />
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if auth.isAllowed('forum_thread_lock') %}
+                        <tr>
+                            <td class="label">Locked</td>
+                            <td>
+                                <input type="checkbox" name="locked" {{ thread.IsLocked ? 'checked="checked"':'' }} />
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if auth.isAllowed('forum_thread_rename') %}
+                        <tr>
+                            <td class="label">Current Title</td>
+                            <td>
+                                <input type="text" id="oldtitle" name="titleorig" class="long" onclick="$('#newtitle').raw().value = $('#oldtitle').raw().value; $('#newtitle').raw().focus(); $('#newtitle').raw().setSelectionRange(0,0);" title="click here to insert old title in the title field" value="{{ thread.Title|decode }}" readonly="readonly" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label">Change Title To:</td>
+                            <td>
+                                <input id="newtitle" type="text" name="title" class="long" value="" title="If left blank then title will be unchanged or automagically filled as appropriate. If merging and left blank the merged into threads title will be used." />
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if auth.isAllowed('forum_thread_move') %}
+                        <tr>
+                            <td class="label">Update thread location</td>
+                            <td>
+                                <input type="radio" name="send_thread" id="noop" value="noop" checked="checked" onchange="toggle_visible('send_thread')"/>
+                                <label for="noop">no update &nbsp;&nbsp;&nbsp;</label>
+                                <input type="radio" name="send_thread" id="forum" value="forum" onchange="toggle_visible('send_thread')"/>
+                                <label for="forum">to <em>new</em> forum &nbsp;&nbsp;&nbsp;</label>
+                                <input type="radio" name="send_thread" id="thread" value="thread" onchange="toggle_visible('send_thread')"/>
+                                <label for="thread">to merge into <em>existing</em> thread &nbsp;&nbsp;&nbsp;</label>
+                                {% if forum.ID != settings.forums.trash_forum_id %}
+                                    <input type="radio" name="send_thread" id="trash" value="trash" onchange="toggle_visible('send_thread'); document.getElementById('send_thread_forum').selectedIndex={{ settings.forums.trash_forum_id }};"/>
+                                    <label for="trash">to trash &nbsp;&nbsp;&nbsp;</label>
+                                {% endif %}
+                                {% if (auth.isAllowed('forum_thread_delete')) or (auth.isAllowed('forum_post_delete')) %}
+                                    <input type="radio" name="send_thread" id="delete" value="delete" onchange="toggle_visible('send_thread')"/>
+                                    <label for="delete">to permanent delete</label>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    <tr name="noop" class="send_thread">
+                        <td class="label">Notes</td>
+                        <td>
+                            <input type="text" name="note[]" class="long" value="" />
+                        </td>
+                    </tr>
+                    <tr name="noop" class="send_thread">
+                        <td colspan="2" class="center">
+                            <input type="submit" value="Edit thread" />
+                        </td>
+                    </tr>
+                    <tr name="forum" class="send_thread hidden">
+                        <td class="label">Forum</td>
+                        <td>
+                            {{ render.forumSelect(thread.ForumID, 'send_thread_forum') }}
+                        </td>
+                    </tr>
+                    <tr name="forum" class="send_thread hidden">
+                        <td class="label">Notes</td>
+                        <td>
+                            <input type="text" name="note[]" class="long" value="" />
+                        </td>
+                    </tr>
+                    <tr name="forum" class="send_thread hidden">
+                        <td colspan="2" class="center">
+                            <input type="submit" value="Edit thread" />
+                        </td>
+                    </tr>
+                    <tr name="thread" class="send_thread hidden">
+                        <td class="label">Thread ID</td>
+                        <td>
+                            <input type="number" name="mergethreadid">
+                        </td>
+                    </tr>
+                    <tr name="thread" class="send_thread hidden">
+                        <td colspan="2" class="center">
+                            <input type="submit" value="Edit thread" formaction="/forum/thread/{{ thread.ID }}/merge" />
+                        </td>
+                    </tr>
+                    {% if forum.ID != settings.forums.trash_forum_id %}
+                        <tr name="trash" class="send_thread hidden">
+                            <td class="label">Notes</td>
+                            <td>
+                                <input type="text" name="note[]" class="long" value="" />
+                            </td>
+                        </tr>
+                        <tr name="trash" class="send_thread hidden">
+                            <td colspan="2" class="center">
+                                <input type="submit" value="Edit thread" />
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if auth.isAllowed('forum_thread_delete') %}
+                        <tr name="delete" class="send_thread hidden">
+                            <td colspan="2" class="center">
+                                <input type="submit" value="Edit thread" formaction="/forum/thread/{{ thread.ID }}/delete" />
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if auth.isAllowed('forum_thread_split') and thread.numPosts > 1 %}
+                        <tr>
+                            <td class="label">Split thread</td>
+                            <td>
+                                <a href="#splittool" onclick="$('.split').toggle();">Show/Hide split tool</a>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </table>
+            </form>
+        {% endif %}
+    {% else %}
+        <div class="box pad" align="center">
+        <b>Your forum privileges have been revoked!</b><br><br>
+        <a href="{{ settings.links.rules }}"> View the site rules</a>
+        </div>
+    {% endif %}
+{% endblock %}

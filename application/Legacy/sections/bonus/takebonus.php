@@ -3,15 +3,15 @@ enforce_login();
 authorize();
 
 include_once(SERVER_ROOT.'/Legacy/sections/bonus/functions.php');
-
-$P=array();
-$P=db_array($_POST);
+$wallet = $master->repos->userWallets->get('UserID = ?', [$activeUser['ID']]);
+$P=[];
+$P=$_POST;
 
 $ItemID = empty($P['itemid']) ? '' : $P['itemid'];
-if(!is_number($ItemID))  error(0);
-$UserID = empty($P['userid']) ? '' : $P['userid'];
-if(!is_number($UserID))  error(0);
-if($UserID != $LoggedUser['ID'])  error(0);
+if (!is_integer_string($ItemID))  error(0);
+$userID = empty($P['userid']) ? '' : $P['userid'];
+if (!is_integer_string($userID))  error(0);
+if ($userID != $activeUser['ID'])  error(0);
 
 $ShopItem = get_shop_item($ItemID);
 
@@ -27,10 +27,14 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
         $Othername = empty($P['othername']) ? '' : $P['othername'];
         if ($Othername) {
 
-            $DB->query("SELECT ID From users_main WHERE Username='$Othername'");
-            if (($DB->record_count()) > 0) {
-                list($OtherID) = $DB->next_record();
-                if(blockedGift($OtherID, $LoggedUser['ID'])) {
+            $OtherID = $master->db->rawQuery(
+                "SELECT ID
+                   FROM users
+                  WHERE Username = ?",
+                [$Othername]
+            )->fetchColumn();
+            if (!($OtherID === false)) {
+                if (blockedGift($OtherID, $activeUser['ID'])) {
                     $ResultMessage = "You cannot donate to this user";
                     header("Location: bonus.php?action=msg&result=" .urlencode($ResultMessage));
                     die();
@@ -45,32 +49,54 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
         }
     }
 
-    $DB->query("SELECT Credits From users_main WHERE ID='$UserID'");
-    list($Credits) = $DB->next_record();
-
     // again lets not trust the check on the previous page as to whether they can afford it
-    if ($OtherID && ($Cost <= $Credits)) {
+    if ($OtherID && ($Cost <= $wallet->Balance)) {
 
-        $UpdateSet = array();
-        $UpdateSetOther = array();
+        $UpdateSet = [];
+        $UpdateData = [];
+        $UpdateSetOther = [];
+        $UpdateDataOther = [];
+
+        $user = $master->repos->users->load($userID);
+        $wallet = $user->wallet;
+
+        $otherUser = $master->repos->users->load($OtherID);
+        $otherWallet = $otherUser->wallet;
 
         switch($Action) {  // atm hardcoded in db:  givecredits, givegb, gb, slot, title, badge
             case 'badge' :
 
-                $UserBadgeIDs = get_user_shop_badges_ids($UserID);
+                $UserBadgeIDs = get_user_shop_badges_ids($userID);
                 if ( in_array($Value, $UserBadgeIDs)) {
                     $ResultMessage='Something bad happened (duplicate badge insertion)';
                     break;
                 }
 
-                $DB->query("SELECT Badge FROM badges WHERE ID = ".intval($Value));
-                list($BadgeSet) = $DB->next_record();
+                $BadgeSet = $master->db->rawQuery(
+                    "SELECT Badge
+                       FROM badges
+                      WHERE ID = ?",
+                    [$Value]
+                )->fetchColumn();
 
-                $DB->query("SELECT MAX(b.Rank) FROM badges AS b LEFT JOIN users_badges AS ub ON ub.BadgeID = b.ID WHERE ub.UserID = $UserID AND Badge = '".db_string($BadgeSet)."'");
-                list($UserRank) = $DB->next_record();
+                $UserRank = $master->db->rawQuery(
+                    "SELECT MAX(b.Rank)
+                       FROM badges AS b
+                  LEFT JOIN users_badges AS ub
+                         ON ub.BadgeID = b.ID
+                      WHERE ub.UserID = ?
+                        AND Badge = ?",
+                    [$userID, $BadgeSet]
+                )->fetchColumn();
 
-                $DB->query("SELECT ID, Rank FROM badges WHERE Badge = '".db_string($BadgeSet)."' ORDER BY ID");
-                $Badges = $DB->to_array(false, MYSQLI_ASSOC);
+                $Badges = $master->db->rawQuery(
+                    "SELECT ID,
+                            Rank
+                       FROM badges
+                      WHERE Badge = ?
+                   ORDER BY ID",
+                    [$BadgeSet]
+                )->fetchAll(\PDO::FETCH_BOTH);
 
                 $CurBadgeKey   = array_search($Value, array_column($Badges, 'ID'));
                 $PreviousBadge = $Badges[$CurBadgeKey > 0 ? $CurBadgeKey - 1 : 0];
@@ -82,101 +108,126 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                     break;
                 }
 
-                $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought a $Title badge.");
-                $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
+                $Summary = " | -$Cost credits | ".ucfirst("you bought a $Title badge.");
+                $wallet->adjustBalance(-$Cost);
+                $wallet->addLog($Summary);
 
-                $DB->query( "INSERT INTO users_badges (UserID, BadgeID, Description)
-                                  VALUES ( '$UserID', '$Value', '$Description')");
+                $master->db->rawQuery(
+                    "INSERT INTO users_badges (UserID, BadgeID, Description)
+                          VALUES (?, ?, ?)",
+                    [$userID, $Value, $Description]
+                );
 
-                $DB->query("SELECT Badge, Rank FROM badges WHERE ID='$Value'");
-                if ($DB->record_count() == 0) error(0);
-                list($Badge, $Rank) = $DB->next_record();
+                list($Badge, $Rank) = $master->db->rawQuery(
+                    "SELECT Badge,
+                            Rank
+                       FROM badges
+                      WHERE ID = ?",
+                    [$Value]
+                )->fetch(\PDO::FETCH_NUM);
+                if ($master->db->foundRows() == 0) error(0);
 
                 // remove lower ranked badges of same badge set
-                $DB->query("DELETE ub
-                          FROM users_badges AS ub
-                     LEFT JOIN badges AS b ON b.ID=ub.BadgeID
-                         WHERE ub.UserID = '$UserID'
-                           AND b.Badge='$Badge' AND b.Rank<$Rank");
+                $master->db->rawQuery(
+                    "DELETE ub
+                       FROM users_badges AS ub
+                  LEFT JOIN badges AS b ON b.ID=ub.BadgeID
+                      WHERE ub.UserID = ?
+                        AND b.Badge = ?
+                        AND b.Rank < ?",
+                    [$userID, $Badge, $Rank]
+                );
 
-                $Cache->delete_value('user_badges_ids_'.$UserID);
-                $Cache->delete_value('user_badges_'.$UserID);
-                $Cache->delete_value('user_badges_'.$UserID.'_limit');
-                $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
-                $ResultMessage=$Summary;
+                $master->cache->deleteValue('user_badges_ids_'.$userID);
+                $master->cache->deleteValue('user_badges_'.$userID);
+                $master->cache->deleteValue('user_badges_'.$userID.'_limit');
+                $ResultMessage=sqltime().$Summary;
 
                 break;
 
             case 'givecredits':
+                $GiftFrom = isset($_POST['anon_gift']) ? "Anonymous" : $activeUser['Username'];
+                $GiftFromTag = isset($_POST['anon_gift']) ? "Anonymous" : "[user]{$activeUser['ID']}[/user]";
 
-                $Summary = sqltime()." | +".number_format ($Value)." credits | ".ucfirst("you received a gift of ".number_format ($Value)." credits from {$LoggedUser['Username']}");
-                $UpdateSetOther[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
-                $UpdateSetOther[]="m.Credits=(m.Credits+'$Value')";
+                $Summary = " | +".number_format ($Value)." credits | ".ucfirst("you received a gift of ".number_format ($Value)." credits from {$GiftFrom}");
+                $otherWallet->adjustBalance($Value);
+                $otherWallet->addLog($Summary);
 
-                $Summary = sqltime()." | -".number_format ($Cost)." credits | ".ucfirst("you gave a gift of ".number_format ($Value)." credits to {$P['othername']}");
-                $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
-                $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
-                $ResultMessage=$Summary;
+                $Summary = " | -".number_format ($Cost)." credits | ".ucfirst("you gave a gift of ".number_format ($Value)." credits to {$P['othername']}");
+                $wallet->adjustBalance(-$Cost);
+                $wallet->addLog($Summary);
+                $ResultMessage=sqltime().$Summary;
 
                 $AddMessage = isset($P['message']) && $P['message']?"[br][br]Message from sender:[br][br]{$_POST['message']}":'';
-                send_pm($OtherID, 0, db_string("Bonus Shop - You received a gift of credits"),
-                        db_string("[br]You received a gift of ".number_format ($Value)." credits from [user]{$LoggedUser['ID']}[/user]{$AddMessage}"));
+                send_pm($OtherID, 0, "Bonus Shop - You received a gift of credits",
+                        "[br]You received a gift of ".number_format ($Value)." credits from {$GiftFromTag}{$AddMessage}");
 
                 break;
 
             case 'gb':
                 $ValueBytes = get_bytes($Value.'gb');
-                if ($LoggedUser['BytesDownloaded'] <= 0) {
+                if ($activeUser['BytesDownloaded'] <= 0) {
                     $ResultMessage= "You have no download to deduct from!";
                 } else {
 
-                    $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought -$Value gb.");
-                    if($LoggedUser['BytesDownloaded'] < $ValueBytes)
-                        $Summary .= " | NOTE: Could only remove ". get_size($LoggedUser['BytesDownloaded']);
-                    $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
+                    $Summary = " | -$Cost credits | ".ucfirst("you bought -$Value gb.");
+                    if ($user->legacy['Downloaded'] < $ValueBytes) {
+                        $Summary .= " | NOTE: Could only remove ". get_size($user->legacy['Downloaded']);
+                        $ValueBytes = $user->legacy['Downloaded'];
+                    }
+                    $wallet->adjustBalance(-$Cost);
+                    $wallet->addLog($Summary);
 
-                    $UpdateSet[]="m.Downloaded=(m.Downloaded-'$ValueBytes')";
-                    $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
-                    $ResultMessage=$Summary;
-
+                    $UpdateSet[]="m.Downloaded = (m.Downloaded - ?)";
+                    $UpdateData[] = $ValueBytes;
+                    $UpdateSet[]="m.Credits = (m.Credits - ?)";
+                    $UpdateData[] = $Cost;
+                    $ResultMessage=sqltime().$Summary;
                 }
                 break;
 
             case 'givegb':  // no test if user had download to remove as this could violate privacy settings
                 $ValueBytes = get_bytes($Value.'gb');
+                $GiftFrom = isset($_POST['anon_gift']) ? "Anonymous" : $activeUser['Username'];
+                $GiftFromTag = isset($_POST['anon_gift']) ? "Anonymous" : "[user]{$activeUser['ID']}[/user]";
 
-                $Summary = sqltime()." | ".ucfirst("you received a gift of -$Value gb from {$LoggedUser['Username']}.");
-                $UpdateSetOther[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
+                $Summary = " | ".ucfirst("you received a gift of -$Value gb from {$GiftFrom}.");
+                $otherWallet->addLog($Summary);
 
-                $Summary = sqltime()." | -$Cost credits | ".ucfirst("you gave a gift of -$Value gb to {$P['othername']}.");
-                $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
-                $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
+                $Summary = " | -$Cost credits | ".ucfirst("you gave a gift of -$Value gb to {$P['othername']}.");
+                $wallet->adjustBalance(-$Cost);
+                $wallet->addLog($Summary);
 
                 $AddMessage = isset($P['message']) && $P['message']?"[br][br]Message from sender:[br][br]{$_POST['message']}":'';
-                send_pm($OtherID, 0, db_string("Bonus Shop - You received a gift of -gb"),
-                     db_string("[br]You received a gift of -".number_format ($Value)." gb from [user]{$LoggedUser['ID']}[/user]{$AddMessage}"));
+                send_pm($OtherID, 0, "Bonus Shop - You received a gift of -gb",
+                     "[br]You received a gift of -".number_format ($Value)." gb from {$GiftFromTag}{$AddMessage}");
 
-                $UpdateSetOther[]="m.Downloaded=(m.Downloaded-'$ValueBytes')";
-                $ResultMessage=$Summary;
+                if ($otherUser->legacy['Downloaded'] < $ValueBytes) {
+                    $ValueBytes = $otherUser->legacy['Downloaded'];
+                }
 
+                $UpdateSetOther[]="m.Downloaded = (m.Downloaded - ?)";
+                $UpdateDataOther[] = $ValueBytes;
+                $ResultMessage=sqltime().$Summary;
                 break;
 
             case 'slot':
 
-                $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought $Value slot".($Value>1?'s':'').".");
-                $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
-                $UpdateSet[]="m.FLTokens=(m.FLTokens+'$Value')";
-                $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
-                $ResultMessage=$Summary;
+                $Summary = " | -$Cost credits | ".ucfirst("you bought $Value slot".($Value>1?'s':'').".");
+                $wallet->adjustBalance(-$Cost);
+                $wallet->addLog($Summary);
+                $UpdateSet[]="m.FLTokens = (m.FLTokens + ?)";
+                $UpdateData[] = $Value;
+                $ResultMessage=sqltime().$Summary;
                 break;
 
             case 'pfl':
 
-                $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought $Value hour".($Value>1?'s':'')." of personal freeleech.");
-                $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
-                $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
+                $Summary = " | -$Cost credits | ".ucfirst("you bought $Value hour".($Value>1?'s':'')." of personal freeleech.");
+                $wallet->adjustBalance(-$Cost);
+                $wallet->addLog($Summary);
 
-                $personal_freeleech = $LoggedUser['personal_freeleech'];
+                $personal_freeleech = $activeUser['personal_freeleech'];
 
                 // The user already have personal freeleech time, add to it.
                 if ($personal_freeleech >= sqltime()) {
@@ -186,10 +237,59 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                     $personal_freeleech = time_plus(60 * 60 * $Value);
                 }
 
-                $UpdateSet[]="personal_freeleech='$personal_freeleech'";
-                $master->tracker->setPersonalFreeleech($LoggedUser['torrent_pass'], strtotime($personal_freeleech));
+                $UpdateSet[]="personal_freeleech = ?";
+                $UpdateData[] = $personal_freeleech;
+                $master->tracker->setPersonalFreeleech($activeUser['torrent_pass'], strtotime($personal_freeleech));
 
-                $ResultMessage=$Summary;
+                $ResultMessage=sqltime().$Summary;
+                break;
+
+            case 'invite':
+                if (check_perms('site_purchase_invites')) {
+                    $Invites = $master->db->rawQuery(
+                        "SELECT Invites
+                          FROM users_main
+                         WHERE ID = ?",
+                        [$userID]
+                    )->fetchColumn();
+                    if ($Invites < 4) {
+                        $master->db->rawQuery(
+                            "UPDATE users_main
+                                SET Invites = Invites + 1
+                              WHERE ID = ?",
+                            [$userID]
+                        );
+                        $Summary = " | -$Cost credits | ".ucfirst("you bought an invite to share the love");
+                        $wallet->adjustBalance(-$Cost);
+                        $wallet->addLog($Summary);
+                        $ResultMessage=$Summary;
+                        $Invites = $master->db->rawQuery(
+                            "SELECT Invites
+                               FROM users_main
+                              WHERE ID = ?",
+                            [$userID]
+                        )->fetchColumn();
+                        $comment = sqltime()." - Number of invites changed to {$Invites} - Invite purchased from the bonus shop for {$Cost} points";
+                        $StaffNote = $master->db->rawQuery(
+                            "UPDATE users_info
+                                SET AdminComment = CONCAT_WS(CHAR(10 using utf8), ?, AdminComment)
+                              WHERE UserID = ?",
+                            [$comment, $userID]
+                        );
+                        $master->irker->announceDebug('Invite purchased from bonus shop by ' . $activeUser['Username'] . ". Current Invites: " . $Invites);
+                        //Send a staff PM too in case irker does not want to comply
+                        $Notice = "Please be sure to use your invites wisely while following the rules.";
+                        $subject = ("A user has purchased an invite");
+                        $MsgStaff = ("/user.php?id=" . $activeUser['ID'] . " has purchased an invite via the bonus shop.");
+                        $MsgStaff .= ("\nUser now has: " . $Invites . " invites.");
+                        $staffClass = $this->permissions->getMinClassPermission('users_edit_invites');
+                        send_staff_pm($subject, $MsgStaff, $staffClass->Level);
+                    } else {
+                        $master->flasher->notice("You have too many invites to make a purchase!");
+                    }
+                } else {
+                    $master->flasher->notice("Sorry you have not yet attained a user class that is able to purchase invites");
+                }
                 break;
 
             case 'title':
@@ -202,12 +302,13 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                     if ($tlen > 32) {
                         $ResultMessage = "Title was too long ($tlen characters, max=32)";
                     } else {
-                        $NewTitle = db_string( display_str($NewTitle) );
-                        $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought a new custom title ''$NewTitle''.");
-                        $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
-                        $UpdateSet[]="m.Title='$NewTitle'";
-                        $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
-                        $ResultMessage=$Summary;
+                        $NewTitle = display_str($NewTitle);
+                        $Summary = " | -$Cost credits | ".ucfirst("you bought a new custom title ''$NewTitle''.");
+                        $wallet->adjustBalance(-$Cost);
+                        $wallet->addLog($Summary);
+                        $UpdateSet[] = "m.Title = ?";
+                        $UpdateData[] = $NewTitle;
+                        $ResultMessage=sqltime().$Summary;
                     }
                 }
                 break;
@@ -220,12 +321,21 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
                     $ResultMessage = "TorrentID was not set";
                 } else {
 
-                    $DB->query("SELECT UserID, Name, FreeTorrent, Size FROM torrents AS t JOIN torrents_group AS tg ON t.GroupID=tg.ID WHERE GroupID='$GroupID'");
-                    if ($DB->record_count()==0)
+                    $nextRecord = $master->db->rawQuery(
+                        "SELECT tg.UserID,
+                                Name,
+                                FreeTorrent,
+                                Size
+                           FROM torrents AS t
+                           JOIN torrents_group AS tg ON t.GroupID = tg.ID
+                          WHERE GroupID = ?",
+                        [$GroupID]
+                    )->fetch(\PDO::FETCH_NUM);
+                    if ($master->db->foundRows() == 0)
                         $ResultMessage = "Could not find any torrent with ID=$GroupID";
                     else {
-                        list($OwnerID, $TName, $FreeTorrent, $Sizebytes) = $DB->next_record();
-                        if ($OwnerID != $LoggedUser['ID']) {
+                        list($OwnerID, $TName, $FreeTorrent, $Sizebytes) = $nextRecord;
+                        if ($OwnerID != $activeUser['ID']) {
 
                             $ResultMessage = "You are not the owner of torrent with ID=$GroupID - only the uploader can buy Universal Freeleech for their torrent";
 
@@ -233,18 +343,18 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
 
                             $ResultMessage = "Torrent $TName is already freeleech!";
 
-                        } elseif ($Sizebytes < get_bytes($Value.'gb') ) {
+                        } elseif ($Sizebytes < get_bytes($Value.'gb')) {
 
                             $ResultMessage = "Torrent $TName (" . get_size($Sizebytes, 2). ") is too small for a > $Value gb freeleech!";
 
                         } else {
 
                             // make torrent FL
-                            freeleech_groups($GroupID, 1, true);
+                            freeleech_groups($GroupID, 1, true, null);
 
-                            $Summary = sqltime()." | -$Cost credits | ".ucfirst("you bought a universal freeleech ($Value gb+) for torrent [torrent]{$GroupID}[/torrent]");
-                            $UpdateSet[]="i.BonusLog=CONCAT_WS( '\n', '$Summary', i.BonusLog)";
-                            $UpdateSet[]="m.Credits=(m.Credits-'$Cost')";
+                            $Summary = " | -$Cost credits | ".ucfirst("you bought a universal freeleech ($Value gb+) for torrent [torrent]{$GroupID}[/torrent]");
+                            $wallet->adjustBalance(-$Cost);
+                            $wallet->addLog($Summary);
                             $ResultMessage= sqltime()." | -$Cost credits | ".ucfirst("you bought a universal freeleech ($Value gb+) for torrent $TName"); ;
                         }
                     }
@@ -259,24 +369,36 @@ if (!empty($ShopItem) && is_array($ShopItem)) {
 
         if ($UpdateSetOther) {
             $SET = implode(', ', $UpdateSetOther);
-            $sql = "UPDATE users_main AS m JOIN users_info AS i ON m.ID=i.UserID SET $SET WHERE m.ID='$OtherID'";
-            $DB->query($sql);
+            $UpdateDataOther[] = $OtherID;
+            $master->db->rawQuery(
+                "UPDATE users_main AS m
+                   JOIN users_info AS i ON m.ID = i.UserID
+                    SET {$SET}
+                  WHERE m.ID = ?",
+                $UpdateDataOther
+            );
             $master->repos->users->uncache($OtherID);
         }
 
         if ($UpdateSet) {
             $SET = implode(', ', $UpdateSet);
-            $sql = "UPDATE users_main AS m JOIN users_info AS i ON m.ID=i.UserID SET $SET WHERE m.ID='$UserID'";
-            $DB->query($sql);
-            $master->repos->users->uncache($UserID);
+            $UpdateData[] = $userID;
+            $master->db->rawQuery(
+                "UPDATE users_main AS m
+                   JOIN users_info AS i ON m.ID = i.UserID
+                    SET {$SET}
+                  WHERE m.ID = ?",
+                $UpdateData
+            );
+            $master->repos->users->uncache($userID);
         }
     }
 }
 
 // Go back
 $Msg ='';
-if (isset($_REQUEST['retu']) && is_number($_REQUEST['retu']))
+if (isset($_REQUEST['retu']) && is_integer_string($_REQUEST['retu']))
     $Msg .= "&retu=".$_REQUEST['retu'];
-elseif (isset($_REQUEST['rett']) && is_number($_REQUEST['rett']))
+elseif (isset($_REQUEST['rett']) && is_integer_string($_REQUEST['rett']))
     $Msg .= "&rett=".$_REQUEST['rett'];
-header("Location: bonus.php?action=msg&". (!empty($ResultMessage) ? "result=" .urlencode($ResultMessage):"").$Msg);
+header("Location: bonus.php?action=msg&". (!empty($ResultMessage) ? "result=" .urlencode($ResultMessage):"")."%0A".urlencode($Notice ?? '').$Msg);

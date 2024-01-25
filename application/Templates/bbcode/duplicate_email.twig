@@ -1,0 +1,28 @@
+{% if Inviter %}
+The following user attempted to invite a potential user with a duplicate email address. This could mean 4 things:
+{% else %}
+The following potential user attempted to create an account with a duplicate email address. This could mean 3 things:
+{% endif %}
+
+[b][size=3]Explanation[/size][/b]
+
+{% if Inviter %}
+[*] The inviter unknowingly invited someone who has or had an account
+[*] The inviter knew and is attemping to make multiple accounts
+[*] The inviter made a mistake and unintentionally typed another address
+[*] The inviter is hacked and the IP was just trying multiple accounts until it find a good one: check the IP history carefully
+{% else %}
+[*] The potential user forgot they already had an account
+[*] The potential user is attempting to make multiple accounts
+[*] The potential user is trying to find registered emails
+{% endif %}
+[b][size=3]Summary[/size][/b]
+
+Email address: {{ Email }}
+{% if Inviter %}
+Inviter: {{ Inviter }}
+{% else %}
+Username provided: {{ Username }}
+{% endif %}
+IP: [geoip]{{ IP }}[/geoip]
+Time: {{ CurrentTime }}

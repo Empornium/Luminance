@@ -6,7 +6,7 @@ if (!check_perms('admin_convert_tags')) {
     error(403);
 }
 $tagtype = $_POST['tagtype'];
-if (!in_array($tagtype, ['bad','good'])) error(0);
+if (!in_array($tagtype, ['bad', 'good'])) error(0);
 
 $returnmessage = '';
 $result = 0;
@@ -16,19 +16,19 @@ if (isset($_POST["old{$tagtype}tags"])) {
     if (is_array($oldIDs) && count($oldIDs)>0) {
         // check we really have an array of numbers
         foreach ($oldIDs AS $tagID) {
-            if (!is_number($tagID)) error(403);
+            if (!is_integer_string($tagID)) error(403);
         }
         // gets named param string in form ':id0,:id1', $params are returned in form [':id0'=>$val0, ':id1'=>$val1]
         $namedparams = $master->db->bindParamArray("id", $oldIDs, $params);
         // get names for results message
-        $tags = $master->db->raw_query("SELECT Tag FROM tags_goodbad WHERE ID IN ($namedparams)", $params)->fetchAll(\PDO::FETCH_COLUMN);
+        $tags = $master->db->rawQuery("SELECT Tag FROM tags_goodbad WHERE ID IN ($namedparams)", $params)->fetchAll(\PDO::FETCH_COLUMN);
         // delete tags
-        $master->db->raw_query("DELETE FROM tags_goodbad WHERE ID IN ($namedparams)", $params);
+        $master->db->rawQuery("DELETE FROM tags_goodbad WHERE ID IN ($namedparams)", $params);
         $message = "Removed ".count($tags)." tag".(count($tags)>1?'s':'')." from $tagtype tag list: ". implode(', ', $tags);
         $returnmessage .= $message;
-        write_log("$message, by " . $LoggedUser['Username']);
+        write_log("$message, by " . $activeUser['Username']);
         $result = 1;
-        $master->cache->delete_value("{$tagtype}_tags");
+        $master->cache->deleteValue("{$tagtype}_tags");
     }
 }
 
@@ -44,12 +44,12 @@ if (isset($_POST["new{$tagtype}tag"])) {
     $tags=[];
     // process array of tags
     foreach ($rawtags as $tag) {
-        $tag = trim($tag,'.'); // trim dots from the beginning and end
+        $tag = trim($tag, '.'); // trim dots from the beginning and end
         $tag = strtolower(trim($tag));
         $tag = preg_replace('/[^a-z0-9.-]/', '', $tag);
 
         if ($tag) {
-            $master->db->raw_query("INSERT IGNORE INTO tags_goodbad (Tag, TagType) VALUES (:tag, :tagtype)",
+            $master->db->rawQuery("INSERT IGNORE INTO tags_goodbad (Tag, TagType) VALUES (:tag, :tagtype)",
                                                        [':tag'     => $tag,
                                                         ':tagtype' => $tagtype]);
             $tags[] = $tag;
@@ -58,9 +58,9 @@ if (isset($_POST["new{$tagtype}tag"])) {
     if (count($tags)>0) {
         $message = "Added ".count($tags)." tag".(count($tags)>1?'s':'')." to $tagtype tags list: ". implode(', ', $tags);
         $returnmessage .= " $message ";
-        write_log("$message, by " . $LoggedUser['Username']);
+        write_log("$message, by " . $activeUser['Username']);
         $result = 1;
-        $master->cache->delete_value("{$tagtype}_tags");
+        $master->cache->deleteValue("{$tagtype}_tags");
     }
 
 }

@@ -1,219 +1,127 @@
 <?php
 namespace Luminance\Legacy;
-/**************************************************************************/
-/*-- Invite tree class -----------------------------------------------------
-***************************************************************************/
+class InviteTree {
+    public function makeTree($userID) {
+        global $master;
 
-class InviteTree
-{
-    public $UserID = 0;
-    public $Visible = true;
+        $tree = $master->db->rawQuery(
+            "SELECT TreeID,
+                    TreeLevel,
+                    TreePosition
+               FROM invite_tree
+               WHERE UserID = ?
+           ORDER BY TreePosition ASC
+              LIMIT 1",
+              [$userID]
+        )->fetch(\PDO::FETCH_NUM);
 
-    // Set things up
-    public function __construct($UserID, $Options = array())
-    {
-        $this->UserID = $UserID;
-        if ($Options['visible'] === false) {
-            $this->Visible = false;
+        if (empty($tree)) return;
+        list($page, $limit) = page_limit(100);
+
+         // used so adjacent trees do not show up in immediate tree
+         $maxPosition = $master->db->rawQuery(
+            "SELECT TreePosition
+               FROM invite_tree
+              WHERE TreeID = ?
+                AND TreeLevel = ?
+                AND TreePosition > ?
+           ORDER BY TreePosition ASC
+              LIMIT 1",
+            $tree
+        )->fetchColumn();
+
+        if ($maxPosition === false) {
+            $wherePosition = "";
+            $params = $tree;
+        } else {
+            $wherePosition = "AND TreePosition < ?";
+            $params = array_merge($tree, [$maxPosition]);
         }
-    }
 
-    public function make_tree()
-    {
-        $UserID = $this->UserID;
-        global $DB;
+        $invitees = $master->db->rawQuery(
+            "SELECT SQL_CALC_FOUND_ROWS
+                    UserID,
+                    TreePosition,
+                    TreeLevel
+               FROM invite_tree
+              WHERE TreeID = ?
+              AND TreeLevel > ?
+              AND TreePosition > ?
+            {$wherePosition}
+           ORDER BY TreePosition
+              LIMIT {$limit}",
+           $params
+        )->fetchAll(\PDO::FETCH_UNIQUE|\PDO::FETCH_OBJ);
 
-        $DB->query("SELECT
-            t1.TreePosition,
-            t1.TreeID,
-            t1.TreeLevel,
-            (SELECT
-                t2.TreePosition FROM invite_tree AS t2
-                WHERE TreeID=t1.TreeID AND TreeLevel=t1.TreeLevel AND t2.TreePosition>t1.TreePosition
-                ORDER BY TreePosition LIMIT 1
-            ) AS MaxPosition
-            FROM invite_tree AS t1
-            WHERE t1.UserID=$UserID");
-
-        list($TreePosition, $TreeID, $TreeLevel, $MaxPosition) = $DB->next_record();
-        if (!$MaxPosition) { $MaxPosition = 1000000; } // $MaxPermission is null if the user is the last one in that tree on that level
-        if (!$TreeID) { return; }
-        $TreeQuery = $DB->query("
-            SELECT
-            it.UserID,
-            Username,
-            Donor,
-            Enabled,
-            PermissionID,
-            Uploaded,
-            Downloaded,
-            Paranoia,
-            TreePosition,
-            TreeLevel
-            FROM invite_tree AS it
-            JOIN users_main AS um ON um.ID=it.UserID
-            JOIN users_info AS ui ON ui.UserID=it.UserID
-            WHERE TreeID=$TreeID
-            AND TreePosition>$TreePosition
-            AND TreePosition<$MaxPosition
-            AND TreeLevel>$TreeLevel
-            ORDER BY TreePosition");
-
-        $PreviousTreeLevel = $TreeLevel;
+        $treeLevel = $tree[1];
 
         // Stats for the summary
-        $MaxTreeLevel = $TreeLevel; // The deepest level (this changes)
-        $OriginalTreeLevel = $TreeLevel; // The level of the user we're viewing
-        $BaseTreeLevel = $TreeLevel + 1; // The level of users invited by our user
-        $Count = 0;
-        $Branches = 0;
-        $DisabledCount = 0;
-        $DonorCount = 0;
-        $ParanoidCount = 0;
-        $TotalUpload = 0;
-        $TotalDownload = 0;
-        $TopLevelUpload = 0;
-        $TopLevelDownload = 0;
+        $tree = [
+            'MaxTreeLevel'      => $treeLevel,      // The deepest level (this changes)
+            'OriginalTreeLevel' => $treeLevel,      // The level of the user we're viewing
+            'BaseTreeLevel'     => $treeLevel + 1,  // The level of users invited by our user
+            'Count'             => 0,
+            'Branches'          => 0,
+            'DisabledCount'     => 0,
+            'DonorCount'        => 0,
+            'ParanoidCount'     => 0,
+            'TotalUpload'       => 0,
+            'TotalDownload'     => 0,
+            'TopLevelUpload'    => 0,
+            'TopLevelDownload'  => 0,
+        ];
 
-        $ClassSummary = array();
-        global $Classes;
-        foreach ($Classes as $ClassID => $Val) {
-            $ClassSummary[$ClassID] = 0;
+        $classSummary = [];
+        $classes = $master->repos->permissions->getClasses();
+        foreach ($classes as $classID => $val) {
+            $classSummary[$classID] = 0;
         }
 
-?>
-        <div class="invitetree pad">
-<?php
+        foreach ($invitees as $userID => &$invitee) {
+            $invitee->user = $master->repos->users->load($userID);
+            if ($invitee->user === false) {
+                unset($invitees[$userID]);
+                continue;
+            }
 
-        // We store this in an output buffer, so we can show the summary at the top without having to loop through twice
-        ob_start();
-        #TODO convert to DB array and foreach loop, while(next_record()) loops are dangerous!
-        while(list($ID, $Username, $Donor, $Enabled, $Class, $Uploaded, $Downloaded, $Paranoia, $TreePosition, $TreeLevel) = $DB->next_record()) {
 
             // Do stats
-            $Count++;
+            $tree['Count']++;
 
-            if ($TreeLevel > $MaxTreeLevel) {
-                $MaxTreeLevel = $TreeLevel;
-            }
-
-            if ($TreeLevel == $BaseTreeLevel) {
-                $Branches++;
-                $TopLevelUpload += $Uploaded;
-                $TopLevelDownload += $Downloaded;
+            if ($invitee->TreeLevel > $tree['MaxTreeLevel']) {
+                $tree['MaxTreeLevel'] = $invitee->TreeLevel;
             }
 
-            $ClassSummary[$Class]++;
-            if ($Enabled == 2) {
-                $DisabledCount++;
-            }
-            if ($Donor) {
-                $DonorCount++;
+            if ($invitee->TreeLevel == $tree['BaseTreeLevel']) {
+                $tree['Branches']++;
+                $tree['TopLevelUpload'] += $invitee->user->legacy['Uploaded'];
+                $tree['TopLevelDownload'] += $invitee->user->legacy['Downloaded'];
             }
 
-            // Manage tree depth
-            if ($TreeLevel > $PreviousTreeLevel) {
-                for ($i = 0; $i<$TreeLevel-$PreviousTreeLevel; $i++) { echo "<ul class=\"invitetree\">\n"; }
-            } elseif ($TreeLevel < $PreviousTreeLevel) {
-                for ($i = 0; $i<$PreviousTreeLevel-$TreeLevel; $i++) { echo "</ul>\n"; }
+            $classSummary[$invitee->user->class->ID]++;
+            if ($invitee->user->legacy['Enabled'] == 2) {
+                $tree['DisabledCount']++;
             }
-?>
-            <li>
-                <strong><?=format_username($ID, $Username, $Donor, true, $Enabled, $Class)?></strong>
-<?php
-            if (check_paranoia(array('uploaded', 'downloaded'), $Paranoia, $Classes[$Class]['Level'])) {
-                $TotalUpload += $Uploaded;
-                $TotalDownload += $Downloaded;
-?>
-                &nbsp;Uploaded: <strong><?=get_size($Uploaded)?></strong>
-                &nbsp;Downloaded: <strong><?=get_size($Downloaded)?></strong>
-                &nbsp;Ratio: <strong><?=ratio($Uploaded, $Downloaded)?></strong>
-<?php
+            if ($invitee->user->legacy['Donor']) {
+                $tree['DonorCount']++;
+            }
+            if (check_paranoia(['uploaded', 'downloaded'], $invitee->user->legacy['Paranoia'], $invitee->user->class->Level)) {
+                $tree['TotalUpload'] += $invitee->user->legacy['Uploaded'];
+                $tree['TotalDownload'] += $invitee->user->legacy['Downloaded'];
             } else {
-                $ParanoidCount++;
-?>
-                &nbsp;Paranoia: <strong><?=number_format($Paranoia) ?></strong>
-<?php
-            }
-?>
-            </li>
-<?php		$PreviousTreeLevel = $TreeLevel;
-            $DB->set_query_id($TreeQuery);
-        }
-        $Tree = ob_get_clean();
-        if ($Count) {
-
-?> 		<p style="font-weight: bold;">
-            This tree has <?=$Count?> entries, <?=$Branches?> branches, and a depth of <?=$MaxTreeLevel - $OriginalTreeLevel?>.
-            It has
-<?php
-            $ClassStrings = array();
-            foreach ($ClassSummary as $ClassID => $ClassCount) {
-                if ($ClassCount == 0) { continue; }
-                $LastClass = make_class_string($ClassID);
-                if ($ClassCount>1) {
-                    if ($LastClass == "Torrent Celebrity") {
-                         $LastClass = 'Torrent Celebrities';
-                    } else {
-                        $LastClass.='s';
-                    }
-                }
-                $LastClass= $ClassCount.' '.$LastClass.' (' . number_format(($ClassCount/$Count)*100) . '%)';
-
-                $ClassStrings []= $LastClass;
-            }
-            if (count($ClassStrings)>1) {
-                array_pop($ClassStrings);
-                echo implode(', ', $ClassStrings);
-                echo ' and '.$LastClass;
-            } else {
-                echo $LastClass;
-            }
-            echo '. ';
-            echo $DisabledCount;
-            echo ($DisabledCount==1)?' user is':' users are';
-            echo ' disabled (';
-            if ($DisabledCount == 0) { echo '0%)'; } else { echo number_format(($DisabledCount/$Count)*100) . '%)';}
-            echo ', and ';
-            echo $DonorCount;
-            echo ($DonorCount==1)?' user has':' users have';
-            echo ' donated (';
-            if ($DonorCount == 0) { echo '0%)'; } else { echo number_format(($DonorCount/$Count)*100) . '%)';}
-            echo '. </p>';
-
-            echo '<p style="font-weight: bold;">';
-            echo 'The total amount uploaded by the entire tree was '.get_size($TotalUpload);
-            echo ', the total amount downloaded was '.get_size($TotalDownload);
-            echo ', and the total ratio is '.ratio($TotalUpload, $TotalDownload).'. ';
-            echo '</p>';
-
-            echo '<p style="font-weight: bold;">';
-            echo 'The total amount uploaded by direct invitees (the top level) was '.get_size($TopLevelUpload);
-            echo ', the total amount downloaded was '.get_size($TopLevelDownload);
-            echo ', and the total ratio is '.ratio($TopLevelUpload, $TopLevelDownload).'. ';
-
-
-            echo 'These numbers include the stats of paranoid users, and will be factored in to the invitation giving script.</p>';
-
-
-            if ($ParanoidCount) {
-                echo '<p style="font-weight: bold;">';
-                echo $ParanoidCount;
-                echo ($ParanoidCount==1)?' user (':' users (';
-                echo number_format(($ParanoidCount/$Count)*100);
-                echo '%) ';
-                echo ($ParanoidCount==1)?'  is':' are';
-                echo ' too paranoid to have their stats shown here, and ';
-                echo ($ParanoidCount==1)?'  was':' were';
-                echo ' not factored into the stats for the total tree.';
-                echo '</p>';
+                $tree['ParanoidCount']++;
             }
         }
 
-?>
-        <br />
-        <?=$Tree?>
-        </div>
-<?php
+        echo $master->render->template(
+            'snippets/invite_tree.html.twig',
+            [
+                'tree'         => $tree,
+                'invitees'     => $invitees,
+                'page'         => $page,
+                'classSummary' => $classSummary,
+                'treeLevel'    => $treeLevel,
+            ]
+        );
     }
 }

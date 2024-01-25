@@ -21,8 +21,8 @@
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `sphinx_delta` (
   `ID` int(10) NOT NULL,
-  `GroupName` varchar(255) DEFAULT NULL,
-  `TagList` text,
+  `GroupName` varchar(300) DEFAULT NULL,
+  `TagList` mediumtext,
   `NewCategoryID` int(11) NOT NULL,
   `Image` varchar(255) NOT NULL,
   `Time` int(12) DEFAULT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `sphinx_delta` (
   `Leechers` int(10) DEFAULT NULL,
   `FreeTorrent` tinyint(1) DEFAULT NULL,
   `FileList` mediumtext,
-  `SearchText` text,
+  `SearchText` mediumtext,
   PRIMARY KEY (`ID`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;

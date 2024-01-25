@@ -23,18 +23,23 @@ switch ($Char) {
 }
 
 if ($MinUses > 0) {
-    $WHERE .= " AND t.Uses >= :minuses ";
-    $Params[':minuses'] = $MinUses;
+    $WHERE .= " AND t.Uses >= ? ";
+    $Params[] = $MinUses;
 }
 
-$TagList = $master->db->raw_query("SELECT t.ID, t.Name, t.Uses, COUNT(ts.ID)
-                                   FROM tags AS t
-                                   LEFT JOIN tag_synomyns AS ts ON ts.TagID = t.ID
-                                   WHERE t.TagType = 'other' $WHERE
-                                   GROUP BY t.ID HAVING COUNT(ts.ID) = 0
-                                   ORDER BY Name ASC",
-                                   $Params)
-                      ->fetchAll(\PDO::FETCH_NUM);
+$TagList = $master->db->rawQuery(
+    "SELECT t.ID,
+            t.Name,
+            t.Uses,
+            COUNT(ts.ID)
+       FROM tags AS t
+  LEFT JOIN tags_synonyms AS ts ON ts.TagID = t.ID
+      WHERE t.TagType = 'other' $WHERE
+   GROUP BY t.ID
+     HAVING COUNT(ts.ID) = 0
+   ORDER BY Name ASC",
+    $Params
+)->fetchAll(\PDO::FETCH_NUM);
 
 $taglistHTML = '<option value="0" selected="selected">none &nbsp;</option>';
 

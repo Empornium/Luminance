@@ -1,6 +1,6 @@
 <?php
 enforce_login();
-if (!check_perms('torrents_review_manage')) error(403);
+if (!check_perms('torrent_review_manage')) error(403);
 
 $IsAjax = isset($_POST['submit']) && $_POST['submit'] == 'Save'? FALSE : TRUE;
 
@@ -10,38 +10,46 @@ $Description = isset($_POST['description'])? $_POST['description']:false;
 
 if ($Sort && $Name && $Description && ($Sort != "") && ($Name != "") && (trim($Description) != "")) {
 
-    $Text = new Luminance\Legacy\Text;
-    if (!$Text->validate_bbcode($Description,  get_permissions_advtags($LoggedUser['ID']), !$IsAjax)) {
+    $bbCode = new \Luminance\Legacy\Text;
+    if (!$bbCode->validate_bbcode($Description,  get_permissions_advtags($activeUser['ID']), !$IsAjax)) {
         echo "There are errors in your bbcode (unclosed tags)";
         die();
     }
 
-    $Sort = db_string($Sort);
-    $Name = db_string($Name);
-    $Description = db_string($Description);
     $ID = (int) $_POST['id'];
-    if (is_numeric($ID)) {
+    if (is_integer_string($ID)) {
         if ($ID == 0) {
             // Create new response
-            $DB->query("INSERT INTO review_reasons (Sort, Name, Description) VALUES('$Sort', '$Name', '$Description')");
+            $master->db->rawQuery("INSERT INTO review_reasons (Sort, Name, Description) VALUES(?, ?, ?)",
+                [$Sort, $Name, $Description]
+            );
             // if submit is set then this is not an ajax response - reload page and pass vars for message & return convid
             if (!$IsAjax) {
-                $InsertedID = $DB->inserted_id();
+                $InsertedID = $master->db->lastinsertID();
                 header("Location: tools.php?action=marked_for_deletion_reasons&added=$InsertedID");
             } else
                 echo '1';
         } else {
-            $DB->query("SELECT * FROM review_reasons WHERE ID=$ID");
-            if ($DB->record_count() != 0) {
+            $master->db->rawQuery("SELECT * FROM review_reasons WHERE ID = ?", [$ID]);
+            if ($master->db->foundRows() != 0) {
                 // Edit response
-                $DB->query("UPDATE review_reasons SET Sort='$Sort', Name='$Name', Description='$Description' WHERE ID=$ID");
+                $master->db->rawQuery(
+                    "UPDATE review_reasons
+                        SET Sort = ?,
+                            Name = ?,
+                            Description = ?
+                      WHERE ID = ?",
+                    [$Sort, $Name, $Description, $ID]
+                );
                 echo '2';
             } else {
                 // Create new response
-                $DB->query("INSERT INTO review_reasons (Sort, Name, Description) VALUES('$Sort', '$Name', '$Description')");
+                $master->db->rawQuery("INSERT INTO review_reasons (Sort, Name, Description) VALUES(?, ?, ?)",
+                    [$Sort, $Name, $Description]
+                );
                 // if submit is set then this is not an ajax response - reload page and pass vars for message & return convid
                 if (!$IsAjax) {
-                    $InsertedID = $DB->inserted_id();
+                    $InsertedID = $master->db->lastInsertID();
                     header("Location: tools.php?action=marked_for_deletion_reasons&added=$InsertedID");
                 } else
                     echo '1';
@@ -62,4 +70,3 @@ if ($Sort && $Name && $Description && ($Sort != "") && ($Name != "") && (trim($D
     } else
         echo '-1';
 }
-
